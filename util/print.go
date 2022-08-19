@@ -13,3 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+package util
+
+import (
+	"encoding/json"
+)
+
+func ToString(x interface{}) string {
+	s, _ := json.Marshal(x)
+	return string(s)
+}

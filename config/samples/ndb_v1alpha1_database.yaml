@@ -1,6 +1,24 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: database-sample
+  name: db
 spec:
-  # TODO(user): Add fields here
+  ndb:
+    clusterId: "Nutanix Cluster Id"
+    credentials:
+      loginUser: admin
+      password: "NDB Password"
+      sshPublicKey: "SSH Key"
+    server: https://[NDB IP]:8443/era/v0.9
+
+  databaseInstance:
+    databaseInstanceName: "Database Instance Name"
+    databaseNames:
+      - database_one
+      - database_two
+      - database_three
+    password: 
+    size: 10
+    timezone: "UTC"
+    type: postgres
+    
