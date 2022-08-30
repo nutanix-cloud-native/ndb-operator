@@ -21,6 +21,9 @@ import (
 )
 
 func ToString(x interface{}) string {
-	s, _ := json.Marshal(x)
+	s, err := json.Marshal(x)
+	if err != nil {
+		return ""
+	}
 	return string(s)
 }

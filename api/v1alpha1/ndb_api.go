@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -30,6 +31,11 @@ import (
 func GetAllDatabases(ctx context.Context, ndbClient *ndbclient.NDBClient) (databases []DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllDatabases")
+	if ndbClient == nil {
+		err = errors.New("nil reference")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
 	res, err := ndbClient.Get("databases")
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
@@ -49,7 +55,11 @@ func GetAllDatabases(ctx context.Context, ndbClient *ndbclient.NDBClient) (datab
 		log.Error(err, "Error occured reading response.Body in GetAllDatabases")
 		return
 	}
-	_ = json.Unmarshal(body, &databases)
+	err = json.Unmarshal(body, &databases)
+	if err != nil {
+		log.Error(err, "Error occured trying to unmarshal.")
+		return
+	}
 	log.Info("Returning from ndb_api.GetAllDatabases")
 	return
 }
@@ -57,6 +67,11 @@ func GetAllDatabases(ctx context.Context, ndbClient *ndbclient.NDBClient) (datab
 func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id string) (database DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetDatabaseById", "databaseId", id)
+	if ndbClient == nil {
+		err = errors.New("nil reference")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
 	if id == "" {
 		err = fmt.Errorf("database id is empty")
 		log.Error(err, "no database id provided")
@@ -81,7 +96,11 @@ func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id str
 		log.Error(err, "Error occured reading response.Body in GetAllDatabases")
 		return
 	}
-	_ = json.Unmarshal(body, &database)
+	err = json.Unmarshal(body, &database)
+	if err != nil {
+		log.Error(err, "Error occured trying to unmarshal.")
+		return
+	}
 	log.Info("Returning from ndb_api.GetDatabaseById")
 	return
 }
@@ -89,6 +108,11 @@ func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id str
 func ProvisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, req *DatabaseProvisionRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.ProvisionDatabase")
+	if ndbClient == nil {
+		err = errors.New("nil reference")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
 	res, err := ndbClient.Post("databases/provision", req)
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
@@ -108,7 +132,11 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, req 
 		log.Error(err, "Error occured reading response.Body in ProvisionDatabase")
 		return
 	}
-	_ = json.Unmarshal(body, &task)
+	err = json.Unmarshal(body, &task)
+	if err != nil {
+		log.Error(err, "Error occured trying to unmarshal.")
+		return
+	}
 	log.Info("Returning from ndb_api.ProvisionDatabase")
 	return
 }
@@ -116,6 +144,11 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, req 
 func GetAllProfiles(ctx context.Context, ndbClient *ndbclient.NDBClient) (profiles []ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllProfiles")
+	if ndbClient == nil {
+		err = errors.New("nil reference")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
 	res, err := ndbClient.Get("profiles")
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
@@ -134,7 +167,11 @@ func GetAllProfiles(ctx context.Context, ndbClient *ndbclient.NDBClient) (profil
 		log.Error(err, "Error occured reading response.Body in GetAllProfiles")
 		return
 	}
-	_ = json.Unmarshal(body, &profiles)
+	err = json.Unmarshal(body, &profiles)
+	if err != nil {
+		log.Error(err, "Error occured trying to unmarshal.")
+		return
+	}
 	log.Info("Returning from ndb_api.GetAllProfiles")
 	return
 }
@@ -142,6 +179,11 @@ func GetAllProfiles(ctx context.Context, ndbClient *ndbclient.NDBClient) (profil
 func GetAllSLAs(ctx context.Context, ndbClient *ndbclient.NDBClient) (slas []SLAResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllSLAs")
+	if ndbClient == nil {
+		err = errors.New("nil reference")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
 	res, err := ndbClient.Get("slas")
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
@@ -160,7 +202,11 @@ func GetAllSLAs(ctx context.Context, ndbClient *ndbclient.NDBClient) (slas []SLA
 		log.Error(err, "Error occured reading response.Body in GetAllSLAs")
 		return
 	}
-	_ = json.Unmarshal(body, &slas)
+	err = json.Unmarshal(body, &slas)
+	if err != nil {
+		log.Error(err, "Error occured trying to unmarshal.")
+		return
+	}
 	log.Info("Returning from ndb_api.GetAllSLAs")
 	return
 }
@@ -168,6 +214,11 @@ func GetAllSLAs(ctx context.Context, ndbClient *ndbclient.NDBClient) (slas []SLA
 func DeprovisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, id string, req DatabaseDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.DeprovisionDatabase", "databaseId", id)
+	if ndbClient == nil {
+		err = errors.New("nil reference")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
 	if id == "" {
 		err = fmt.Errorf("id is empty")
 		log.Error(err, "no database id provided")
@@ -192,7 +243,11 @@ func DeprovisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, id
 		log.Error(err, "Error occured reading response.Body")
 		return
 	}
-	_ = json.Unmarshal(body, &task)
+	err = json.Unmarshal(body, &task)
+	if err != nil {
+		log.Error(err, "Error occured trying to unmarshal.")
+		return
+	}
 	log.Info("Returning from ndb_api.DeprovisionDatabase")
 	return
 }
@@ -200,6 +255,11 @@ func DeprovisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, id
 func DeprovisionDatabaseServer(ctx context.Context, ndbClient *ndbclient.NDBClient, id string, req DatabaseServerDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.DeprovisionDatabaseServer", "dbServerId", id)
+	if ndbClient == nil {
+		err = errors.New("nil reference")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
 	if id == "" {
 		err = fmt.Errorf("id is empty")
 		log.Error(err, "no database server id provided")
@@ -224,7 +284,11 @@ func DeprovisionDatabaseServer(ctx context.Context, ndbClient *ndbclient.NDBClie
 		log.Error(err, "Error occured reading response.Body in DeprovisionDatabaseServer")
 		return
 	}
-	_ = json.Unmarshal(body, &task)
+	err = json.Unmarshal(body, &task)
+	if err != nil {
+		log.Error(err, "Error occured trying to unmarshal.")
+		return
+	}
 	log.Info("Returning from ndb_api.DeprovisionDatabaseServer")
 	return
 }

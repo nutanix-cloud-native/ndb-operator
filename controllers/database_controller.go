@@ -77,107 +77,18 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			return r.addFinalizer(ctx, req, ndbv1alpha1.FINALIZER_DATABASE_SERVER, database)
 		}
 	} else {
+		// The object is under deletion. Perform deletion based on the finalizers we've added.
 		return r.handleDelete(ctx, database, ndbClient)
 	}
 
-	// In the case when a database has been provisioned through the operator an Id is assigned to the database CR.
-	// If someone deletes the database externally/aborts the operation through NDB (and not through the operator), the operator should
-	// create a new database. To do this, we fetch the database by the Id we have in the datbase CR's Status.Id.
-	// If the database response's status is empty, we set our CR's status to be empty so that it is provisioned again.
-	if database.Status.Id != "" {
-		// database was provisioned earlier => sync status
-
-		var databaseResponse ndbv1alpha1.DatabaseResponse
-
-		allDatabases, err := ndbv1alpha1.GetAllDatabases(ctx, ndbClient)
-		if err != nil {
-			log.Error(err, "An error occured while trying to get all databases")
-			return r.requeueOnErr(err)
-		} else {
-			for _, db := range allDatabases {
-				if db.Id == database.Status.Id {
-					databaseResponse = db
-					break
-				}
-			}
-		}
-
-		// Update the CR status if the database response is empty so that it triggers a provision operation
-		if databaseResponse.Status == ndbv1alpha1.DATABASE_CR_STATUS_EMPTY {
-			database.Status.Status = ndbv1alpha1.DATABASE_CR_STATUS_EMPTY
-			err = r.Status().Update(ctx, database)
-			if err != nil {
-				log.Error(err, "Failed to update database status")
-				return r.requeueOnErr(err)
-			}
-		}
-
+	// To check and handle the case when the database ha been deleted/aborted externally (not through the operator).
+	err = r.handleExternalDelete(ctx, database, ndbClient)
+	if err != nil {
+		log.Error(err, "Error occured while external delete check")
+		return r.requeueOnErr(err)
 	}
 
-	switch database.Status.Status {
-
-	case ndbv1alpha1.DATABASE_CR_STATUS_EMPTY:
-		// DB Status.Status is empty => Provision a DB
-		log.Info("Provisioning a database instance with NDB.")
-
-		generatedReq, err := ndbv1alpha1.GenerateProvisioningRequest(ctx, ndbClient, spec)
-		if err != nil {
-			log.Error(err, "Could not generate provisioning request, requeuing.")
-			return r.requeueOnErr(err)
-		}
-
-		taskResponse, err := ndbv1alpha1.ProvisionDatabase(ctx, ndbClient, generatedReq)
-		if err != nil {
-			log.Error(err, "An error occured while trying to provision the database")
-			return r.requeueOnErr(err)
-		}
-		// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
-
-		log.Info("Setting database CR status to provisioning and id as " + taskResponse.EntityId)
-		database.Status.Status = ndbv1alpha1.DATABASE_CR_STATUS_PROVISIONING
-		database.Status.Id = taskResponse.EntityId
-
-		err = r.Status().Update(ctx, database)
-		if err != nil {
-			log.Error(err, "Failed to update database status")
-			return r.requeueOnErr(err)
-		}
-
-	case ndbv1alpha1.DATABASE_CR_STATUS_READY:
-		return r.requeueWithTimeout(15)
-
-	case ndbv1alpha1.DATABASE_CR_STATUS_PROVISIONING:
-		// Check the status of the DB
-		databaseResponse, err := ndbv1alpha1.GetDatabaseById(ctx, ndbClient, database.Status.Id)
-		if err != nil {
-			log.Error(err, "An error occured while trying to get the database with id: "+database.Status.Id)
-			r.requeueOnErr(err)
-		}
-		// if READY => Change status
-		// log.Info("DEBUG Database Response: " + util.ToString(databaseResponse))
-		if databaseResponse.Status == ndbv1alpha1.DATABASE_CR_STATUS_READY {
-			log.Info("Database instance is READY, adding data to CR's status and updating the CR")
-			database.Status.Status = ndbv1alpha1.DATABASE_CR_STATUS_READY
-			database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
-			for _, property := range databaseResponse.Properties {
-				if property.Name == ndbv1alpha1.PROPERTY_NAME_VM_IP {
-					database.Status.IPAddress = property.Value
-				}
-			}
-
-			err = r.Status().Update(ctx, database)
-			if err != nil {
-				log.Error(err, "Failed to update database status")
-				return r.requeueOnErr(err)
-			}
-		}
-		// If database instance is not yet ready, requeue with wait
-		return r.requeueWithTimeout(15)
-
-	default:
-		// Do Nothing
-	}
-	return r.doNotRequeue()
+	return r.handleSync(ctx, database, ndbClient)
 }
 
 // SetupWithManager sets up the controller with the Manager.

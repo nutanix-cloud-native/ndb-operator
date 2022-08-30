@@ -44,13 +44,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		return
 	}
 
-	database_names := ""
-	for idx, name := range dbSpec.Instance.DatabaseNames {
-		database_names += name
-		if idx != len(dbSpec.Instance.DatabaseNames)-1 {
-			database_names += ","
-		}
-	}
+	database_names := strings.Join(dbSpec.Instance.DatabaseNames, ",")
 
 	req = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(dbSpec.Instance.Type),
