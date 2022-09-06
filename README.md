@@ -2,9 +2,12 @@
 The NDB operator brings automated and simplified database administration, provisioning, and life-cycle management to Kubernetes.
 
 ## Getting Started
-You’ll need a Kubernetes cluster to run against, which should have network connectivity to the NDB installation. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
-**Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
-
+### Pre-requisites
+1. Era / NDB on-prem [installation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Era-User-Guide-v2_4:top-era-installation-c.html).
+2. A Kubernetes cluster to run against, which should have network connectivity to the NDB installation. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
+**Note:** The operator will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
+3. The operator-sdk installed.
+4. A clone of the source code (this repository).
 ### Installation and Running on the cluster
 1. Install the CRDs into the cluster:
 
@@ -34,6 +37,7 @@ More information can be found via the [Kubebuilder Documentation](https://book.k
 <br>
 
 ### Using the Operator
+
 1. To create instances of custom resources (provision databases), edit [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) file with the NDB installation and database instance details and run:
 
 ```sh
@@ -44,6 +48,41 @@ kubectl apply -f config/samples/ndb_v1alpha1_database.yaml
 ```sh
 kubectl delete -f config/samples/ndb_v1alpha1_database.yaml
 ```
+The [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) is described as follows:
+```yaml
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  # This name that will be used within the kubernetes cluster
+  name: db
+spec:
+  ndb:
+    # Cluster id of the cluster where the Database has to be provisioned
+    # Can be fetched from the GET /clusters endpoint
+    clusterId: "Nutanix Cluster Id" 
+    # Credentials for NDB installation
+    credentials:
+      loginUser: admin
+      password: "NDB Password"
+      sshPublicKey: "SSH Key"
+    # The NDB Server
+    server: https://[NDB IP]:8443/era/v0.9
+
+  databaseInstance:
+    # The database instance name on NDB
+    databaseInstanceName: "Database Instance Name"
+    # Names of the databases on that instance
+    databaseNames:
+      - database_one
+      - database_two
+      - database_three
+    # Password for the database
+    password: qwertyuiop
+    size: 10
+    timezone: "UTC"
+    type: postgres
+```
+
 <br>
 
 ### Building and pushing to an image registry  
@@ -97,4 +136,3 @@ Issues and enhancement requests can be submitted in the [Issues tab of this repo
 Copyright 2021-2022 Nutanix, Inc.
 
 The project is released under version 2.0 of the [Apache license](http://www.apache.org/licenses/LICENSE-2.0).
-

@@ -28,16 +28,20 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// This function generates and returns a request for provisioning a database (and a dbserver vm) on NDB
+// The database provisioned has a NONE time machine SLA attached to it, and uses the default OOB profiles
 func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBClient, dbSpec DatabaseSpec) (req *DatabaseProvisionRequest, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 
+	// Fetching the NONE TM SLA
 	sla, err := GetNoneTimeMachineSLA(ctx, ndbclient)
 	if err != nil {
 		log.Error(err, "Error occured while getting NONE TM SLA", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 		return
 	}
 
+	// Fetch the OOB profiles for the database
 	profilesMap, err := GetOOBProfiles(ctx, ndbclient, dbSpec.Instance.Type)
 	if err != nil {
 		log.Error(err, "Error occured while getting OOB profiles", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
@@ -46,6 +50,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 
 	database_names := strings.Join(dbSpec.Instance.DatabaseNames, ",")
 
+	// Creating a provisioning request based on the database type
 	req = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(dbSpec.Instance.Type),
 		Name:                     dbSpec.Instance.DatabaseInstanceName,
@@ -123,6 +128,8 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 	return
 }
 
+// Fetches all the SLAs from the ndb and returns the NONE TM SLA.
+// Returns an error if not found.
 func GetNoneTimeMachineSLA(ctx context.Context, ndbclient *ndbclient.NDBClient) (sla SLAResponse, err error) {
 	slas, err := GetAllSLAs(ctx, ndbclient)
 	if err != nil {
@@ -137,7 +144,10 @@ func GetNoneTimeMachineSLA(ctx context.Context, ndbclient *ndbclient.NDBClient) 
 	return sla, fmt.Errorf("NONE TimeMachine not found")
 }
 
+// Fetches all the profiles and returns a map of OOB profiles
+// Returns an error if one or more OOB profiles is not found
 func GetOOBProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType string) (profileMap map[string]ProfileResponse, err error) {
+	// Map of profile type to profiles
 	profileMap = make(map[string]ProfileResponse)
 
 	profiles, err := GetAllProfiles(ctx, ndbclient)
@@ -149,14 +159,17 @@ func GetOOBProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType 
 	genericProfiles := util.Filter(profiles, func(p ProfileResponse) bool { return p.EngineType == DATABASE_ENGINE_TYPE_GENERIC })
 	dbEngineSpecificProfiles := util.Filter(profiles, func(p ProfileResponse) bool { return p.EngineType == GetDatabaseEngineName(dbType) })
 
+	// Specifying the usage of small compute profiles
 	computeProfiles := util.Filter(genericProfiles, func(p ProfileResponse) bool {
 		return p.Type == PROFILE_TYPE_COMPUTE && strings.Contains(strings.ToLower(p.Name), "small")
 	})
 	storageProfiles := util.Filter(genericProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_STORAGE })
+	// Specifying the usage of single instance topoplogy
 	softwareProfiles := util.Filter(dbEngineSpecificProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_SOFTWARE && p.Topology == TOPOLOGY_SINGLE })
 	networkProfiles := util.Filter(dbEngineSpecificProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_NETWORK })
 	dbParamProfiles := util.Filter(dbEngineSpecificProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_DATABASE_PARAMETER })
 
+	// Some profile not found, return an error
 	if len(computeProfiles) == 0 || len(softwareProfiles) == 0 || len(storageProfiles) == 0 || len(networkProfiles) == 0 || len(dbParamProfiles) == 0 {
 		err = errors.New("oob profile: one or more OOB profile(s) were not found")
 		return
@@ -186,6 +199,7 @@ func GetDatabaseEngineName(dbType string) string {
 	}
 }
 
+// Returns a request to delete a database instance
 func GenerateDeprovisionDatabaseRequest() (req *DatabaseDeprovisionRequest) {
 	req = &DatabaseDeprovisionRequest{
 		Delete:               true,
@@ -198,6 +212,7 @@ func GenerateDeprovisionDatabaseRequest() (req *DatabaseDeprovisionRequest) {
 	return
 }
 
+// Returns a request to delete a database server vm
 func GenerateDeprovisionDatabaseServerRequest() (req *DatabaseServerDeprovisionRequest) {
 	req = &DatabaseServerDeprovisionRequest{
 		Delete:            true,

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 )
 
+// A utility function to convert an interface to a string
 func ToString(x interface{}) string {
 	s, err := json.Marshal(x)
 	if err != nil {

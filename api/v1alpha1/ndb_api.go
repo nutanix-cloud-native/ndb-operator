@@ -28,6 +28,7 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// Fetches all the databases on the NDB instance and retutns a slice of the databases
 func GetAllDatabases(ctx context.Context, ndbClient *ndbclient.NDBClient) (databases []DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllDatabases")
@@ -64,6 +65,7 @@ func GetAllDatabases(ctx context.Context, ndbClient *ndbclient.NDBClient) (datab
 	return
 }
 
+// Fetches and returns a database by an Id
 func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id string) (database DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetDatabaseById", "databaseId", id)
@@ -72,6 +74,7 @@ func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id str
 		log.Error(err, "Received nil ndbClient reference")
 		return
 	}
+	// Checking if id is empty, this is necessary otherwise the request becomes a call to get all databases (/databases)
 	if id == "" {
 		err = fmt.Errorf("database id is empty")
 		log.Error(err, "no database id provided")
@@ -105,6 +108,8 @@ func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id str
 	return
 }
 
+// Provisions a database instance based on the database provisioning request
+// Returns the task info summary response for the operation
 func ProvisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, req *DatabaseProvisionRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.ProvisionDatabase")
@@ -141,6 +146,7 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, req 
 	return
 }
 
+// Fetches and returns all the available profiles as a profile slice
 func GetAllProfiles(ctx context.Context, ndbClient *ndbclient.NDBClient) (profiles []ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllProfiles")
@@ -176,6 +182,7 @@ func GetAllProfiles(ctx context.Context, ndbClient *ndbclient.NDBClient) (profil
 	return
 }
 
+// Fetches and returns all the SLAs as a sla slice
 func GetAllSLAs(ctx context.Context, ndbClient *ndbclient.NDBClient) (slas []SLAResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllSLAs")
@@ -211,6 +218,8 @@ func GetAllSLAs(ctx context.Context, ndbClient *ndbclient.NDBClient) (slas []SLA
 	return
 }
 
+// Deprovisions a database instance given a database id
+// Returns the task info summary response for the operation
 func DeprovisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, id string, req DatabaseDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.DeprovisionDatabase", "databaseId", id)
@@ -252,6 +261,8 @@ func DeprovisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, id
 	return
 }
 
+// Deprovisions a database server vm given a server id
+// Returns the task info summary response for the operation
 func DeprovisionDatabaseServer(ctx context.Context, ndbClient *ndbclient.NDBClient, id string, req DatabaseServerDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.DeprovisionDatabaseServer", "dbServerId", id)

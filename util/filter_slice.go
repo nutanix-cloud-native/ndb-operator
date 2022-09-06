@@ -16,6 +16,8 @@ limitations under the License.
 
 package util
 
+// A utility function to filter the items based on the conditions
+// defined in the predicate 'fn'
 func Filter[T any](items []T, fn func(item T) bool) []T {
 	filteredItems := []T{}
 	for _, value := range items {

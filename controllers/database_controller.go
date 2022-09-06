@@ -94,7 +94,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		log.Error(err, "Error occured while external delete check")
 		return r.requeueOnErr(err)
 	}
-
+	// Synchronize the database CR with the database instance on NDB.
 	return r.handleSync(ctx, database, ndbClient)
 }
 

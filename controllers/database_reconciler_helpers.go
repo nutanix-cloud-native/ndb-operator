@@ -143,8 +143,8 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 	return r.requeueWithTimeout(15)
 }
 
-// In the case when a database has been provisioned through the operator an Id is assigned to the database CR.
-// If someone deletes the database externally/aborts the operation through NDB (and not through the operator), the operator should
+// When a database is provisioned, an id is assigned to the database CR.
+// In case if someone deletes the database externally/aborts the operation through NDB (and not through the operator), the operator should
 // create a new database. To do this, we fetch the database by the Id we have in the datbase CR's Status.Id.
 // If the database response's status is empty, we set our CR's status to be empty so that it is provisioned again.
 func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndbclient.NDBClient) (err error) {
@@ -180,6 +180,9 @@ func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database 
 	return nil
 }
 
+// The handleSync function synchronizes the database CR's with the database instance in NDB
+// It handles the transition from EMPTY (initial state) => PROVISIONING => RUNNING
+// and updates the status accordingly. The update() triggers an implicit requeue of the reconcile request.
 func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndbclient.NDBClient) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.handleSync")
