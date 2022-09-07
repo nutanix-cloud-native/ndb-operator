@@ -13,3 +13,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+package util
+
+import (
+	"encoding/json"
+)
+
+// A utility function to convert an interface to a string
+func ToString(x interface{}) string {
+	s, err := json.Marshal(x)
+	if err != nil {
+		return ""
+	}
+	return string(s)
+}

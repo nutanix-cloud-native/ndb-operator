@@ -13,3 +13,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+package util
+
+// A utility function to filter the items based on the conditions
+// defined in the predicate 'fn'
+func Filter[T any](items []T, fn func(item T) bool) []T {
+	filteredItems := []T{}
+	for _, value := range items {
+		if fn(value) {
+			filteredItems = append(filteredItems, value)
+		}
+	}
+	return filteredItems
+}

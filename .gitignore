@@ -23,3 +23,8 @@ testbin/*
 *.swp
 *.swo
 *~
+
+
+sandbox
+config/samples/ndb.yaml
+.DS_Store
