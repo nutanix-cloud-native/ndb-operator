@@ -199,6 +199,19 @@ func GetDatabaseEngineName(dbType string) string {
 	}
 }
 
+func GetDatabasePortByType(dbType string) int32 {
+	switch dbType {
+	case "postgres":
+		return DATABASE_DEFAULT_PORT_POSTGRES
+	case "mongodb":
+		return DATABASE_DEFAULT_PORT_MONGODB
+	case "mysql":
+		return DATABASE_DEFAULT_PORT_MYSQL
+	default:
+		return 80
+	}
+}
+
 // Returns a request to delete a database instance
 func GenerateDeprovisionDatabaseRequest() (req *DatabaseDeprovisionRequest) {
 	req = &DatabaseDeprovisionRequest{

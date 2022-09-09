@@ -24,7 +24,11 @@ import (
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/ndbclient"
 	"github.com/nutanix-cloud-native/ndb-operator/util"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -183,7 +187,7 @@ func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database 
 // The handleSync function synchronizes the database CR's with the database instance in NDB
 // It handles the transition from EMPTY (initial state) => PROVISIONING => RUNNING
 // and updates the status accordingly. The update() triggers an implicit requeue of the reconcile request.
-func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndbclient.NDBClient) (ctrl.Result, error) {
+func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndbclient.NDBClient, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.handleSync")
 
@@ -244,6 +248,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		return r.requeueWithTimeout(15)
 
 	case ndbv1alpha1.DATABASE_CR_STATUS_READY:
+		r.setupConnectivity(ctx, database, req)
 		return r.requeueWithTimeout(15)
 
 	default:
@@ -251,4 +256,125 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 	}
 
 	return r.doNotRequeue()
+}
+
+// Sets up a kubernetes networking service (Without selectors)
+// Then sets up an endpoint with the same name as the service
+// to map to an external endpoint (NDB database instance in our scenario).
+func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *ndbv1alpha1.Database, req ctrl.Request) (err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered database_reconciler_helpers.setupConnectivity")
+	// The 'service' and 'endpoint' objects should have the
+	// same name for the service to map to the enpoint.
+	commonMetadata := metav1.ObjectMeta{
+		Name:      database.Name + "-svc",
+		Namespace: req.Namespace,
+	}
+	commonNamespacedName := types.NamespacedName{
+		Name:      database.Name + "-svc",
+		Namespace: req.Namespace,
+	}
+	targetPort := ndbv1alpha1.GetDatabasePortByType(database.Spec.Instance.Type)
+
+	err = r.setupService(ctx, database, commonNamespacedName, commonMetadata, targetPort)
+	if err != nil {
+		log.Error(err, "Error occured while setting up the service")
+		return
+	}
+	err = r.setupEndpoints(ctx, database, commonNamespacedName, commonMetadata, targetPort)
+	if err != nil {
+		log.Error(err, "Error occured while setting up the endpoints")
+		return
+	}
+	log.Info("Returning from database_reconciler_helpers.setupConnectivity")
+	return
+}
+
+// Checks and creates a new service (without label selectors) if it does not exists
+// and also sets up the database as the owner for the created service
+func (r *DatabaseReconciler) setupService(ctx context.Context, database *ndbv1alpha1.Database, namespacedName types.NamespacedName, metadata metav1.ObjectMeta, targetPort int32) (err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered database_reconciler_helpers.setupService")
+	// Create a new service if it does not exists.
+	foundService := &corev1.Service{}
+	err = r.Get(ctx, namespacedName, foundService)
+	if err != nil && errors.IsNotFound(err) {
+		log.Info("No service found, creating a new service", "target port", targetPort)
+		service := &corev1.Service{
+			ObjectMeta: metadata,
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{
+					{
+						Protocol:   corev1.ProtocolTCP,
+						Port:       80,
+						TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: targetPort},
+					},
+				},
+			},
+		}
+		// Setting database as the owner of this service
+		err = ctrl.SetControllerReference(database, service, r.Scheme)
+		if err != nil {
+			log.Error(err, "Error setting controller reference for the service")
+		}
+		err = r.Create(ctx, service)
+		if err != nil {
+			log.Error(err, "Failed to create a new service")
+			return
+		}
+		log.Info("Created a new service", "service name", service.GetName())
+	}
+	log.Info("Returning from database_reconciler_helpers.setupService")
+	return
+}
+
+// Checks and creates an endpoints object for the service if it does not already exists.
+// If it is already present, syncs the IP address with the Database.Status.IPAddress if out of sync.
+func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1alpha1.Database, namespacedName types.NamespacedName, metadata metav1.ObjectMeta, targetPort int32) (err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered database_reconciler_helpers.setupEndpoints")
+	foundEndpoint := &corev1.Endpoints{}
+	endpointSubsets := []corev1.EndpointSubset{
+		{
+			Addresses: []corev1.EndpointAddress{{IP: database.Status.IPAddress}},
+			Ports:     []corev1.EndpointPort{{Port: targetPort}},
+		},
+	}
+	err = r.Get(ctx, namespacedName, foundEndpoint)
+	// Create an endpoint if it does not exists.
+	if err != nil && errors.IsNotFound(err) {
+		log.Info("No endpoint found, creating a new endpoint")
+		endpoint := &corev1.Endpoints{
+			ObjectMeta: metadata,
+			Subsets:    endpointSubsets,
+		}
+		// Setting database as the owner of this endpoint
+		ctrl.SetControllerReference(database, endpoint, r.Scheme)
+		err = r.Create(ctx, endpoint)
+		if err != nil {
+			log.Error(err, "Failed to create a new ep")
+			return
+		}
+		log.Info("Created a new endpoint", "endpoint name", endpoint.GetName())
+	} else {
+		// If endpoint exists, check if the IP has changed.
+		// If changed, sync with the latest IP in the database CR status.
+		for _, subset := range foundEndpoint.Subsets {
+			for _, address := range subset.Addresses {
+				if address.IP == database.Status.IPAddress {
+					// IP has not changed, no need to update endpoint
+					return
+				}
+			}
+		}
+		log.Info("Endpoint found with a different IP address, updating.")
+		foundEndpoint.Subsets = endpointSubsets
+		err = r.Update(ctx, foundEndpoint)
+		if err != nil {
+			log.Error(err, "Failed to update endpoint")
+			return
+		}
+	}
+	log.Info("Returning from database_reconciler_helpers.setupEndpoints")
+	return
 }
