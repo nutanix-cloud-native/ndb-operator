@@ -34,7 +34,6 @@ make generate manifests
 
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
-<br>
 
 ### Using the Operator
 
@@ -119,7 +118,17 @@ make undeploy
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 
 It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/) 
-which provides a reconcile function responsible for synchronizing resources untile the desired state is reached on the cluster 
+which provides a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster.
+
+A custom resource of the kind Database is created by the reconciler, followed by a Service and an Endpoint that maps to the IP address of the database instance provisioned. Application pods/deployments can use this service to interact with the databases provisioned on NDB through the native Kubernetes service. 
+
+Pods can specify an initContainer to wait for the service (and hence the database instance) to get created before they start up.
+```yaml
+  initContainers:
+  - name: init-db
+    image: busybox:1.28
+    command: ['sh', '-c', "until nslookup <<Database CR Name>>-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for database service; sleep 2; done"]
+```
 
 ## Contributing
 See the [contributing docs](CONTRIBUTING.md).
