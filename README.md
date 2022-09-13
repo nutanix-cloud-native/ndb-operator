@@ -9,32 +9,11 @@ The NDB operator brings automated and simplified database administration, provis
 3. The operator-sdk installed.
 4. A clone of the source code ([this](https://github.com/nutanix-cloud-native/ndb-operator) repository).
 ### Installation and Running on the cluster
-1. Install the CRDs into the cluster:
+Deploy the controller on the cluster:
 
 ```sh
-make install
+make deploy 
 ```
-
-2. Run your controller (this will run in the foreground, so switch to a new terminal if you want to leave it running):
-
-```sh
-make run
-```
-
-**NOTE:** You can also run this in one step by running: `make install run`      
-<br>
-### Modifying the API definitions
-If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
-
-```sh
-make generate manifests
-```
-
-**NOTE:** Run `make --help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
-<br>
 
 ### Using the Operator
 
@@ -83,7 +62,36 @@ spec:
     type: postgres
 ```
 
-<br>
+
+
+
+## Developement
+
+### Installation and Running the controller locally
+1. Install the CRDs into the cluster:
+
+```sh
+make install
+```
+
+2. Run your controller locally (this will run in the foreground, so switch to a new terminal if you want to leave it running):
+
+```sh
+make run
+```
+
+**NOTE:** You can also run this in one step by running: `make install run`
+
+### Modifying the API definitions
+If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
+
+```sh
+make generate manifests
+```
+
+**NOTE:** Run `make --help` for more information on all potential `make` targets
+
+More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
 ### Building and pushing to an image registry  
 Build and push your image to the location specified by `IMG`:
@@ -91,8 +99,6 @@ Build and push your image to the location specified by `IMG`:
 ```sh
 make docker-build docker-push IMG=<some-registry>/ndb-operator:tag
 ```
-
-<br>
 
 ### Deploy the operator pushed to an image registry  
 Deploy the controller to the cluster with the image specified by `IMG`:
@@ -109,13 +115,14 @@ make uninstall
 ```
 
 ### Undeploy controller
-UnDeploy the controller to the cluster:
+To remove the controller from the cluster:
 
 ```sh
 make undeploy
 ```
 
-### How it works
+## How it works
+
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 
 It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/) 
