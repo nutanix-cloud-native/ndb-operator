@@ -46,19 +46,19 @@ func GetAllDatabases(ctx context.Context, ndbClient *ndbclient.NDBClient) (datab
 				err = fmt.Errorf("GET /databases responded with a nil response")
 			}
 		}
-		log.Error(err, "Error occured fetching all databases")
+		log.Error(err, "Error occurred fetching all databases")
 		return
 	}
 	log.Info("GET /databases", "HTTP status code", res.StatusCode)
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
-		log.Error(err, "Error occured reading response.Body in GetAllDatabases")
+		log.Error(err, "Error occurred reading response.Body in GetAllDatabases")
 		return
 	}
 	err = json.Unmarshal(body, &databases)
 	if err != nil {
-		log.Error(err, "Error occured trying to unmarshal.")
+		log.Error(err, "Error occurred trying to unmarshal.")
 		return
 	}
 	log.Info("Returning from ndb_api.GetAllDatabases")
@@ -89,19 +89,19 @@ func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id str
 				err = fmt.Errorf("GET /databases/%s responded with a nil response", id)
 			}
 		}
-		log.Error(err, "Error occured fetching database")
+		log.Error(err, "Error occurred fetching database")
 		return
 	}
 	log.Info("GET /databases/"+id, "HTTP status code", res.StatusCode)
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
-		log.Error(err, "Error occured reading response.Body in GetAllDatabases")
+		log.Error(err, "Error occurred reading response.Body in GetAllDatabases")
 		return
 	}
 	err = json.Unmarshal(body, &database)
 	if err != nil {
-		log.Error(err, "Error occured trying to unmarshal.")
+		log.Error(err, "Error occurred trying to unmarshal.")
 		return
 	}
 	log.Info("Returning from ndb_api.GetDatabaseById")
@@ -127,19 +127,19 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, req 
 				err = fmt.Errorf("POST databases/provision responded with nil response")
 			}
 		}
-		log.Error(err, "Error occured provisioning database")
+		log.Error(err, "Error occurred provisioning database")
 		return
 	}
 	log.Info("POST databases/provision", "HTTP status code", res.StatusCode)
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
-		log.Error(err, "Error occured reading response.Body in ProvisionDatabase")
+		log.Error(err, "Error occurred reading response.Body in ProvisionDatabase")
 		return
 	}
 	err = json.Unmarshal(body, &task)
 	if err != nil {
-		log.Error(err, "Error occured trying to unmarshal.")
+		log.Error(err, "Error occurred trying to unmarshal.")
 		return
 	}
 	log.Info("Returning from ndb_api.ProvisionDatabase")
@@ -164,18 +164,18 @@ func GetAllProfiles(ctx context.Context, ndbClient *ndbclient.NDBClient) (profil
 				err = fmt.Errorf("GET /profiles responded with nil response")
 			}
 		}
-		log.Error(err, "Error occured while fetching profiles")
+		log.Error(err, "Error occurred while fetching profiles")
 		return
 	}
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
-		log.Error(err, "Error occured reading response.Body in GetAllProfiles")
+		log.Error(err, "Error occurred reading response.Body in GetAllProfiles")
 		return
 	}
 	err = json.Unmarshal(body, &profiles)
 	if err != nil {
-		log.Error(err, "Error occured trying to unmarshal.")
+		log.Error(err, "Error occurred trying to unmarshal.")
 		return
 	}
 	log.Info("Returning from ndb_api.GetAllProfiles")
@@ -200,18 +200,18 @@ func GetAllSLAs(ctx context.Context, ndbClient *ndbclient.NDBClient) (slas []SLA
 				err = fmt.Errorf("GET /slas responded with nil response")
 			}
 		}
-		log.Error(err, "Error occured while fetching slas")
+		log.Error(err, "Error occurred while fetching slas")
 		return
 	}
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
-		log.Error(err, "Error occured reading response.Body in GetAllSLAs")
+		log.Error(err, "Error occurred reading response.Body in GetAllSLAs")
 		return
 	}
 	err = json.Unmarshal(body, &slas)
 	if err != nil {
-		log.Error(err, "Error occured trying to unmarshal.")
+		log.Error(err, "Error occurred trying to unmarshal.")
 		return
 	}
 	log.Info("Returning from ndb_api.GetAllSLAs")
@@ -242,19 +242,19 @@ func DeprovisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, id
 				err = fmt.Errorf("DELETE /databases/%s responded with nil response", id)
 			}
 		}
-		log.Error(err, "Error occured deprovisioning database")
+		log.Error(err, "Error occurred deprovisioning database")
 		return
 	}
 	log.Info("DELETE /databases/"+id, "HTTP status code", res.StatusCode)
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
-		log.Error(err, "Error occured reading response.Body")
+		log.Error(err, "Error occurred reading response.Body")
 		return
 	}
 	err = json.Unmarshal(body, &task)
 	if err != nil {
-		log.Error(err, "Error occured trying to unmarshal.")
+		log.Error(err, "Error occurred trying to unmarshal.")
 		return
 	}
 	log.Info("Returning from ndb_api.DeprovisionDatabase")
@@ -285,19 +285,19 @@ func DeprovisionDatabaseServer(ctx context.Context, ndbClient *ndbclient.NDBClie
 				err = fmt.Errorf("DELETE /dbservers/%s responded with nil response", id)
 			}
 		}
-		log.Error(err, "Error occured deprovisioning database server")
+		log.Error(err, "Error occurred deprovisioning database server")
 		return
 	}
 	log.Info("DELETE /dbservers/"+id, "HTTP status code", res.StatusCode)
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
-		log.Error(err, "Error occured reading response.Body in DeprovisionDatabaseServer")
+		log.Error(err, "Error occurred reading response.Body in DeprovisionDatabaseServer")
 		return
 	}
 	err = json.Unmarshal(body, &task)
 	if err != nil {
-		log.Error(err, "Error occured trying to unmarshal.")
+		log.Error(err, "Error occurred trying to unmarshal.")
 		return
 	}
 	log.Info("Returning from ndb_api.DeprovisionDatabaseServer")
