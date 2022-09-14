@@ -44,9 +44,9 @@ type DatabaseReconciler struct {
 
 // The Reconcile method is where the controller logic resides.
 
-//+kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/finalizers,verbs=update
+// +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/finalizers,verbs=update
 func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("<==============================Reconcile Started=============================>")
@@ -91,7 +91,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	// To check and handle the case when the database ha been deleted/aborted externally (not through the operator).
 	err = r.handleExternalDelete(ctx, database, ndbClient)
 	if err != nil {
-		log.Error(err, "Error occured while external delete check")
+		log.Error(err, "Error occurred while external delete check")
 		return r.requeueOnErr(err)
 	}
 	// Synchronize the database CR with the database instance on NDB.

@@ -78,8 +78,9 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 }
 
 // handleDelete function handles the deletion of
-// 		a. Database instance
-//		b. Database server
+//
+//	a. Database instance
+//	b. Database server
 func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndbclient.NDBClient) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Database CR is being deleted.")
@@ -108,7 +109,7 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 		log.Info("Checking if database instance exists")
 		allDatabases, err := ndbv1alpha1.GetAllDatabases(ctx, ndbClient)
 		if err != nil {
-			log.Error(err, "An error occured while trying to get all databases")
+			log.Error(err, "An error occurred while trying to get all databases")
 			return r.requeueOnErr(err)
 		}
 		if len(util.Filter(allDatabases, func(d ndbv1alpha1.DatabaseResponse) bool { return d.Id == database.Status.Id })) == 0 {
@@ -155,7 +156,7 @@ func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database 
 		var databaseResponse ndbv1alpha1.DatabaseResponse
 		allDatabases, err := ndbv1alpha1.GetAllDatabases(ctx, ndbClient)
 		if err != nil {
-			log.Error(err, "An error occured while trying to get all databases")
+			log.Error(err, "An error occurred while trying to get all databases")
 			return err
 		} else {
 			for _, db := range allDatabases {
@@ -201,7 +202,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 
 		taskResponse, err := ndbv1alpha1.ProvisionDatabase(ctx, ndbClient, generatedReq)
 		if err != nil {
-			log.Error(err, "An error occured while trying to provision the database")
+			log.Error(err, "An error occurred while trying to provision the database")
 			return r.requeueOnErr(err)
 		}
 		// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
@@ -220,7 +221,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		// Check the status of the DB
 		databaseResponse, err := ndbv1alpha1.GetDatabaseById(ctx, ndbClient, database.Status.Id)
 		if err != nil {
-			log.Error(err, "An error occured while trying to get the database with id: "+database.Status.Id)
+			log.Error(err, "An error occurred while trying to get the database with id: "+database.Status.Id)
 			r.requeueOnErr(err)
 		}
 		// if READY => Change status
