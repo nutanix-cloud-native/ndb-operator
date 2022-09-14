@@ -1,6 +1,18 @@
 # Nutanix Database Service Operator for Kubernetes
 The NDB operator brings automated and simplified database administration, provisioning, and life-cycle management to Kubernetes.
 
+---
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/nutanix-cloud-native/ndb-operator)](https://goreportcard.com/report/github.com/nutanix-cloud-native/ndb-operator)
+![CI](https://github.com/nutanix-cloud-native/ndb-operator/actions/workflows/build-dev.yaml/badge.svg)
+![Release](https://github.com/nutanix-cloud-native/ndb-operator/actions/workflows/release.yaml/badge.svg)
+
+[![release](https://img.shields.io/github/release-pre/nutanix-cloud-native/ndb-operator.svg)](https://github.com/nutanix-cloud-native/ndb-operator/releases)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/nutanix-cloud-native/ndb-operator/blob/master/LICENSE)
+![Proudly written in Golang](https://img.shields.io/badge/written%20in-Golang-92d1e7.svg)
+
+---
+
 ## Getting Started
 ### Pre-requisites
 1. Era / NDB on-prem [installation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Era-User-Guide-v2_4:top-era-installation-c.html).
