@@ -30,6 +30,10 @@ const (
 	FINALIZER_DATABASE_INSTANCE = "ndb.nutanix.com/finalizerdatabaseinstance"
 	FINALIZER_DATABASE_SERVER   = "ndb.nutanix.com/finalizerdatabaseserver"
 
+	NDB_PARAM_USERNAME       = "username"
+	NDB_PARAM_PASSWORD       = "password"
+	NDB_PARAM_SSH_PUBLIC_KEY = "ssh_public_key"
+
 	PROFILE_TYPE_COMPUTE            = "Compute"
 	PROFILE_TYPE_DATABASE_PARAMETER = "Database_Parameter"
 	PROFILE_TYPE_NETWORK            = "Network"

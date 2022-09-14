@@ -78,8 +78,9 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 }
 
 // handleDelete function handles the deletion of
-// 		a. Database instance
-//		b. Database server
+//
+//	a. Database instance
+//	b. Database server
 func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndbclient.NDBClient) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Database CR is being deleted.")
@@ -183,7 +184,7 @@ func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database 
 // The handleSync function synchronizes the database CR's with the database instance in NDB
 // It handles the transition from EMPTY (initial state) => PROVISIONING => RUNNING
 // and updates the status accordingly. The update() triggers an implicit requeue of the reconcile request.
-func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndbclient.NDBClient) (ctrl.Result, error) {
+func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndbclient.NDBClient, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.handleSync")
 
@@ -193,7 +194,24 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		// DB Status.Status is empty => Provision a DB
 		log.Info("Provisioning a database instance with NDB.")
 
-		generatedReq, err := ndbv1alpha1.GenerateProvisioningRequest(ctx, ndbClient, database.Spec)
+		dbPassword, err := util.GetDataFromSecret(ctx, r.Client, database.Spec.Instance.CredentialSecret, req.Namespace, ndbv1alpha1.NDB_PARAM_PASSWORD)
+		if err != nil {
+			log.Error(err, "Error fetching database password from secret")
+			return r.requeueOnErr(err)
+		}
+
+		sshPublicKey, err := util.GetDataFromSecret(ctx, r.Client, database.Spec.Instance.CredentialSecret, req.Namespace, ndbv1alpha1.NDB_PARAM_SSH_PUBLIC_KEY)
+		if err != nil {
+			log.Error(err, "Error fetching sshPublicKey from secret")
+			return r.requeueOnErr(err)
+		}
+
+		reqData := map[string]interface{}{
+			ndbv1alpha1.NDB_PARAM_PASSWORD:       dbPassword,
+			ndbv1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+		}
+
+		generatedReq, err := ndbv1alpha1.GenerateProvisioningRequest(ctx, ndbClient, database.Spec, reqData)
 		if err != nil {
 			log.Error(err, "Could not generate provisioning request, requeuing.")
 			return r.requeueOnErr(err)

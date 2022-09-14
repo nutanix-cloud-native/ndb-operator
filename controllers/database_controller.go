@@ -44,9 +44,9 @@ type DatabaseReconciler struct {
 
 // The Reconcile method is where the controller logic resides.
 
-//+kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/finalizers,verbs=update
+// +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/finalizers,verbs=update
 func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("<==============================Reconcile Started=============================>")
@@ -69,7 +69,16 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	spec := database.Spec
 	server := spec.NDB
-	ndbClient := ndbclient.NewNDBClient(server.Credentials.LoginUser, server.Credentials.Password, server.Server)
+	secretName := server.CredentialSecret
+	username, err := util.GetDataFromSecret(ctx, r.Client, secretName, req.Namespace, "username")
+	if err != nil {
+		log.Error(err, "Error reading username from secret", "Secret Name", secretName)
+	}
+	password, err := util.GetDataFromSecret(ctx, r.Client, secretName, req.Namespace, "password")
+	if err != nil {
+		log.Error(err, "Error reading password from secret", "Secret Name", secretName)
+	}
+	ndbClient := ndbclient.NewNDBClient(username, password, server.Server)
 
 	// log.Info(fmt.Sprintf("Finalizers: %v", database.Finalizers))
 
@@ -95,7 +104,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return r.requeueOnErr(err)
 	}
 	// Synchronize the database CR with the database instance on NDB.
-	return r.handleSync(ctx, database, ndbClient)
+	return r.handleSync(ctx, database, ndbClient, req)
 }
 
 // SetupWithManager sets up the controller with the Manager.
