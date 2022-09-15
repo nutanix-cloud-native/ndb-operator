@@ -186,13 +186,13 @@ func GetOOBProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType 
 
 func GetDatabaseEngineName(dbType string) string {
 	switch dbType {
-	case "postgres":
+	case DATABASE_TYPE_POSTGRES:
 		return DATABASE_ENGINE_TYPE_POSTGRES
-	case "mysql":
+	case DATABASE_TYPE_MYSQL:
 		return DATABASE_ENGINE_TYPE_MYSQL
-	case "mongodb":
+	case DATABASE_TYPE_MONGODB:
 		return DATABASE_ENGINE_TYPE_MONGODB
-	case "generic":
+	case DATABASE_TYPE_GENERIC:
 		return DATABASE_ENGINE_TYPE_GENERIC
 	default:
 		return ""
@@ -201,11 +201,11 @@ func GetDatabaseEngineName(dbType string) string {
 
 func GetDatabasePortByType(dbType string) int32 {
 	switch dbType {
-	case "postgres":
+	case DATABASE_TYPE_POSTGRES:
 		return DATABASE_DEFAULT_PORT_POSTGRES
-	case "mongodb":
+	case DATABASE_TYPE_MONGODB:
 		return DATABASE_DEFAULT_PORT_MONGODB
-	case "mysql":
+	case DATABASE_TYPE_MYSQL:
 		return DATABASE_DEFAULT_PORT_MYSQL
 	default:
 		return 80

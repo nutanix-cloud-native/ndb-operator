@@ -260,7 +260,7 @@ type Node struct {
 	VmName     string   `json:"vmName"`
 }
 
-//used by database response
+// used by database response
 // +kubebuilder:object:generate:=false
 type Property struct {
 	Name        string `json:"name"`
