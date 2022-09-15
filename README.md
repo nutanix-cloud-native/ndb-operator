@@ -1,39 +1,31 @@
 # Nutanix Database Service Operator for Kubernetes
 The NDB operator brings automated and simplified database administration, provisioning, and life-cycle management to Kubernetes.
 
+---
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/nutanix-cloud-native/ndb-operator)](https://goreportcard.com/report/github.com/nutanix-cloud-native/ndb-operator)
+![CI](https://github.com/nutanix-cloud-native/ndb-operator/actions/workflows/build-dev.yaml/badge.svg)
+![Release](https://github.com/nutanix-cloud-native/ndb-operator/actions/workflows/release.yaml/badge.svg)
+
+[![release](https://img.shields.io/github/release-pre/nutanix-cloud-native/ndb-operator.svg)](https://github.com/nutanix-cloud-native/ndb-operator/releases)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/nutanix-cloud-native/ndb-operator/blob/master/LICENSE)
+![Proudly written in Golang](https://img.shields.io/badge/written%20in-Golang-92d1e7.svg)
+
+---
+
 ## Getting Started
 ### Pre-requisites
-1. Era / NDB on-prem [installation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Era-User-Guide-v2_4:top-era-installation-c.html).
+1. NDB [installation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Era-User-Guide-v2_4:top-era-installation-c.html).
 2. A Kubernetes cluster to run against, which should have network connectivity to the NDB installation. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
 **Note:** The operator will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
 3. The operator-sdk installed.
 4. A clone of the source code ([this](https://github.com/nutanix-cloud-native/ndb-operator) repository).
 ### Installation and Running on the cluster
-1. Install the CRDs into the cluster:
+Deploy the controller on the cluster:
 
 ```sh
-make install
+make deploy 
 ```
-
-2. Run your controller (this will run in the foreground, so switch to a new terminal if you want to leave it running):
-
-```sh
-make run
-```
-
-**NOTE:** You can also run this in one step by running: `make install run`      
-<br>
-### Modifying the API definitions
-If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
-
-```sh
-make generate manifests
-```
-
-**NOTE:** Run `make --help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
 
 ### Using the Operator
 
@@ -82,7 +74,36 @@ spec:
     type: postgres
 ```
 
-<br>
+
+
+
+## Developement
+
+### Installation and Running the controller locally
+1. Install the CRDs into the cluster:
+
+```sh
+make install
+```
+
+2. Run your controller locally (this will run in the foreground, so switch to a new terminal if you want to leave it running):
+
+```sh
+make run
+```
+
+**NOTE:** You can also run this in one step by running: `make install run`
+
+### Modifying the API definitions
+If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
+
+```sh
+make generate manifests
+```
+
+**NOTE:** Run `make --help` for more information on all potential `make` targets
+
+More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
 ### Building and pushing to an image registry  
 Build and push your image to the location specified by `IMG`:
@@ -90,8 +111,6 @@ Build and push your image to the location specified by `IMG`:
 ```sh
 make docker-build docker-push IMG=<some-registry>/ndb-operator:tag
 ```
-
-<br>
 
 ### Deploy the operator pushed to an image registry  
 Deploy the controller to the cluster with the image specified by `IMG`:
@@ -108,13 +127,14 @@ make uninstall
 ```
 
 ### Undeploy controller
-UnDeploy the controller to the cluster:
+To remove the controller from the cluster:
 
 ```sh
 make undeploy
 ```
 
-### How it works
+## How it works
+
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 
 It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/) 

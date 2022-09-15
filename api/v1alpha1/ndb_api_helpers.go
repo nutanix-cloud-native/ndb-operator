@@ -37,14 +37,14 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 	// Fetching the NONE TM SLA
 	sla, err := GetNoneTimeMachineSLA(ctx, ndbclient)
 	if err != nil {
-		log.Error(err, "Error occured while getting NONE TM SLA", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
+		log.Error(err, "Error occurred while getting NONE TM SLA", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 		return
 	}
 
 	// Fetch the OOB profiles for the database
 	profilesMap, err := GetOOBProfiles(ctx, ndbclient, dbSpec.Instance.Type)
 	if err != nil {
-		log.Error(err, "Error occured while getting OOB profiles", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
+		log.Error(err, "Error occurred while getting OOB profiles", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 		return
 	}
 
