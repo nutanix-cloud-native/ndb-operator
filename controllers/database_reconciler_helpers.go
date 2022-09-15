@@ -279,12 +279,12 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 
 	err = r.setupService(ctx, database, commonNamespacedName, commonMetadata, targetPort)
 	if err != nil {
-		log.Error(err, "Error occured while setting up the service")
+		log.Error(err, "Error occurred while setting up the service")
 		return
 	}
 	err = r.setupEndpoints(ctx, database, commonNamespacedName, commonMetadata, targetPort)
 	if err != nil {
-		log.Error(err, "Error occured while setting up the endpoints")
+		log.Error(err, "Error occurred while setting up the endpoints")
 		return
 	}
 	log.Info("Returning from database_reconciler_helpers.setupConnectivity")
