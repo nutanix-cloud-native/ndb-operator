@@ -24,6 +24,7 @@ package controllers
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -95,12 +96,14 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return r.requeueOnErr(err)
 	}
 	// Synchronize the database CR with the database instance on NDB.
-	return r.handleSync(ctx, database, ndbClient)
+	return r.handleSync(ctx, database, ndbClient, req)
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *DatabaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ndbv1alpha1.Database{}).
+		Owns(&corev1.Service{}).
+		Owns(&corev1.Endpoints{}).
 		Complete(r)
 }
