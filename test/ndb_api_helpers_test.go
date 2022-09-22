@@ -33,7 +33,7 @@ func TestGetNoneTimeMachineSLA(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	sla, err := v1alpha1.GetNoneTimeMachineSLA(context.Background(), ndbclient)
@@ -83,7 +83,7 @@ func TestGetNoneTimeMachineSLAReturnsErrorWhenNoneTimeMachineNotFound(t *testing
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	sla, err := v1alpha1.GetNoneTimeMachineSLA(context.Background(), ndbclient)
@@ -101,7 +101,7 @@ func TestGetOOBProfiles(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -135,7 +135,7 @@ func TestGetOOBProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -172,7 +172,7 @@ func TestGetOOBProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -238,7 +238,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -332,7 +332,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfProfilesNotFound(t *testing.T)
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -368,7 +368,7 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -479,7 +479,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfDBPasswordIsEmpty(t *testing.T
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -573,7 +573,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}

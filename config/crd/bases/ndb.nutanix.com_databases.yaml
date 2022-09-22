@@ -136,6 +136,10 @@ spec:
                     type: string
                   server:
                     type: string
+                  skipCertificateVerification:
+                    default: false
+                    description: Skip server's certificate and hostname verification
+                    type: boolean
                 required:
                 - clusterId
                 - credentialSecret

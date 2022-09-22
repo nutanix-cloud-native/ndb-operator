@@ -79,6 +79,10 @@ type NDB struct {
 	CredentialSecret string `json:"credentialSecret"`
 	// +kubebuilder:validation:Required
 	Server string `json:"server"`
+	// +kubebuilder:default:=false
+	// +optional
+	// Skip server's certificate and hostname verification
+	SkipCertificateVerification bool `json:"skipCertificateVerification"`
 }
 
 // Database instance specific details

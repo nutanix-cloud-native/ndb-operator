@@ -19,6 +19,7 @@ package ndbclient
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"net/http"
 )
@@ -30,11 +31,17 @@ type NDBClient struct {
 	client   *http.Client
 }
 
-func NewNDBClient(username, password, url string) *NDBClient {
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+func NewNDBClient(username, password, url, caCert string, skipVerify bool) *NDBClient {
+
+	TLSClientConfig := &tls.Config{InsecureSkipVerify: skipVerify}
+	if caCert != "" {
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM([]byte(caCert))
+		TLSClientConfig.RootCAs = caCertPool
 	}
-	client := &http.Client{Transport: transport}
+	client := &http.Client{
+		Transport: &http.Transport{TLSClientConfig: TLSClientConfig},
+	}
 	return &NDBClient{username, password, url, client}
 }
 

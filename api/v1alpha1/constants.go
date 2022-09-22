@@ -51,6 +51,7 @@ const (
 
 	PROPERTY_NAME_VM_IP = "vm_ip"
 
+	SECRET_DATA_KEY_CA_CERTIFICATE = "ca_certificate"
 	SECRET_DATA_KEY_PASSWORD       = "password"
 	SECRET_DATA_KEY_SSH_PUBLIC_KEY = "ssh_public_key"
 	SECRET_DATA_KEY_USERNAME       = "username"

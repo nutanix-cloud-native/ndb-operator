@@ -78,7 +78,11 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if err != nil {
 		log.Error(err, "Error reading password from secret", "Secret Name", secretName)
 	}
-	ndbClient := ndbclient.NewNDBClient(username, password, NDBInfo.Server)
+	caCert, err := util.GetDataFromSecret(ctx, r.Client, secretName, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_CA_CERTIFICATE)
+	if err != nil {
+		log.Error(err, "Error reading caCert from secret", "Secret Name", secretName)
+	}
+	ndbClient := ndbclient.NewNDBClient(username, password, NDBInfo.Server, caCert, NDBInfo.SkipCertificateVerification)
 
 	// Examine DeletionTimestamp to determine if object is under deletion
 	if database.ObjectMeta.DeletionTimestamp.IsZero() {
