@@ -30,7 +30,7 @@ import (
 
 // This function generates and returns a request for provisioning a database (and a dbserver vm) on NDB
 // The database provisioned has a NONE time machine SLA attached to it, and uses the default OOB profiles
-func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBClient, dbSpec DatabaseSpec) (req *DatabaseProvisionRequest, err error) {
+func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBClient, dbSpec DatabaseSpec, reqData map[string]interface{}) (req *DatabaseProvisionRequest, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 
@@ -50,6 +50,31 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 
 	database_names := strings.Join(dbSpec.Instance.DatabaseNames, ",")
 
+	// Type assertion
+	dbPassword, ok := reqData[NDB_PARAM_PASSWORD].(string)
+	if !ok || dbPassword == "" {
+		err = errors.New("invalid database password")
+		var errStatement string
+		if !ok {
+			errStatement = "Type assertion failed for database password. Expected a string value"
+		} else {
+			errStatement = "Empty database password"
+		}
+		log.Error(err, errStatement)
+	}
+	// Type assertion
+	SSHPublicKey, ok := reqData[NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	if !ok || SSHPublicKey == "" {
+		err = errors.New("invalid ssh public key")
+		var errStatement string
+		if !ok {
+			errStatement = "Type assertion failed for SSHPublicKey. Expected a string value"
+		} else {
+			errStatement = "Empty SSHPublicKey"
+		}
+		log.Error(err, errStatement)
+	}
+
 	// Creating a provisioning request based on the database type
 	req = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(dbSpec.Instance.Type),
@@ -64,7 +89,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		CreateDbServer:           true,
 		NodeCount:                1,
 		NxClusterId:              dbSpec.NDB.ClusterId,
-		SSHPublicKey:             dbSpec.NDB.Credentials.SSHPublicKey,
+		SSHPublicKey:             SSHPublicKey,
 		Clustered:                false,
 		AutoTuneStagingDrive:     true,
 		TimeMachineInfo: TimeMachineInfo{
@@ -114,7 +139,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 			},
 			{
 				Name:  "db_password",
-				Value: dbSpec.Instance.Password,
+				Value: dbPassword,
 			},
 		},
 		Nodes: []Node{

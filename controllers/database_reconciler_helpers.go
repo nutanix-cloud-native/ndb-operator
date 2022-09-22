@@ -198,7 +198,24 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		// DB Status.Status is empty => Provision a DB
 		log.Info("Provisioning a database instance with NDB.")
 
-		generatedReq, err := ndbv1alpha1.GenerateProvisioningRequest(ctx, ndbClient, database.Spec)
+		dbPassword, err := util.GetDataFromSecret(ctx, r.Client, database.Spec.Instance.CredentialSecret, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_PASSWORD)
+		if err != nil {
+			log.Error(err, "Error fetching database password from secret")
+			return r.requeueOnErr(err)
+		}
+
+		sshPublicKey, err := util.GetDataFromSecret(ctx, r.Client, database.Spec.Instance.CredentialSecret, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_SSH_PUBLIC_KEY)
+		if err != nil {
+			log.Error(err, "Error fetching sshPublicKey from secret")
+			return r.requeueOnErr(err)
+		}
+
+		reqData := map[string]interface{}{
+			ndbv1alpha1.NDB_PARAM_PASSWORD:       dbPassword,
+			ndbv1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+		}
+
+		generatedReq, err := ndbv1alpha1.GenerateProvisioningRequest(ctx, ndbClient, database.Spec, reqData)
 		if err != nil {
 			log.Error(err, "Could not generate provisioning request, requeuing.")
 			return r.requeueOnErr(err)

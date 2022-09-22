@@ -72,18 +72,13 @@ func init() {
 
 // Details of the NDB installation
 type NDB struct {
-	ClusterId   string      `json:"clusterId"`
-	Credentials Credentials `json:"credentials"`
-	Server      string      `json:"server"`
-}
-
-type Credentials struct {
-	// Username for NDB
-	LoginUser string `json:"loginUser"`
-	// Password for NDB
-	Password string `json:"password"`
-	// SSH public key for the database vm
-	SSHPublicKey string `json:"sshPublicKey"`
+	// +kubebuilder:validation:Required
+	ClusterId string `json:"clusterId"`
+	// +kubebuilder:validation:Required
+	// Name of the secret holding the credentials for NDB (username and password)
+	CredentialSecret string `json:"credentialSecret"`
+	// +kubebuilder:validation:Required
+	Server string `json:"server"`
 }
 
 // Database instance specific details
@@ -95,8 +90,9 @@ type Instance struct {
 	// +kubebuilder:validation:MinItems:=1
 	// Name of the database to be provisiond in the database instance
 	DatabaseNames []string `json:"databaseNames"`
-	// Password of the database instance
-	Password string `json:"password"`
+	// +kubebuilder:validation:Required
+	// Name of the secret holding the credentials for the database instance (password and ssh key)
+	CredentialSecret string `json:"credentialSecret"`
 	// +kubebuilder:validation:Minimum:=10
 	// +kubebuilder:default:=10
 	// +optional

@@ -68,11 +68,17 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	log.Info("Database CR Status: " + util.ToString(database.Status))
 
-	spec := database.Spec
-	server := spec.NDB
-	ndbClient := ndbclient.NewNDBClient(server.Credentials.LoginUser, server.Credentials.Password, server.Server)
-
-	// log.Info(fmt.Sprintf("Finalizers: %v", database.Finalizers))
+	NDBInfo := database.Spec.NDB
+	secretName := NDBInfo.CredentialSecret
+	username, err := util.GetDataFromSecret(ctx, r.Client, secretName, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_USERNAME)
+	if err != nil {
+		log.Error(err, "Error reading username from secret", "Secret Name", secretName)
+	}
+	password, err := util.GetDataFromSecret(ctx, r.Client, secretName, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_PASSWORD)
+	if err != nil {
+		log.Error(err, "Error reading password from secret", "Secret Name", secretName)
+	}
+	ndbClient := ndbclient.NewNDBClient(username, password, NDBInfo.Server)
 
 	// Examine DeletionTimestamp to determine if object is under deletion
 	if database.ObjectMeta.DeletionTimestamp.IsZero() {

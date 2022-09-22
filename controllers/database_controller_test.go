@@ -69,18 +69,14 @@ var _ = Describe("Database controller", func() {
 				},
 				Spec: ndbv1alpha1.DatabaseSpec{
 					NDB: ndbv1alpha1.NDB{
-						ClusterId: "abcd",
-						Credentials: ndbv1alpha1.Credentials{
-							LoginUser:    "username",
-							Password:     "password",
-							SSHPublicKey: "abcd",
-						},
-						Server: testNDBServer,
+						ClusterId:        "abcd",
+						CredentialSecret: "qwertyuiop",
+						Server:           testNDBServer,
 					},
 					Instance: ndbv1alpha1.Instance{
 						DatabaseInstanceName: DatabaseName,
 						DatabaseNames:        []string{"database_1"},
-						Password:             "abcd",
+						CredentialSecret:     "qwertyuiop",
 						Size:                 10,
 						TimeZone:             "UTC",
 						Type:                 "postgres",
