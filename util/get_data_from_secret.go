@@ -25,7 +25,6 @@ func GetDataFromSecret(ctx context.Context, client client.Client, name, namespac
 			log.Info("Returning from util.GetDataFromSecret")
 		} else {
 			err = fmt.Errorf(fmt.Sprintf("Key '%s' not present in the secret '%s' in namespace '%s'", key, name, namespace))
-			log.Error(err, "Data not found in secret")
 		}
 	}
 	return
