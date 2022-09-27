@@ -22,7 +22,7 @@ jobs:
       - name: Run Synopsys Detect
         uses: synopsys-sig/detect-action@v0.3.3
         env:
-          DETECT_PROJECT_USER_GROUPS: xxx
+          DETECT_PROJECT_USER_GROUPS: "CloudNative"
         with:
           scan-mode: INTELLIGENT
           github-token: ${{ secrets.GITHUB_TOKEN }}
