@@ -73,10 +73,12 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	username, err := util.GetDataFromSecret(ctx, r.Client, secretName, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_USERNAME)
 	if err != nil {
 		log.Error(err, "Error reading username from secret", "Secret Name", secretName)
+		return r.requeueOnErr(err)
 	}
 	password, err := util.GetDataFromSecret(ctx, r.Client, secretName, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_PASSWORD)
 	if err != nil {
 		log.Error(err, "Error reading password from secret", "Secret Name", secretName)
+		return r.requeueOnErr(err)
 	}
 	caCert, err := util.GetDataFromSecret(ctx, r.Client, secretName, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_CA_CERTIFICATE)
 	if err != nil {
