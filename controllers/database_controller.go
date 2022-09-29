@@ -23,6 +23,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -69,19 +70,19 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	log.Info("Database CR Status: " + util.ToString(database.Status))
 
 	NDBInfo := database.Spec.NDB
-	secretName := NDBInfo.CredentialSecret
-	username, err := util.GetDataFromSecret(ctx, r.Client, secretName, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_USERNAME)
-	if err != nil {
-		log.Error(err, "Error reading username from secret", "Secret Name", secretName)
+	username, password, caCert, err := r.getNDBCredentials(ctx, NDBInfo.CredentialSecret, req.Namespace)
+	if err != nil || username == "" || password == "" {
+		var errStatement string
+		if err == nil {
+			errStatement = "NDB username or password cannot be empty"
+			err = fmt.Errorf("empty NDB credentials")
+		} else {
+			errStatement = "An error occured while fetching the NDB Secrets"
+		}
+		log.Error(err, errStatement)
 		return r.requeueOnErr(err)
 	}
-	password, err := util.GetDataFromSecret(ctx, r.Client, secretName, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_PASSWORD)
-	if err != nil {
-		log.Error(err, "Error reading password from secret", "Secret Name", secretName)
-		return r.requeueOnErr(err)
-	}
-	caCert, err := util.GetDataFromSecret(ctx, r.Client, secretName, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_CA_CERTIFICATE)
-	if err != nil {
+	if caCert == "" {
 		log.Info("Ca-cert not found, falling back to host's HTTPs certs.")
 	}
 	ndbClient := ndbclient.NewNDBClient(username, password, NDBInfo.Server, caCert, NDBInfo.SkipCertificateVerification)

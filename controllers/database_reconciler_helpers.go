@@ -396,3 +396,20 @@ func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1
 	log.Info("Returning from database_reconciler_helpers.setupEndpoints")
 	return
 }
+
+// Returns the credentials(username, password and caCertificate) for NDB
+// Returns an error if reading the secret containing credentials fails
+func (r *DatabaseReconciler) getNDBCredentials(ctx context.Context, name, namespace string) (username, password, caCert string, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered database_reconciler_helpers.getNDBCredentials")
+	secretDataMap, err := util.GetAllDataFromSecret(ctx, r.Client, name, namespace)
+	if err != nil {
+		log.Error(err, "Error occured in util.GetAllDataFromSecret while fetching all NDB secrets", "Secret Name", name, "Namespace", namespace)
+		return
+	}
+	username = string(secretDataMap[ndbv1alpha1.SECRET_DATA_KEY_USERNAME])
+	password = string(secretDataMap[ndbv1alpha1.SECRET_DATA_KEY_PASSWORD])
+	caCert = string(secretDataMap[ndbv1alpha1.SECRET_DATA_KEY_CA_CERTIFICATE])
+	log.Info("Returning from database_reconciler_helpers.getNDBCredentials")
+	return
+}
