@@ -3,8 +3,6 @@ package test
 import (
 	"context"
 
-	b64 "encoding/base64"
-
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/util"
 	. "github.com/onsi/ginkgo"
@@ -47,9 +45,9 @@ var _ = Describe("Test Secret Utility", func() {
 					Namespace: namespaceName,
 				},
 				Type: corev1.SecretTypeOpaque,
-				Data: map[string][]byte{
-					ndbv1alpha1.NDB_PARAM_USERNAME: []byte(b64.StdEncoding.EncodeToString([]byte(username))),
-					ndbv1alpha1.NDB_PARAM_PASSWORD: []byte(b64.StdEncoding.EncodeToString([]byte(password))),
+				StringData: map[string]string{
+					ndbv1alpha1.NDB_PARAM_USERNAME: username,
+					ndbv1alpha1.NDB_PARAM_PASSWORD: password,
 				},
 			}
 			instanceSecret = &corev1.Secret{
@@ -58,9 +56,9 @@ var _ = Describe("Test Secret Utility", func() {
 					Namespace: namespaceName,
 				},
 				Type: corev1.SecretTypeOpaque,
-				Data: map[string][]byte{
-					ndbv1alpha1.NDB_PARAM_PASSWORD:       []byte(b64.StdEncoding.EncodeToString([]byte(password))),
-					ndbv1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: []byte(b64.StdEncoding.EncodeToString([]byte(sshPublicKey))),
+				StringData: map[string]string{
+					ndbv1alpha1.NDB_PARAM_PASSWORD:       password,
+					ndbv1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
 				},
 			}
 			By("Creating the Namespace to perform the tests")
@@ -97,11 +95,11 @@ var _ = Describe("Test Secret Utility", func() {
 			// username
 			data, err := util.GetDataFromSecret(ctx, k8sClient, ndbSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_USERNAME)
 			Expect(err).To(Not(HaveOccurred()))
-			Expect(data).To(Equal(b64.StdEncoding.EncodeToString([]byte(username))))
+			Expect(data).To(Equal(username))
 			// password
 			data, err = util.GetDataFromSecret(ctx, k8sClient, ndbSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_PASSWORD)
 			Expect(err).To(Not(HaveOccurred()))
-			Expect(data).To(Equal(b64.StdEncoding.EncodeToString([]byte(password))))
+			Expect(data).To(Equal(password))
 
 			By("fetching and checking the instance secrets")
 			foundInstanceSecret := &corev1.Secret{}
@@ -111,11 +109,11 @@ var _ = Describe("Test Secret Utility", func() {
 			// password
 			data, err = util.GetDataFromSecret(ctx, k8sClient, instanceSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_PASSWORD)
 			Expect(err).To(Not(HaveOccurred()))
-			Expect(data).To(Equal(b64.StdEncoding.EncodeToString([]byte(password))))
+			Expect(data).To(Equal(password))
 			// ssh key
 			data, err = util.GetDataFromSecret(ctx, k8sClient, instanceSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_SSH_PUBLIC_KEY)
 			Expect(err).To(Not(HaveOccurred()))
-			Expect(data).To(Equal(b64.StdEncoding.EncodeToString([]byte(sshPublicKey))))
+			Expect(data).To(Equal(sshPublicKey))
 
 			By("returning error when secrets are not present")
 			// To simulate the situation when no secrets are present

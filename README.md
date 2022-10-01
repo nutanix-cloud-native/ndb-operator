@@ -36,10 +36,9 @@ kind: Secret
 metadata:
   name: your-ndb-secret
 type: Opaque
-data:
-  username: username-encoded-in-base64
-  password: password-encoded-in-base64
 stringData:
+  username: username-for-ndb-server
+  password: password-for-ndb-server
   ca_certificate: |
     -----BEGIN CERTIFICATE-----
     CA CERTIFICATE (ca_certificate is optional)
@@ -50,9 +49,9 @@ kind: Secret
 metadata:
   name: your-db-secret
 type: Opaque
-data:
-  password: password-encoded-in-base64
-  ssh_public_key: SSH PUBLIC KEY
+stringData:
+  password: password-for-the-database-instance
+  ssh_public_key: SSH-PUBLIC-KEY
 
 ```
 

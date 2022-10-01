@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"time"
 
@@ -198,15 +199,16 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		// DB Status.Status is empty => Provision a DB
 		log.Info("Provisioning a database instance with NDB.")
 
-		dbPassword, err := util.GetDataFromSecret(ctx, r.Client, database.Spec.Instance.CredentialSecret, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_PASSWORD)
-		if err != nil {
-			log.Error(err, "Error fetching database password from secret")
-			return r.requeueOnErr(err)
-		}
-
-		sshPublicKey, err := util.GetDataFromSecret(ctx, r.Client, database.Spec.Instance.CredentialSecret, req.Namespace, ndbv1alpha1.SECRET_DATA_KEY_SSH_PUBLIC_KEY)
-		if err != nil {
-			log.Error(err, "Error fetching sshPublicKey from secret")
+		dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
+		if err != nil || dbPassword == "" || sshPublicKey == "" {
+			var errStatement string
+			if err == nil {
+				errStatement = "Database instance password and ssh key cannot be empty"
+				err = fmt.Errorf("empty DB instance credentials")
+			} else {
+				errStatement = "An error occured while fetching the DB Instance Secrets"
+			}
+			log.Error(err, errStatement)
 			return r.requeueOnErr(err)
 		}
 
@@ -411,5 +413,21 @@ func (r *DatabaseReconciler) getNDBCredentials(ctx context.Context, name, namesp
 	password = string(secretDataMap[ndbv1alpha1.SECRET_DATA_KEY_PASSWORD])
 	caCert = string(secretDataMap[ndbv1alpha1.SECRET_DATA_KEY_CA_CERTIFICATE])
 	log.Info("Returning from database_reconciler_helpers.getNDBCredentials")
+	return
+}
+
+// Returns the credentials(password and ssh public key) for NDB
+// Returns an error if reading the secret containing credentials fails
+func (r *DatabaseReconciler) getDatabaseInstanceCredentials(ctx context.Context, name, namespace string) (password, sshPublicKey string, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered database_reconciler_helpers.getDatabaseInstanceCredentials")
+	secretDataMap, err := util.GetAllDataFromSecret(ctx, r.Client, name, namespace)
+	if err != nil {
+		log.Error(err, "Error occured in util.GetAllDataFromSecret while fetching all database instance secrets", "Secret Name", name, "Namespace", namespace)
+		return
+	}
+	password = string(secretDataMap[ndbv1alpha1.SECRET_DATA_KEY_PASSWORD])
+	sshPublicKey = string(secretDataMap[ndbv1alpha1.SECRET_DATA_KEY_SSH_PUBLIC_KEY])
+	log.Info("Returning from database_reconciler_helpers.getDatabaseInstanceCredentials")
 	return
 }
