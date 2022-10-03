@@ -27,4 +27,5 @@ testbin/*
 
 sandbox
 config/samples/ndb.yaml
+config/helm
 .DS_Store
