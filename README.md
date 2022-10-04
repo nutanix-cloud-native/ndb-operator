@@ -29,12 +29,38 @@ make deploy
 
 ### Using the Operator
 
-1. To create instances of custom resources (provision databases), edit [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) file with the NDB installation and database instance details and run:
+1. Create the secrets that are to be used by the custom resource:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: your-ndb-secret
+type: Opaque
+stringData:
+  username: username-for-ndb-server
+  password: password-for-ndb-server
+  ca_certificate: |
+    -----BEGIN CERTIFICATE-----
+    CA CERTIFICATE (ca_certificate is optional)
+    -----END CERTIFICATE-----
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: your-db-secret
+type: Opaque
+stringData:
+  password: password-for-the-database-instance
+  ssh_public_key: SSH-PUBLIC-KEY
+
+```
+
+2. To create instances of custom resources (provision databases), edit [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) file with the NDB installation and database instance details and run:
 
 ```sh
 kubectl apply -f config/samples/ndb_v1alpha1_database.yaml
 ```
-2. To delete instances of custom resources (deprovision databases) run:
+3. To delete instances of custom resources (deprovision databases) run:
 
 ```sh
 kubectl delete -f config/samples/ndb_v1alpha1_database.yaml
@@ -47,35 +73,35 @@ metadata:
   # This name that will be used within the kubernetes cluster
   name: db
 spec:
+  # NDB server specific details
   ndb:
     # Cluster id of the cluster where the Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
     clusterId: "Nutanix Cluster Id" 
-    # Credentials for NDB installation
-    credentials:
-      loginUser: admin
-      password: "NDB Password"
-      sshPublicKey: "SSH Key"
+    # Credentials secret name for NDB installation
+    # data: username, password, 
+    # stringData: ca_certificate
+    credentialSecret: your-ndb-secret
     # The NDB Server
     server: https://[NDB IP]:8443/era/v0.9
-
+    # Set to true to skip SSL verification, default: false.
+    skipCertificateVerification: true
+  # Database instance specific details (that is to be provisioned)
   databaseInstance:
     # The database instance name on NDB
-    databaseInstanceName: "Database Instance Name"
+    databaseInstanceName: "Database-Instance-Name"
     # Names of the databases on that instance
     databaseNames:
       - database_one
       - database_two
       - database_three
-    # Password for the database
-    password: qwertyuiop
+    # Credentials secret name for NDB installation
+    # data: password, ssh_public_key
+    credentialSecret: your-db-secret
     size: 10
     timezone: "UTC"
     type: postgres
 ```
-
-
-
 
 ## Developement
 
@@ -107,7 +133,7 @@ More information can be found via the [Kubebuilder Documentation](https://book.k
 
 ### Building and pushing to an image registry  
 Build and push your image to the location specified by `IMG`:
-	
+  
 ```sh
 make docker-build docker-push IMG=<some-registry>/ndb-operator:tag
 ```

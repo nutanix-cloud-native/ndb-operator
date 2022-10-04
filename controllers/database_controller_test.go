@@ -25,6 +25,8 @@ import (
 	"context"
 	"time"
 
+	b64 "encoding/base64"
+
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -45,20 +47,30 @@ var _ = Describe("Database controller", func() {
 
 		ctx := context.Background()
 
-		database := &ndbv1alpha1.Database{}
+		const ndbSecretName = "test-ndb-secret-name"
+		const instanceSecretName = "test-instance-secret-name"
+		const username = "test-username"
+		const password = "test-password"
+		const sshPublicKey = "test-ssh-key"
 
-		namespace := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      namespaceName,
-				Namespace: namespaceName,
-			},
-		}
+		var namespace *corev1.Namespace
+		var ndbSecret *corev1.Secret
+		var instanceSecret *corev1.Secret
+		database := &ndbv1alpha1.Database{}
 
 		typeNamespaceName := types.NamespacedName{Name: DatabaseName, Namespace: namespaceName}
 		typeNamespaceNameForService := types.NamespacedName{Name: DatabaseName + "-svc", Namespace: namespaceName}
+		ndbSecretTypeNamespaceName := types.NamespacedName{Name: ndbSecretName, Namespace: namespaceName}
+		instanceSecretTypeNamespaceName := types.NamespacedName{Name: instanceSecretName, Namespace: namespaceName}
 
 		BeforeEach(func() {
 			By("Creating the Namespace to perform the tests")
+			namespace = &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      namespaceName,
+					Namespace: namespaceName,
+				},
+			}
 			err := k8sClient.Create(ctx, namespace)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -69,24 +81,56 @@ var _ = Describe("Database controller", func() {
 				},
 				Spec: ndbv1alpha1.DatabaseSpec{
 					NDB: ndbv1alpha1.NDB{
-						ClusterId: "abcd",
-						Credentials: ndbv1alpha1.Credentials{
-							LoginUser:    "username",
-							Password:     "password",
-							SSHPublicKey: "abcd",
-						},
-						Server: testNDBServer,
+						ClusterId:        "abcd",
+						CredentialSecret: ndbSecretName,
+						Server:           testNDBServer,
 					},
 					Instance: ndbv1alpha1.Instance{
 						DatabaseInstanceName: DatabaseName,
 						DatabaseNames:        []string{"database_1"},
-						Password:             "abcd",
+						CredentialSecret:     instanceSecretName,
 						Size:                 10,
 						TimeZone:             "UTC",
 						Type:                 "postgres",
 					},
 				},
 			}
+
+			ndbSecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      ndbSecretName,
+					Namespace: namespaceName,
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{
+					ndbv1alpha1.NDB_PARAM_USERNAME: []byte(b64.StdEncoding.EncodeToString([]byte(username))),
+					ndbv1alpha1.NDB_PARAM_PASSWORD: []byte(b64.StdEncoding.EncodeToString([]byte(password))),
+				},
+			}
+			instanceSecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      instanceSecretName,
+					Namespace: namespaceName,
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{
+					ndbv1alpha1.NDB_PARAM_PASSWORD:       []byte(b64.StdEncoding.EncodeToString([]byte(password))),
+					ndbv1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: []byte(b64.StdEncoding.EncodeToString([]byte(sshPublicKey))),
+				},
+			}
+
+			By("Creating the secrets")
+			err = k8sClient.Get(ctx, ndbSecretTypeNamespaceName, ndbSecret)
+			if err != nil && errors.IsNotFound(err) {
+				err = k8sClient.Create(ctx, ndbSecret)
+				Expect(err).To(Not(HaveOccurred()))
+			}
+			err = k8sClient.Get(ctx, instanceSecretTypeNamespaceName, instanceSecret)
+			if err != nil && errors.IsNotFound(err) {
+				err = k8sClient.Create(ctx, instanceSecret)
+				Expect(err).To(Not(HaveOccurred()))
+			}
+
 		})
 
 		AfterEach(func() {

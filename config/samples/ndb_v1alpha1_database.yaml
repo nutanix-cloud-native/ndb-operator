@@ -5,19 +5,16 @@ metadata:
 spec:
   ndb:
     clusterId: "Nutanix Cluster Id"
-    credentials:
-      loginUser: admin
-      password: "NDB Password"
-      sshPublicKey: "SSH Key"
+    credentialSecret : ndb-secret-name
     server: https://[NDB IP]:8443/era/v0.9
-
+    skipCertificateVerification: true
   databaseInstance:
     databaseInstanceName: "Database Instance Name"
     databaseNames:
       - database_one
       - database_two
       - database_three
-    password: 
+    credentialSecret: db-instance-secret-name
     size: 10
     timezone: "UTC"
     type: postgres

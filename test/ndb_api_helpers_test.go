@@ -33,7 +33,7 @@ func TestGetNoneTimeMachineSLA(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	sla, err := v1alpha1.GetNoneTimeMachineSLA(context.Background(), ndbclient)
@@ -83,7 +83,7 @@ func TestGetNoneTimeMachineSLAReturnsErrorWhenNoneTimeMachineNotFound(t *testing
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	sla, err := v1alpha1.GetNoneTimeMachineSLA(context.Background(), ndbclient)
@@ -101,7 +101,7 @@ func TestGetOOBProfiles(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -135,7 +135,7 @@ func TestGetOOBProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -172,7 +172,7 @@ func TestGetOOBProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -238,20 +238,16 @@ func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
 		dbSpec := v1alpha1.DatabaseSpec{
 			NDB: v1alpha1.NDB{
-				Server:    "abc.def.ghi.jkl/v99/api",
-				ClusterId: "test-cluster-id",
-				Credentials: v1alpha1.Credentials{
-					LoginUser:    "test-username",
-					Password:     "test-password",
-					SSHPublicKey: "==qwertyuiopasdfghjklzxcvbnm==",
-				},
+				Server:           "abc.def.ghi.jkl/v99/api",
+				ClusterId:        "test-cluster-id",
+				CredentialSecret: "qwertyuiop",
 			},
 			Instance: v1alpha1.Instance{
 				DatabaseNames:        []string{"a", "b", "c", "d"},
@@ -261,7 +257,12 @@ func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
 			},
 		}
 
-		_, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec)
+		reqData := map[string]interface{}{
+			v1alpha1.NDB_PARAM_PASSWORD:       "qwerty",
+			v1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
+		}
+
+		_, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData)
 		t.Log(err)
 		if err == nil {
 			t.Errorf("GenerateProvisioningRequest should return an error when NONE time machine is not found")
@@ -331,20 +332,16 @@ func TestGenerateProvisioningRequestReturnsErrorIfProfilesNotFound(t *testing.T)
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
 		dbSpec := v1alpha1.DatabaseSpec{
 			NDB: v1alpha1.NDB{
-				Server:    "abc.def.ghi.jkl/v99/api",
-				ClusterId: "test-cluster-id",
-				Credentials: v1alpha1.Credentials{
-					LoginUser:    "test-username",
-					Password:     "test-password",
-					SSHPublicKey: "==qwertyuiopasdfghjklzxcvbnm==",
-				},
+				Server:           "abc.def.ghi.jkl/v99/api",
+				ClusterId:        "test-cluster-id",
+				CredentialSecret: "test-credential-secret-name",
 			},
 			Instance: v1alpha1.Instance{
 				DatabaseNames:        []string{"a", "b", "c", "d"},
@@ -354,7 +351,12 @@ func TestGenerateProvisioningRequestReturnsErrorIfProfilesNotFound(t *testing.T)
 			},
 		}
 
-		_, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec)
+		reqData := map[string]interface{}{
+			v1alpha1.NDB_PARAM_PASSWORD:       "qwerty",
+			v1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
+		}
+
+		_, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData)
 		t.Log(err)
 		if err == nil {
 			t.Errorf("GenerateProvisioningRequest should return an error when profiles are not found")
@@ -366,20 +368,16 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
 		dbSpec := v1alpha1.DatabaseSpec{
 			NDB: v1alpha1.NDB{
-				Server:    "abc.def.ghi.jkl/v99/api",
-				ClusterId: "test-cluster-id",
-				Credentials: v1alpha1.Credentials{
-					LoginUser:    "test-username",
-					Password:     "test-password",
-					SSHPublicKey: "==qwertyuiopasdfghjklzxcvbnm==",
-				},
+				Server:           "abc.def.ghi.jkl/v99/api",
+				ClusterId:        "test-cluster-id",
+				CredentialSecret: "test-credential-secret-name",
 			},
 			Instance: v1alpha1.Instance{
 				DatabaseNames:        []string{"a", "b", "c", "d"},
@@ -389,7 +387,12 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 			},
 		}
 
-		request, _ := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec)
+		reqData := map[string]interface{}{
+			v1alpha1.NDB_PARAM_PASSWORD:       "qwerty",
+			v1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
+		}
+
+		request, _ := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData)
 
 		//Assert
 		if request.DatabaseType != v1alpha1.GetDatabaseEngineName(dbType) {
@@ -410,6 +413,194 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 		}
 		if request.TimeMachineInfo.SlaId != NONE_SLA_ID {
 			t.Logf("NONE time machine sla not selected")
+		}
+	}
+}
+
+func TestGenerateProvisioningRequestReturnsErrorIfDBPasswordIsEmpty(t *testing.T) {
+
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			var response interface{}
+			if r.URL.Path == "/profiles" {
+				response = []v1alpha1.ProfileResponse{
+					{
+						Id:              "1",
+						Name:            "a",
+						Type:            "test type",
+						EngineType:      "test engine",
+						LatestVersionId: "v-id-1",
+						Topology:        "test topology",
+					},
+				}
+			} else if r.URL.Path == "/slas" {
+				response = []v1alpha1.SLAResponse{
+					{
+						Id:                 "sla-1-id",
+						Name:               "SLA 1",
+						UniqueName:         "SLA 1 Unique Name",
+						Description:        "SLA 1 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+					{
+						Id:                 "sla-2-id",
+						Name:               "SLA 2",
+						UniqueName:         "SLA 2 Unique Name",
+						Description:        "SLA 2 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+					{
+						Id:                 NONE_SLA_ID,
+						Name:               v1alpha1.SLA_NAME_NONE,
+						UniqueName:         "SLA 3 Unique Name",
+						Description:        "SLA 3 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+				}
+			}
+			resp, _ := json.Marshal(response)
+			w.WriteHeader(http.StatusOK)
+			w.Write(resp)
+		}
+	}))
+	defer server.Close()
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	for _, dbType := range dbTypes {
+		dbSpec := v1alpha1.DatabaseSpec{
+			NDB: v1alpha1.NDB{
+				Server:           "abc.def.ghi.jkl/v99/api",
+				ClusterId:        "test-cluster-id",
+				CredentialSecret: "test-credential-secret-name",
+			},
+			Instance: v1alpha1.Instance{
+				DatabaseNames:        []string{"a", "b", "c", "d"},
+				Type:                 dbType,
+				DatabaseInstanceName: dbType + "-instance-test",
+				TimeZone:             "UTC",
+			},
+		}
+
+		reqData := map[string]interface{}{
+			v1alpha1.NDB_PARAM_PASSWORD:       "",
+			v1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
+		}
+
+		_, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData)
+		t.Log(err)
+		if err == nil {
+			t.Errorf("GenerateProvisioningRequest should return an error when db password is empty")
+		}
+	}
+}
+
+func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
+
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			var response interface{}
+			if r.URL.Path == "/profiles" {
+				response = []v1alpha1.ProfileResponse{
+					{
+						Id:              "1",
+						Name:            "a",
+						Type:            "test type",
+						EngineType:      "test engine",
+						LatestVersionId: "v-id-1",
+						Topology:        "test topology",
+					},
+				}
+			} else if r.URL.Path == "/slas" {
+				response = []v1alpha1.SLAResponse{
+					{
+						Id:                 "sla-1-id",
+						Name:               "SLA 1",
+						UniqueName:         "SLA 1 Unique Name",
+						Description:        "SLA 1 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+					{
+						Id:                 "sla-2-id",
+						Name:               "SLA 2",
+						UniqueName:         "SLA 2 Unique Name",
+						Description:        "SLA 2 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+					{
+						Id:                 NONE_SLA_ID,
+						Name:               v1alpha1.SLA_NAME_NONE,
+						UniqueName:         "SLA 3 Unique Name",
+						Description:        "SLA 3 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+				}
+			}
+			resp, _ := json.Marshal(response)
+			w.WriteHeader(http.StatusOK)
+			w.Write(resp)
+		}
+	}))
+	defer server.Close()
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	for _, dbType := range dbTypes {
+		dbSpec := v1alpha1.DatabaseSpec{
+			NDB: v1alpha1.NDB{
+				Server:           "abc.def.ghi.jkl/v99/api",
+				ClusterId:        "test-cluster-id",
+				CredentialSecret: "test-credential-secret-name",
+			},
+			Instance: v1alpha1.Instance{
+				DatabaseNames:        []string{"a", "b", "c", "d"},
+				Type:                 dbType,
+				DatabaseInstanceName: dbType + "-instance-test",
+				TimeZone:             "UTC",
+			},
+		}
+
+		reqData := map[string]interface{}{
+			v1alpha1.NDB_PARAM_PASSWORD:       "qwertyuiop",
+			v1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: "",
+		}
+
+		_, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData)
+		t.Log(err)
+		if err == nil {
+			t.Errorf("GenerateProvisioningRequest should return an error when ssh key is empty")
 		}
 	}
 }

@@ -23,6 +23,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -68,11 +69,23 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	log.Info("Database CR Status: " + util.ToString(database.Status))
 
-	spec := database.Spec
-	server := spec.NDB
-	ndbClient := ndbclient.NewNDBClient(server.Credentials.LoginUser, server.Credentials.Password, server.Server)
-
-	// log.Info(fmt.Sprintf("Finalizers: %v", database.Finalizers))
+	NDBInfo := database.Spec.NDB
+	username, password, caCert, err := r.getNDBCredentials(ctx, NDBInfo.CredentialSecret, req.Namespace)
+	if err != nil || username == "" || password == "" {
+		var errStatement string
+		if err == nil {
+			errStatement = "NDB username or password cannot be empty"
+			err = fmt.Errorf("empty NDB credentials")
+		} else {
+			errStatement = "An error occured while fetching the NDB Secrets"
+		}
+		log.Error(err, errStatement)
+		return r.requeueOnErr(err)
+	}
+	if caCert == "" {
+		log.Info("Ca-cert not found, falling back to host's HTTPs certs.")
+	}
+	ndbClient := ndbclient.NewNDBClient(username, password, NDBInfo.Server, caCert, NDBInfo.SkipCertificateVerification)
 
 	// Examine DeletionTimestamp to determine if object is under deletion
 	if database.ObjectMeta.DeletionTimestamp.IsZero() {

@@ -54,6 +54,10 @@ spec:
               databaseInstance:
                 description: Database instance specific details
                 properties:
+                  credentialSecret:
+                    description: Name of the secret holding the credentials for the
+                      database instance (password and ssh key)
+                    type: string
                   databaseInstanceName:
                     default: database_instance_name
                     description: Name of the database instance
@@ -69,9 +73,6 @@ spec:
                       type: string
                     minItems: 1
                     type: array
-                  password:
-                    description: Password of the database instance
-                    type: string
                   profiles:
                     properties:
                       compute:
@@ -119,9 +120,9 @@ spec:
                     - mongodb
                     type: string
                 required:
+                - credentialSecret
                 - databaseInstanceName
                 - databaseNames
-                - password
                 - type
                 type: object
               ndb:
@@ -129,27 +130,19 @@ spec:
                 properties:
                   clusterId:
                     type: string
-                  credentials:
-                    properties:
-                      loginUser:
-                        description: Username for NDB
-                        type: string
-                      password:
-                        description: Password for NDB
-                        type: string
-                      sshPublicKey:
-                        description: SSH public key for the database vm
-                        type: string
-                    required:
-                    - loginUser
-                    - password
-                    - sshPublicKey
-                    type: object
+                  credentialSecret:
+                    description: Name of the secret holding the credentials for NDB
+                      (username and password)
+                    type: string
                   server:
                     type: string
+                  skipCertificateVerification:
+                    default: false
+                    description: Skip server's certificate and hostname verification
+                    type: boolean
                 required:
                 - clusterId
-                - credentials
+                - credentialSecret
                 - server
                 type: object
             required:
