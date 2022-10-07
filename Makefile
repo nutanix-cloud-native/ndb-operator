@@ -29,7 +29,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # nutanix.com/ndb-operator-bundle:$VERSION and nutanix.com/ndb-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= manavrajvanshinx/ndb-operator
+IMAGE_TAG_BASE ?= ghcr.io/nutanix-cloud-native/ndb-operator/controller
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
@@ -153,24 +153,30 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 ## Build using Kustomize and replace helm variables, change filenames
 .PHONY: helm
 helm: clean-helm manifests kustomize dirs
+	
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG} 
-	cp config/default/* ${HELM}
-	cd ${HELM} && $(KUSTOMIZE) edit set namespace HELM_VAR_NAMESPACE && $(KUSTOMIZE) edit set nameprefix HELM_VAR_NAME-
-	$(KUSTOMIZE) build config/helm -o ${KUSTOMIZE_OUT}
-	find ${KUSTOMIZE_OUT}/ -type f -exec sed -i '' -e 's/HELM_VAR_NAMESPACE/{{.Release.Namespace}}/g; s/HELM_VAR_NAME/{{.Release.Name}}/g' {} \;
+	cp config/default/* ${HELM_CONFIG}
+	cd ${HELM_CONFIG} && $(KUSTOMIZE) edit set namespace HELM_VAR_NAMESPACE && $(KUSTOMIZE) edit set nameprefix HELM_VAR_NAME-
+	$(KUSTOMIZE) build ${HELM_CONFIG} -o ${KUSTOMIZE_OUT}
+	find ${KUSTOMIZE_OUT}/ -type f -exec sed -i '' -e 's/HELM_VAR_NAMESPACE/{{.Release.Namespace}}/g; s/HELM_VAR_NAME/{{.Values.name}}/g' {} \;
 	for file in ${KUSTOMIZE_OUT}/*; do mv "$$file" "$${file/helm_var_name-/}"; done 
+	cp ${HELM_CONFIG}/chart/* ${HELM}
 	mv ${KUSTOMIZE_OUT} ${HELM}/templates
+
 
 .PHONY: dirs
 dirs:
+	mkdir ${HELM}
 	mkdir -p ${KUSTOMIZE_OUT}
 	
 .PHONY: clean-helm
 clean-helm:
 	rm -r ${HELM} || true
+	cd ${HELM_CONFIG} && rm *.yaml || true
 
-HELM ?= $(shell pwd)/config/helm
-KUSTOMIZE_OUT ?= ${HELM}/kustomize-out
+HELM_CONFIG ?= $(shell pwd)/config/helm_config
+KUSTOMIZE_OUT ?= ${HELM_CONFIG}/kustomize-out
+HELM ?= ./helm
 ##@ Build Dependencies
 
 ## Location to install dependencies to
