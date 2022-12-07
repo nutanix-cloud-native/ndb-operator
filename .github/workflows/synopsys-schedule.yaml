@@ -20,7 +20,7 @@ jobs:
         run: make build
 
       - name: Run Synopsys Detect
-        uses: synopsys-sig/detect-action@v0.3.3
+        uses: synopsys-sig/detect-action@v0.3.4
         env:
           DETECT_PROJECT_USER_GROUPS: "CloudNative"
         with:
