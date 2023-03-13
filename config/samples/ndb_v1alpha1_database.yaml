@@ -1,20 +1,20 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db
+    name: db
 spec:
-  ndb:
-    clusterId: "Nutanix Cluster Id"
-    credentialSecret: ndb-secret-name
-    server: https://[NDB IP]:8443/era/v0.9
-    skipCertificateVerification: true
-  databaseInstance:
-    databaseInstanceName: "Database Instance Name"
-    databaseNames:
-      - database_one
-      - database_two
-      - database_three
-    credentialSecret: db-instance-secret-name
-    size: 10
-    timezone: "UTC"
-    type: postgres
+    ndb:
+        clusterId: 'db94d680-5f45-43ea-a5e8-d43312bed165'
+        credentialSecret: ntnx2-ndb-secret
+        server: https://eraol43ldxqb9-era.nutanixtestdrive.com/era/v0.9
+        skipCertificateVerification: true
+    databaseInstance:
+        databaseInstanceName: 'test2'
+        databaseNames:
+            - database_one
+            - database_two
+            - database_three
+        credentialSecret: ntnx2-db-secret
+        size: 10
+        timezone: 'UTC'
+        type: postgres
