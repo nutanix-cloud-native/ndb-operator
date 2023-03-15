@@ -1,7 +1,7 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db
+  name: db5
 spec:
   ndb:
     clusterId: "64598461-9ab5-4fbe-b8ca-63ca98645645"
@@ -9,13 +9,12 @@ spec:
     server: https://erajc79mswrn2-era.nutanixtestdrive.com/era/v0.9
     skipCertificateVerification: true
   databaseInstance:
-    databaseInstanceName: "testdb"
+    databaseInstanceName: "db5"
     databaseNames:
       - database_one
       - database_two
       - database_three
     credentialSecret: ntnx1-db-secret
-    size: 10
+    size: 200
     timezone: "UTC"
-    type: postgres
-
+    type: mongodb
