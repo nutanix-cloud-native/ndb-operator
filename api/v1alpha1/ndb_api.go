@@ -118,6 +118,7 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, req 
 		log.Error(err, "Received nil ndbClient reference")
 		return
 	}
+	fmt.Println(req)
 	res, err := ndbClient.Post("databases/provision", req)
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
