@@ -53,8 +53,8 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	log := ctrllog.FromContext(ctx)
 	log.Info("<==============================Reconcile Started=============================>")
 	// Fetch the database resource from the namespace
-	database := &ndbv1alpha1.Database{}
-	err := r.Get(ctx, req.NamespacedName, database)
+	database := &ndbv1alpha1.Database{}             // Instaniate an instance of Database struct
+	err := r.Get(ctx, req.NamespacedName, database) // Set values in it using Get K8 API call
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -69,6 +69,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	log.Info("Database CR Status: " + util.ToString(database.Status))
 
+	// ============================================== NDBINFO IS USED AFTER THIS POINT ==============================================
 	NDBInfo := database.Spec.NDB
 	username, password, caCert, err := r.getNDBCredentials(ctx, NDBInfo.CredentialSecret, req.Namespace)
 	if err != nil || username == "" || password == "" {
@@ -85,7 +86,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if caCert == "" {
 		log.Info("Ca-cert not found, falling back to host's HTTPs certs.")
 	}
-	ndbClient := ndbclient.NewNDBClient(username, password, NDBInfo.Server, caCert, NDBInfo.SkipCertificateVerification)
+	ndbClient := ndbclient.NewNDBClient(username, password, NDBInfo.Server, NDBInfo.RemoteType, caCert, NDBInfo.SkipCertificateVerification)
 
 	// Examine DeletionTimestamp to determine if object is under deletion
 	if database.ObjectMeta.DeletionTimestamp.IsZero() {

@@ -30,6 +30,8 @@ import (
 
 // This function generates and returns a request for provisioning a database (and a dbserver vm) on NDB
 // The database provisioned has a NONE time machine SLA attached to it, and uses the default OOB profiles
+
+// TODO: I have added the remoteType as part of the ndbClient structure. Use that to differentiate provisionRequest construction.
 func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBClient, dbSpec DatabaseSpec, reqData map[string]interface{}) (req *DatabaseProvisionRequest, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)

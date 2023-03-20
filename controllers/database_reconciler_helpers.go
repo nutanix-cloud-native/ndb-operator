@@ -409,7 +409,7 @@ func (r *DatabaseReconciler) getNDBCredentials(ctx context.Context, name, namesp
 		log.Error(err, "Error occured in util.GetAllDataFromSecret while fetching all NDB secrets", "Secret Name", name, "Namespace", namespace)
 		return
 	}
-	username = string(secretDataMap[ndbv1alpha1.SECRET_DATA_KEY_USERNAME])
+	username = string(secretDataMap[ndbv1alpha1.SECRET_DATA_KEY_USERNAME]) // in constants.go
 	password = string(secretDataMap[ndbv1alpha1.SECRET_DATA_KEY_PASSWORD])
 	caCert = string(secretDataMap[ndbv1alpha1.SECRET_DATA_KEY_CA_CERTIFICATE])
 	log.Info("Returning from database_reconciler_helpers.getNDBCredentials")
