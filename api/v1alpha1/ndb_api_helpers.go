@@ -209,7 +209,6 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 			},
 		}
 	}
-	fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 	jsonString, err := json.MarshalIndent(req, "", "  ")
 	fmt.Println(string(jsonString))
 	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
