@@ -4,17 +4,17 @@ metadata:
     name: db
 spec:
     ndb:
-        clusterId: 'f703bdb6-b9c1-4dd8-a0fd-236ccd4af306'
+        clusterId: '6886c490-0432-4aa8-8d91-c701bdefabbc'
         credentialSecret: ntnx2-ndb-secret
-        server: https://erap2t9rkwz1x-era.nutanixtestdrive.com/era/v0.9
+        server: https://erawgibl2jvw4-era.nutanixtestdrive.com/era/v0.9
         skipCertificateVerification: true
     databaseInstance:
-        databaseInstanceName: 'test_mysql2'
+        databaseInstanceName: 'test_postgres'
         databaseNames:
-            - database_one_mysql
-            - database_two_mysql
-            - database_three_mysql
+            - database_one
+            - database_two
+            - database_three
         credentialSecret: ntnx2-db-secret
         size: 10
         timezone: 'UTC'
-        type: mysql
+        type: postgres
