@@ -4,9 +4,9 @@ metadata:
   name: db5
 spec:
   ndb:
-    clusterId: "64598461-9ab5-4fbe-b8ca-63ca98645645"
+    clusterId: "2833751d-6553-4c81-95ae-72ab5cc4e55a"
     credentialSecret : ntnx1-ndb-secret
-    server: https://erajc79mswrn2-era.nutanixtestdrive.com/era/v0.9
+    server: https://erauvyatzz3wz-era.nutanixtestdrive.com/era/v0.9
     skipCertificateVerification: true
   databaseInstance:
     databaseInstanceName: "db5"
