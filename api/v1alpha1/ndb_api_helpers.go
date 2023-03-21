@@ -103,16 +103,8 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 			},
 			ActionArguments: []ActionArgument{
 				{
-					Name:  "proxy_read_port",
-					Value: "5001",
-				},
-				{
 					Name:  "listener_port",
 					Value: "3306",
-				},
-				{
-					Name:  "proxy_write_port",
-					Value: "5000",
 				},
 				{
 					Name:  "database_size",
@@ -121,14 +113,6 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 				{
 					Name:  "auto_tune_staging_drive",
 					Value: "true",
-				},
-				{
-					Name:  "enable_synchronous_mode",
-					Value: "false",
-				},
-				{
-					Name:  "backup_policy",
-					Value: "primary_only",
 				},
 				{
 					Name:  "dbserver_description",
