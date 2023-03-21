@@ -122,6 +122,7 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, req 
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
 			if res != nil {
+				fmt.Print(res)
 				err = fmt.Errorf("POST databases/provision responded with %d", res.StatusCode)
 			} else {
 				err = fmt.Errorf("POST databases/provision responded with nil response")

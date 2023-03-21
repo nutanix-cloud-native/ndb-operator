@@ -74,81 +74,163 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		}
 		log.Error(err, errStatement)
 	}
-
 	// Creating a provisioning request based on the database type
-	req = &DatabaseProvisionRequest{
-		DatabaseType:             GetDatabaseEngineName(dbSpec.Instance.Type),
-		Name:                     dbSpec.Instance.DatabaseInstanceName,
-		DatabaseDescription:      "Database provisioned by ndb-operator: " + dbSpec.Instance.DatabaseInstanceName,
-		SoftwareProfileId:        profilesMap[PROFILE_TYPE_SOFTWARE].Id,
-		SoftwareProfileVersionId: profilesMap[PROFILE_TYPE_SOFTWARE].LatestVersionId,
-		ComputeProfileId:         profilesMap[PROFILE_TYPE_COMPUTE].Id,
-		NetworkProfileId:         profilesMap[PROFILE_TYPE_NETWORK].Id,
-		DbParameterProfileId:     profilesMap[PROFILE_TYPE_DATABASE_PARAMETER].Id,
-		NewDbServerTimeZone:      dbSpec.Instance.TimeZone,
-		CreateDbServer:           true,
-		NodeCount:                1,
-		NxClusterId:              dbSpec.NDB.ClusterId,
-		SSHPublicKey:             SSHPublicKey,
-		Clustered:                false,
-		AutoTuneStagingDrive:     true,
-		TimeMachineInfo: TimeMachineInfo{
-			Name:             dbSpec.Instance.DatabaseInstanceName + "_TM",
-			Description:      sla.Description,
-			SlaId:            sla.Id,
-			Schedule:         make(map[string]string),
-			Tags:             make([]string, 0),
-			AutoTuneLogDrive: true,
-		},
-		ActionArguments: []ActionArgument{
-			{
-				Name:  "proxy_read_port",
-				Value: "5001",
+	if dbSpec.Instance.Type == "mongodb" {
+		req = &DatabaseProvisionRequest{
+			DatabaseType:             GetDatabaseEngineName(dbSpec.Instance.Type),
+			Name:                     dbSpec.Instance.DatabaseInstanceName,
+			DatabaseDescription:      "Database provisioned by ndb-operator: " + dbSpec.Instance.DatabaseInstanceName,
+			SoftwareProfileId:        profilesMap[PROFILE_TYPE_SOFTWARE].Id,
+			SoftwareProfileVersionId: profilesMap[PROFILE_TYPE_SOFTWARE].LatestVersionId,
+			ComputeProfileId:         profilesMap[PROFILE_TYPE_COMPUTE].Id,
+			NetworkProfileId:         profilesMap[PROFILE_TYPE_NETWORK].Id,
+			DbParameterProfileId:     profilesMap[PROFILE_TYPE_DATABASE_PARAMETER].Id,
+			NewDbServerTimeZone:      dbSpec.Instance.TimeZone,
+			CreateDbServer:           true,
+			NodeCount:                1,
+			NxClusterId:              dbSpec.NDB.ClusterId,
+			SSHPublicKey:             SSHPublicKey,
+			Clustered:                false,
+			AutoTuneStagingDrive:     true,
+
+			TimeMachineInfo: TimeMachineInfo{
+				Name:             dbSpec.Instance.DatabaseInstanceName + "_TM",
+				Description:      sla.Description,
+				SlaId:            sla.Id,
+				Schedule:         make(map[string]string),
+				Tags:             make([]string, 0),
+				AutoTuneLogDrive: true,
 			},
-			{
-				Name:  "listener_port",
-				Value: "5432",
+			ActionArguments: []ActionArgument{
+				{
+					Name:  "listener_port",
+					Value: "27017",
+				},
+				{
+					Name:  "database_size",
+					Value: strconv.Itoa(dbSpec.Instance.Size),
+				},
+				{
+					Name:  "log_size",
+					Value: "100",
+				},
+
+				{
+					Name:  "journal_size",
+					Value: "100",
+				},
+				{
+					Name:  "backup_policy",
+					Value: "primary_only",
+				},
+				{
+					Name:  "restart_mongod",
+					Value: "true",
+				},
+				{
+					Name:  "working_dir",
+					Value: "/tmp",
+				},
+				{
+					Name:  "dbserver_description",
+					Value: "dbserver for " + dbSpec.Instance.DatabaseInstanceName,
+				},
+				{
+					Name:  "database_names",
+					Value: database_names,
+				},
+				{
+					Name:  "db_user",
+					Value: dbSpec.Instance.DatabaseInstanceName,
+				},
+				{
+					Name:  "db_password",
+					Value: dbPassword,
+				},
 			},
-			{
-				Name:  "proxy_write_port",
-				Value: "5000",
+			Nodes: []Node{
+				{
+					Properties: make([]string, 0),
+					VmName:     dbSpec.Instance.DatabaseInstanceName + "_VM",
+				},
 			},
-			{
-				Name:  "database_size",
-				Value: strconv.Itoa(dbSpec.Instance.Size),
+		}
+	} else {
+		req = &DatabaseProvisionRequest{
+			DatabaseType:             GetDatabaseEngineName(dbSpec.Instance.Type),
+			Name:                     dbSpec.Instance.DatabaseInstanceName,
+			DatabaseDescription:      "Database provisioned by ndb-operator: " + dbSpec.Instance.DatabaseInstanceName,
+			SoftwareProfileId:        profilesMap[PROFILE_TYPE_SOFTWARE].Id,
+			SoftwareProfileVersionId: profilesMap[PROFILE_TYPE_SOFTWARE].LatestVersionId,
+			ComputeProfileId:         profilesMap[PROFILE_TYPE_COMPUTE].Id,
+			NetworkProfileId:         profilesMap[PROFILE_TYPE_NETWORK].Id,
+			DbParameterProfileId:     profilesMap[PROFILE_TYPE_DATABASE_PARAMETER].Id,
+			NewDbServerTimeZone:      dbSpec.Instance.TimeZone,
+			CreateDbServer:           true,
+			NodeCount:                1,
+			NxClusterId:              dbSpec.NDB.ClusterId,
+			SSHPublicKey:             SSHPublicKey,
+			Clustered:                false,
+			AutoTuneStagingDrive:     true,
+			TimeMachineInfo: TimeMachineInfo{
+				Name:             dbSpec.Instance.DatabaseInstanceName + "_TM",
+				Description:      sla.Description,
+				SlaId:            sla.Id,
+				Schedule:         make(map[string]string),
+				Tags:             make([]string, 0),
+				AutoTuneLogDrive: true,
 			},
-			{
-				Name:  "auto_tune_staging_drive",
-				Value: "true",
+			ActionArguments: []ActionArgument{
+				{
+					Name:  "proxy_read_port",
+					Value: "5001",
+				},
+				{
+					Name:  "listener_port",
+					Value: "5432",
+				},
+				{
+					Name:  "proxy_write_port",
+					Value: "5000",
+				},
+				{
+					Name:  "database_size",
+					Value: strconv.Itoa(dbSpec.Instance.Size),
+				},
+				{
+					Name:  "auto_tune_staging_drive",
+					Value: "true",
+				},
+				{
+					Name:  "enable_synchronous_mode",
+					Value: "false",
+				},
+				{
+					Name:  "backup_policy",
+					Value: "primary_only",
+				},
+				{
+					Name:  "dbserver_description",
+					Value: "dbserver for " + dbSpec.Instance.DatabaseInstanceName,
+				},
+				{
+					Name:  "database_names",
+					Value: database_names,
+				},
+				{
+					Name:  "db_password",
+					Value: dbPassword,
+				},
 			},
-			{
-				Name:  "enable_synchronous_mode",
-				Value: "false",
+			Nodes: []Node{
+				{
+					Properties: make([]string, 0),
+					VmName:     dbSpec.Instance.DatabaseInstanceName + "_VM",
+				},
 			},
-			{
-				Name:  "backup_policy",
-				Value: "primary_only",
-			},
-			{
-				Name:  "dbserver_description",
-				Value: "dbserver for " + dbSpec.Instance.DatabaseInstanceName,
-			},
-			{
-				Name:  "database_names",
-				Value: database_names,
-			},
-			{
-				Name:  "db_password",
-				Value: dbPassword,
-			},
-		},
-		Nodes: []Node{
-			{
-				Properties: make([]string, 0),
-				VmName:     dbSpec.Instance.DatabaseInstanceName + "_VM",
-			},
-		},
+		}
 	}
+
 	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 	return
 }
