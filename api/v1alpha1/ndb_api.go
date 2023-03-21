@@ -110,6 +110,8 @@ func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id str
 
 // Provisions a database instance based on the database provisioning request
 // Returns the task info summary response for the operation
+
+// TODO: I have added the remoteType as part of the ndbClient structure. Use that to differentiate provisionDatabase call.
 func ProvisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, req *DatabaseProvisionRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.ProvisionDatabase")

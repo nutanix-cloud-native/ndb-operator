@@ -72,6 +72,8 @@ func init() {
 
 // Details of the NDB installation
 type NDB struct {
+	// +kubebuilder:validation:Required;Enum=cloud;on-prem
+	RemoteType string `json:"remoteType"`
 	// +kubebuilder:validation:Required
 	ClusterId string `json:"clusterId"`
 	// +kubebuilder:validation:Required

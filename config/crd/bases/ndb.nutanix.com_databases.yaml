@@ -134,6 +134,8 @@ spec:
                     description: Name of the secret holding the credentials for NDB
                       (username and password)
                     type: string
+                  remoteType:
+                    type: string
                   server:
                     type: string
                   skipCertificateVerification:
@@ -143,6 +145,7 @@ spec:
                 required:
                 - clusterId
                 - credentialSecret
+                - remoteType
                 - server
                 type: object
             required:

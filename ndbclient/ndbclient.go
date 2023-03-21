@@ -25,13 +25,14 @@ import (
 )
 
 type NDBClient struct {
-	username string
-	password string
-	url      string
-	client   *http.Client
+	username   string
+	password   string
+	url        string
+	remoteType string
+	client     *http.Client
 }
 
-func NewNDBClient(username, password, url, caCert string, skipVerify bool) *NDBClient {
+func NewNDBClient(username, password, url, remoteType, caCert string, skipVerify bool) *NDBClient {
 
 	TLSClientConfig := &tls.Config{InsecureSkipVerify: skipVerify}
 	if caCert != "" {
@@ -42,7 +43,7 @@ func NewNDBClient(username, password, url, caCert string, skipVerify bool) *NDBC
 	client := &http.Client{
 		Transport: &http.Transport{TLSClientConfig: TLSClientConfig},
 	}
-	return &NDBClient{username, password, url, client}
+	return &NDBClient{username, password, url, remoteType, client}
 }
 
 func (ndbClient *NDBClient) Get(path string) (*http.Response, error) {
