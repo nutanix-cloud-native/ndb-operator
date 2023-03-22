@@ -39,7 +39,7 @@ func TestGetAllSLAs(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "cloud", "", true)
 
 	//Test
 	value, _ := v1alpha1.GetAllSLAs(context.Background(), ndbclient)
@@ -58,7 +58,7 @@ func TestGetAllSLAsThrowsErrorWhenClientReturnsNon200(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "cloud", "", true)
 
 	//Test
 	_, err := v1alpha1.GetAllSLAs(context.Background(), ndbclient)
@@ -71,7 +71,7 @@ func TestGetAllProfiles(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "cloud", "", true)
 
 	//Test
 	value, _ := v1alpha1.GetAllProfiles(context.Background(), ndbclient)
@@ -91,7 +91,7 @@ func TestGetAllProfileThrowsErrorWhenClientReturnsNon200(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "cloud", "", true)
 
 	//Test
 	_, err := v1alpha1.GetAllProfiles(context.Background(), ndbclient)
