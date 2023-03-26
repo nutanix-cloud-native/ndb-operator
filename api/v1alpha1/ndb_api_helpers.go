@@ -75,6 +75,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		}
 		log.Error(err, errStatement)
 	}
+
 	// Creating a provisioning request based on the database type
 	req = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(dbSpec.Instance.Type),
@@ -275,7 +276,12 @@ func GetActionArgumentsByDatabaseType(databaseType string) (DatabaseActionArgs, 
 }
 
 func (m *MysqlActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {
-	return []ActionArgument{}
+	return []ActionArgument {
+  			{
+  				Name:  "listener_port",
+  				Value: "3306",
+  			},
+	}
 }
 
 func (p *PostgresActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {

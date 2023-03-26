@@ -4,9 +4,9 @@ metadata:
     name: db
 spec:
     ndb:
-        clusterId: 'f703bdb6-b9c1-4dd8-a0fd-236ccd4af306'
+        clusterId: '780e11d1-a389-4a04-86ec-eb1a0ac7e162'
         credentialSecret: ntnx2-ndb-secret
-        server: https://erap2t9rkwz1x-era.nutanixtestdrive.com/era/v0.9
+        server: https://eravoiwrziyev-era.nutanixtestdrive.com/era/v0.9
         skipCertificateVerification: true
     databaseInstance:
         databaseInstanceName: 'test_mysql2'
