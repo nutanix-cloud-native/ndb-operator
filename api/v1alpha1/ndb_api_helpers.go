@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -108,7 +107,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 			},
 		},
 	}
-
+	// Setting action arguments based on database type
 	actionArgs := make([]ActionArgument, 0)
 
 	if dbSpec.Instance.Type == "mysql" {
@@ -168,8 +167,9 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 
 	req.ActionArguments = actionArgs
 
-	jsonString, err := json.MarshalIndent(req, "", "  ")
-	fmt.Println(string(jsonString))
+	//Printing out json body which is sent to ndb_api
+	// jsonString, err := json.MarshalIndent(req, "", "  ")
+	// fmt.Println(string(jsonString))
 	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 	return
 }
@@ -226,11 +226,6 @@ func GetOOBProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType 
 	profileMap[PROFILE_TYPE_SOFTWARE] = softwareProfiles[0]
 	profileMap[PROFILE_TYPE_NETWORK] = networkProfiles[0]
 	profileMap[PROFILE_TYPE_DATABASE_PARAMETER] = dbParamProfiles[0]
-	// fmt.Println(profileMap[PROFILE_TYPE_COMPUTE])
-	// fmt.Println(profileMap[PROFILE_TYPE_STORAGE])
-	// fmt.Println(profileMap[PROFILE_TYPE_SOFTWARE])
-	// fmt.Println(profileMap[PROFILE_TYPE_NETWORK])
-	// fmt.Println(profileMap[PROFILE_TYPE_DATABASE_PARAMETER])
 
 	return
 }
