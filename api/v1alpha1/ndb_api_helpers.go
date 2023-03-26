@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -75,7 +74,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		}
 		log.Error(err, errStatement)
 	}
-
+	
 	// Creating a provisioning request based on the database type
 	req = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(dbSpec.Instance.Type),
@@ -93,7 +92,6 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		SSHPublicKey:             SSHPublicKey,
 		Clustered:                false,
 		AutoTuneStagingDrive:     true,
-
 		TimeMachineInfo: TimeMachineInfo{
 			Name:             dbSpec.Instance.DatabaseInstanceName + "_TM",
 			Description:      sla.Description,
