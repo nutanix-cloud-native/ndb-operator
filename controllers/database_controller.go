@@ -86,6 +86,9 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if caCert == "" {
 		log.Info("Ca-cert not found, falling back to host's HTTPs certs.")
 	}
+
+	var remoteTypeVal string = NDBInfo.RemoteType
+
 	ndbClient := ndbclient.NewNDBClient(username, password, NDBInfo.Server, NDBInfo.RemoteType, caCert, NDBInfo.SkipCertificateVerification)
 
 	// Examine DeletionTimestamp to determine if object is under deletion
@@ -110,7 +113,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return r.requeueOnErr(err)
 	}
 	// Synchronize the database CR with the database instance on NDB.
-	return r.handleSync(ctx, database, ndbClient, req)
+	return r.handleSync(ctx, database, ndbClient, req, remoteTypeVal)
 }
 
 // SetupWithManager sets up the controller with the Manager.

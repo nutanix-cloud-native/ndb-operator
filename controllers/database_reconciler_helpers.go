@@ -189,7 +189,7 @@ func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database 
 // The handleSync function synchronizes the database CR's with the database instance in NDB
 // It handles the transition from EMPTY (initial state) => PROVISIONING => RUNNING
 // and updates the status accordingly. The update() triggers an implicit requeue of the reconcile request.
-func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndbclient.NDBClient, req ctrl.Request) (ctrl.Result, error) {
+func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndbclient.NDBClient, req ctrl.Request, remoteTypeVal string) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.handleSync")
 
@@ -217,7 +217,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			ndbv1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
 		}
 
-		generatedReq, err := ndbv1alpha1.GenerateProvisioningRequest(ctx, ndbClient, database.Spec, reqData)
+		generatedReq, err := ndbv1alpha1.GenerateProvisioningRequest(ctx, ndbClient, database.Spec, reqData, remoteTypeVal)
 		if err != nil {
 			log.Error(err, "Could not generate provisioning request, requeuing.")
 			return r.requeueOnErr(err)

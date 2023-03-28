@@ -164,6 +164,12 @@ type DatabaseProvisionRequest struct {
 }
 
 // +kubebuilder:object:generate:=false
+type CloudDatabaseProvisionRequest struct {
+	DatabaseProvisionRequest
+	AwsKeyName string `json:"awsKeyName"`
+}
+
+// +kubebuilder:object:generate:=false
 type DatabaseDeprovisionRequest struct {
 	Delete               bool `json:"delete"`
 	Remove               bool `json:"remove"`
