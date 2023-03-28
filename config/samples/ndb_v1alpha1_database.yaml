@@ -5,9 +5,9 @@ metadata:
 spec:
   ndb:
     remoteType: "cloud"
-    clusterId: "Nutanix Cluster Id"
-    credentialSecret : ndb-secret-name
-    server: https://[NDB IP]:8443/era/v1.0
+    clusterId: "a3583bb6-6abc-492b-82de-010564617e7d"
+    credentialSecret : ntnx4-ndb-secret
+    server: https://ndb.nutanix.com/era/v1.0
     skipCertificateVerification: true
   databaseInstance:
     databaseInstanceName: "Database Instance Name"
