@@ -32,7 +32,7 @@ import (
 // The database provisioned has a NONE time machine SLA attached to it, and uses the default OOB profiles
 
 // TODO: I have added the remoteType as part of the ndbClient structure. Use that to differentiate provisionRequest construction.
-func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBClient, dbSpec DatabaseSpec, reqData map[string]interface{}, remoteTypeVal string) (req *DatabaseProvisionRequest, err error) {
+func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBClient, dbSpec DatabaseSpec, reqData map[string]interface{}, remoteTypeVal string) (req *DatabaseProvisionRequest, cloudreq *CloudDatabaseProvisionRequest, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 
@@ -150,6 +150,12 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 				VmName:     dbSpec.Instance.DatabaseInstanceName + "_VM",
 			},
 		},
+	}
+	if remoteTypeVal == "cloud" {
+		cloudreq = &CloudDatabaseProvisionRequest{
+			DatabaseProvisionRequest: *req,
+			AwsKeyName:               "my-key",
+		}
 	}
 
 	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)

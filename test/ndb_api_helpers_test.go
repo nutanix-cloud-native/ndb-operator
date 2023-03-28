@@ -262,7 +262,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
 			v1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
 		}
 
-		_, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData, "on-prem")
+		_, _, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData, "on-prem")
 		t.Log(err)
 		if err == nil {
 			t.Errorf("GenerateProvisioningRequest should return an error when NONE time machine is not found")
@@ -356,7 +356,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfProfilesNotFound(t *testing.T)
 			v1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
 		}
 
-		_, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData, "on-prem")
+		_, _, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData, "on-prem")
 		t.Log(err)
 		if err == nil {
 			t.Errorf("GenerateProvisioningRequest should return an error when profiles are not found")
@@ -392,7 +392,7 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 			v1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
 		}
 
-		request, _ := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData, "on-prem")
+		request, _, _ := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData, "on-prem")
 
 		//Assert
 		if request.DatabaseType != v1alpha1.GetDatabaseEngineName(dbType) {
@@ -503,7 +503,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfDBPasswordIsEmpty(t *testing.T
 			v1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
 		}
 
-		_, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData, "on-prem")
+		_, _, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData, "on-prem")
 		t.Log(err)
 		if err == nil {
 			t.Errorf("GenerateProvisioningRequest should return an error when db password is empty")
@@ -597,7 +597,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 			v1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: "",
 		}
 
-		_, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData, "on-prem")
+		_, _, err := v1alpha1.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData, "on-prem")
 		t.Log(err)
 		if err == nil {
 			t.Errorf("GenerateProvisioningRequest should return an error when ssh key is empty")

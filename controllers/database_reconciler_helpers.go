@@ -217,12 +217,12 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			ndbv1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
 		}
 
-		generatedReq, err := ndbv1alpha1.GenerateProvisioningRequest(ctx, ndbClient, database.Spec, reqData, remoteTypeVal)
+		generatedReq, cloudGeneratedReq, err := ndbv1alpha1.GenerateProvisioningRequest(ctx, ndbClient, database.Spec, reqData, remoteTypeVal)
 		if err != nil {
 			log.Error(err, "Could not generate provisioning request, requeuing.")
 			return r.requeueOnErr(err)
 		}
-
+		fmt.Print(cloudGeneratedReq)
 		taskResponse, err := ndbv1alpha1.ProvisionDatabase(ctx, ndbClient, generatedReq)
 		if err != nil {
 			log.Error(err, "An error occurred while trying to provision the database")
