@@ -50,6 +50,14 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 
 	database_names := strings.Join(dbSpec.Instance.DatabaseNames, ",")
 
+	profiles, err := GetAllProfiles(ctx, ndbclient)
+
+	err = enrichProfilesMap(ctx, dbSpec, profiles, profilesMap, dbSpec.Instance.Type)
+	if err != nil {
+		log.Error(err, "Error occurred while performing enrichment of custom profiles", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
+		return
+	}
+
 	// Type assertion
 	dbPassword, ok := reqData[NDB_PARAM_PASSWORD].(string)
 	if !ok || dbPassword == "" {
@@ -62,6 +70,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		}
 		log.Error(err, errStatement)
 	}
+
 	// Type assertion
 	SSHPublicKey, ok := reqData[NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	if !ok || SSHPublicKey == "" {
@@ -151,6 +160,115 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 	}
 	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 	return
+}
+
+/*
+This function takes profiles from getAllProfiles and validates the entry of custom profile provided through YAML.
+If checks pass, the custom profile values are overriden which can be used for database provisioning
+*/
+func enrichProfilesMap(ctx context.Context, dbSpec DatabaseSpec, profiles []ProfileResponse, profilesMap map[string]ProfileResponse, dbType string) (err error) {
+
+	log := ctrllog.FromContext(ctx)
+
+	// Fetched generic profiles for Compute Profile Type
+	genericProfiles := util.Filter(profiles, func(p ProfileResponse) bool { return p.EngineType == DATABASE_ENGINE_TYPE_GENERIC })
+
+	// Fetched dbEngineTypeSpecific profiles for Software, Network and Database Param Profile Type
+	dbEngineSpecificProfiles := util.Filter(profiles, func(p ProfileResponse) bool { return p.EngineType == GetDatabaseEngineName(dbType) })
+
+	log.Info("Printing DBEngineSpecific Profiles", "dbEngineSpecificProfile", dbEngineSpecificProfiles)
+
+	log.Info("Going to perform profile enrichment for database provisioning")
+
+	receivedCustomProfiles := dbSpec.Instance.Profiles
+
+	if receivedCustomProfiles == (Profiles{}) {
+		log.Info("Defaulting to OOB Profiles as no custom profiles received. Returning from enrichingProfilesMap")
+		return
+	} else {
+		log.Info("Received Custom Profiles => ", "Received Custom Profiles", receivedCustomProfiles)
+		//Custom Software Profile Check and overriding the default values
+		softwareProfile := dbSpec.Instance.Profiles.Software
+		if softwareProfile == (Profile{}) {
+			log.Info("No enrichment for software profiles as no custom profile received for Software. Hence, proceeding with default OOB software profile")
+		} else {
+			isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, dbEngineSpecificProfiles, softwareProfile, PROFILE_TYPE_SOFTWARE)
+			if errorThroughChecks != nil {
+				//log.Error(err, "")
+				return errorThroughChecks
+			}
+			if isValidProfile {
+				profilesMap[PROFILE_TYPE_SOFTWARE] = matchedProfile
+			}
+		}
+
+		//Custom Compute Profile Check and overriding the default values
+		computeProfile := dbSpec.Instance.Profiles.Compute
+		if computeProfile == (Profile{}) {
+			log.Info("No enrichment for compute profiles as no custom profile received for Compute. Hence, proceeding with default OOB compute profile")
+		} else {
+			isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, genericProfiles, computeProfile, PROFILE_TYPE_COMPUTE)
+			if errorThroughChecks != nil {
+				//log.Error(err, "")
+				return errorThroughChecks
+			}
+			if isValidProfile {
+				profilesMap[PROFILE_TYPE_COMPUTE] = matchedProfile
+			}
+		}
+
+		//Custom Network Profile Check and overriding the default values
+		networkProfile := dbSpec.Instance.Profiles.Network
+		if networkProfile == (Profile{}) {
+			log.Info("No enrichment for network profiles as no custom profile received for Network. Hence, proceeding with default OOB network profile")
+		} else {
+			isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, dbEngineSpecificProfiles, networkProfile, PROFILE_TYPE_NETWORK)
+			if errorThroughChecks != nil {
+				//log.Error(err, "")
+				return errorThroughChecks
+			}
+			if isValidProfile {
+				profilesMap[PROFILE_TYPE_NETWORK] = matchedProfile
+			}
+		}
+
+		//Custom DbParam Profile Check and overriding the default values
+		dbParamProfile := dbSpec.Instance.Profiles.DbParam
+		if dbParamProfile == (Profile{}) {
+			log.Info("No enrichment for database parameter profiles as no custom profile received for it. Hence, proceeding with default OOB dbParam profile")
+		} else {
+			isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, dbEngineSpecificProfiles, dbParamProfile, PROFILE_TYPE_DATABASE_PARAMETER)
+			if err != nil {
+				//log.Error(err, "")
+				return errorThroughChecks
+			}
+			if isValidProfile {
+				profilesMap[PROFILE_TYPE_DATABASE_PARAMETER] = matchedProfile
+			}
+		}
+	}
+	return
+}
+
+func performProfileAvailabilityCheck(ctx context.Context, profiles []ProfileResponse, customProfile Profile, profileType string) (isValidProfile bool, matchedProfile ProfileResponse, err error) {
+	log := ctrllog.FromContext(ctx)
+	isValidProfile = false
+	err = nil
+	matchedProfile = ProfileResponse{}
+	for _, eachProfile := range profiles {
+		if eachProfile.Type == profileType {
+			if (eachProfile.Id == customProfile.Id) && (eachProfile.LatestVersionId == customProfile.VersionId) {
+				log.Info("Profile Matched for custom profile", "profileType", profileType, "profileValue", eachProfile)
+				isValidProfile = true
+				matchedProfile = eachProfile
+				break
+			}
+		}
+	}
+	if !isValidProfile {
+		err = fmt.Errorf("no profile found from the available profiles for %s", profileType)
+	}
+	return isValidProfile, matchedProfile, err
 }
 
 // Fetches all the SLAs from the ndb and returns the NONE TM SLA.
