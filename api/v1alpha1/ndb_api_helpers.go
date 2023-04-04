@@ -214,7 +214,7 @@ func EnrichAndGetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, d
 	profileMap[PROFILE_TYPE_DATABASE_PARAMETER] = dbParamProfiles[0]
 
 	// performs overriding of default OOB profiles based on the customProfiles obtained through YAML
-	err = enrichProfilesMap(ctx, customProfiles, genericProfiles, dbEngineSpecificProfiles, profileMap)
+	err = EnrichProfilesMap(ctx, customProfiles, genericProfiles, dbEngineSpecificProfiles, profileMap)
 
 	return
 }
@@ -223,7 +223,7 @@ func EnrichAndGetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, d
 This function takes customProfiles, generic & dbEngineSpecific profiles & validates the entry of custom profile provided through YAML.
 If checks pass, the custom profile values are used for overriding the default behaviour/profile value which are used for database provisioning
 */
-func enrichProfilesMap(ctx context.Context, customProfiles Profiles, genericProfiles []ProfileResponse, dbEngineSpecificProfiles []ProfileResponse, profilesMap map[string]ProfileResponse) (err error) {
+func EnrichProfilesMap(ctx context.Context, customProfiles Profiles, genericProfiles []ProfileResponse, dbEngineSpecificProfiles []ProfileResponse, profilesMap map[string]ProfileResponse) (err error) {
 	log := ctrllog.FromContext(ctx)
 	if customProfiles == (Profiles{}) {
 		log.Info("Defaulting to using OOB Profiles as no custom profiles received. Returning from enrichingProfilesMap")
@@ -232,7 +232,7 @@ func enrichProfilesMap(ctx context.Context, customProfiles Profiles, genericProf
 	log.Info("Received Custom Profiles => ", "Received Custom Profiles", customProfiles)
 	customProfileOptions := [...]string{PROFILE_TYPE_COMPUTE, PROFILE_TYPE_SOFTWARE, PROFILE_TYPE_NETWORK, PROFILE_TYPE_DATABASE_PARAMETER}
 	for _, profileValue := range customProfileOptions {
-		err = performProfileMatchingAndEnrichProfiles(ctx, profileValue, customProfiles, genericProfiles, dbEngineSpecificProfiles, profilesMap)
+		err = PerformProfileMatchingAndEnrichProfiles(ctx, profileValue, customProfiles, genericProfiles, dbEngineSpecificProfiles, profilesMap)
 		if err != nil {
 			return
 		}
@@ -244,11 +244,11 @@ func enrichProfilesMap(ctx context.Context, customProfiles Profiles, genericProf
 Based on compute or (software, network & dbParam), generic or dbEngineSpecific profiles are used for matching the input customProfile
 Furthermore, based on whether matched or not matched, delegation is performed to override the default profile values
 */
-func performProfileMatchingAndEnrichProfiles(ctx context.Context, profileType string, customProfiles Profiles, genericProfiles []ProfileResponse, dbEngineSpecificProfiles []ProfileResponse, profilesMap map[string]ProfileResponse) (err error) {
+func PerformProfileMatchingAndEnrichProfiles(ctx context.Context, profileType string, customProfiles Profiles, genericProfiles []ProfileResponse, dbEngineSpecificProfiles []ProfileResponse, profilesMap map[string]ProfileResponse) (err error) {
 	log := ctrllog.FromContext(ctx)
 	customProfile := GetProfileForType(profileType, customProfiles)
 	if !isEmptyProfile(customProfile) {
-		profileToUseForMatching := getAppropriateProfileForType(profileType, genericProfiles, dbEngineSpecificProfiles)
+		profileToUseForMatching := GetAppropriateProfileForType(profileType, genericProfiles, dbEngineSpecificProfiles)
 		log.Info("Performing profile matching for profileType => ", "profileType", profileType)
 		matchedProfile := util.Filter(profileToUseForMatching, func(p ProfileResponse) bool {
 			return p.Type == profileType &&
@@ -256,13 +256,13 @@ func performProfileMatchingAndEnrichProfiles(ctx context.Context, profileType st
 				p.LatestVersionId == customProfile.VersionId &&
 				p.Topology == GetTopologyForProfileType(profileType)
 		})
-		err = enrichProfileMapForProfileType(ctx, profilesMap, profileType, matchedProfile)
+		err = EnrichProfileMapForProfileType(ctx, profilesMap, profileType, matchedProfile)
 	}
 	return
 }
 
 // This functions gives either generic or dbEngine specific profiles based upon the profile type to be filtered upon
-func getAppropriateProfileForType(profileType string, genericProfiles []ProfileResponse, dbEngineSpecificProfiles []ProfileResponse) (profiles []ProfileResponse) {
+func GetAppropriateProfileForType(profileType string, genericProfiles []ProfileResponse, dbEngineSpecificProfiles []ProfileResponse) (profiles []ProfileResponse) {
 	if profileType == PROFILE_TYPE_COMPUTE {
 		return genericProfiles
 	} else {
@@ -274,7 +274,7 @@ func getAppropriateProfileForType(profileType string, genericProfiles []ProfileR
 This function checks the correctness of the profile (response) passed as the parameter
 and overrides the profilesMap for the custom profile type specified if the custom profile provided passes the checks
 */
-func enrichProfileMapForProfileType(ctx context.Context, profileMap map[string]ProfileResponse, profileType string, response []ProfileResponse) (err error) {
+func EnrichProfileMapForProfileType(ctx context.Context, profileMap map[string]ProfileResponse, profileType string, response []ProfileResponse) (err error) {
 	log := ctrllog.FromContext(ctx)
 	if len(response) == 0 {
 		err = fmt.Errorf("No matching profile found for profileType = %s", profileType)
