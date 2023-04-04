@@ -20,12 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/nutanix-cloud-native/ndb-operator/ndbclient"
 	"github.com/nutanix-cloud-native/ndb-operator/util"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+	"strconv"
+	"strings"
 )
 
 // This function generates and returns a request for provisioning a database (and a dbserver vm) on NDB
@@ -41,22 +40,14 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		return
 	}
 
-	// Fetch the OOB profiles for the database
-	profilesMap, err := GetOOBProfiles(ctx, ndbclient, dbSpec.Instance.Type)
+	// Fetch upto date profiles for the database
+	profilesMap, err := EnrichAndGetProfiles(ctx, ndbclient, dbSpec.Instance.Type, dbSpec.Instance.Profiles)
 	if err != nil {
-		log.Error(err, "Error occurred while getting OOB profiles", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
+		log.Error(err, "Error occurred while enriching and getting profiles", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 		return
 	}
 
 	database_names := strings.Join(dbSpec.Instance.DatabaseNames, ",")
-
-	profiles, err := GetAllProfiles(ctx, ndbclient)
-
-	err = enrichProfilesMap(ctx, dbSpec, profiles, profilesMap, dbSpec.Instance.Type)
-	if err != nil {
-		log.Error(err, "Error occurred while performing enrichment of custom profiles", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
-		return
-	}
 
 	// Type assertion
 	dbPassword, ok := reqData[NDB_PARAM_PASSWORD].(string)
@@ -162,115 +153,6 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 	return
 }
 
-/*
-This function takes profiles from getAllProfiles and validates the entry of custom profile provided through YAML.
-If checks pass, the custom profile values are overriden which can be used for database provisioning
-*/
-func enrichProfilesMap(ctx context.Context, dbSpec DatabaseSpec, profiles []ProfileResponse, profilesMap map[string]ProfileResponse, dbType string) (err error) {
-
-	log := ctrllog.FromContext(ctx)
-
-	// Fetched generic profiles for Compute Profile Type
-	genericProfiles := util.Filter(profiles, func(p ProfileResponse) bool { return p.EngineType == DATABASE_ENGINE_TYPE_GENERIC })
-
-	// Fetched dbEngineTypeSpecific profiles for Software, Network and Database Param Profile Type
-	dbEngineSpecificProfiles := util.Filter(profiles, func(p ProfileResponse) bool { return p.EngineType == GetDatabaseEngineName(dbType) })
-
-	log.Info("Printing DBEngineSpecific Profiles", "dbEngineSpecificProfile", dbEngineSpecificProfiles)
-
-	log.Info("Going to perform profile enrichment for database provisioning")
-
-	receivedCustomProfiles := dbSpec.Instance.Profiles
-
-	if receivedCustomProfiles == (Profiles{}) {
-		log.Info("Defaulting to OOB Profiles as no custom profiles received. Returning from enrichingProfilesMap")
-		return
-	} else {
-		log.Info("Received Custom Profiles => ", "Received Custom Profiles", receivedCustomProfiles)
-		//Custom Software Profile Check and overriding the default values
-		softwareProfile := dbSpec.Instance.Profiles.Software
-		if softwareProfile == (Profile{}) {
-			log.Info("No enrichment for software profiles as no custom profile received for Software. Hence, proceeding with default OOB software profile")
-		} else {
-			isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, dbEngineSpecificProfiles, softwareProfile, PROFILE_TYPE_SOFTWARE)
-			if errorThroughChecks != nil {
-				//log.Error(err, "")
-				return errorThroughChecks
-			}
-			if isValidProfile {
-				profilesMap[PROFILE_TYPE_SOFTWARE] = matchedProfile
-			}
-		}
-
-		//Custom Compute Profile Check and overriding the default values
-		computeProfile := dbSpec.Instance.Profiles.Compute
-		if computeProfile == (Profile{}) {
-			log.Info("No enrichment for compute profiles as no custom profile received for Compute. Hence, proceeding with default OOB compute profile")
-		} else {
-			isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, genericProfiles, computeProfile, PROFILE_TYPE_COMPUTE)
-			if errorThroughChecks != nil {
-				//log.Error(err, "")
-				return errorThroughChecks
-			}
-			if isValidProfile {
-				profilesMap[PROFILE_TYPE_COMPUTE] = matchedProfile
-			}
-		}
-
-		//Custom Network Profile Check and overriding the default values
-		networkProfile := dbSpec.Instance.Profiles.Network
-		if networkProfile == (Profile{}) {
-			log.Info("No enrichment for network profiles as no custom profile received for Network. Hence, proceeding with default OOB network profile")
-		} else {
-			isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, dbEngineSpecificProfiles, networkProfile, PROFILE_TYPE_NETWORK)
-			if errorThroughChecks != nil {
-				//log.Error(err, "")
-				return errorThroughChecks
-			}
-			if isValidProfile {
-				profilesMap[PROFILE_TYPE_NETWORK] = matchedProfile
-			}
-		}
-
-		//Custom DbParam Profile Check and overriding the default values
-		dbParamProfile := dbSpec.Instance.Profiles.DbParam
-		if dbParamProfile == (Profile{}) {
-			log.Info("No enrichment for database parameter profiles as no custom profile received for it. Hence, proceeding with default OOB dbParam profile")
-		} else {
-			isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, dbEngineSpecificProfiles, dbParamProfile, PROFILE_TYPE_DATABASE_PARAMETER)
-			if err != nil {
-				//log.Error(err, "")
-				return errorThroughChecks
-			}
-			if isValidProfile {
-				profilesMap[PROFILE_TYPE_DATABASE_PARAMETER] = matchedProfile
-			}
-		}
-	}
-	return
-}
-
-func performProfileAvailabilityCheck(ctx context.Context, profiles []ProfileResponse, customProfile Profile, profileType string) (isValidProfile bool, matchedProfile ProfileResponse, err error) {
-	log := ctrllog.FromContext(ctx)
-	isValidProfile = false
-	err = nil
-	matchedProfile = ProfileResponse{}
-	for _, eachProfile := range profiles {
-		if eachProfile.Type == profileType {
-			if (eachProfile.Id == customProfile.Id) && (eachProfile.LatestVersionId == customProfile.VersionId) {
-				log.Info("Profile Matched for custom profile", "profileType", profileType, "profileValue", eachProfile)
-				isValidProfile = true
-				matchedProfile = eachProfile
-				break
-			}
-		}
-	}
-	if !isValidProfile {
-		err = fmt.Errorf("no profile found from the available profiles for %s", profileType)
-	}
-	return isValidProfile, matchedProfile, err
-}
-
 // Fetches all the SLAs from the ndb and returns the NONE TM SLA.
 // Returns an error if not found.
 func GetNoneTimeMachineSLA(ctx context.Context, ndbclient *ndbclient.NDBClient) (sla SLAResponse, err error) {
@@ -287,9 +169,16 @@ func GetNoneTimeMachineSLA(ctx context.Context, ndbclient *ndbclient.NDBClient) 
 	return sla, fmt.Errorf("NONE TimeMachine not found")
 }
 
-// Fetches all the profiles and returns a map of OOB profiles
-// Returns an error if one or more OOB profiles is not found
-func GetOOBProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType string) (profileMap map[string]ProfileResponse, err error) {
+/*
+	 Fetches all the profiles and returns a map of OOB (default) profiles and overrided them with custom profiles if provided
+	 Returns an error if:
+		 (a) one or more OOB profiles (default) is not found
+	 	 (b) custom profile provided does not match any of the profiles from GetAllProfiles()
+*/
+func EnrichAndGetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType string, customProfiles Profiles) (profileMap map[string]ProfileResponse, err error) {
+
+	//log := ctrllog.FromContext(ctx)
+
 	// Map of profile type to profiles
 	profileMap = make(map[string]ProfileResponse)
 
@@ -324,7 +213,113 @@ func GetOOBProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType 
 	profileMap[PROFILE_TYPE_NETWORK] = networkProfiles[0]
 	profileMap[PROFILE_TYPE_DATABASE_PARAMETER] = dbParamProfiles[0]
 
+	// performs overriding of default OOB profiles based on the customProfiles obtained through YAML
+	err = enrichProfilesMap(ctx, customProfiles, genericProfiles, dbEngineSpecificProfiles, profileMap)
+
 	return
+}
+
+/*
+This function takes customProfiles, generic & dbEngineSpecific profiles & validates the entry of custom profile provided through YAML.
+If checks pass, the custom profile values are used for overriding the default behaviour/profile value which are used for database provisioning
+*/
+func enrichProfilesMap(ctx context.Context, customProfiles Profiles, genericProfiles []ProfileResponse, dbEngineSpecificProfiles []ProfileResponse, profilesMap map[string]ProfileResponse) (err error) {
+	log := ctrllog.FromContext(ctx)
+	if customProfiles == (Profiles{}) {
+		log.Info("Defaulting to using OOB Profiles as no custom profiles received. Returning from enrichingProfilesMap")
+		return
+	}
+	log.Info("Received Custom Profiles => ", "Received Custom Profiles", customProfiles)
+	customProfileOptions := [...]string{PROFILE_TYPE_COMPUTE, PROFILE_TYPE_SOFTWARE, PROFILE_TYPE_NETWORK, PROFILE_TYPE_DATABASE_PARAMETER}
+	for _, profileValue := range customProfileOptions {
+		err = performProfileMatchingAndEnrichProfiles(ctx, profileValue, customProfiles, genericProfiles, dbEngineSpecificProfiles, profilesMap)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+/*
+Based on compute or (software, network & dbParam), generic or dbEngineSpecific profiles are used for matching the input customProfile
+Furthermore, based on whether matched or not matched, delegation is performed to override the default profile values
+*/
+func performProfileMatchingAndEnrichProfiles(ctx context.Context, profileType string, customProfiles Profiles, genericProfiles []ProfileResponse, dbEngineSpecificProfiles []ProfileResponse, profilesMap map[string]ProfileResponse) (err error) {
+	log := ctrllog.FromContext(ctx)
+	customProfile := GetProfileForType(profileType, customProfiles)
+	if !isEmptyProfile(customProfile) {
+		profileToUseForMatching := getAppropriateProfileForType(profileType, genericProfiles, dbEngineSpecificProfiles)
+		log.Info("Performing profile matching for profileType => ", "profileType", profileType)
+		matchedProfile := util.Filter(profileToUseForMatching, func(p ProfileResponse) bool {
+			return p.Type == profileType &&
+				p.Id == customProfile.Id &&
+				p.LatestVersionId == customProfile.VersionId &&
+				p.Topology == GetTopologyForProfileType(profileType)
+		})
+		err = enrichProfileMapForProfileType(ctx, profilesMap, profileType, matchedProfile)
+	}
+	return
+}
+
+// This functions gives either generic or dbEngine specific profiles based upon the profile type to be filtered upon
+func getAppropriateProfileForType(profileType string, genericProfiles []ProfileResponse, dbEngineSpecificProfiles []ProfileResponse) (profiles []ProfileResponse) {
+	if profileType == PROFILE_TYPE_COMPUTE {
+		return genericProfiles
+	} else {
+		return dbEngineSpecificProfiles
+	}
+}
+
+/*
+This function checks the correctness of the profile (response) passed as the parameter
+and overrides the profilesMap for the custom profile type specified if the custom profile provided passes the checks
+*/
+func enrichProfileMapForProfileType(ctx context.Context, profileMap map[string]ProfileResponse, profileType string, response []ProfileResponse) (err error) {
+	log := ctrllog.FromContext(ctx)
+	if len(response) == 0 {
+		err = fmt.Errorf("No matching profile found for profileType = %s", profileType)
+		log.Info("Error Occurred. No enrichment performed for profile => ", "profileType", profileType)
+		return
+	}
+	log.Info("Profile Matching succeeded for profileType => ", "profileType", profileType)
+	log.Info("Going to perform custom profile enrichment performed for => ", "profileType", profileType)
+	profileMap[profileType] = response[0]
+	return
+}
+
+/*
+Providing the least costly topology based on each profile type
+NOTE: Values need to verified / Can be changes after having further discussions!
+*/
+func GetTopologyForProfileType(profileType string) string {
+	switch profileType {
+	case PROFILE_TYPE_COMPUTE:
+		return TOPOLOGY_ALL
+	case PROFILE_TYPE_SOFTWARE:
+		return TOPOLOGY_SINGLE
+	case PROFILE_TYPE_NETWORK:
+		return TOPOLOGY_ALL
+	case PROFILE_TYPE_DATABASE_PARAMETER:
+		return TOPOLOGY_INSTANCE
+	default:
+		return ""
+	}
+}
+
+func GetProfileForType(profileType string, profiles Profiles) Profile {
+	defaultEmptyProfile := Profile{}
+	switch profileType {
+	case PROFILE_TYPE_COMPUTE:
+		return profiles.Compute
+	case PROFILE_TYPE_SOFTWARE:
+		return profiles.Software
+	case PROFILE_TYPE_NETWORK:
+		return profiles.Network
+	case PROFILE_TYPE_DATABASE_PARAMETER:
+		return profiles.DbParam
+	default:
+		return defaultEmptyProfile
+	}
 }
 
 func GetDatabaseEngineName(dbType string) string {
@@ -353,6 +348,11 @@ func GetDatabasePortByType(dbType string) int32 {
 	default:
 		return 80
 	}
+}
+
+func isEmptyProfile(customProfile Profile) (isEmpty bool) {
+	isEmpty = customProfile == (Profile{})
+	return
 }
 
 // Returns a request to delete a database instance

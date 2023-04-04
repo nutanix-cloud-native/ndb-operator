@@ -4,24 +4,17 @@ metadata:
   name: db
 spec:
   ndb:
-    clusterId: "0f812c8e-0607-46cf-886e-706ce7d30b6a"
-    credentialSecret : ntnx3-ndb-secret
-    server: https://eraybgyd9x86x-era.nutanixtestdrive.com/era/v0.9
+    clusterId: "Nutanix Cluster Id"
+    credentialSecret : ndb-secret-name
+    server: https://[NDB IP]:8443/era/v0.9
     skipCertificateVerification: true
   databaseInstance:
-    databaseInstanceName: "ntnx3_db_version_1.1"
+    databaseInstanceName: "Database Instance Name"
     databaseNames:
       - database_one
       - database_two
       - database_three
-    credentialSecret: ntnx3-db-secret
+    credentialSecret: db-instance-secret-name
     size: 10
     timezone: "UTC"
     type: postgres
-    profiles:
-      compute:
-        id: "f6594223-dc7d-45da-ab40-07ce8c2dcdac"
-        versionId: "23fffd73-f582-4cd3-82c0-db09e580a937"
-      software:
-        id: "780db288-93eb-4d59-b90d-e34e47adb3df"
-        versionId: "97ae4340-37f3-403b-bd41-4f11965ea6ef"

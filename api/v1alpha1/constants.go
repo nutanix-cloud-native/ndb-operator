@@ -36,6 +36,10 @@ const (
 	DATABASE_TYPE_MYSQL    = "mysql"
 	DATABASE_TYPE_POSTGRES = "postgres"
 
+	DATABASE_TYPE_POSTGRES_INVALID_PROFILE = "postgres_invalid_profiles"
+	DATABASE_TYPE_MYSQL_INVALID_PROFILE    = "mysql_invalid_profiles"
+	DATABASE_TYPE_MONGODB_INVALID_PROFILE  = "mongodb_invalid_profiles"
+
 	FINALIZER_DATABASE_INSTANCE = "ndb.nutanix.com/finalizerdatabaseinstance"
 	FINALIZER_DATABASE_SERVER   = "ndb.nutanix.com/finalizerdatabaseserver"
 
