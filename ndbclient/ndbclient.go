@@ -47,7 +47,7 @@ func NewNDBClient(username, password, url, caCert string, skipVerify bool) *NDBC
 func (ndbClient *NDBClient) Get(path string) (*http.Response, error) {
 	url := ndbClient.url + "/" + path
 	req, err := http.NewRequest("GET", url, nil)
-	req.Header.Add("Cookie", "eraAuth=eyJhbGciOiJSUzUxMiJ9")
+
 	if err != nil {
 		// fmt.Println(err)
 		return nil, err
@@ -60,7 +60,7 @@ func (ndbClient *NDBClient) Post(path string, body interface{}) (*http.Response,
 	url := ndbClient.url + "/" + path
 	payload, _ := json.Marshal(body)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
-	req.Header.Add("Cookie", "eraAuth=eyJhbGciOiJSUzUxMiJ9")
+
 	if err != nil {
 		// fmt.Println(err)
 		return nil, err
