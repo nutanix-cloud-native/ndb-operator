@@ -106,11 +106,28 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 				VmName:     dbSpec.Instance.DatabaseInstanceName + "_VM",
 			},
 		},
-		ActionArguments: []ActionArgument{},
+		ActionArguments: []ActionArgument{
+			{
+				Name:  "backup_policy",
+				Value: "primary_only",
+			},
+			{
+				Name:  "dbserver_description",
+				Value: "dbserver for " + dbSpec.Instance.DatabaseInstanceName,
+			},
+			{
+				Name:  "database_names",
+				Value: database_names,
+			},
+			{
+				Name:  "db_password",
+				Value: dbPassword,
+			},
+		},
 	}
 
 	if dbSpec.Instance.Type == DATABASE_TYPE_MONGODB {
-		req.ActionArguments = []ActionArgument{
+		newArgs := []ActionArgument{
 			{
 				Name:  "listener_port",
 				Value: "27017",
@@ -123,14 +140,9 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 				Name:  "log_size",
 				Value: "100",
 			},
-
 			{
 				Name:  "journal_size",
 				Value: "100",
-			},
-			{
-				Name:  "backup_policy",
-				Value: "primary_only",
 			},
 			{
 				Name:  "restart_mongod",
@@ -141,24 +153,13 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 				Value: "/tmp",
 			},
 			{
-				Name:  "dbserver_description",
-				Value: "dbserver for " + dbSpec.Instance.DatabaseInstanceName,
-			},
-			{
-				Name:  "database_names",
-				Value: database_names,
-			},
-			{
 				Name:  "db_user",
 				Value: dbSpec.Instance.DatabaseInstanceName,
 			},
-			{
-				Name:  "db_password",
-				Value: dbPassword,
-			},
 		}
+		req.ActionArguments = append(req.ActionArguments, newArgs...)
 	} else if dbSpec.Instance.Type == DATABASE_TYPE_POSTGRES {
-		req.ActionArguments = []ActionArgument{
+		newArgs := []ActionArgument{
 			{
 				Name:  "proxy_read_port",
 				Value: "5001",
@@ -183,23 +184,8 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 				Name:  "enable_synchronous_mode",
 				Value: "false",
 			},
-			{
-				Name:  "backup_policy",
-				Value: "primary_only",
-			},
-			{
-				Name:  "dbserver_description",
-				Value: "dbserver for " + dbSpec.Instance.DatabaseInstanceName,
-			},
-			{
-				Name:  "database_names",
-				Value: database_names,
-			},
-			{
-				Name:  "db_password",
-				Value: dbPassword,
-			},
 		}
+		req.ActionArguments = append(req.ActionArguments, newArgs...)
 	}
 
 	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
