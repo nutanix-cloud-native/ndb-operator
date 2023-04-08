@@ -75,20 +75,104 @@ Backup and recovery: We need to establish backup and recovery procedures to ensu
 
 <h2>Potential Design Patterns, Principles, and Code Refactoring strategies</h2>
 
-The codebase could be converted into an Object Oriented fashion with classes. Further, here are some of the design patterns we could use:
 
-**Builder:** This pattern could be used to create the provisioning request for a database instance in a more modular and flexible way. Rather than creating the request directly in one function, a builder class could be used to set individual properties of the request. This would make the code more maintainable and extensible, and would allow for easier testing of different combinations of request properties.
+Employing Clean Code Practices + Design Patterns:
 
-**Factory:** Since there are different types of database instances that can be provisioned (e.g. MySQL, Postgres, etc.), a factory pattern could be used to create the appropriate request object based on the specified database type. This would help to decouple the creation of the request object from the calling code, and would make it easier to add support for new database types in the future.
+DRY (Do Not Repeat Yourself):
+The initial draft of using 4 if & else statements for each of the profiles (namely: software, compute, network, and storage) and performing the same checks and code again proved to be in direct opposition to the DRY approach whose repetitiveness can be seen from the below snippet:
+```
+            //Custom Software Profile Check and overriding the default values
+            softwareProfile := dbSpec.Instance.Profiles.Software
+            if softwareProfile == (Profile{}) {
+                log.Info("No enrichment for software profiles as no custom profile received for Software. Hence, proceeding with default OOB software profile")
+            } else {
+                isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, dbEngineSpecificProfiles, softwareProfile, PROFILE_TYPE_SOFTWARE)
+                if errorThroughChecks != nil {
+                    //log.Error(err, "")
+                    return errorThroughChecks
+                }
+                if isValidProfile {
+                    profilesMap[PROFILE_TYPE_SOFTWARE] = matchedProfile
+                }
+            }
 
-**Dependency Injection:** To allow for better testability, dependency injection can be used to decouple the code from its dependencies. For example, in the provided code snippet, the NDBClient is being passed into the GenerateProvisioningRequest() function. However, if the NDBClient had additional dependencies or if it were difficult to create a testable version of the NDBClient, dependency injection could be used to allow for easier testing and swapping of dependencies.
+            //Custom Compute Profile Check and overriding the default values
+            computeProfile := dbSpec.Instance.Profiles.Compute
+            if computeProfile == (Profile{}) {
+                log.Info("No enrichment for compute profiles as no custom profile received for Compute. Hence, proceeding with default OOB compute profile")
+            } else {
+                isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, genericProfiles, computeProfile, PROFILE_TYPE_COMPUTE)
+                if errorThroughChecks != nil {
+                    //log.Error(err, "")
+                    return errorThroughChecks
+                }
+                if isValidProfile {
+                    profilesMap[PROFILE_TYPE_COMPUTE] = matchedProfile
+                }
+            }
 
-**Code Refactoring:**
-After reviewing the code base, it was discovered that the ndb_api_helpers.go file contains the code for provisioning the database. The main task of generating the request payload for provisioning the database is handled by the GenerateProvisioningRequest function. To retrieve all the profiles, this function utilizes the GetOOBProfiles function which returns a map of all the profiles. However, the current implementation of GenerateProvisioningRequest only retrieves the first element of the values within the map, which is assumed to be the default value. This means that the function doesn't verify if the user has provided a specific profile or not before assigning a default value.
+            //Custom Network Profile Check and overriding the default values
+            networkProfile := dbSpec.Instance.Profiles.Network
+            if networkProfile == (Profile{}) {
+                log.Info("No enrichment for network profiles as no custom profile received for Network. Hence, proceeding with default OOB network profile")
+            } else {
+                isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, dbEngineSpecificProfiles, networkProfile, PROFILE_TYPE_NETWORK)
+                if errorThroughChecks != nil {
+                    //log.Error(err, "")
+                    return errorThroughChecks
+                }
+                if isValidProfile {
+                    profilesMap[PROFILE_TYPE_NETWORK] = matchedProfile
+                }
+            }
 
-To improve this behavior, we plan to iterate over all the profiles in the arrays that are inside the values of the profiles map. If the user has provided input for a specific profile, we will assign that input to the profiles variable. If not, we will use the first element of the array as the default value.
+            //Custom DbParam Profile Check and overriding the default values
+            dbParamProfile := dbSpec.Instance.Profiles.DbParam
+            if dbParamProfile == (Profile{}) {
+                log.Info("No enrichment for database parameter profiles as no custom profile received for it. Hence, proceeding with default OOB dbParam profile")
+            } else {
+                isValidProfile, matchedProfile, errorThroughChecks := performProfileAvailabilityCheck(ctx, dbEngineSpecificProfiles, dbParamProfile, PROFILE_TYPE_DATABASE_PARAMETER)
+                if err != nil {
+                    //log.Error(err, "")
+                    return errorThroughChecks
+                }
+                if isValidProfile {
+                    profilesMap[PROFILE_TYPE_DATABASE_PARAMETER] = matchedProfile
+                }
+            }
+        }
+        return
+    }
+```
+Hence, we create an array of profiles, and iterating over those profiles and calling a clean modular function by identifying the common key points from the above snippet helps in eliminating code duplication and makes the code more, readable, and open for extension by just adding new profile name to the list of profiles and easily maintainable! This approach can be viewed in EnrichProfilesMap() and delegate functions.
 
-This change will allow us to properly check whether the user has provided input for a specific profile or not, and avoid the incorrect assumption that the first element of the values array is always the default value. By iterating over all the profiles, we can ensure that the correct profile is selected and assigned to the profiles variable. This will lead to more accurate and reliable database provisioning.
+Refactoring + Delegation using Facade Design Pattern:
+
+By default, for populating profiles, GetOOBProfiles() was called which did the task of fetching all profiles and populating default profile values. However, with the advent of custom profiles being provided from YAML, we suggest refactoring GetOOBProfiles() to EnrichProfilesMap() which will perform the same task as GetOOBProfiles did but in addition override the default values to input profiles provided after performing checks such as:
+(1) Emptiness / Null checks for profiles
+(2) Performing matching of the Id/VersionId for the custom profile provided & failing the database provisioning request in case of a match is not found.
+Thus, for each of the checkers, we create modular functions and delegate the task of performing the above-mentioned checks.
+
+The flow proceeds as:
+
+EnrichProfilesMap() 
+Performs the task to set default values and override the default values by calling the below functions.  
+
+PerformProfileMatchingAndEnrichProfiles() uses
+[isEmptyProfile() + GetAppropriateProfileForType() + GetTopologyForProfileType() in filtering profiles]
+Once, the user input is received, the input is delegated for checks and performing matching if the profile exists. Additionally, other factory methods are also used for performing the matching of profiles
+
+EnrichProfileMapForProfileType()
+Performs the final overriding of the default profile with the matched profile. Additionally, it cancels the database provisioning request for unmatched profiles.
+
+Moreover, in Tests, new tests have been added which indicate their functionality through their names adhering to the Clean Coding Naming principle:
+TestEnrichAndGetProfilesWhenCustomProfilesMatch()
+TestEnrichAndGetProfilesWhenInvalidCustomProfilesProvided()
+
+Additionally, we can also view the creation of specific functions as the alignment with the Facade Design Pattern that delegates the task of performing specific actions to respective functions. 
+
+Alternatively, a closer look at the initial draft and performing Cyclomatic Complexity checks indicate that our approach has breached the threshold value of permissible complexity. Hence, to tackle this problem, we will change the filtering profile functions to perform matching based on Id and further based on versionId and eliminating factory methods like getTopology(), getProfileForType(), and a few checker functions that will aid in reducing the cyclomatic complexity automatically.
+
 
 <h2> Modifications </h2>
 
