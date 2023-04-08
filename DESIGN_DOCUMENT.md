@@ -397,31 +397,170 @@ func GetTopologyForProfileType(profileType string) string {
 Testcases were written in "\ndb-operator\test\ndb_api_helpers_test.go"
 <br>Dummy Objects required for these testcases were created in "\ndb-operator\test\testutility.go"
 
-<h3> Testcase to check Test Scenario 1 and Test Scenario 3 </h3>
-<br>[[File:test_scenario_1_3.png|1000px]]
-<h4> Code for creating Dummy Objects required for this testcase </h4>
-<br>[[File:test_scenario_1_3_dummy_object.png|1000px]]
+<h3> Testcase to check Test Scenario 1 and Test Scenario 3 :</h3>
 
-<h3> Testcase to check Test Scenario 2 </h3>
-<br>[[File:test_scenario_2.png|1000px]]
-<h4> Code for creating Dummy Objects required for this testcase </h4>
-<br>[[File:test_scenario_2_dummy_object.png|1000px]]
+```
+func TestEnrichAndGetProfilesWhenCustomProfilesMatch(t *testing.T) {
+
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+
+	for _, dbType := range dbTypes {
+
+		// get custom profile based upon the database type
+		customProfile := GetCustomProfileForDBType(dbType)
+
+		profileMap, _ := v1alpha1.EnrichAndGetProfiles(context.Background(), ndbclient, dbType, customProfile)
+
+		//Assert
+		profileTypes := []string{
+			v1alpha1.PROFILE_TYPE_COMPUTE,
+			v1alpha1.PROFILE_TYPE_STORAGE,
+			v1alpha1.PROFILE_TYPE_SOFTWARE,
+			v1alpha1.PROFILE_TYPE_NETWORK,
+			v1alpha1.PROFILE_TYPE_DATABASE_PARAMETER,
+		}
+		for _, profileType := range profileTypes {
+			profile := profileMap[profileType]
+			//Assert that no profileType is empty
+			if profile == (v1alpha1.ProfileResponse{}) {
+				t.Errorf("Empty profile type %s for dbType %s", profileType, dbType)
+			}
+			//Assert that profile EngineType matches the database engine or the generic type
+			if profile.EngineType != v1alpha1.GetDatabaseEngineName(dbType) && profile.EngineType != v1alpha1.DATABASE_ENGINE_TYPE_GENERIC {
+				t.Errorf("Profile engine type %s for dbType %s does not match", profile.EngineType, dbType)
+			}
+			obtainedProfile := v1alpha1.GetProfileForType(profileType, customProfile)
+			// Ignoring Storage Profile Type as the Profile struct currently only supports compute, software, network and dbParam
+			if profileType != v1alpha1.PROFILE_TYPE_STORAGE && profile.Id != obtainedProfile.Id && profile.LatestVersionId != obtainedProfile.VersionId {
+				t.Errorf("Custom Profile Enrichment failed for profileType = %s and dbType = %s", profileType, dbType)
+			}
+		}
+	}
+}
+```
+
+<h4> Code for creating Dummy Objects required for this testcase :</h4>
+
+```
+func GetCustomProfileForDBType(dbType string) (profiles v1alpha1.Profiles) {
+	switch dbType {
+	case v1alpha1.DATABASE_TYPE_POSTGRES:
+		profiles = v1alpha1.Profiles{
+			// Custom Software Profile Name = "custom postgres software profile"
+			Software: v1alpha1.Profile{
+				Id:        "12",
+				VersionId: "v-id-12",
+			},
+			// Custom ompute Name = "a"
+			Compute: v1alpha1.Profile{
+				Id:        "1",
+				VersionId: "v-id-1",
+			},
+			Network: v1alpha1.Profile{
+				Id:        "15",
+				VersionId: "v-id-15",
+			},
+			DbParam: v1alpha1.Profile{
+				Id:        "18",
+				VersionId: "v-id-18",
+			},
+		}
+		return profiles
+```
+
+<h3> Testcase to check Test Scenario 2 :</h3>
+
+```
+func TestEnrichAndGetProfilesWhenInvalidCustomProfilesProvided(t *testing.T) {
+
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	dbTypes := []string{"postgres_invalid_profiles", "mysql_invalid_profiles", "mongodb_invalid_profiles"}
+
+	for _, dbType := range dbTypes {
+
+		// get custom profile based upon the database type
+		customProfile := GetCustomProfileForDBType(dbType)
+
+		profileMap, _ := v1alpha1.EnrichAndGetProfiles(context.Background(), ndbclient, dbType, customProfile)
+
+		//Assert
+		profileTypes := []string{
+			v1alpha1.PROFILE_TYPE_COMPUTE,
+			v1alpha1.PROFILE_TYPE_STORAGE,
+			v1alpha1.PROFILE_TYPE_SOFTWARE,
+			v1alpha1.PROFILE_TYPE_NETWORK,
+			v1alpha1.PROFILE_TYPE_DATABASE_PARAMETER,
+		}
+		for _, profileType := range profileTypes {
+			profile := profileMap[profileType]
+			//Assert that profile EngineType matches the database engine or the generic type
+			if profile.EngineType != v1alpha1.GetDatabaseEngineName(dbType) && profile.EngineType != v1alpha1.DATABASE_ENGINE_TYPE_GENERIC {
+				t.Errorf("Profile engine type %s for dbType %s does not match", profile.EngineType, dbType)
+			}
+			/* since custom profile is passed it should not default to OOB, and err should be raised stating the custom profile passed does not exist,
+			and thus database provisioning does not occur
+			*/
+			if profile != (v1alpha1.ProfileResponse{}) {
+				t.Errorf("Incorrect Profile Match found for profile type = %s and dbType = %s", profileType, dbType)
+			}
+		}
+	}
+}
+```
+
+
+<h4> Code for creating Dummy Objects required for this testcase :</h4>
+
+```
+case v1alpha1.DATABASE_TYPE_MONGODB_INVALID_PROFILE, v1alpha1.DATABASE_TYPE_MYSQL_INVALID_PROFILE, v1alpha1.DATABASE_TYPE_POSTGRES_INVALID_PROFILE:
+		// below custom profiles do not exist and will be used for the negative scenario
+		profiles = v1alpha1.Profiles{
+			Software: v1alpha1.Profile{
+				Id:        "140",
+				VersionId: "v-id-140",
+			},
+			Compute: v1alpha1.Profile{
+				Id:        "100",
+				VersionId: "v-id-100",
+			},
+			Network: v1alpha1.Profile{
+				Id:        "170",
+				VersionId: "v-id-170",
+			},
+			DbParam: v1alpha1.Profile{
+				Id:        "200",
+				VersionId: "v-id-200",
+			},
+		}
+		return profiles
+```
 
 <h2>Github</h2>
-* Repo: https://github.com/karan-47/ndb-operator/tree/feature/ntnx3
+<li> Repo: https://github.com/karan-47/ndb-operator/tree/feature/ntnx3
 
 
 <h2>Mentors</h2>
-* Prof. Edward F. Gehringer
-* Krunal Jhaveri
-* Manav Rajvanshi
-* Krishna Saurabh Vankadaru
-* Kartiki Bhandakkar
+<li> Prof. Edward F. Gehringer
+<li> Krunal Jhaveri
+<li> Manav Rajvanshi
+<li> Krishna Saurabh Vankadaru
+<li> Kartiki Bhandakkar
 
 <h2>Contributors</h2>
-* Karan Pradeep Gala (kgala2)
-* Ashish Joshi (ajoshi24)
-* Tilak Satra (trsatra)
+<li> Karan Pradeep Gala (kgala2)
+<li> Ashish Joshi (ajoshi24)
+<li> Tilak Satra (trsatra)
 
 <h2>References</h2>
 [1] Nutanix. (n.d.). Nutanix Database Service. Retrieved from https://www.nutanix.com/products/database-service
