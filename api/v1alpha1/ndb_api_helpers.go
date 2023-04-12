@@ -126,7 +126,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		},
 	}
 	// Setting action arguments based on database type
-	dbActionArgsMap := map[string][]ActionArguments{
+	dbActionArgsMap := map[string][]ActionArgument{
 		DATABASE_TYPE_MONGODB: {
 			{
 				Name:  "listener_port",
