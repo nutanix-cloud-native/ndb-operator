@@ -1,15 +1,15 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db5
+  name: db4
 spec:
   ndb:
-    clusterId: "2833751d-6553-4c81-95ae-72ab5cc4e55a"
-    credentialSecret : ntnx1-ndb-secret
-    server: https://erauvyatzz3wz-era.nutanixtestdrive.com/era/v0.9
+    clusterId: "0c1d281f-7edd-407c-8982-89304f39b2e6"
+    credentialSecret: ntnx1-ndb-secret
+    server: https://era0ik7hkyqq9-era.nutanixtestdrive.com/era/v0.9
     skipCertificateVerification: true
   databaseInstance:
-    databaseInstanceName: "db5"
+    databaseInstanceName: "db4"
     databaseNames:
       - database_one
       - database_two

@@ -125,9 +125,9 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 			},
 		},
 	}
-
-	if dbSpec.Instance.Type == DATABASE_TYPE_MONGODB {
-		newArgs := []ActionArgument{
+	// Setting action arguments based on database type
+	dbActionArgsMap := map[string][]ActionArguments{
+		DATABASE_TYPE_MONGODB: {
 			{
 				Name:  "listener_port",
 				Value: "27017",
@@ -156,10 +156,8 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 				Name:  "db_user",
 				Value: dbSpec.Instance.DatabaseInstanceName,
 			},
-		}
-		req.ActionArguments = append(req.ActionArguments, newArgs...)
-	} else if dbSpec.Instance.Type == DATABASE_TYPE_POSTGRES {
-		newArgs := []ActionArgument{
+		},
+		DATABASE_TYPE_POSTGRES: {
 			{
 				Name:  "proxy_read_port",
 				Value: "5001",
@@ -184,8 +182,17 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 				Name:  "enable_synchronous_mode",
 				Value: "false",
 			},
-		}
-		req.ActionArguments = append(req.ActionArguments, newArgs...)
+		},
+
+		DATABASE_TYPE_MYSQL: {
+			{
+				Name:  "listener_port",
+				Value: "3306",
+			},
+		},
+	}
+	for _, arg := range dbActionArgsMap[dbSpec.Instance.Type] {
+		req.ActionArguments = append(req.ActionArguments, arg)
 	}
 
 	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
