@@ -208,12 +208,19 @@ type TaskInfoSummaryResponse struct {
 
 // +kubebuilder:object:generate:=false
 type ProfileResponse struct {
-	Id              string `json:"id"`
-	Name            string `json:"name"`
-	Type            string `json:"type"`
-	EngineType      string `json:"engineType"`
-	LatestVersionId string `json:"latestVersionId"`
-	Topology        string `json:"topology"`
+	Id              string    `json:"id"`
+	Name            string    `json:"name"`
+	Type            string    `json:"type"`
+	EngineType      string    `json:"engineType"`
+	LatestVersionId string    `json:"latestVersionId"`
+	Topology        string    `json:"topology"`
+	Versions        []Version `json:"versions"`
+}
+
+type Version struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 // +kubebuilder:object:generate:=false

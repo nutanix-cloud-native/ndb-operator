@@ -67,4 +67,6 @@ const (
 	TOPOLOGY_DATABASE = "database"
 	TOPOLOGY_INSTANCE = "instance"
 	TOPOLOGY_SINGLE   = "single"
+
+	EMPTY_STRING = ""
 )

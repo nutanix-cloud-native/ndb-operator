@@ -156,6 +156,8 @@ func GetAllProfiles(ctx context.Context, ndbClient *ndbclient.NDBClient) (profil
 		return
 	}
 	res, err := ndbClient.Get("profiles")
+	fmt.Println("******************* Going to print profiles after addition of the Versions field *****************************")
+	fmt.Println(res)
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
 			if res != nil {
