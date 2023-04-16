@@ -204,8 +204,8 @@ func PopulateProfilesMap(ctx context.Context, profiles Profiles, allProfiles []P
 	log := ctrllog.FromContext(ctx)
 	log.Info("Received Custom Profiles => ", "Received Custom Profiles", profiles)
 	profileOptions := [...]string{PROFILE_TYPE_COMPUTE, PROFILE_TYPE_SOFTWARE, PROFILE_TYPE_NETWORK, PROFILE_TYPE_DATABASE_PARAMETER}
-	for _, profileStringValue := range profileOptions {
-		err = PerformProfileMatchingAndEnrichProfiles(ctx, profileStringValue, profiles, allProfiles, genericProfiles, dbEngineSpecificProfiles, profilesMap)
+	for _, profileType := range profileOptions {
+		err = PerformProfileMatchingAndEnrichProfiles(ctx, profileType, profiles, allProfiles, genericProfiles, dbEngineSpecificProfiles, profilesMap)
 		if err != nil {
 			return
 		}
