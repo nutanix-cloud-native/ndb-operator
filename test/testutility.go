@@ -77,6 +77,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_GENERIC,
 			LatestVersionId: "v-id-1",
 			Topology:        v1alpha1.TOPOLOGY_ALL,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "1.1",
@@ -85,6 +92,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_GENERIC,
 			LatestVersionId: "v-id-1",
 			Topology:        v1alpha1.TOPOLOGY_ALL,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "2",
@@ -93,6 +107,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_GENERIC,
 			LatestVersionId: "v-id-2",
 			Topology:        v1alpha1.TOPOLOGY_ALL,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "3",
@@ -101,6 +122,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_POSTGRES,
 			LatestVersionId: "v-id-3",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "4",
@@ -109,6 +137,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MYSQL,
 			LatestVersionId: "v-id-4",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "5",
@@ -117,6 +152,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MONGODB,
 			LatestVersionId: "v-id-5",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "6",
@@ -125,6 +167,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_POSTGRES,
 			LatestVersionId: "v-id-6",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "7",
@@ -133,6 +182,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MYSQL,
 			LatestVersionId: "v-id-7",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "8",
@@ -141,6 +197,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MONGODB,
 			LatestVersionId: "v-id-8",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "9",
@@ -149,6 +212,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_POSTGRES,
 			LatestVersionId: "v-id-9",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "10",
@@ -157,6 +227,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MYSQL,
 			LatestVersionId: "v-id-10",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "11",
@@ -165,6 +242,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MONGODB,
 			LatestVersionId: "v-id-11",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "12",
@@ -173,6 +257,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_POSTGRES,
 			LatestVersionId: "v-id-12",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "13",
@@ -181,6 +272,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MYSQL,
 			LatestVersionId: "v-id-13",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "14",
@@ -189,6 +287,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MONGODB,
 			LatestVersionId: "v-id-14",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "15",
@@ -197,6 +302,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_POSTGRES,
 			LatestVersionId: "v-id-15",
 			Topology:        v1alpha1.TOPOLOGY_ALL,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "16",
@@ -205,6 +317,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MYSQL,
 			LatestVersionId: "v-id-16",
 			Topology:        v1alpha1.TOPOLOGY_ALL,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "17",
@@ -213,6 +332,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MONGODB,
 			LatestVersionId: "v-id-17",
 			Topology:        v1alpha1.TOPOLOGY_ALL,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "18",
@@ -221,6 +347,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_POSTGRES,
 			LatestVersionId: "v-id-18",
 			Topology:        v1alpha1.TOPOLOGY_INSTANCE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "19",
@@ -229,6 +362,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MYSQL,
 			LatestVersionId: "v-id-19",
 			Topology:        v1alpha1.TOPOLOGY_INSTANCE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 		{
 			Id:              "20",
@@ -237,6 +377,13 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MONGODB,
 			LatestVersionId: "v-id-20",
 			Topology:        v1alpha1.TOPOLOGY_INSTANCE,
+			Versions: []v1alpha1.Version{
+				{
+					Id:          "version-id",
+					Name:        "version-name",
+					Description: "version-description",
+				},
+			},
 		},
 	},
 }
@@ -281,20 +428,20 @@ func GetCustomProfileForDBType(dbType string) (profiles v1alpha1.Profiles) {
 			// Custom Software Profile Name = "custom postgres software profile"
 			Software: v1alpha1.Profile{
 				Id:        "12",
-				VersionId: "v-id-12",
+				VersionId: "version-id",
 			},
 			// Custom ompute Name = "a"
 			Compute: v1alpha1.Profile{
 				Id:        "1",
-				VersionId: "v-id-1",
+				VersionId: "version-id",
 			},
 			Network: v1alpha1.Profile{
 				Id:        "15",
-				VersionId: "v-id-15",
+				VersionId: "version-id",
 			},
 			DbParam: v1alpha1.Profile{
 				Id:        "18",
-				VersionId: "v-id-18",
+				VersionId: "version-id",
 			},
 		}
 		return profiles
@@ -303,20 +450,20 @@ func GetCustomProfileForDBType(dbType string) (profiles v1alpha1.Profiles) {
 			// Custom Software Profile Name = "custom mysql software profile"
 			Software: v1alpha1.Profile{
 				Id:        "13",
-				VersionId: "v-id-13",
+				VersionId: "version-id",
 			},
 			// Custom Compute Name = "a"
 			Compute: v1alpha1.Profile{
 				Id:        "1",
-				VersionId: "v-id-1",
+				VersionId: "version-id",
 			},
 			Network: v1alpha1.Profile{
 				Id:        "16",
-				VersionId: "v-id-16",
+				VersionId: "version-id",
 			},
 			DbParam: v1alpha1.Profile{
 				Id:        "19",
-				VersionId: "v-id-19",
+				VersionId: "version-id",
 			},
 		}
 		return profiles
@@ -325,20 +472,20 @@ func GetCustomProfileForDBType(dbType string) (profiles v1alpha1.Profiles) {
 			// Custom Software Profile Name = "custom mongodb software profile"
 			Software: v1alpha1.Profile{
 				Id:        "14",
-				VersionId: "v-id-14",
+				VersionId: "version-id",
 			},
 			// Custom Compute Name = "a"
 			Compute: v1alpha1.Profile{
 				Id:        "1",
-				VersionId: "v-id-1",
+				VersionId: "version-id",
 			},
 			Network: v1alpha1.Profile{
 				Id:        "17",
-				VersionId: "v-id-17",
+				VersionId: "version-id",
 			},
 			DbParam: v1alpha1.Profile{
 				Id:        "20",
-				VersionId: "v-id-20",
+				VersionId: "version-id",
 			},
 		}
 		return profiles
@@ -347,19 +494,19 @@ func GetCustomProfileForDBType(dbType string) (profiles v1alpha1.Profiles) {
 		profiles = v1alpha1.Profiles{
 			Software: v1alpha1.Profile{
 				Id:        "140",
-				VersionId: "v-id-140",
+				VersionId: "version-id",
 			},
 			Compute: v1alpha1.Profile{
 				Id:        "100",
-				VersionId: "v-id-100",
+				VersionId: "version-id",
 			},
 			Network: v1alpha1.Profile{
 				Id:        "170",
-				VersionId: "v-id-170",
+				VersionId: "version-id",
 			},
 			DbParam: v1alpha1.Profile{
 				Id:        "200",
-				VersionId: "v-id-200",
+				VersionId: "version-id",
 			},
 		}
 		return profiles

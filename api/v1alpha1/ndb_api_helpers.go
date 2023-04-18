@@ -169,7 +169,7 @@ func GetNoneTimeMachineSLA(ctx context.Context, ndbclient *ndbclient.NDBClient) 
 	return sla, fmt.Errorf("NONE TimeMachine not found")
 }
 
-/* */
+// This method populates the profileMap with all the values for the profileType available
 func MatchAndGetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType string, profiles Profiles) (profileMap map[string]ProfileResponse, err error) {
 
 	log := ctrllog.FromContext(ctx)
@@ -184,7 +184,7 @@ func MatchAndGetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, db
 	}
 
 	log.Info("Received Input Profiles = ", "Received Input Profiles", profiles)
-	profileOptions := [...]string{PROFILE_TYPE_COMPUTE, PROFILE_TYPE_SOFTWARE, PROFILE_TYPE_NETWORK, PROFILE_TYPE_DATABASE_PARAMETER}
+	profileOptions := [...]string{PROFILE_TYPE_COMPUTE, PROFILE_TYPE_SOFTWARE, PROFILE_TYPE_NETWORK, PROFILE_TYPE_DATABASE_PARAMETER, PROFILE_TYPE_STORAGE}
 	for _, profileType := range profileOptions {
 		if profiles == (Profiles{}) {
 			err = PopulateDefaultProfile(ctx, profileMap, profileType, allProfiles, dbType)
@@ -201,22 +201,30 @@ func MatchAndGetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, db
 
 }
 
-/* */
+/*
+	This function does:
+	(a) Id level matching with profiles in allProfiles
+	(b) If Id level match is successful, flow proceeds to match based on versionId
+		When matched, the latestVersionId is overridden with the versionId as it is this attribute while dbProvisioning which is used for
+		profileType versionId
+*/
 func matchProfiles(ctx context.Context, profileType string, profile Profile, allProfiles []ProfileResponse, profilesMap map[string]ProfileResponse, dbType string) (err error) {
 	log := ctrllog.FromContext(ctx)
 	var idMatchedProfile []ProfileResponse
-	if !isEmptyProfile(profile) {
-		log.Info("Performing profile matching for profileType => ", "profileType", profileType)
-		// match based on ID
-		idMatchedProfile = util.Filter(allProfiles, func(p ProfileResponse) bool { return p.Id == profile.Id })
-		// matching based on versionID
-		matchedVersion := util.Filter(idMatchedProfile[0].Versions, func(versions Version) bool { return versions.Id == profile.VersionId })
+	var matchedVersion []Version
+	if isEmptyProfile(profile) {
+		err = PopulateDefaultProfile(ctx, profilesMap, profileType, allProfiles, dbType)
+		return
+	}
+	log.Info("Performing profile matching for profileType => ", "profileType", profileType)
+	// match based on ID
+	idMatchedProfile = util.Filter(allProfiles, func(p ProfileResponse) bool { return p.Id == profile.Id && p.Type == profileType })
+	// matching based on versionID
+	if len(idMatchedProfile) > 0 {
+		matchedVersion = util.Filter(idMatchedProfile[0].Versions, func(versions Version) bool { return versions.Id == profile.VersionId })
 		// when versionID level match found, override latestVersionId as it is used in the database provisioning request
 		if len(matchedVersion) > 0 {
 			log.Info("Id and VersionId matched for profileType", "profileType", profileType)
-			fmt.Println("*****************************************************************************")
-			fmt.Println(matchedVersion[0])
-			fmt.Println("*****************************************************************************")
 			idMatchedProfile[0].LatestVersionId = profile.VersionId
 		}
 	}
@@ -224,21 +232,21 @@ func matchProfiles(ctx context.Context, profileType string, profile Profile, all
 	return
 }
 
-/* */
+// This function performs the task of populating profileMap with response (matching result) received for the profileType
 func PopulateProfileOfType(ctx context.Context, profileMap map[string]ProfileResponse, profileType string, allProfiles []ProfileResponse, dbType string, response []ProfileResponse) (err error) {
 	log := ctrllog.FromContext(ctx)
 	// if response is empty, it indicates no matching profile found; hence set the default OOB profile for that type
 	if len(response) == 0 {
-		err = PopulateDefaultProfile(ctx, profileMap, profileType, allProfiles, dbType)
-		if err != nil {
-			return err
-		}
+		err = fmt.Errorf("No matching profile found for profileType = %s", profileType)
+		log.Info("Error Occurred. No enrichment performed for profile = ", "profileType", profileType)
+		return
 	}
 	log.Info("Going to populate profile value in profilesMap for profileType = ", "profileType", profileType)
 	profileMap[profileType] = response[0]
 	return
 }
 
+// This method populates profileMap with the default value for the profileType
 func PopulateDefaultProfile(ctx context.Context, profileMap map[string]ProfileResponse, profileType string, allProfiles []ProfileResponse, dbType string) (err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Going to set default profile value for profileType = ", "profileType", profileType)
@@ -267,6 +275,9 @@ func GetDefaultProfileForType(genericProfiles []ProfileResponse, dbEngineSpecifi
 		break
 	case PROFILE_TYPE_DATABASE_PARAMETER:
 		profile = util.Filter(dbEngineSpecificProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_DATABASE_PARAMETER })
+		break
+	case PROFILE_TYPE_STORAGE:
+		profile = util.Filter(genericProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_STORAGE })
 		break
 	default:
 		return

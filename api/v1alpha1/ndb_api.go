@@ -157,7 +157,6 @@ func GetAllProfiles(ctx context.Context, ndbClient *ndbclient.NDBClient) (profil
 	}
 	res, err := ndbClient.Get("profiles")
 	fmt.Println("******************* Going to print profiles after addition of the Versions field *****************************")
-	fmt.Println(res)
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
 			if res != nil {
@@ -176,6 +175,7 @@ func GetAllProfiles(ctx context.Context, ndbClient *ndbclient.NDBClient) (profil
 		return
 	}
 	err = json.Unmarshal(body, &profiles)
+	fmt.Println(profiles)
 	if err != nil {
 		log.Error(err, "Error occurred trying to unmarshal.")
 		return
