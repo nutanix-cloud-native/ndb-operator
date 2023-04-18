@@ -19,13 +19,13 @@ package test
 import (
 	"context"
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
-
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/ndbclient"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"strings"
+	"testing"
 )
 
 func TestGetNoneTimeMachineSLA(t *testing.T) {
@@ -96,7 +96,7 @@ func TestGetNoneTimeMachineSLAReturnsErrorWhenNoneTimeMachineNotFound(t *testing
 	}
 }
 
-func TestEnrichAndGetProfilesWhenCustomProfilesMatch(t *testing.T) {
+func TestMatchAndGetProfilesWhenProfilesMatch(t *testing.T) {
 
 	//Set
 	server := GetServerTestHelper(t)
@@ -111,7 +111,7 @@ func TestEnrichAndGetProfilesWhenCustomProfilesMatch(t *testing.T) {
 		// get custom profile based upon the database type
 		customProfile := GetCustomProfileForDBType(dbType)
 
-		profileMap, _ := v1alpha1.EnrichAndGetProfiles(context.Background(), ndbclient, dbType, customProfile)
+		profileMap, _ := v1alpha1.MatchAndGetProfiles(context.Background(), ndbclient, dbType, customProfile)
 
 		//Assert
 		profileTypes := []string{
@@ -124,14 +124,14 @@ func TestEnrichAndGetProfilesWhenCustomProfilesMatch(t *testing.T) {
 		for _, profileType := range profileTypes {
 			profile := profileMap[profileType]
 			//Assert that no profileType is empty
-			if profile == (v1alpha1.ProfileResponse{}) {
+			if reflect.DeepEqual(profile, v1alpha1.ProfileResponse{}) {
 				t.Errorf("Empty profile type %s for dbType %s", profileType, dbType)
 			}
 			//Assert that profile EngineType matches the database engine or the generic type
 			if profile.EngineType != v1alpha1.GetDatabaseEngineName(dbType) && profile.EngineType != v1alpha1.DATABASE_ENGINE_TYPE_GENERIC {
 				t.Errorf("Profile engine type %s for dbType %s does not match", profile.EngineType, dbType)
 			}
-			obtainedProfile := v1alpha1.GetProfileForType(profileType, customProfile)
+			obtainedProfile := v1alpha1.GetProfileByType(profileType, customProfile)
 			// Ignoring Storage Profile Type as the Profile struct currently only supports compute, software, network and dbParam
 			if profileType != v1alpha1.PROFILE_TYPE_STORAGE && profile.Id != obtainedProfile.Id && profile.LatestVersionId != obtainedProfile.VersionId {
 				t.Errorf("Custom Profile Enrichment failed for profileType = %s and dbType = %s", profileType, dbType)
@@ -140,7 +140,7 @@ func TestEnrichAndGetProfilesWhenCustomProfilesMatch(t *testing.T) {
 	}
 }
 
-func TestEnrichAndGetProfilesWhenInvalidCustomProfilesProvided(t *testing.T) {
+func TestMatchAndGetProfilesWhenNonMatchingProfilesProvided(t *testing.T) {
 
 	//Set
 	server := GetServerTestHelper(t)
@@ -155,7 +155,7 @@ func TestEnrichAndGetProfilesWhenInvalidCustomProfilesProvided(t *testing.T) {
 		// get custom profile based upon the database type
 		customProfile := GetCustomProfileForDBType(dbType)
 
-		profileMap, _ := v1alpha1.EnrichAndGetProfiles(context.Background(), ndbclient, dbType, customProfile)
+		profileMap, _ := v1alpha1.MatchAndGetProfiles(context.Background(), ndbclient, dbType, customProfile)
 
 		//Assert
 		profileTypes := []string{
@@ -171,17 +171,18 @@ func TestEnrichAndGetProfilesWhenInvalidCustomProfilesProvided(t *testing.T) {
 			if profile.EngineType != v1alpha1.GetDatabaseEngineName(dbType) && profile.EngineType != v1alpha1.DATABASE_ENGINE_TYPE_GENERIC {
 				t.Errorf("Profile engine type %s for dbType %s does not match", profile.EngineType, dbType)
 			}
-			/* since custom profile is passed it should not default to OOB, and err should be raised stating the custom profile passed does not exist,
-			and thus database provisioning does not occur
+			/*
+				Since custom profile is passed it should not default to OOB, and err should be raised stating the custom profile passed does
+				not exist, and thus database provisioning does not occur
 			*/
-			if profile != (v1alpha1.ProfileResponse{}) {
+			if !reflect.DeepEqual(profile, v1alpha1.ProfileResponse{}) {
 				t.Errorf("Incorrect Profile Match found for profile type = %s and dbType = %s", profileType, dbType)
 			}
 		}
 	}
 }
 
-func TestEnrichAndGetProfiles(t *testing.T) {
+func TestMatchAndGetProfiles(t *testing.T) {
 
 	//Set
 	server := GetServerTestHelper(t)
@@ -191,7 +192,7 @@ func TestEnrichAndGetProfiles(t *testing.T) {
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
-		profileMap, _ := v1alpha1.EnrichAndGetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
+		profileMap, _ := v1alpha1.MatchAndGetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
 
 		//Assert
 		profileTypes := []string{
@@ -204,7 +205,7 @@ func TestEnrichAndGetProfiles(t *testing.T) {
 		for _, profileType := range profileTypes {
 			profile := profileMap[profileType]
 			//Assert that no profileType is empty
-			if profile == (v1alpha1.ProfileResponse{}) {
+			if reflect.DeepEqual(profile, v1alpha1.ProfileResponse{}) {
 				t.Errorf("Empty profile type %s for dbType %s", profileType, dbType)
 			}
 			//Assert that profile EngineType matches the database engine or the generic type
@@ -215,7 +216,7 @@ func TestEnrichAndGetProfiles(t *testing.T) {
 	}
 }
 
-func TestEnrichAndGetProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
+func TestMatchAndGetProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
 
 	//Set
 	server := GetServerTestHelper(t)
@@ -225,7 +226,7 @@ func TestEnrichAndGetProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
-		profileMap, _ := v1alpha1.EnrichAndGetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
+		profileMap, _ := v1alpha1.MatchAndGetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
 		//Assert
 		computeProfile := profileMap[v1alpha1.PROFILE_TYPE_COMPUTE]
 		if !strings.Contains(strings.ToLower(computeProfile.Name), "small") {
@@ -234,7 +235,7 @@ func TestEnrichAndGetProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
 	}
 }
 
-func TestEnrichAndGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
+func TestMatchAndGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
 
 	//Set
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -243,12 +244,19 @@ func TestEnrichAndGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T)
 		} else {
 			resp, _ := json.Marshal([]v1alpha1.ProfileResponse{
 				{
-					Id:              "1",
+					Id:              "112",
 					Name:            "a",
 					Type:            "test type",
 					EngineType:      "test engine",
 					LatestVersionId: "v-id-1",
 					Topology:        "test topology",
+					Versions: []v1alpha1.Version{
+						{
+							Id:          "version-id",
+							Name:        "version-name",
+							Description: "version-description",
+						},
+					},
 				},
 			})
 			w.WriteHeader(http.StatusOK)
@@ -261,11 +269,11 @@ func TestEnrichAndGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T)
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
-		_, err := v1alpha1.EnrichAndGetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
+		_, err := v1alpha1.MatchAndGetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
 		// None of the profile criteria should match the mocked response
 		// t.Log(err)
 		if err == nil {
-			t.Errorf("EnrichAndGetProfiles should have returned an error when none of the profiles match the criteria.")
+			t.Errorf("MatchAndGetProfiles should have returned an error when none of the profiles match the criteria.")
 		}
 
 	}
