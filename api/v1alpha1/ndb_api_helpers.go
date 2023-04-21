@@ -123,76 +123,16 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 				Name:  "db_password",
 				Value: dbPassword,
 			},
+			{
+				Name:  "database_size",
+				Value: strconv.Itoa(dbSpec.Instance.Size),
+			},
 		},
 	}
 	// Setting action arguments based on database type
-	dbActionArgsMap := map[string][]ActionArgument{
-		DATABASE_TYPE_MONGODB: {
-			{
-				Name:  "listener_port",
-				Value: "27017",
-			},
-			{
-				Name:  "database_size",
-				Value: strconv.Itoa(dbSpec.Instance.Size),
-			},
-			{
-				Name:  "log_size",
-				Value: "100",
-			},
-			{
-				Name:  "journal_size",
-				Value: "100",
-			},
-			{
-				Name:  "restart_mongod",
-				Value: "true",
-			},
-			{
-				Name:  "working_dir",
-				Value: "/tmp",
-			},
-			{
-				Name:  "db_user",
-				Value: dbSpec.Instance.DatabaseInstanceName,
-			},
-		},
-		DATABASE_TYPE_POSTGRES: {
-			{
-				Name:  "proxy_read_port",
-				Value: "5001",
-			},
-			{
-				Name:  "listener_port",
-				Value: "5432",
-			},
-			{
-				Name:  "proxy_write_port",
-				Value: "5000",
-			},
-			{
-				Name:  "database_size",
-				Value: strconv.Itoa(dbSpec.Instance.Size),
-			},
-			{
-				Name:  "auto_tune_staging_drive",
-				Value: "true",
-			},
-			{
-				Name:  "enable_synchronous_mode",
-				Value: "false",
-			},
-		},
-
-		DATABASE_TYPE_MYSQL: {
-			{
-				Name:  "listener_port",
-				Value: "3306",
-			},
-		},
-	}
-	for _, arg := range dbActionArgsMap[dbSpec.Instance.Type] {
-		req.ActionArguments = append(req.ActionArguments, arg)
+	dbTypeActionArgs := GetActionArgumentsByDatabaseType(dbSpec.Instance.Type)
+	if dbTypeActionArgs != nil {
+		req.ActionArguments = append(req.ActionArguments, dbTypeActionArgs.GetActionArguments(dbSpec)...)
 	}
 
 	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
@@ -306,4 +246,75 @@ func GenerateDeprovisionDatabaseServerRequest() (req *DatabaseServerDeprovisionR
 		DeleteVmSnapshots: true,
 	}
 	return
+}
+
+func GetActionArgumentsByDatabaseType(databaseType string) DatabaseActionArgs {
+	var dbTypeActionArgs DatabaseActionArgs
+	switch databaseType {
+	case DATABASE_TYPE_MYSQL:
+		dbTypeActionArgs = &MysqlActionArgs{}
+	case DATABASE_TYPE_POSTGRES:
+		dbTypeActionArgs = &PostgresActionArgs{}
+	case DATABASE_TYPE_MONGODB:
+		dbTypeActionArgs = &MongodbActionArgs{}
+	}
+	return dbTypeActionArgs
+}
+
+func (m *MysqlActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {
+	return []ActionArgument{}
+}
+
+func (p *PostgresActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {
+	return []ActionArgument{
+		{
+			Name:  "proxy_read_port",
+			Value: "5001",
+		},
+		{
+			Name:  "listener_port",
+			Value: "5432",
+		},
+		{
+			Name:  "proxy_write_port",
+			Value: "5000",
+		},
+		{
+			Name:  "enable_synchronous_mode",
+			Value: "false",
+		},
+		{
+			Name:  "auto_tune_staging_drive",
+			Value: "true",
+		},
+	}
+}
+
+func (m *MongodbActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {
+	return []ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "27017",
+		},
+		{
+			Name:  "log_size",
+			Value: "100",
+		},
+		{
+			Name:  "journal_size",
+			Value: "100",
+		},
+		{
+			Name:  "restart_mongod",
+			Value: "true",
+		},
+		{
+			Name:  "working_dir",
+			Value: "/tmp",
+		},
+		{
+			Name:  "db_user",
+			Value: dbSpec.Instance.DatabaseInstanceName,
+		},
+	}
 }
