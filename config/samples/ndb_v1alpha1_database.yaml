@@ -1,7 +1,7 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db
+  name: db12
 spec:
   ndb:
     clusterId: "a52a3561-bbb7-415c-94af-0f8ed886f3e4"
@@ -9,7 +9,7 @@ spec:
     server: https://eradcljh2n9li-era.nutanixtestdrive.com/era/v0.9
     skipCertificateVerification: true
   databaseInstance:
-    databaseInstanceName: "db"
+    databaseInstanceName: "db12"
     databaseNames:
       - database_one
       - database_two
