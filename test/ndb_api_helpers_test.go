@@ -604,3 +604,79 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 		}
 	}
 }
+
+func TestGetActionArgumentsByDatabaseType(t *testing.T) {
+	cases := []struct {
+		dbType       string
+		expectedArgs []v1alpha1.ActionArgument
+	}{
+		{
+			dbType: "mysql",
+			expectedArgs: []v1alpha1.ActionArgument{
+				{
+					Name:  "listener_port",
+					Value: "3306",
+				},
+			},
+		},
+		{
+			dbType: "postgres",
+			expectedArgs: []v1alpha1.ActionArgument{
+				{
+					Name:  "proxy_read_port",
+					Value: "5001",
+				},
+				{
+					Name:  "listener_port",
+					Value: "5432",
+				},
+				{
+					Name:  "proxy_write_port",
+					Value: "5000",
+				},
+				{
+					Name:  "enable_synchronous_mode",
+					Value: "false",
+				},
+				{
+					Name:  "backup_policy",
+					Value: "primary_only",
+				},
+			},
+		},
+		{
+			dbType:       "unsupported_database_type",
+			expectedArgs: nil,
+		},
+	}
+
+	for _, c := range cases {
+		args := v1alpha1.GetActionArgumentsByDatabaseType(c.dbType)
+		if args == nil && c.expectedArgs != nil {
+			t.Errorf("Unexpected nil value for database type '%s'", c.dbType)
+			continue
+		}
+		if args != nil && c.expectedArgs == nil {
+			t.Errorf("Expected nil value for database type '%s', but got %v", c.dbType, args)
+			continue
+		}
+		if args == nil && c.expectedArgs == nil {
+			continue
+		}
+
+		actionArgs := args.GetActionArguments()
+		if len(actionArgs) != len(c.expectedArgs) {
+			t.Errorf("Expected %d action arguments for database type '%s', but got %d", len(c.expectedArgs), c.dbType, len(actionArgs))
+			continue
+		}
+
+		for i, expectedArg := range c.expectedArgs {
+			if expectedArg.Name != actionArgs[i].Name {
+				t.Errorf("Expected action argument name '%s' for database type '%s', but got '%s'", expectedArg.Name, c.dbType, actionArgs[i].Name)
+			}
+			if expectedArg.Value != actionArgs[i].Value {
+				t.Errorf("Expected action argument value '%s' for database type '%s' and name '%s', but got '%s'", expectedArg.Value, c.dbType, expectedArg.Name, actionArgs[i].Value)
+			}
+		}
+	}
+}
