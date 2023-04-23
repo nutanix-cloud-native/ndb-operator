@@ -253,6 +253,7 @@ func GenerateDeprovisionDatabaseServerRequest() (req *DatabaseServerDeprovisionR
 	return
 }
 
+// Returns action arguments based on the type of database
 func GetActionArgumentsByDatabaseType(databaseType string) DatabaseActionArgs {
 	var dbTypeActionArgs DatabaseActionArgs
 	switch databaseType {
