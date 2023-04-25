@@ -130,15 +130,14 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		},
 	}
 	// Setting action arguments based on database type
-	dbTypeActionArgs := GetActionArgumentsByDatabaseType(dbSpec.Instance.Type)
-	if dbTypeActionArgs != nil {
-		req.ActionArguments = append(req.ActionArguments, dbTypeActionArgs.GetActionArguments(dbSpec)...)
-	} else {
-		var errStatement string
-		err = errors.New("Invalid Database Type")
-		errStatement = "Invalid Database Type: supported values: mysql, postgres, mongodb"
-		log.Error(err, errStatement)
+	dbTypeActionArgs, err := GetActionArgumentsByDatabaseType(dbSpec.Instance.Type)
+
+	if err != nil {
+		log.Error(err, "Error occurred while getting dbTypeActionArgs", "database type", dbSpec.Instance.Type)
+		return
 	}
+
+	req.ActionArguments = append(req.ActionArguments, dbTypeActionArgs.GetActionArguments(dbSpec)...)
 
 	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 	return
@@ -254,7 +253,7 @@ func GenerateDeprovisionDatabaseServerRequest() (req *DatabaseServerDeprovisionR
 }
 
 // Returns action arguments based on the type of database
-func GetActionArgumentsByDatabaseType(databaseType string) DatabaseActionArgs {
+func GetActionArgumentsByDatabaseType(databaseType string) (DatabaseActionArgs, error) {
 	var dbTypeActionArgs DatabaseActionArgs
 	switch databaseType {
 	case DATABASE_TYPE_MYSQL:
@@ -264,9 +263,9 @@ func GetActionArgumentsByDatabaseType(databaseType string) DatabaseActionArgs {
 	case DATABASE_TYPE_MONGODB:
 		dbTypeActionArgs = &MongodbActionArgs{}
 	default:
-		return nil
+		return nil, errors.New("Invalid Database Type: supported values: mysql, postgres, mongodb")
 	}
-	return dbTypeActionArgs
+	return dbTypeActionArgs, nil
 }
 
 func (m *MysqlActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {

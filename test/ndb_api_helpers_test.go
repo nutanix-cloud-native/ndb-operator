@@ -608,14 +608,14 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 
 func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 	// Test with MySQL database type
-	mysqlArgs := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MYSQL)
-	if mysqlArgs == nil {
+	mysqlArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MYSQL)
+	if mysqlArgs != nil {
 		t.Error("Expected non-nil, but got nil")
 	}
 
 	// Test with Postgres database type
-	postgresArgs := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_POSTGRES)
-	if postgresArgs == nil {
+	postgresArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_POSTGRES)
+	if err != nil {
 		t.Error("Expected non-nil, but got nil")
 	}
 	expectedPostgresArgs := []v1alpha1.ActionArgument{
@@ -630,8 +630,8 @@ func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 	}
 
 	// Test with MongoDB database type
-	mongodbArgs := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MONGODB)
-	if mongodbArgs == nil {
+	mongodbArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MONGODB)
+	if err != nil {
 		t.Error("Expected non-nil, but got nil")
 	}
 	expectedMongodbArgs := []v1alpha1.ActionArgument{
@@ -647,8 +647,8 @@ func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 	}
 
 	// Test with unknown database type
-	unknownArgs := v1alpha1.GetActionArgumentsByDatabaseType("unknown")
-	if unknownArgs != nil {
+	unknownArgs, err := v1alpha1.GetActionArgumentsByDatabaseType("unknown")
+	if err == nil {
 		t.Errorf("Expected nil, but got %v", unknownArgs)
 	}
 }
