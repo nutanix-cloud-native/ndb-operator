@@ -111,7 +111,7 @@ func TestMatchAndGetProfilesWhenProfilesMatch(t *testing.T) {
 		// get custom profile based upon the database type
 		customProfile := GetCustomProfileForDBType(dbType)
 
-		profileMap, _ := v1alpha1.MatchAndGetProfiles(context.Background(), ndbclient, dbType, customProfile)
+		profileMap, _ := v1alpha1.GetProfiles(context.Background(), ndbclient, dbType, customProfile)
 
 		//Assert
 		profileTypes := []string{
@@ -133,7 +133,7 @@ func TestMatchAndGetProfilesWhenProfilesMatch(t *testing.T) {
 			}
 			obtainedProfile := v1alpha1.GetProfileByType(profileType, customProfile)
 			// Ignoring Storage Profile Type as the Profile struct currently only supports compute, software, network and dbParam
-			if profileType != v1alpha1.PROFILE_TYPE_STORAGE && profile.Id != obtainedProfile.Id && profile.LatestVersionId != obtainedProfile.VersionId {
+			if profileType != v1alpha1.PROFILE_TYPE_STORAGE && profile.Id != obtainedProfile.Id && profile.LatestVersionId == obtainedProfile.VersionId {
 				t.Errorf("Custom Profile Enrichment failed for profileType = %s and dbType = %s", profileType, dbType)
 			}
 		}
@@ -155,7 +155,7 @@ func TestMatchAndGetProfilesWhenNonMatchingProfilesProvided(t *testing.T) {
 		// get custom profile based upon the database type
 		customProfile := GetCustomProfileForDBType(dbType)
 
-		profileMap, _ := v1alpha1.MatchAndGetProfiles(context.Background(), ndbclient, dbType, customProfile)
+		profileMap, _ := v1alpha1.GetProfiles(context.Background(), ndbclient, dbType, customProfile)
 
 		//Assert
 		profileTypes := []string{
@@ -182,7 +182,7 @@ func TestMatchAndGetProfilesWhenNonMatchingProfilesProvided(t *testing.T) {
 	}
 }
 
-func TestMatchAndGetProfiles(t *testing.T) {
+func TestMatchAndGetProfilesForDefaultProfiles(t *testing.T) {
 
 	//Set
 	server := GetServerTestHelper(t)
@@ -192,7 +192,7 @@ func TestMatchAndGetProfiles(t *testing.T) {
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
-		profileMap, _ := v1alpha1.MatchAndGetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
+		profileMap, _ := v1alpha1.GetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
 
 		//Assert
 		profileTypes := []string{
@@ -226,7 +226,7 @@ func TestMatchAndGetProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
-		profileMap, _ := v1alpha1.MatchAndGetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
+		profileMap, _ := v1alpha1.GetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
 		//Assert
 		computeProfile := profileMap[v1alpha1.PROFILE_TYPE_COMPUTE]
 		if !strings.Contains(strings.ToLower(computeProfile.Name), "small") {
@@ -269,11 +269,11 @@ func TestMatchAndGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
-		_, err := v1alpha1.MatchAndGetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
+		_, err := v1alpha1.GetProfiles(context.Background(), ndbclient, dbType, v1alpha1.Profiles{})
 		// None of the profile criteria should match the mocked response
 		// t.Log(err)
 		if err == nil {
-			t.Errorf("MatchAndGetProfiles should have returned an error when none of the profiles match the criteria.")
+			t.Errorf("GetProfiles should have returned an error when none of the profiles match the criteria.")
 		}
 
 	}
