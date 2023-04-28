@@ -12,7 +12,8 @@ The NDB operator brings automated and simplified database administration, provis
 ![Proudly written in Golang](https://img.shields.io/badge/written%20in-Golang-92d1e7.svg)
 
 ---
-
+## Demo video
+[link](https://www.youtube.com/watch?v=CqZ7U9pxZ60)
 ## Getting Started
 ### Pre-requisites
 1. NDB [installation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Era-User-Guide-v2_4:top-era-installation-c.html).
