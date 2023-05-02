@@ -13,9 +13,9 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
           # TODO(user): uncomment for common cases that do not require escalating privileges
-          capabilities:
-            drop:
-              - "ALL"
+            capabilities:
+              drop:
+                - "ALL"
           image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.1
           args:
             - "--secure-listen-address=0.0.0.0:8443"
