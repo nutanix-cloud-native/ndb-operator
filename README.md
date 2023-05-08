@@ -29,7 +29,7 @@ make deploy
 
 ### Using the Operator
 
-1. Create the secrets that are to be used by the custom resource:
+1. Create a secrets.yaml that are to be used by the custom resource:
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -55,6 +55,11 @@ stringData:
 
 ```
 
+Apply the secrets using:
+ 
+```
+kubectl apply -f secrets.yaml
+```
 2. To create instances of custom resources (provision databases), edit [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) file with the NDB installation and database instance details and run:
 
 ```sh
