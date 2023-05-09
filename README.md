@@ -35,7 +35,7 @@ make deploy
 apiVersion: v1
 kind: Secret
 metadata:
-  name: your-ndb-secret
+  name: ndb-secret-name
 type: Opaque
 stringData:
   username: username-for-ndb-server
@@ -48,7 +48,7 @@ stringData:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: your-db-secret
+  name: db-instance-secret-name
 type: Opaque
 stringData:
   password: password-for-the-database-instance
@@ -68,7 +68,7 @@ You can optionally verify that they have been created:
 kubectl get secrets
 ```
 
-2. To create an instances of CR (provision databases), update the NDB Server IP in [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) in spec section. Also ensure that the names of the secrets provided in ndb_v1alpha1_database.yaml match with the names of secrets defined in the secrets.yaml
+2. To create an instances of CR (provision databases), update the NDB Server IP in [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) in spec section. Notice that the names of the secrets provided in the ndb_v1alpha1_database.yaml exactly match with the names of secrets defined in the secrets.yaml
 
 3. Finally, run below command to provision the database using NDB Operator:
 ```sh
