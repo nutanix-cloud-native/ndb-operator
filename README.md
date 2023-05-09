@@ -91,9 +91,9 @@ spec:
   ndb:
     # Cluster id of the cluster where the Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
-    clusterId: "Nutanix Cluster Id"
+    clusterId: "Nutanix Cluster Id" 
     # Credentials secret name for NDB installation
-    # data: username, password,
+    # data: username, password, 
     # stringData: ca_certificate
     credentialSecret: your-ndb-secret
     # The NDB Server
