@@ -72,7 +72,7 @@ kubectl get secrets
     <br /> b. "clusterId"            : Nutanix Cluster Id
     <br /> c. "databaseInstanceName" : Database Instance Name
 
-3. Finally, run below command to provision the database using NDB Operator:
+3. Finally, run this command to provision the database using NDB Operator:
 ```sh
 kubectl apply -f config/samples/ndb_v1alpha1_database.yaml
 ```
