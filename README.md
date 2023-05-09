@@ -60,7 +60,6 @@ Apply the secrets:
 
 ```
 kubectl apply -f <path/to/secrets.yaml>
-
 ```
 You can optionally verify that they have been created:
 
@@ -68,7 +67,13 @@ You can optionally verify that they have been created:
 kubectl get secrets
 ```
 
-2. To create an instances of CR (provision databases), update the NDB Server IP in [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) in spec section. Ensure that the names of the secrets provided in the ndb_v1alpha1_database.yaml exactly match with the names of secrets defined in the secrets.yaml
+2. To create an instances of CR (provision databases), update below fields in the "spec" section of [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml)
+    <br /> a. "server"               : NDB Server IP
+    <br /> b. "clusterId"            : Nutanix Cluster Id
+    <br /> c. "databaseInstanceName" : Database Instance Name
+
+   Ensure that the names of the secrets provided in the [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) match with the names of secrets defined in the secrets.yaml
+
 
 3. Finally, run below command to provision the database using NDB Operator:
 ```sh
