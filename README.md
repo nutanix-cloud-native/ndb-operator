@@ -29,8 +29,8 @@ make deploy
 
 ### Using the Operator
 
-1. Create a secrets.yaml that will store the secrets to be used by the custom resource:
-You may choose to create this file under /samples dir
+1. Create file "secrets.yaml" to store the secrets that can be used by the custom resources:
+
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -56,17 +56,25 @@ stringData:
 
 ```
 
-Apply the secrets using:
+Apply the secrets:
 
 ```
 kubectl apply -f <path/to/secrets.yaml>
-```
-2. To create instances of custom resources (provision databases), edit [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) file with the NDB installation and database instance details and run:
 
+```
+You can optionally verify that they have been created:
+
+```sh
+kubectl get secrets
+```
+
+2. To create an instances of CR (provision databases), update the NDB Server IP in [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) in spec section. Also ensure that the names of the secrets provided in ndb_v1alpha1_database.yaml match with the names of secrets defined in the secrets.yaml
+
+3. Finally, run below command to provision the database using NDB Operator:
 ```sh
 kubectl apply -f config/samples/ndb_v1alpha1_database.yaml
 ```
-3. To delete instances of custom resources (deprovision databases) run:
+4. To delete instances of custom resources (deprovision databases) run:
 
 ```sh
 kubectl delete -f config/samples/ndb_v1alpha1_database.yaml
@@ -83,9 +91,9 @@ spec:
   ndb:
     # Cluster id of the cluster where the Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
-    clusterId: "Nutanix Cluster Id" 
+    clusterId: "Nutanix Cluster Id"
     # Credentials secret name for NDB installation
-    # data: username, password, 
+    # data: username, password,
     # stringData: ca_certificate
     credentialSecret: your-ndb-secret
     # The NDB Server
