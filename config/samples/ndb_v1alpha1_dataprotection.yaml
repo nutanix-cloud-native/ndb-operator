@@ -1,0 +1,12 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: DataProtection
+metadata:
+  labels:
+    app.kubernetes.io/name: dataprotection
+    app.kubernetes.io/instance: dataprotection-sample
+    app.kubernetes.io/part-of: ndb-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: ndb-operator
+  name: dataprotection-sample
+spec:
+  # TODO(user): Add fields here
