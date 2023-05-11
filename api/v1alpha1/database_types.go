@@ -268,3 +268,17 @@ type Property struct {
 	Value       string `json:"value"`
 	Description string `json:"description"`
 }
+
+// +kubebuilder:object:generate:=false
+type DatabaseActionArgs interface {
+	GetActionArguments(dbSpec DatabaseSpec) []ActionArgument
+}
+
+// +kubebuilder:object:generate:=false
+type PostgresActionArgs struct{}
+
+// +kubebuilder:object:generate:=false
+type MongodbActionArgs struct{}
+
+// +kubebuilder:object:generate:=false
+type MysqlActionArgs struct{}
