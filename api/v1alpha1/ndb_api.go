@@ -80,23 +80,25 @@ func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id str
 		log.Error(err, "no database id provided")
 		return
 	}
-	res, err := ndbClient.Get("databases/" + id)
+
+	getDbDetailedPath := fmt.Sprintf("databases/%s/detailed=true", id)
+	res, err := ndbClient.Get(getDbDetailedPath)
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
 			if res != nil {
-				err = fmt.Errorf("GET /databases/%s responded with %d", id, res.StatusCode)
+				err = fmt.Errorf("GET %s responded with %d", getDbDetailedPath, res.StatusCode)
 			} else {
-				err = fmt.Errorf("GET /databases/%s responded with a nil response", id)
+				err = fmt.Errorf("GET %s responded with a nil response", getDbDetailedPath)
 			}
 		}
 		log.Error(err, "Error occurred fetching database")
 		return
 	}
-	log.Info("GET /databases/"+id, "HTTP status code", res.StatusCode)
+	log.Info(getDbDetailedPath, "HTTP status code", res.StatusCode)
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in GetAllDatabases")
+		log.Error(err, "Error occurred reading response.Body in Get Database by ID")
 		return
 	}
 	err = json.Unmarshal(body, &database)
