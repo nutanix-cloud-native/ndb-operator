@@ -608,15 +608,15 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 
 func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 	// Test with MySQL database type
-	mysqlArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MYSQL)
-	if mysqlArgs != nil {
-		t.Error("Expected non-nil, but got nil")
+	_, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MYSQL)
+	if err != nil {
+		t.Error("Error while fetching mysql args", "err", err)
 	}
 
 	// Test with Postgres database type
 	postgresArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_POSTGRES)
 	if err != nil {
-		t.Error("Expected non-nil, but got nil")
+		t.Error("Error while fetching postgres args", "err", err)
 	}
 	expectedPostgresArgs := []v1alpha1.ActionArgument{
 		{Name: "proxy_read_port", Value: "5001"},
@@ -632,7 +632,7 @@ func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 	// Test with MongoDB database type
 	mongodbArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MONGODB)
 	if err != nil {
-		t.Error("Expected non-nil, but got nil")
+		t.Error("Error while fetching mongodbArgs", "err", err)
 	}
 	expectedMongodbArgs := []v1alpha1.ActionArgument{
 		{Name: "listener_port", Value: "27017"},
@@ -649,6 +649,6 @@ func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 	// Test with unknown database type
 	unknownArgs, err := v1alpha1.GetActionArgumentsByDatabaseType("unknown")
 	if err == nil {
-		t.Errorf("Expected nil, but got %v", unknownArgs)
+		t.Errorf("Expected error for unknown database type, but got %v", unknownArgs)
 	}
 }
