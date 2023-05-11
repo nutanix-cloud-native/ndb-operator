@@ -14,7 +14,7 @@ The NDB operator brings automated and simplified database administration, provis
 ---
 ## Getting Started
 ### Pre-requisites
-1. NDB [installation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-Era-User-Guide-v2_4:top-era-installation-c.html).
+1. NDB [installation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-NDB-User-Guide-v2_5:Nutanix-NDB-User-Guide-v2_5).
 2. A Kubernetes cluster to run against, which should have network connectivity to the NDB installation. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
 **Note:** The operator will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
 3. The operator-sdk installed.
@@ -28,12 +28,13 @@ make deploy
 
 ### Using the Operator
 
-1. Create the secrets that are to be used by the custom resource:
+1. Create file "secrets.yaml" to store the secrets that can be used by the custom resources:
+
 ```yaml
 apiVersion: v1
 kind: Secret
 metadata:
-  name: your-ndb-secret
+  name: ndb-secret-name
 type: Opaque
 stringData:
   username: username-for-ndb-server
@@ -46,7 +47,7 @@ stringData:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: your-db-secret
+  name: db-instance-secret-name
 type: Opaque
 stringData:
   password: password-for-the-database-instance
@@ -54,12 +55,27 @@ stringData:
 
 ```
 
-2. To create instances of custom resources (provision databases), edit [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) file with the NDB installation and database instance details and run:
+Apply the secrets:
 
+```
+kubectl apply -f <path/to/secrets.yaml>
+```
+You can optionally verify that they have been created:
+
+```sh
+kubectl get secrets
+```
+
+2. To create a Database CR, update these fields in the "spec" section of [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml)
+    <br /> a. "server"               : NDB Server IP
+    <br /> b. "clusterId"            : Nutanix Cluster Id
+    <br /> c. "databaseInstanceName" : Database Instance Name
+
+3. Finally, run this command to provision the database using NDB Operator:
 ```sh
 kubectl apply -f config/samples/ndb_v1alpha1_database.yaml
 ```
-3. To delete instances of custom resources (deprovision databases) run:
+4. To delete the Database CR (deprovision database) run:
 
 ```sh
 kubectl delete -f config/samples/ndb_v1alpha1_database.yaml
@@ -80,7 +96,7 @@ spec:
     # Credentials secret name for NDB installation
     # data: username, password, 
     # stringData: ca_certificate
-    credentialSecret: your-ndb-secret
+    credentialSecret: ndb-secret-name
     # The NDB Server
     server: https://[NDB IP]:8443/era/v0.9
     # Set to true to skip SSL verification, default: false.
@@ -96,7 +112,7 @@ spec:
       - database_three
     # Credentials secret name for NDB installation
     # data: password, ssh_public_key
-    credentialSecret: your-db-secret
+    credentialSecret: db-instance-secret-name
     size: 10
     timezone: "UTC"
     type: postgres
