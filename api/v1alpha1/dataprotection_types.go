@@ -8,11 +8,14 @@ import (
 
 // DataProtectionSpec defines the desired state of DataProtection
 type DataProtectionSpec struct {
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=backup;restore
 	Type string `json:"type"`
 	// +kubebuilder:validation:Required
-	DatabaseCRName string  `json:"databaseName"`
-	Restore        Restore `json:"restore"`
+	// +kubebuilder:validation:MinLength:=1
+	DatabaseCRName string `json:"databaseName"`
+	// +kubebuilder:validation:Required
+	Restore Restore `json:"restore"`
 }
 
 type Restore struct {
