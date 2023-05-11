@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,8 +26,8 @@ type DataProtectionStatus struct {
 	Type        string `json:"type"`
 	OperationId string `json:"operationId"`
 	// backup or the restore time
-	Time           time.Time `json:"time"`
-	DatabaseCRName string    `json:"databaseName"`
+	Time           string `json:"time"`
+	DatabaseCRName string `json:"databaseName"`
 }
 
 //+kubebuilder:object:root=true
