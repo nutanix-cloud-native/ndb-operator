@@ -52,7 +52,6 @@ func (ndbClient *NDBClient) Get(path string) (*http.Response, error) {
 		return nil, err
 	}
 	req.SetBasicAuth(ndbClient.username, ndbClient.password)
-	req.Header.Add("Cookie", "eraAuth=eyJhbGciOiJSUzUxMiJ9")
 	return ndbClient.client.Do(req)
 }
 
@@ -66,7 +65,6 @@ func (ndbClient *NDBClient) Post(path string, body interface{}) (*http.Response,
 	}
 	req.SetBasicAuth(ndbClient.username, ndbClient.password)
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
-	req.Header.Add("Cookie", "eraAuth=eyJhbGciOiJSUzUxMiJ9")
 	return ndbClient.client.Do(req)
 }
 
@@ -80,6 +78,5 @@ func (ndbClient *NDBClient) Delete(path string, body interface{}) (*http.Respons
 	}
 	req.SetBasicAuth(ndbClient.username, ndbClient.password)
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
-	req.Header.Add("Cookie", "eraAuth=eyJhbGciOiJSUzUxMiJ9")
 	return ndbClient.client.Do(req)
 }
