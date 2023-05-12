@@ -252,7 +252,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			log.Info("Database instance is READY, adding data to CR's status and updating the CR")
 			database.Status.Status = ndbv1alpha1.DATABASE_CR_STATUS_READY
 			database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
-			database.Status.IPAddress = databaseResponse.DatabaseNodes[0].IPAddresses[0]
+			database.Status.IPAddress = databaseResponse.DatabaseNodes[0].DbServer.IPAddresses[0]
 			err = r.Status().Update(ctx, database)
 			if err != nil {
 				log.Error(err, "Failed to update database status")

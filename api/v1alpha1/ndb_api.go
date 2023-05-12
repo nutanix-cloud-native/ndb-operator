@@ -81,7 +81,7 @@ func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id str
 		return
 	}
 
-	getDbDetailedPath := fmt.Sprintf("databases/%s/detailed=true", id)
+	getDbDetailedPath := fmt.Sprintf("databases/%s?detailed=true", id)
 	res, err := ndbClient.Get(getDbDetailedPath)
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
