@@ -239,6 +239,7 @@ type DatabaseNode struct {
 	DbServer         DatabaseServer `json:"dbserver"`
 }
 
+// +kubebuilder:object:generate:=false
 type DatabaseServer struct {
 	Id          string   `json:"id"`
 	Name        string   `json:"name"`
