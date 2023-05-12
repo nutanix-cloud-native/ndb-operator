@@ -74,7 +74,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		}
 		log.Error(err, errStatement)
 	}
-	
+
 	// Creating a provisioning request based on the database type
 	req = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(dbSpec.Instance.Type),
@@ -195,11 +195,6 @@ func GetOOBProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType 
 	profileMap[PROFILE_TYPE_SOFTWARE] = softwareProfiles[0]
 	profileMap[PROFILE_TYPE_NETWORK] = networkProfiles[0]
 	profileMap[PROFILE_TYPE_DATABASE_PARAMETER] = dbParamProfiles[0]
-	// fmt.Println(profileMap[PROFILE_TYPE_COMPUTE])
-	// fmt.Println(profileMap[PROFILE_TYPE_STORAGE])
-	// fmt.Println(profileMap[PROFILE_TYPE_SOFTWARE])
-	// fmt.Println(profileMap[PROFILE_TYPE_NETWORK])
-	// fmt.Println(profileMap[PROFILE_TYPE_DATABASE_PARAMETER])
 
 	return
 }
@@ -274,11 +269,11 @@ func GetActionArgumentsByDatabaseType(databaseType string) (DatabaseActionArgs, 
 }
 
 func (m *MysqlActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {
-	return []ActionArgument {
-  			{
-  				Name:  "listener_port",
-  				Value: "3306",
-  			},
+	return []ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "3306",
+		},
 	}
 }
 
