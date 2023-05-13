@@ -608,18 +608,22 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 
 func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 	// Test with MySQL database type
-	_, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MYSQL)
+	MySQLExpectedArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MYSQL)
 
 	if err != nil {
 		t.Error("Error while fetching mysql args", "err", err)
 	}
 
-	expectedArgs:= []v1alpha1.ActionArgument{
-  				{
-  					Name:  "listener_port",
-  					Value: "3306",
-  				},
-  			}
+	expectedMySqlArgs := []v1alpha1.ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "3306",
+		},
+	}
+
+	if !reflect.DeepEqual(MySQLExpectedArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMySqlArgs) {
+		t.Errorf("Expected %v, but got %v", expectedMySqlArgs, MySQLExpectedArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
+	}
 
 	// Test with Postgres database type
 	postgresArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_POSTGRES)

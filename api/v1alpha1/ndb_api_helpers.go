@@ -268,7 +268,7 @@ func GetActionArgumentsByDatabaseType(databaseType string) (DatabaseActionArgs, 
 	return dbTypeActionArgs, nil
 }
 
-func (m *MysqlActionArgs) GetActionArguments() []ActionArgument {
+func (m *MysqlActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {
 	return []ActionArgument{
 		{
 			Name:  "listener_port",

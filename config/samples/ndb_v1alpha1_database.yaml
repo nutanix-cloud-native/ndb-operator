@@ -1,20 +1,20 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-    name: db2
+  name: db
 spec:
-    ndb:
-        clusterId: '9ffd5d28-5ada-45b7-a1ba-da2e17984ab9'
-        credentialSecret: ntnx2-ndb-secret
-        server: https://erat9rw4zqqq9-era.nutanixtestdrive.com/era/v0.9
-        skipCertificateVerification: true
-    databaseInstance:
-        databaseInstanceName: 'test_mysql'
-        databaseNames:
-            - database_one_mysql
-            - database_two_mysql
-            - database_three_mysql
-        credentialSecret: ntnx2-db-secret
-        size: 10
-        timezone: 'UTC'
-        type: mysql
+  ndb:
+    clusterId: "Nutanix Cluster Id"
+    credentialSecret: ndb-secret-name
+    server: https://[NDB IP]:8443/era/v0.9
+    skipCertificateVerification: true
+  databaseInstance:
+    databaseInstanceName: "Database Instance Name"
+    databaseNames:
+      - database_one
+      - database_two
+      - database_three
+    credentialSecret: db-instance-secret-name
+    size: 10
+    timezone: "UTC"
+    type: postgres
