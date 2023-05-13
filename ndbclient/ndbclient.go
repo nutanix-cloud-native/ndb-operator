@@ -32,7 +32,6 @@ type NDBClient struct {
 }
 
 func NewNDBClient(username, password, url, caCert string, skipVerify bool) *NDBClient {
-
 	TLSClientConfig := &tls.Config{InsecureSkipVerify: skipVerify}
 	if caCert != "" {
 		caCertPool := x509.NewCertPool()

@@ -270,7 +270,7 @@ type Property struct {
 
 // +kubebuilder:object:generate:=false
 type DatabaseActionArgs interface {
-	GetActionArguments() []ActionArgument
+	GetActionArguments(dbSpec DatabaseSpec) []ActionArgument
 }
 
 // +kubebuilder:object:generate:=false

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -606,77 +607,56 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 }
 
 func TestGetActionArgumentsByDatabaseType(t *testing.T) {
-	cases := []struct {
-		dbType       string
-		expectedArgs []v1alpha1.ActionArgument
-	}{
-		{
-			dbType: "mysql",
-			expectedArgs: []v1alpha1.ActionArgument{
-				{
-					Name:  "listener_port",
-					Value: "3306",
-				},
-			},
-		},
-		{
-			dbType: "postgres",
-			expectedArgs: []v1alpha1.ActionArgument{
-				{
-					Name:  "proxy_read_port",
-					Value: "5001",
-				},
-				{
-					Name:  "listener_port",
-					Value: "5432",
-				},
-				{
-					Name:  "proxy_write_port",
-					Value: "5000",
-				},
-				{
-					Name:  "enable_synchronous_mode",
-					Value: "false",
-				},
-				{
-					Name:  "backup_policy",
-					Value: "primary_only",
-				},
-			},
-		},
-		{
-			dbType:       "unsupported_database_type",
-			expectedArgs: nil,
-		},
+	// Test with MySQL database type
+	_, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MYSQL)
+
+	if err != nil {
+		t.Error("Error while fetching mysql args", "err", err)
 	}
 
-	for _, c := range cases {
-		args := v1alpha1.GetActionArgumentsByDatabaseType(c.dbType)
-		if args == nil && c.expectedArgs != nil {
-			t.Errorf("Unexpected nil value for database type '%s'", c.dbType)
-			continue
-		}
-		if args != nil && c.expectedArgs == nil {
-			t.Errorf("Expected nil value for database type '%s', but got %v", c.dbType, args)
-			continue
-		}
-		if args == nil && c.expectedArgs == nil {
-			continue
-		}
+	expectedArgs:= []v1alpha1.ActionArgument{
+  				{
+  					Name:  "listener_port",
+  					Value: "3306",
+  				},
+  			}
 
-		actionArgs := args.GetActionArguments()
-		if len(actionArgs) != len(c.expectedArgs) {
-			t.Errorf("Expected %d action arguments for database type '%s', but got %d", len(c.expectedArgs), c.dbType, len(actionArgs))
-			continue
-		}
+	// Test with Postgres database type
+	postgresArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_POSTGRES)
+	if err != nil {
+		t.Error("Error while fetching postgres args", "err", err)
+	}
+	expectedPostgresArgs := []v1alpha1.ActionArgument{
+		{Name: "proxy_read_port", Value: "5001"},
+		{Name: "listener_port", Value: "5432"},
+		{Name: "proxy_write_port", Value: "5000"},
+		{Name: "enable_synchronous_mode", Value: "false"},
+		{Name: "auto_tune_staging_drive", Value: "true"},
+	}
+	if !reflect.DeepEqual(postgresArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedPostgresArgs) {
+		t.Errorf("Expected %v, but got %v", expectedPostgresArgs, postgresArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
+	}
 
-		for i, expectedArg := range c.expectedArgs {
-			if expectedArg.Name != actionArgs[i].Name {
-				t.Errorf("Expected action argument name '%s' for database type '%s', but got '%s'", expectedArg.Name, c.dbType, actionArgs[i].Name)
-			}
-			if expectedArg.Value != actionArgs[i].Value {
-				t.Errorf("Expected action argument value '%s' for database type '%s' and name '%s', but got '%s'", expectedArg.Value, c.dbType, expectedArg.Name, actionArgs[i].Value)
-			}
-		}
+	// Test with MongoDB database type
+	mongodbArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MONGODB)
+	if err != nil {
+		t.Error("Error while fetching mongodbArgs", "err", err)
+	}
+	expectedMongodbArgs := []v1alpha1.ActionArgument{
+		{Name: "listener_port", Value: "27017"},
+		{Name: "log_size", Value: "100"},
+		{Name: "journal_size", Value: "100"},
+		{Name: "restart_mongod", Value: "true"},
+		{Name: "working_dir", Value: "/tmp"},
+		{Name: "db_user", Value: "test"},
+	}
+	if !reflect.DeepEqual(mongodbArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMongodbArgs) {
+		t.Errorf("Expected %v, but got %v", expectedMongodbArgs, mongodbArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
+	}
+
+	// Test with unknown database type
+	unknownArgs, err := v1alpha1.GetActionArgumentsByDatabaseType("unknown")
+	if err == nil {
+		t.Errorf("Expected error for unknown database type, but got %v", unknownArgs)
 	}
 }
