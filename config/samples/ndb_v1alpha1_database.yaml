@@ -5,7 +5,7 @@ metadata:
 spec:
   ndb:
     clusterId: "Nutanix Cluster Id"
-    credentialSecret : ndb-secret-name
+    credentialSecret: ndb-secret-name
     server: https://[NDB IP]:8443/era/v0.9
     skipCertificateVerification: true
   databaseInstance:
