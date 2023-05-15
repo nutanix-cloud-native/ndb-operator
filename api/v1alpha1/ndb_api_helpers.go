@@ -42,7 +42,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 	}
 
 	// Fetch the OOB profiles for the database
-	profilesMap, err := GetOOBProfiles(ctx, ndbclient, dbSpec.Instance.Type)
+	profilesMap, err := GetProfiles(ctx, ndbclient, dbSpec.Instance)
 	if err != nil {
 		log.Error(err, "Error occurred while getting OOB profiles", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 		return
@@ -159,9 +159,47 @@ func GetNoneTimeMachineSLA(ctx context.Context, ndbclient *ndbclient.NDBClient) 
 	return sla, fmt.Errorf("NONE TimeMachine not found")
 }
 
+func filterProfilesByField(profileType string, field string, value string, allProfiles []ProfileResponse) (filteredProfiles []ProfileResponse, err error) {
+	if field == "Name" {
+		filteredProfiles = util.Filter(allProfiles, func(p ProfileResponse) bool {
+			return p.Type == profileType && strings.Contains(strings.ToLower(p.Name), (strings.ToLower(value)))
+		})
+	} else if field == "Id" {
+		filteredProfiles = util.Filter(allProfiles, func(p ProfileResponse) bool {
+			return p.Type == profileType && strings.Contains(strings.ToLower(p.Id), (strings.ToLower(value)))
+		})
+	} else {
+		return nil, errors.New("specify either field or value in the input")
+	}
+
+	return filteredProfiles, nil
+}
+
+func getComputeProfile(allProfiles []ProfileResponse, instanceSpec Instance) (computeProfiles []ProfileResponse, err error) {
+
+	if instanceSpec.Profiles.Compute != (Profile{}) {
+		if instanceSpec.Profiles.Compute.Name != "" {
+			computeProfiles, _ = filterProfilesByField(PROFILE_TYPE_COMPUTE, "Name", instanceSpec.Profiles.Compute.Name, allProfiles)
+		} else if instanceSpec.Profiles.Compute.Id != "" {
+			computeProfiles, _ = filterProfilesByField(PROFILE_TYPE_COMPUTE, "Id", instanceSpec.Profiles.Compute.Id, allProfiles)
+		}
+	} else {
+		computeProfiles = util.Filter(allProfiles, func(p ProfileResponse) bool {
+			return p.Type == PROFILE_TYPE_COMPUTE && strings.Contains(strings.ToLower(p.Name), "small")
+		})
+
+		if len(computeProfiles) == 0 {
+			err = errors.New("oob profile: one or more OOB profile(s) were not found")
+			return nil, err
+		}
+	}
+
+	return computeProfiles, nil
+}
+
 // Fetches all the profiles and returns a map of OOB profiles
 // Returns an error if one or more OOB profiles is not found
-func GetOOBProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType string) (profileMap map[string]ProfileResponse, err error) {
+func GetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, instanceSpec Instance) (profileMap map[string]ProfileResponse, err error) {
 	// Map of profile type to profiles
 	profileMap = make(map[string]ProfileResponse)
 
@@ -172,12 +210,16 @@ func GetOOBProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType 
 	}
 
 	genericProfiles := util.Filter(profiles, func(p ProfileResponse) bool { return p.EngineType == DATABASE_ENGINE_TYPE_GENERIC })
-	dbEngineSpecificProfiles := util.Filter(profiles, func(p ProfileResponse) bool { return p.EngineType == GetDatabaseEngineName(dbType) })
+	dbEngineSpecificProfiles := util.Filter(profiles, func(p ProfileResponse) bool { return p.EngineType == GetDatabaseEngineName(instanceSpec.Type) })
 
 	// Specifying the usage of small compute profiles
-	computeProfiles := util.Filter(genericProfiles, func(p ProfileResponse) bool {
-		return p.Type == PROFILE_TYPE_COMPUTE && strings.Contains(strings.ToLower(p.Name), "small")
-	})
+	computeProfileResponse, err := getComputeProfile(profiles, instanceSpec)
+	if err != nil {
+		err = errors.New("error occurred while getting the compute profile details using the provided compute profileinformation")
+		return nil, err
+	}
+	profileMap[PROFILE_TYPE_COMPUTE] = computeProfileResponse[0]
+
 	storageProfiles := util.Filter(genericProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_STORAGE })
 	// Specifying the usage of single instance topoplogy
 	softwareProfiles := util.Filter(dbEngineSpecificProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_SOFTWARE && p.Topology == TOPOLOGY_SINGLE })
@@ -185,12 +227,11 @@ func GetOOBProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType 
 	dbParamProfiles := util.Filter(dbEngineSpecificProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_DATABASE_PARAMETER })
 
 	// Some profile not found, return an error
-	if len(computeProfiles) == 0 || len(softwareProfiles) == 0 || len(storageProfiles) == 0 || len(networkProfiles) == 0 || len(dbParamProfiles) == 0 {
+	if len(softwareProfiles) == 0 || len(storageProfiles) == 0 || len(networkProfiles) == 0 || len(dbParamProfiles) == 0 {
 		err = errors.New("oob profile: one or more OOB profile(s) were not found")
 		return
 	}
 
-	profileMap[PROFILE_TYPE_COMPUTE] = computeProfiles[0]
 	profileMap[PROFILE_TYPE_STORAGE] = storageProfiles[0]
 	profileMap[PROFILE_TYPE_SOFTWARE] = softwareProfiles[0]
 	profileMap[PROFILE_TYPE_NETWORK] = networkProfiles[0]

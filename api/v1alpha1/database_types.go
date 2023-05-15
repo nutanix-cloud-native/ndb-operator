@@ -130,7 +130,7 @@ type Profile struct {
 	// +optional
 	Id string `json:"id"`
 	// +optional
-	VersionId string `json:"versionId"`
+	Name string `json:"name"`
 }
 
 // NDB API client model types

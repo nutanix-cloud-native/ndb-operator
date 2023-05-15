@@ -79,28 +79,28 @@ spec:
                         properties:
                           id:
                             type: string
-                          versionId:
+                          name:
                             type: string
                         type: object
                       dbParam:
                         properties:
                           id:
                             type: string
-                          versionId:
+                          name:
                             type: string
                         type: object
                       network:
                         properties:
                           id:
                             type: string
-                          versionId:
+                          name:
                             type: string
                         type: object
                       software:
                         properties:
                           id:
                             type: string
-                          versionId:
+                          name:
                             type: string
                         type: object
                     type: object

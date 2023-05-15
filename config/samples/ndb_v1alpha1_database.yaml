@@ -18,3 +18,4 @@ spec:
     size: 10
     timezone: "UTC"
     type: postgres
+

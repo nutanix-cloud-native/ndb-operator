@@ -104,10 +104,12 @@ func TestGetOOBProfiles(t *testing.T) {
 	defer server.Close()
 	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
+	Instance := v1alpha1.Instance{}
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
-		profileMap, _ := v1alpha1.GetOOBProfiles(context.Background(), ndbclient, dbType)
+		Instance.Type = dbType
+		profileMap, _ := v1alpha1.GetProfiles(context.Background(), ndbclient, Instance)
 
 		//Assert
 		profileTypes := []string{
@@ -138,10 +140,12 @@ func TestGetOOBProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
 	defer server.Close()
 	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
+	Instance := v1alpha1.Instance{}
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
-		profileMap, _ := v1alpha1.GetOOBProfiles(context.Background(), ndbclient, dbType)
+		Instance.Type = dbType
+		profileMap, _ := v1alpha1.GetProfiles(context.Background(), ndbclient, Instance)
 
 		//Assert
 		computeProfile := profileMap[v1alpha1.PROFILE_TYPE_COMPUTE]
@@ -175,10 +179,12 @@ func TestGetOOBProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
 	defer server.Close()
 	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
+	Instance := v1alpha1.Instance{}
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
-		_, err := v1alpha1.GetOOBProfiles(context.Background(), ndbclient, dbType)
+		Instance.Type = dbType
+		_, err := v1alpha1.GetProfiles(context.Background(), ndbclient, Instance)
 		// None of the profile criteria should match the mocked response
 		// t.Log(err)
 		if err == nil {
