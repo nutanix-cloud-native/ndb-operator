@@ -608,9 +608,21 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 
 func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 	// Test with MySQL database type
-	_, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MYSQL)
+	MySQLExpectedArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MYSQL)
+
 	if err != nil {
 		t.Error("Error while fetching mysql args", "err", err)
+	}
+
+	expectedMySqlArgs := []v1alpha1.ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "3306",
+		},
+	}
+
+	if !reflect.DeepEqual(MySQLExpectedArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMySqlArgs) {
+		t.Errorf("Expected %v, but got %v", expectedMySqlArgs, MySQLExpectedArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
 	}
 
 	// Test with Postgres database type
@@ -624,6 +636,7 @@ func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 		{Name: "proxy_write_port", Value: "5000"},
 		{Name: "enable_synchronous_mode", Value: "false"},
 		{Name: "auto_tune_staging_drive", Value: "true"},
+		{Name: "backup_policy", Value: "primary_only"},
 	}
 	if !reflect.DeepEqual(postgresArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedPostgresArgs) {
 		t.Errorf("Expected %v, but got %v", expectedPostgresArgs, postgresArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
@@ -641,6 +654,7 @@ func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 		{Name: "restart_mongod", Value: "true"},
 		{Name: "working_dir", Value: "/tmp"},
 		{Name: "db_user", Value: "test"},
+		{Name: "backup_policy", Value: "primary_only"},
 	}
 	if !reflect.DeepEqual(mongodbArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMongodbArgs) {
 		t.Errorf("Expected %v, but got %v", expectedMongodbArgs, mongodbArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))

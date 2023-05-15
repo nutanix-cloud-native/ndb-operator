@@ -108,10 +108,6 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		},
 		ActionArguments: []ActionArgument{
 			{
-				Name:  "backup_policy",
-				Value: "primary_only",
-			},
-			{
 				Name:  "dbserver_description",
 				Value: "dbserver for " + dbSpec.Instance.DatabaseInstanceName,
 			},
@@ -269,7 +265,12 @@ func GetActionArgumentsByDatabaseType(databaseType string) (DatabaseActionArgs, 
 }
 
 func (m *MysqlActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {
-	return []ActionArgument{}
+	return []ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "3306",
+		},
+	}
 }
 
 func (p *PostgresActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {
@@ -293,6 +294,10 @@ func (p *PostgresActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArg
 		{
 			Name:  "auto_tune_staging_drive",
 			Value: "true",
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
 		},
 	}
 }
@@ -322,6 +327,10 @@ func (m *MongodbActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgu
 		{
 			Name:  "db_user",
 			Value: dbSpec.Instance.DatabaseInstanceName,
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
 		},
 	}
 }
