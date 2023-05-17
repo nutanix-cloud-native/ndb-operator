@@ -74,7 +74,6 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		}
 		log.Error(err, errStatement)
 	}
-
 	// Creating a provisioning request based on the database type
 	req = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(dbSpec.Instance.Type),
@@ -92,6 +91,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		SSHPublicKey:             SSHPublicKey,
 		Clustered:                false,
 		AutoTuneStagingDrive:     true,
+
 		TimeMachineInfo: TimeMachineInfo{
 			Name:             dbSpec.Instance.DatabaseInstanceName + "_TM",
 			Description:      sla.Description,
@@ -100,35 +100,13 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 			Tags:             make([]string, 0),
 			AutoTuneLogDrive: true,
 		},
+		Nodes: []Node{
+			{
+				Properties: make([]string, 0),
+				VmName:     dbSpec.Instance.DatabaseInstanceName + "_VM",
+			},
+		},
 		ActionArguments: []ActionArgument{
-			{
-				Name:  "proxy_read_port",
-				Value: "5001",
-			},
-			{
-				Name:  "listener_port",
-				Value: "5432",
-			},
-			{
-				Name:  "proxy_write_port",
-				Value: "5000",
-			},
-			{
-				Name:  "database_size",
-				Value: strconv.Itoa(dbSpec.Instance.Size),
-			},
-			{
-				Name:  "auto_tune_staging_drive",
-				Value: "true",
-			},
-			{
-				Name:  "enable_synchronous_mode",
-				Value: "false",
-			},
-			{
-				Name:  "backup_policy",
-				Value: "primary_only",
-			},
 			{
 				Name:  "dbserver_description",
 				Value: "dbserver for " + dbSpec.Instance.DatabaseInstanceName,
@@ -141,14 +119,22 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 				Name:  "db_password",
 				Value: dbPassword,
 			},
-		},
-		Nodes: []Node{
 			{
-				Properties: make([]string, 0),
-				VmName:     dbSpec.Instance.DatabaseInstanceName + "_VM",
+				Name:  "database_size",
+				Value: strconv.Itoa(dbSpec.Instance.Size),
 			},
 		},
 	}
+	// Setting action arguments based on database type
+	dbTypeActionArgs, err := GetActionArgumentsByDatabaseType(dbSpec.Instance.Type)
+
+	if err != nil {
+		log.Error(err, "Error occurred while getting dbTypeActionArgs", "database type", dbSpec.Instance.Type)
+		return
+	}
+
+	req.ActionArguments = append(req.ActionArguments, dbTypeActionArgs.GetActionArguments(dbSpec)...)
+
 	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 	return
 }
@@ -260,4 +246,91 @@ func GenerateDeprovisionDatabaseServerRequest() (req *DatabaseServerDeprovisionR
 		DeleteVmSnapshots: true,
 	}
 	return
+}
+
+// Returns action arguments based on the type of database
+func GetActionArgumentsByDatabaseType(databaseType string) (DatabaseActionArgs, error) {
+	var dbTypeActionArgs DatabaseActionArgs
+	switch databaseType {
+	case DATABASE_TYPE_MYSQL:
+		dbTypeActionArgs = &MysqlActionArgs{}
+	case DATABASE_TYPE_POSTGRES:
+		dbTypeActionArgs = &PostgresActionArgs{}
+	case DATABASE_TYPE_MONGODB:
+		dbTypeActionArgs = &MongodbActionArgs{}
+	default:
+		return nil, errors.New("Invalid Database Type: supported values: mysql, postgres, mongodb")
+	}
+	return dbTypeActionArgs, nil
+}
+
+func (m *MysqlActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {
+	return []ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "3306",
+		},
+	}
+}
+
+func (p *PostgresActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {
+	return []ActionArgument{
+		{
+			Name:  "proxy_read_port",
+			Value: "5001",
+		},
+		{
+			Name:  "listener_port",
+			Value: "5432",
+		},
+		{
+			Name:  "proxy_write_port",
+			Value: "5000",
+		},
+		{
+			Name:  "enable_synchronous_mode",
+			Value: "false",
+		},
+		{
+			Name:  "auto_tune_staging_drive",
+			Value: "true",
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
+		},
+	}
+}
+
+func (m *MongodbActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgument {
+	return []ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "27017",
+		},
+		{
+			Name:  "log_size",
+			Value: "100",
+		},
+		{
+			Name:  "journal_size",
+			Value: "100",
+		},
+		{
+			Name:  "restart_mongod",
+			Value: "true",
+		},
+		{
+			Name:  "working_dir",
+			Value: "/tmp",
+		},
+		{
+			Name:  "db_user",
+			Value: dbSpec.Instance.DatabaseInstanceName,
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
+		},
+	}
 }
