@@ -259,7 +259,7 @@ func GetActionArgumentsByDatabaseType(databaseType string) (DatabaseActionArgs, 
 	case DATABASE_TYPE_MONGODB:
 		dbTypeActionArgs = &MongodbActionArgs{}
 	default:
-		return nil, errors.New("Invalid Database Type: supported values: mysql, postgres, mongodb")
+		return nil, errors.New("invalid database type: supported values: mysql, postgres, mongodb")
 	}
 	return dbTypeActionArgs, nil
 }
@@ -326,7 +326,7 @@ func (m *MongodbActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgu
 		},
 		{
 			Name:  "db_user",
-			Value: dbSpec.Instance.DatabaseInstanceName,
+			Value: "admin",
 		},
 		{
 			Name:  "backup_policy",

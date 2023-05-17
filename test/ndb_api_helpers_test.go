@@ -653,7 +653,7 @@ func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 		{Name: "journal_size", Value: "100"},
 		{Name: "restart_mongod", Value: "true"},
 		{Name: "working_dir", Value: "/tmp"},
-		{Name: "db_user", Value: "test"},
+		{Name: "db_user", Value: "admin"},
 		{Name: "backup_policy", Value: "primary_only"},
 	}
 	if !reflect.DeepEqual(mongodbArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMongodbArgs) {
