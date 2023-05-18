@@ -332,9 +332,5 @@ func (m *MongodbActionArgs) GetActionArguments(dbSpec DatabaseSpec) []ActionArgu
 			Name:  "backup_policy",
 			Value: "primary_only",
 		},
-		{
-			Name:  "backup_policy",
-			Value: "primary_only",
-		},
 	}
 }
