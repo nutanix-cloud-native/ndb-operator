@@ -654,7 +654,7 @@ func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 		{Name: "working_dir", Value: "/tmp"},
 		{Name: "db_user", Value: "admin"},
 		{Name: "backup_policy", Value: "primary_only"},
-		{Name: "db_user", Value: "test"}}
+	}
 	if !reflect.DeepEqual(mongodbArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMongodbArgs) {
 		t.Errorf("Expected %v, but got %v", expectedMongodbArgs, mongodbArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
 	}
