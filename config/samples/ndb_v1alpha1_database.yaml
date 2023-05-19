@@ -20,12 +20,14 @@ spec:
     type: postgres
     profiles:
       compute:
+        name: ""
         id: ""
       software:
         name: ""
         id: ""
       network:
         name: ""
+        id: ""
       dbParam:
         name: ""
         id: ""

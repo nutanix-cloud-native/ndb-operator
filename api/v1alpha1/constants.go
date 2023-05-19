@@ -48,6 +48,8 @@ const (
 	PROFILE_TYPE_NETWORK            = "Network"
 	PROFILE_TYPE_SOFTWARE           = "Software"
 
+	PROFILE_STATUS_READY = "READY"
+
 	PROPERTY_NAME_VM_IP = "vm_ip"
 
 	SECRET_DATA_KEY_CA_CERTIFICATE = "ca_certificate"

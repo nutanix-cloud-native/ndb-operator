@@ -215,6 +215,7 @@ type ProfileResponse struct {
 	LatestVersionId string `json:"latestVersionId"`
 	Topology        string `json:"topology"`
 	SystemProfile   bool   `json:"systemProfile"`
+	Status          string `json:"status"`
 }
 
 // +kubebuilder:object:generate:=false

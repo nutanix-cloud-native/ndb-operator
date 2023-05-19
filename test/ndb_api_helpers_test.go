@@ -156,6 +156,30 @@ func TestGetProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
 	}
 }
 
+func TestGetProfilesSoftwareProfileNotReadyState(t *testing.T) {
+
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+
+	Instance := v1alpha1.Instance{}
+	inputSoftwareSpec := v1alpha1.Profile{Name: "Software_Profile_Not_Ready"}
+	Instance.Profiles.Software = inputSoftwareSpec
+	//Test
+	dbTypes := []string{"postgres"}
+	for _, dbType := range dbTypes {
+		Instance.Type = dbType
+		profileMap, _ := v1alpha1.GetProfiles(context.Background(), ndbclient, Instance)
+
+		//Assert
+		software := profileMap[v1alpha1.PROFILE_TYPE_SOFTWARE]
+		if software != (v1alpha1.ProfileResponse{}) {
+			t.Errorf("Expected software profile to be not found, but got: %s", software.Name)
+		}
+	}
+}
+
 func TestGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
 
 	//Set
@@ -171,6 +195,7 @@ func TestGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
 					EngineType:      "test engine",
 					LatestVersionId: "v-id-1",
 					Topology:        "test topology",
+					Status:          "READY",
 				},
 			})
 			w.WriteHeader(http.StatusOK)
@@ -205,6 +230,7 @@ func profilesListGenerator() []v1alpha1.ProfileResponse {
 		LatestVersionId: "cp-vid-1",
 		Topology:        "test topology",
 		SystemProfile:   false,
+		Status:          "READY",
 	}
 
 	oob_generic_compute := v1alpha1.ProfileResponse{
@@ -215,6 +241,7 @@ func profilesListGenerator() []v1alpha1.ProfileResponse {
 		LatestVersionId: "cp-vid-2",
 		Topology:        "test topology",
 		SystemProfile:   true,
+		Status:          "READY",
 	}
 
 	oob_postgres_software := v1alpha1.ProfileResponse{
@@ -225,6 +252,18 @@ func profilesListGenerator() []v1alpha1.ProfileResponse {
 		LatestVersionId: "sw-vid-1",
 		Topology:        "single",
 		SystemProfile:   true,
+		Status:          "READY",
+	}
+
+	oob_postgres_software_not_ready := v1alpha1.ProfileResponse{
+		Id:              "sw-id-2",
+		Name:            "Software_Profile_Not_READY",
+		Type:            "Software",
+		EngineType:      "postgres",
+		LatestVersionId: "sw-vid-2",
+		Topology:        "single",
+		SystemProfile:   false,
+		Status:          "NOT_YET_CREATED",
 	}
 
 	oob_postgres_network := v1alpha1.ProfileResponse{
@@ -235,6 +274,7 @@ func profilesListGenerator() []v1alpha1.ProfileResponse {
 		LatestVersionId: "nw-vid-1",
 		Topology:        "test topology",
 		SystemProfile:   true,
+		Status:          "READY",
 	}
 
 	oob_postgres_dbparam := v1alpha1.ProfileResponse{
@@ -245,12 +285,14 @@ func profilesListGenerator() []v1alpha1.ProfileResponse {
 		LatestVersionId: "dbp-vid-1",
 		Topology:        "test topology",
 		SystemProfile:   true,
+		Status:          "READY",
 	}
 
 	allProfiles := [10]v1alpha1.ProfileResponse{
 		custom_generic_compute,
 		oob_generic_compute,
 		oob_postgres_software,
+		oob_postgres_software_not_ready,
 		oob_postgres_network,
 		oob_postgres_dbparam,
 	}
@@ -266,10 +308,10 @@ func TestResolveOOBSoftwareProfileByEmptyNameAndID(t *testing.T) {
 
 	inputProfile := v1alpha1.Profile{}
 
-	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolver)
+	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err != nil {
-		t.Errorf("TestResolveOOBSoftwareProfileByEmptyNameAndID: should not return an error")
+		t.Errorf("should not return an error")
 	}
 
 	assert.True(t, resolvedSoftwareProfile.SystemProfile)
@@ -285,7 +327,7 @@ func TestResolveSoftwareProfileByName(t *testing.T) {
 		Name: "Software_Profile_1",
 	}
 
-	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolver)
+	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err != nil {
 		t.Errorf("TestResolveSoftwareProfileByName: should not return an error")
@@ -306,14 +348,14 @@ func TestResolveSoftwareProfileByNameMismatch(t *testing.T) {
 		Name: "Software_Profile_#1",
 	}
 
-	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolver)
+	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err == nil {
-		t.Errorf("TestResolveSoftwareProfileByNameMismatch: should return an error")
+		t.Errorf("should return an error")
 	}
 
 	if resolvedSoftwareProfile != (v1alpha1.ProfileResponse{}) {
-		t.Errorf("TestResolveSoftwareProfileByNameMismatch: should return a nil profile")
+		t.Errorf("should return a nil profile")
 	}
 }
 
@@ -327,7 +369,7 @@ func TestResolveComputeProfileByName(t *testing.T) {
 	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.ComputeOOBProfileResolver)
 
 	if err != nil {
-		t.Errorf("TestResolveComputeProfileByName: should not return an error")
+		t.Errorf("should not return an error")
 	}
 }
 
@@ -341,7 +383,7 @@ func TestResolveComputeProfileByNameCaseMismatch(t *testing.T) {
 	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.ComputeOOBProfileResolver)
 
 	if err == nil {
-		t.Errorf("TestResolveComputeProfileByNameCaseMismatch: should not return an error")
+		t.Errorf("should not return an error")
 	}
 }
 
@@ -355,7 +397,7 @@ func TestResolveComputeProfileById(t *testing.T) {
 	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.ComputeOOBProfileResolver)
 
 	if err != nil {
-		t.Errorf("TestResolveComputeProfileById should not return an error")
+		t.Errorf("should not return an error")
 	}
 
 }
@@ -377,6 +419,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
 						EngineType:      "test engine",
 						LatestVersionId: "v-id-1",
 						Topology:        "test topology",
+						Status:          "READY",
 					},
 				}
 			} else if r.URL.Path == "/slas" {
@@ -460,6 +503,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfProfilesNotFound(t *testing.T)
 						EngineType:      "test engine",
 						LatestVersionId: "v-id-1",
 						Topology:        "test topology",
+						Status:          "READY",
 					},
 				}
 			} else if r.URL.Path == "/slas" {
@@ -607,6 +651,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfDBPasswordIsEmpty(t *testing.T
 						EngineType:      "test engine",
 						LatestVersionId: "v-id-1",
 						Topology:        "test topology",
+						Status:          "READY",
 					},
 				}
 			} else if r.URL.Path == "/slas" {
@@ -701,6 +746,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 						EngineType:      "test engine",
 						LatestVersionId: "v-id-1",
 						Topology:        "test topology",
+						Status:          "READY",
 					},
 				}
 			} else if r.URL.Path == "/slas" {
