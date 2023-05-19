@@ -228,7 +228,6 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			log.Error(err, "An error occurred while trying to provision the database")
 			return r.requeueOnErr(err)
 		}
-		// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
 
 		log.Info("Setting database CR status to provisioning and id as " + taskResponse.EntityId)
 		database.Status.Status = ndbv1alpha1.DATABASE_CR_STATUS_PROVISIONING
@@ -253,11 +252,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			log.Info("Database instance is READY, adding data to CR's status and updating the CR")
 			database.Status.Status = ndbv1alpha1.DATABASE_CR_STATUS_READY
 			database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
-			for _, property := range databaseResponse.Properties {
-				if property.Name == ndbv1alpha1.PROPERTY_NAME_VM_IP {
-					database.Status.IPAddress = property.Value
-				}
-			}
+			database.Status.IPAddress = databaseResponse.DatabaseNodes[0].DbServer.IPAddresses[0]
 			err = r.Status().Update(ctx, database)
 			if err != nil {
 				log.Error(err, "Failed to update database status")

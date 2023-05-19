@@ -624,7 +624,6 @@ func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 	if !reflect.DeepEqual(MySQLExpectedArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMySqlArgs) {
 		t.Errorf("Expected %v, but got %v", expectedMySqlArgs, MySQLExpectedArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
 	}
-
 	// Test with Postgres database type
 	postgresArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_POSTGRES)
 	if err != nil {

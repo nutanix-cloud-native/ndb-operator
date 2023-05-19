@@ -233,9 +233,17 @@ type SLAResponse struct {
 
 // +kubebuilder:object:generate:=false
 type DatabaseNode struct {
-	Id               string `json:"id"`
-	Name             string `json:"name"`
-	DatabaseServerId string `json:"dbServerId"`
+	Id               string         `json:"id"`
+	Name             string         `json:"name"`
+	DatabaseServerId string         `json:"dbServerId"`
+	DbServer         DatabaseServer `json:"dbserver"`
+}
+
+// +kubebuilder:object:generate:=false
+type DatabaseServer struct {
+	Id          string   `json:"id"`
+	Name        string   `json:"name"`
+	IPAddresses []string `json:"ipAddresses"`
 }
 
 // +kubebuilder:object:generate:=false
