@@ -158,15 +158,15 @@ func GetNoneTimeMachineSLA(ctx context.Context, ndbclient *ndbclient.NDBClient) 
 
 // +kubebuilder:object:generate:=false
 type ProfileResolver interface {
-	Resolve(ctx context.Context, allProfiles []ProfileResponse, filter func(allProfiles ProfileResponse) bool) (profile ProfileResponse, err error)
+	Resolve(ctx context.Context, allProfiles []ProfileResponse, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error)
 }
 
-func (providedProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileResponse, filter func(allProfiles ProfileResponse) bool) (profile ProfileResponse, err error) {
+func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileResponse, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api_helpers.resolve", "provided profile", providedProfile)
+	log.Info("Entered ndb_api_helpers.resolve", "input profile", inputProfile)
 
 	// If both NAME and ID are not provided, return OOB profile
-	if providedProfile.Name == "" && providedProfile.Id == "" {
+	if inputProfile.Name == "" && inputProfile.Id == "" {
 		log.Info("Attempting to resolve the OOB profile...")
 		profile, err = util.FindFirst(allProfiles, filter)
 
@@ -176,17 +176,17 @@ func (providedProfile *Profile) Resolve(ctx context.Context, allProfiles []Profi
 		}
 	} else {
 		// Attempting to resolve using NAME
-		if providedProfile.Name != "" {
+		if inputProfile.Name != "" {
 			profile, _ = util.FindFirst(allProfiles, func(pr ProfileResponse) bool {
-				return pr.Name == providedProfile.Name
+				return pr.Name == inputProfile.Name
 			})
 			log.Info("Profile resolved using Name", "profile", profile)
 		}
 
 		// If unable to resolve by Name, then resolve using ID
-		if profile == (ProfileResponse{}) && providedProfile.Id != "" {
+		if profile == (ProfileResponse{}) && inputProfile.Id != "" {
 			profile, err = util.FindFirst(allProfiles, func(pr ProfileResponse) bool {
-				return pr.Id == providedProfile.Id
+				return pr.Id == inputProfile.Id
 			})
 
 			log.Info("Profile found for the ID", "profile", profile)

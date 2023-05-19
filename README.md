@@ -92,7 +92,7 @@ spec:
   ndb:
     # Cluster id of the cluster where the Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
-    clusterId: "<Nutanix Cluster Id>"
+    clusterId: "Nutanix Cluster Id"
     # Credentials secret name for NDB installation
     # data: username, password,
     # stringData: ca_certificate
@@ -104,7 +104,7 @@ spec:
   # Database instance specific details (that is to be provisioned)
   databaseInstance:
     # The database instance name on NDB
-    databaseInstanceName: "<Database-Instance-Name>"
+    databaseInstanceName: "Database-Instance-Name"
     # Names of the databases on that instance
     databaseNames:
       - database_one
@@ -119,8 +119,7 @@ spec:
 
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
-    # "name" is case-sensitive. For "id", use the UUID of the profile. Both are optional to specify
-    # Profile needs to be in READY state
+    # "name" is case-sensitive. For "id", use the UUID of profile. Profile status should be "READY"
     profiles:
       compute:
         id: ""
