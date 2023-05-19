@@ -16,6 +16,11 @@ limitations under the License.
 
 package util
 
+import (
+	"errors"
+	"reflect"
+)
+
 // A utility function to filter the items based on the conditions
 // defined in the predicate 'fn'
 func Filter[T any](items []T, fn func(item T) bool) []T {
@@ -26,4 +31,18 @@ func Filter[T any](items []T, fn func(item T) bool) []T {
 		}
 	}
 	return filteredItems
+}
+
+// A utility function to find the first match for the given value/criteria
+// throws an error in case of no match
+func FindFirst[T any](items []T, fn func(item T) bool) (T, error) {
+	for _, value := range items {
+		if fn(value) {
+			return value, nil
+		}
+	}
+
+	// returning an empty instance of T if we did not find any matching element
+	empty := reflect.New(reflect.TypeOf(items[0])).Elem().Interface().(T)
+	return empty, errors.New("no element found matching the provided criteria")
 }

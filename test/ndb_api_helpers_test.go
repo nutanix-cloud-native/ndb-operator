@@ -27,6 +27,8 @@ import (
 
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/ndbclient"
+	"github.com/nutanix-cloud-native/ndb-operator/util"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetNoneTimeMachineSLA(t *testing.T) {
@@ -97,7 +99,7 @@ func TestGetNoneTimeMachineSLAReturnsErrorWhenNoneTimeMachineNotFound(t *testing
 	}
 }
 
-func TestGetOOBProfiles(t *testing.T) {
+func TestProfiles(t *testing.T) {
 
 	//Set
 	server := GetServerTestHelper(t)
@@ -114,7 +116,6 @@ func TestGetOOBProfiles(t *testing.T) {
 		//Assert
 		profileTypes := []string{
 			v1alpha1.PROFILE_TYPE_COMPUTE,
-			v1alpha1.PROFILE_TYPE_STORAGE,
 			v1alpha1.PROFILE_TYPE_SOFTWARE,
 			v1alpha1.PROFILE_TYPE_NETWORK,
 			v1alpha1.PROFILE_TYPE_DATABASE_PARAMETER,
@@ -133,7 +134,7 @@ func TestGetOOBProfiles(t *testing.T) {
 	}
 }
 
-func TestGetOOBProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
+func TestGetProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
 
 	//Set
 	server := GetServerTestHelper(t)
@@ -155,7 +156,7 @@ func TestGetOOBProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
 	}
 }
 
-func TestGetOOBProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
+func TestGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
 
 	//Set
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -188,10 +189,175 @@ func TestGetOOBProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
 		// None of the profile criteria should match the mocked response
 		// t.Log(err)
 		if err == nil {
-			t.Errorf("GetOOBProdiles should have retuned an error when none of the profiles matc the criteria.")
+			t.Errorf("GetProfiles should have retuned an error when none of the profiles matc the criteria.")
 		}
 
 	}
+}
+
+func profilesListGenerator() []v1alpha1.ProfileResponse {
+
+	custom_generic_compute := v1alpha1.ProfileResponse{
+		Id:              "cp-id-1",
+		Name:            "Compute_Profile_1",
+		Type:            "Compute",
+		EngineType:      "Generic",
+		LatestVersionId: "cp-vid-1",
+		Topology:        "test topology",
+		SystemProfile:   false,
+	}
+
+	oob_generic_compute := v1alpha1.ProfileResponse{
+		Id:              "cp-id-2",
+		Name:            "small",
+		Type:            "Compute",
+		EngineType:      "Generic",
+		LatestVersionId: "cp-vid-2",
+		Topology:        "test topology",
+		SystemProfile:   true,
+	}
+
+	oob_postgres_software := v1alpha1.ProfileResponse{
+		Id:              "sw-id-1",
+		Name:            "Software_Profile_1",
+		Type:            "Software",
+		EngineType:      "postgres",
+		LatestVersionId: "sw-vid-1",
+		Topology:        "single",
+		SystemProfile:   true,
+	}
+
+	oob_postgres_network := v1alpha1.ProfileResponse{
+		Id:              "nw-id-1",
+		Name:            "Network_Profile_1",
+		Type:            "Network",
+		EngineType:      "postgres",
+		LatestVersionId: "nw-vid-1",
+		Topology:        "test topology",
+		SystemProfile:   true,
+	}
+
+	oob_postgres_dbparam := v1alpha1.ProfileResponse{
+		Id:              "dbp-id-1",
+		Name:            "DBParam_Profile_1",
+		Type:            "DBParam",
+		EngineType:      "postgres",
+		LatestVersionId: "dbp-vid-1",
+		Topology:        "test topology",
+		SystemProfile:   true,
+	}
+
+	allProfiles := [10]v1alpha1.ProfileResponse{
+		custom_generic_compute,
+		oob_generic_compute,
+		oob_postgres_software,
+		oob_postgres_network,
+		oob_postgres_dbparam,
+	}
+
+	return allProfiles[:]
+}
+
+func TestResolveOOBSoftwareProfileByEmptyNameAndID(t *testing.T) {
+	allProfiles := profilesListGenerator()
+	pgSpecificProfiles := util.Filter(allProfiles, func(p v1alpha1.ProfileResponse) bool {
+		return p.EngineType == "postgres"
+	})
+
+	inputProfile := v1alpha1.Profile{}
+
+	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolver)
+
+	if err != nil {
+		t.Errorf("TestResolveOOBSoftwareProfileByEmptyNameAndID: should not return an error")
+	}
+
+	assert.True(t, resolvedSoftwareProfile.SystemProfile)
+}
+
+func TestResolveSoftwareProfileByName(t *testing.T) {
+	allProfiles := profilesListGenerator()
+	pgSpecificProfiles := util.Filter(allProfiles, func(p v1alpha1.ProfileResponse) bool {
+		return p.EngineType == "postgres"
+	})
+
+	inputProfile := v1alpha1.Profile{
+		Name: "Software_Profile_1",
+	}
+
+	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolver)
+
+	if err != nil {
+		t.Errorf("TestResolveSoftwareProfileByName: should not return an error")
+	}
+
+	if resolvedSoftwareProfile.Name != "Software_Profile_1" {
+		t.Errorf("software profile names should match")
+	}
+}
+
+func TestResolveSoftwareProfileByNameMismatch(t *testing.T) {
+	allProfiles := profilesListGenerator()
+	pgSpecificProfiles := util.Filter(allProfiles, func(p v1alpha1.ProfileResponse) bool {
+		return p.EngineType == "postgres"
+	})
+
+	inputProfile := v1alpha1.Profile{
+		Name: "Software_Profile_#1",
+	}
+
+	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolver)
+
+	if err == nil {
+		t.Errorf("TestResolveSoftwareProfileByNameMismatch: should return an error")
+	}
+
+	if resolvedSoftwareProfile != (v1alpha1.ProfileResponse{}) {
+		t.Errorf("TestResolveSoftwareProfileByNameMismatch: should return a nil profile")
+	}
+}
+
+func TestResolveComputeProfileByName(t *testing.T) {
+	allProfiles := profilesListGenerator()
+
+	inputProfile := v1alpha1.Profile{
+		Name: "Compute_Profile_1",
+	}
+
+	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.ComputeOOBProfileResolver)
+
+	if err != nil {
+		t.Errorf("TestResolveComputeProfileByName: should not return an error")
+	}
+}
+
+func TestResolveComputeProfileByNameCaseMismatch(t *testing.T) {
+	allProfiles := profilesListGenerator()
+
+	inputProfile := v1alpha1.Profile{
+		Name: "compute_Profile_1",
+	}
+
+	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.ComputeOOBProfileResolver)
+
+	if err == nil {
+		t.Errorf("TestResolveComputeProfileByNameCaseMismatch: should not return an error")
+	}
+}
+
+func TestResolveComputeProfileById(t *testing.T) {
+	allProfiles := profilesListGenerator()
+
+	inputProfile := v1alpha1.Profile{
+		Id: "cp-id-2",
+	}
+
+	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.ComputeOOBProfileResolver)
+
+	if err != nil {
+		t.Errorf("TestResolveComputeProfileById should not return an error")
+	}
+
 }
 
 func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
@@ -614,9 +780,21 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 
 func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 	// Test with MySQL database type
-	_, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MYSQL)
+	MySQLExpectedArgs, err := v1alpha1.GetActionArgumentsByDatabaseType(v1alpha1.DATABASE_TYPE_MYSQL)
+
 	if err != nil {
 		t.Error("Error while fetching mysql args", "err", err)
+	}
+
+	expectedMySqlArgs := []v1alpha1.ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "3306",
+		},
+	}
+
+	if !reflect.DeepEqual(MySQLExpectedArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMySqlArgs) {
+		t.Errorf("Expected %v, but got %v", expectedMySqlArgs, MySQLExpectedArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
 	}
 
 	// Test with Postgres database type
@@ -630,6 +808,7 @@ func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 		{Name: "proxy_write_port", Value: "5000"},
 		{Name: "enable_synchronous_mode", Value: "false"},
 		{Name: "auto_tune_staging_drive", Value: "true"},
+		{Name: "backup_policy", Value: "primary_only"},
 	}
 	if !reflect.DeepEqual(postgresArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedPostgresArgs) {
 		t.Errorf("Expected %v, but got %v", expectedPostgresArgs, postgresArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
@@ -646,7 +825,8 @@ func TestGetActionArgumentsByDatabaseType(t *testing.T) {
 		{Name: "journal_size", Value: "100"},
 		{Name: "restart_mongod", Value: "true"},
 		{Name: "working_dir", Value: "/tmp"},
-		{Name: "db_user", Value: "test"},
+		{Name: "db_user", Value: "admin"},
+		{Name: "backup_policy", Value: "primary_only"},
 	}
 	if !reflect.DeepEqual(mongodbArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMongodbArgs) {
 		t.Errorf("Expected %v, but got %v", expectedMongodbArgs, mongodbArgs.GetActionArguments(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))

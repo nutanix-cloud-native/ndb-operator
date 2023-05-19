@@ -47,7 +47,6 @@ const (
 	PROFILE_TYPE_DATABASE_PARAMETER = "Database_Parameter"
 	PROFILE_TYPE_NETWORK            = "Network"
 	PROFILE_TYPE_SOFTWARE           = "Software"
-	PROFILE_TYPE_STORAGE            = "Storage"
 
 	PROPERTY_NAME_VM_IP = "vm_ip"
 

@@ -87,14 +87,6 @@ var MockResponsesMap = map[string]interface{}{
 			Topology:        v1alpha1.TOPOLOGY_ALL,
 		},
 		{
-			Id:              "2",
-			Name:            "b",
-			Type:            v1alpha1.PROFILE_TYPE_STORAGE,
-			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_GENERIC,
-			LatestVersionId: "v-id-2",
-			Topology:        v1alpha1.TOPOLOGY_ALL,
-		},
-		{
 			Id:              "3",
 			Name:            "c",
 			Type:            v1alpha1.PROFILE_TYPE_SOFTWARE,

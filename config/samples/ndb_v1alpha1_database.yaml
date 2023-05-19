@@ -18,4 +18,14 @@ spec:
     size: 10
     timezone: "UTC"
     type: postgres
-
+    profiles:
+      compute:
+        id: ""
+      software:
+        name: ""
+        id: ""
+      network:
+        name: ""
+      dbParam:
+        name: ""
+        id: ""
