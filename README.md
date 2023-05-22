@@ -119,11 +119,12 @@ spec:
 
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
-    # "name" is case-sensitive. For "id", use the UUID of profile. Profile status should be "READY"
+    # name is case-sensitive. id is the UUID of the profile. Profile should be in the "READY" state
     profiles:
       compute:
         id: ""
         name: ""
+      # A Software profile is a mandatory input for closed-source engines: SQL Server & Oracle
       software:
         name: ""
         id: ""

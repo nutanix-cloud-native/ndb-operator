@@ -134,7 +134,7 @@ func TestProfiles(t *testing.T) {
 	}
 }
 
-func TestGetProfilesOnlyGetsTheSmallOOBComputeProfile(t *testing.T) {
+func TestGetProfilesOnlyGetsTheSmallOOBComputeProfileWhenNoProfileInfoIsProvided(t *testing.T) {
 
 	//Set
 	server := GetServerTestHelper(t)
@@ -308,7 +308,7 @@ func TestResolveOOBSoftwareProfileByEmptyNameAndID(t *testing.T) {
 
 	inputProfile := v1alpha1.Profile{}
 
-	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
+	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.PROFILE_TYPE_SOFTWARE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err != nil {
 		t.Errorf("should not return an error")
@@ -327,7 +327,7 @@ func TestResolveSoftwareProfileByName(t *testing.T) {
 		Name: "Software_Profile_1",
 	}
 
-	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
+	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.PROFILE_TYPE_SOFTWARE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err != nil {
 		t.Errorf("TestResolveSoftwareProfileByName: should not return an error")
@@ -348,7 +348,7 @@ func TestResolveSoftwareProfileByNameMismatch(t *testing.T) {
 		Name: "Software_Profile_#1",
 	}
 
-	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
+	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.PROFILE_TYPE_SOFTWARE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err == nil {
 		t.Errorf("should return an error")
@@ -366,7 +366,7 @@ func TestResolveComputeProfileByName(t *testing.T) {
 		Name: "Compute_Profile_1",
 	}
 
-	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.ComputeOOBProfileResolver)
+	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.PROFILE_TYPE_COMPUTE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.ComputeOOBProfileResolver)
 
 	if err != nil {
 		t.Errorf("should not return an error")
@@ -380,7 +380,7 @@ func TestResolveComputeProfileByNameCaseMismatch(t *testing.T) {
 		Name: "compute_Profile_1",
 	}
 
-	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.ComputeOOBProfileResolver)
+	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.PROFILE_TYPE_COMPUTE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.ComputeOOBProfileResolver)
 
 	if err == nil {
 		t.Errorf("should not return an error")
@@ -394,7 +394,7 @@ func TestResolveComputeProfileById(t *testing.T) {
 		Id: "cp-id-2",
 	}
 
-	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.ComputeOOBProfileResolver)
+	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.PROFILE_TYPE_COMPUTE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.ComputeOOBProfileResolver)
 
 	if err != nil {
 		t.Errorf("should not return an error")
