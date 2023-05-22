@@ -162,7 +162,7 @@ type ProfileResolver interface {
 	Resolve(ctx context.Context, allProfiles []ProfileResponse, pType string, dbEngine string, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error)
 }
 
-func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileResponse, pType string, dbEngine string, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error) {
+func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileResponse, pType string, dbType string, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api_helpers.resolve", "input profile", inputProfile)
 
@@ -172,11 +172,12 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileR
 	var profileByName, profileById ProfileResponse
 
 	// validation of software profile for closed-source db engines
-	isSoftwareProfile, isClosedSourceEngine := (pType == PROFILE_TYPE_SOFTWARE), (dbEngine == DATABASE_TYPE_ORACLE) || (dbEngine == DATABASE_TYPE_SQLSERVER)
-	if isSoftwareProfile && isClosedSourceEngine {
+	isClosedSourceEngine := (dbType == DATABASE_TYPE_ORACLE) || (dbType == DATABASE_TYPE_SQLSERVER)
+
+	if pType == PROFILE_TYPE_SOFTWARE && isClosedSourceEngine {
 		if !isNameProvided && !isIdProvided {
-			log.Error(errors.New("software profile not provided for closed-source database"), "Provide software profile info", "dbEngine", dbEngine)
-			return ProfileResponse{}, fmt.Errorf("software profile is a mandatory input for %s type of database", dbEngine)
+			log.Error(errors.New("software profile not provided for closed-source database"), "Provide software profile info", "dbType", dbType)
+			return ProfileResponse{}, fmt.Errorf("software profile is a mandatory input for %s type of database", dbType)
 		}
 	}
 
@@ -234,7 +235,8 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileR
 
 // TODO: Once the database_types refactoring is over, move out below methods to  profile_helper.go
 var ComputeOOBProfileResolver = func(p ProfileResponse) bool {
-	return p.Type == PROFILE_TYPE_COMPUTE && strings.ToUpper(p.Name) == DEFAULT_OOB_SMALL_COMPUTE
+	return p.Type == PROFILE_TYPE_COMPUTE &&
+		strings.EqualFold(p.Name, DEFAULT_OOB_SMALL_COMPUTE)
 }
 
 var SoftwareOOBProfileResolverForSingleInstance = func(p ProfileResponse) bool {
