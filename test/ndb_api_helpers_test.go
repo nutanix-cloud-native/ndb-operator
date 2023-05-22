@@ -244,6 +244,17 @@ func profilesListGenerator() []v1alpha1.ProfileResponse {
 		Status:          "READY",
 	}
 
+	oob_oracle_software := v1alpha1.ProfileResponse{
+		Id:              "sw-id-5",
+		Name:            "Software_Profile_5",
+		Type:            "Software",
+		EngineType:      "oracle",
+		LatestVersionId: "sw-vid-5",
+		Topology:        "single",
+		SystemProfile:   true,
+		Status:          "READY",
+	}
+
 	oob_postgres_software := v1alpha1.ProfileResponse{
 		Id:              "sw-id-1",
 		Name:            "Software_Profile_1",
@@ -291,6 +302,7 @@ func profilesListGenerator() []v1alpha1.ProfileResponse {
 	allProfiles := [10]v1alpha1.ProfileResponse{
 		custom_generic_compute,
 		oob_generic_compute,
+		oob_oracle_software,
 		oob_postgres_software,
 		oob_postgres_software_not_ready,
 		oob_postgres_network,
@@ -301,6 +313,7 @@ func profilesListGenerator() []v1alpha1.ProfileResponse {
 }
 
 func TestResolveOOBSoftwareProfileByEmptyNameAndID(t *testing.T) {
+	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 	pgSpecificProfiles := util.Filter(allProfiles, func(p v1alpha1.ProfileResponse) bool {
 		return p.EngineType == "postgres"
@@ -308,7 +321,11 @@ func TestResolveOOBSoftwareProfileByEmptyNameAndID(t *testing.T) {
 
 	inputProfile := v1alpha1.Profile{}
 
-	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.PROFILE_TYPE_SOFTWARE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
+	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
+		pgSpecificProfiles,
+		v1alpha1.PROFILE_TYPE_SOFTWARE,
+		v1alpha1.DATABASE_TYPE_POSTGRES,
+		v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err != nil {
 		t.Errorf("should not return an error")
@@ -318,6 +335,7 @@ func TestResolveOOBSoftwareProfileByEmptyNameAndID(t *testing.T) {
 }
 
 func TestResolveSoftwareProfileByName(t *testing.T) {
+	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 	pgSpecificProfiles := util.Filter(allProfiles, func(p v1alpha1.ProfileResponse) bool {
 		return p.EngineType == "postgres"
@@ -327,10 +345,14 @@ func TestResolveSoftwareProfileByName(t *testing.T) {
 		Name: "Software_Profile_1",
 	}
 
-	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.PROFILE_TYPE_SOFTWARE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
+	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
+		pgSpecificProfiles,
+		v1alpha1.PROFILE_TYPE_SOFTWARE,
+		v1alpha1.DATABASE_TYPE_POSTGRES,
+		v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err != nil {
-		t.Errorf("TestResolveSoftwareProfileByName: should not return an error")
+		t.Errorf("should not return an error")
 	}
 
 	if resolvedSoftwareProfile.Name != "Software_Profile_1" {
@@ -338,7 +360,28 @@ func TestResolveSoftwareProfileByName(t *testing.T) {
 	}
 }
 
+func TestResolveSoftwareProfileResolutionErrorForOracle(t *testing.T) {
+	allProfiles := profilesListGenerator()
+	ctx := context.Background()
+	oracleSpecificProfiles := util.Filter(allProfiles, func(p v1alpha1.ProfileResponse) bool {
+		return p.EngineType == "oracle"
+	})
+
+	inputProfile := v1alpha1.Profile{}
+
+	_, err := inputProfile.Resolve(ctx,
+		oracleSpecificProfiles,
+		v1alpha1.PROFILE_TYPE_SOFTWARE,
+		v1alpha1.DATABASE_TYPE_ORACLE,
+		v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
+
+	if err == nil {
+		t.Errorf("should return an error as software profile input is required for oracle")
+	}
+}
+
 func TestResolveSoftwareProfileByNameMismatch(t *testing.T) {
+	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 	pgSpecificProfiles := util.Filter(allProfiles, func(p v1alpha1.ProfileResponse) bool {
 		return p.EngineType == "postgres"
@@ -348,7 +391,11 @@ func TestResolveSoftwareProfileByNameMismatch(t *testing.T) {
 		Name: "Software_Profile_#1",
 	}
 
-	resolvedSoftwareProfile, err := inputProfile.Resolve(context.Background(), pgSpecificProfiles, v1alpha1.PROFILE_TYPE_SOFTWARE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
+	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
+		pgSpecificProfiles,
+		v1alpha1.PROFILE_TYPE_SOFTWARE,
+		v1alpha1.DATABASE_TYPE_POSTGRES,
+		v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err == nil {
 		t.Errorf("should return an error")
@@ -360,13 +407,18 @@ func TestResolveSoftwareProfileByNameMismatch(t *testing.T) {
 }
 
 func TestResolveComputeProfileByName(t *testing.T) {
+	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 
 	inputProfile := v1alpha1.Profile{
 		Name: "Compute_Profile_1",
 	}
 
-	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.PROFILE_TYPE_COMPUTE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.ComputeOOBProfileResolver)
+	_, err := inputProfile.Resolve(ctx,
+		allProfiles,
+		v1alpha1.PROFILE_TYPE_COMPUTE,
+		v1alpha1.DATABASE_TYPE_POSTGRES,
+		v1alpha1.ComputeOOBProfileResolver)
 
 	if err != nil {
 		t.Errorf("should not return an error")
@@ -374,13 +426,18 @@ func TestResolveComputeProfileByName(t *testing.T) {
 }
 
 func TestResolveComputeProfileByNameCaseMismatch(t *testing.T) {
+	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 
 	inputProfile := v1alpha1.Profile{
 		Name: "compute_Profile_1",
 	}
 
-	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.PROFILE_TYPE_COMPUTE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.ComputeOOBProfileResolver)
+	_, err := inputProfile.Resolve(ctx,
+		allProfiles,
+		v1alpha1.PROFILE_TYPE_COMPUTE,
+		v1alpha1.DATABASE_TYPE_POSTGRES,
+		v1alpha1.ComputeOOBProfileResolver)
 
 	if err == nil {
 		t.Errorf("should not return an error")
@@ -388,13 +445,18 @@ func TestResolveComputeProfileByNameCaseMismatch(t *testing.T) {
 }
 
 func TestResolveComputeProfileById(t *testing.T) {
+	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 
 	inputProfile := v1alpha1.Profile{
 		Id: "cp-id-2",
 	}
 
-	_, err := inputProfile.Resolve(context.Background(), allProfiles, v1alpha1.PROFILE_TYPE_COMPUTE, v1alpha1.DATABASE_TYPE_POSTGRES, v1alpha1.ComputeOOBProfileResolver)
+	_, err := inputProfile.Resolve(ctx,
+		allProfiles,
+		v1alpha1.PROFILE_TYPE_COMPUTE,
+		v1alpha1.DATABASE_TYPE_POSTGRES,
+		v1alpha1.ComputeOOBProfileResolver)
 
 	if err != nil {
 		t.Errorf("should not return an error")
