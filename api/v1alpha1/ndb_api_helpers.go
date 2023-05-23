@@ -266,7 +266,7 @@ func GetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, instanceSp
 	if isClosedSourceEngine {
 		if inputProfiles.Software.Id == "" && inputProfiles.Software.Name == "" {
 			log.Error(errors.New("software profile not provided"), "Provide software profile info", "dbType", instanceSpec.Type)
-			return nil, fmt.Errorf("software profile is a mandatory input for %s type of database", instanceSpec.Type)
+			return nil, fmt.Errorf("software profile is a mandatory input for %s database", instanceSpec.Type)
 		}
 	}
 

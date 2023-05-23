@@ -19,6 +19,7 @@ package test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -152,7 +153,7 @@ func TestGetProfilesFailsWhenSoftwareProfileNotProvidedForClosedSourceDBs(t *tes
 		_, err := v1alpha1.GetProfiles(context.Background(), ndbclient, Instance)
 
 		if err == nil {
-			assert.EqualError(t, err, "software profile is a mandatory input for oracle type of database")
+			assert.EqualError(t, err, fmt.Sprintf("software profile is a mandatory input for %s database", dbType))
 		}
 	}
 }
