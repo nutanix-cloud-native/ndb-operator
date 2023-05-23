@@ -23,7 +23,7 @@ The NDB operator brings automated and simplified database administration, provis
 Deploy the controller on the cluster:
 
 ```sh
-make deploy 
+make deploy
 ```
 
 ### Using the Operator
@@ -92,9 +92,9 @@ spec:
   ndb:
     # Cluster id of the cluster where the Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
-    clusterId: "Nutanix Cluster Id" 
+    clusterId: "Nutanix Cluster Id"
     # Credentials secret name for NDB installation
-    # data: username, password, 
+    # data: username, password,
     # stringData: ca_certificate
     credentialSecret: ndb-secret-name
     # The NDB Server
@@ -116,6 +116,25 @@ spec:
     size: 10
     timezone: "UTC"
     type: postgres
+
+    # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
+    # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
+    # name is case-sensitive. id is the UUID of the profile. Profile should be in the "READY" state
+    profiles:
+      compute:
+        id: ""
+        name: ""
+      # A Software profile is a mandatory input for closed-source engines: SQL Server & Oracle
+      software:
+        name: ""
+        id: ""
+      network:
+        id: ""
+        name: ""
+      dbParam:
+        name: ""
+        id: ""
+
 ```
 
 ## Developement
@@ -146,14 +165,14 @@ make generate manifests
 
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
-### Building and pushing to an image registry  
+### Building and pushing to an image registry
 Build and push your image to the location specified by `IMG`:
-  
+
 ```sh
 make docker-build docker-push IMG=<some-registry>/ndb-operator:tag
 ```
 
-### Deploy the operator pushed to an image registry  
+### Deploy the operator pushed to an image registry
 Deploy the controller to the cluster with the image specified by `IMG`:
 
 ```sh
@@ -178,10 +197,10 @@ make undeploy
 
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 
-It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/) 
+It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/)
 which provides a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster.
 
-A custom resource of the kind Database is created by the reconciler, followed by a Service and an Endpoint that maps to the IP address of the database instance provisioned. Application pods/deployments can use this service to interact with the databases provisioned on NDB through the native Kubernetes service. 
+A custom resource of the kind Database is created by the reconciler, followed by a Service and an Endpoint that maps to the IP address of the database instance provisioned. Application pods/deployments can use this service to interact with the databases provisioned on NDB through the native Kubernetes service.
 
 Pods can specify an initContainer to wait for the service (and hence the database instance) to get created before they start up.
 ```yaml

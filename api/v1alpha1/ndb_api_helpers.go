@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -30,7 +31,7 @@ import (
 
 // This function generates and returns a request for provisioning a database (and a dbserver vm) on NDB
 // The database provisioned has a NONE time machine SLA attached to it, and uses the default OOB profiles
-func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBClient, dbSpec DatabaseSpec, reqData map[string]interface{}) (req *DatabaseProvisionRequest, err error) {
+func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBClient, dbSpec DatabaseSpec, reqData map[string]interface{}) (requestBody *DatabaseProvisionRequest, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 
@@ -42,7 +43,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 	}
 
 	// Fetch the OOB profiles for the database
-	profilesMap, err := GetOOBProfiles(ctx, ndbclient, dbSpec.Instance.Type)
+	profilesMap, err := GetProfiles(ctx, ndbclient, dbSpec.Instance)
 	if err != nil {
 		log.Error(err, "Error occurred while getting OOB profiles", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 		return
@@ -75,7 +76,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		log.Error(err, errStatement)
 	}
 	// Creating a provisioning request based on the database type
-	req = &DatabaseProvisionRequest{
+	requestBody = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(dbSpec.Instance.Type),
 		Name:                     dbSpec.Instance.DatabaseInstanceName,
 		DatabaseDescription:      "Database provisioned by ndb-operator: " + dbSpec.Instance.DatabaseInstanceName,
@@ -133,8 +134,9 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 		return
 	}
 
-	req.ActionArguments = append(req.ActionArguments, dbTypeActionArgs.GetActionArguments(dbSpec)...)
+	requestBody.ActionArguments = append(requestBody.ActionArguments, dbTypeActionArgs.GetActionArguments(dbSpec)...)
 
+	log.Info("Database Provisioning", "requestBody", requestBody)
 	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 	return
 }
@@ -155,43 +157,149 @@ func GetNoneTimeMachineSLA(ctx context.Context, ndbclient *ndbclient.NDBClient) 
 	return sla, fmt.Errorf("NONE TimeMachine not found")
 }
 
-// Fetches all the profiles and returns a map of OOB profiles
-// Returns an error if one or more OOB profiles is not found
-func GetOOBProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, dbType string) (profileMap map[string]ProfileResponse, err error) {
-	// Map of profile type to profiles
-	profileMap = make(map[string]ProfileResponse)
+// +kubebuilder:object:generate:=false
+type ProfileResolver interface {
+	Resolve(ctx context.Context, allProfiles []ProfileResponse, pType string, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error)
+}
 
-	profiles, err := GetAllProfiles(ctx, ndbclient)
+func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileResponse, pType string, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered ndb_api_helpers.resolve", "input profile", inputProfile)
+
+	name, id := inputProfile.Name, inputProfile.Id
+	isNameProvided, isIdProvided := name != "", id != ""
+
+	var profileByName, profileById ProfileResponse
+
+	// resolve the profile based on provided input, return an error if not resolved
+	if isNameProvided {
+		profileByName, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Name == name })
+	}
+
+	if isIdProvided && err == nil {
+		profileById, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Id == id })
+	}
 
 	if err != nil {
+		log.Error(err, "could not resolve profile by id or name", "profile type", pType, "id", id, "name", name)
+		return ProfileResponse{}, fmt.Errorf("could not resolve profile by id=%v or name=%v", id, name)
+	}
+
+	/*
+		1. if both name & id not provided => resolve the OOB profile
+		2. else if both name & id are provided => resolve by both & ensure that both resolved profiles are match
+		3. else if only id provided => resolve by id
+		4. else if only name provided => resolve by name
+		5. else => throw an error
+	*/
+	if !isNameProvided && !isIdProvided { // OOB
+		log.Info("Attempting to resolve the OOB profile, no id or name provided in the spec", "Profile", pType)
+		oobProfile, err := util.FindFirst(allProfiles, filter)
+
+		if err != nil {
+			log.Error(err, "Error resolving OOB Profile", "type", pType)
+			return ProfileResponse{}, fmt.Errorf("no OOB profile found of type=%v", pType)
+		}
+		return oobProfile, nil
+
+	} else if isNameProvided && isIdProvided { // verify that both resolved profiles (by id and name) are one and the same
+		if !reflect.DeepEqual(profileById, profileByName) {
+			log.Error(err, "profile matching both the given name & id does not exist. Retry with correct inputs")
+			return ProfileResponse{}, fmt.Errorf("profiles returned by id & name resolve to different profiles")
+		}
+		return profileById, nil
+
+	} else if isIdProvided {
+		return profileById, nil
+
+	} else if isNameProvided {
+		return profileByName, nil
+	}
+
+	return ProfileResponse{}, fmt.Errorf("could not resolve the profile by Name or Id, err=%v", err)
+}
+
+// TODO: Once the database_types refactoring is over, move out below methods to  profile_helper.go
+var ComputeOOBProfileResolver = func(p ProfileResponse) bool {
+	return p.Type == PROFILE_TYPE_COMPUTE && p.SystemProfile &&
+		strings.EqualFold(p.Name, PROFILE_DEFAULT_OOB_SMALL_COMPUTE)
+}
+
+var SoftwareOOBProfileResolverForSingleInstance = func(p ProfileResponse) bool {
+	return p.Type == PROFILE_TYPE_SOFTWARE && p.SystemProfile && p.Topology == TOPOLOGY_SINGLE
+}
+
+var NetworkOOBProfileResolver = func(p ProfileResponse) bool {
+	return p.SystemProfile && p.Type == PROFILE_TYPE_NETWORK
+}
+
+var DbParamOOBProfileResolver = func(p ProfileResponse) bool {
+	return p.SystemProfile && p.Type == PROFILE_TYPE_DATABASE_PARAMETER
+}
+
+// Fetches all the profiles and returns a map of profiles
+// Returns an error if any profile is not found
+func GetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, instanceSpec Instance) (profilesMap map[string]ProfileResponse, err error) {
+	log := ctrllog.FromContext(ctx)
+	inputProfiles := instanceSpec.Profiles
+	log.Info("Entered ndb_api_helpers.GetProfiles", "Input profiles", inputProfiles)
+
+	allProfiles, err := GetAllProfiles(ctx, ndbclient)
+
+	// profiles need to be in the ready state
+	activeProfiles := util.Filter(allProfiles, func(p ProfileResponse) bool { return p.Status == PROFILE_STATUS_READY })
+	if err != nil {
+		log.Error(err, "Profiles could not be fetched")
 		return
 	}
 
-	genericProfiles := util.Filter(profiles, func(p ProfileResponse) bool { return p.EngineType == DATABASE_ENGINE_TYPE_GENERIC })
-	dbEngineSpecificProfiles := util.Filter(profiles, func(p ProfileResponse) bool { return p.EngineType == GetDatabaseEngineName(dbType) })
+	dbEngineSpecific := util.Filter(activeProfiles, func(p ProfileResponse) bool { return p.EngineType == GetDatabaseEngineName(instanceSpec.Type) })
 
-	// Specifying the usage of small compute profiles
-	computeProfiles := util.Filter(genericProfiles, func(p ProfileResponse) bool {
-		return p.Type == PROFILE_TYPE_COMPUTE && strings.Contains(strings.ToLower(p.Name), "small")
-	})
-	storageProfiles := util.Filter(genericProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_STORAGE })
-	// Specifying the usage of single instance topoplogy
-	softwareProfiles := util.Filter(dbEngineSpecificProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_SOFTWARE && p.Topology == TOPOLOGY_SINGLE })
-	networkProfiles := util.Filter(dbEngineSpecificProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_NETWORK })
-	dbParamProfiles := util.Filter(dbEngineSpecificProfiles, func(p ProfileResponse) bool { return p.Type == PROFILE_TYPE_DATABASE_PARAMETER })
-
-	// Some profile not found, return an error
-	if len(computeProfiles) == 0 || len(softwareProfiles) == 0 || len(storageProfiles) == 0 || len(networkProfiles) == 0 || len(dbParamProfiles) == 0 {
-		err = errors.New("oob profile: one or more OOB profile(s) were not found")
-		return
+	// Compute Profile
+	compute, err := inputProfiles.Compute.Resolve(ctx, activeProfiles, PROFILE_TYPE_COMPUTE, ComputeOOBProfileResolver)
+	if err != nil {
+		log.Error(err, "Compute Profile could not be resolved", "Input Profile", inputProfiles.Compute)
+		return nil, err
 	}
 
-	profileMap[PROFILE_TYPE_COMPUTE] = computeProfiles[0]
-	profileMap[PROFILE_TYPE_STORAGE] = storageProfiles[0]
-	profileMap[PROFILE_TYPE_SOFTWARE] = softwareProfiles[0]
-	profileMap[PROFILE_TYPE_NETWORK] = networkProfiles[0]
-	profileMap[PROFILE_TYPE_DATABASE_PARAMETER] = dbParamProfiles[0]
+	// Software Profile
+	// validation of software profile for closed-source db engines
+	isClosedSourceEngine := (instanceSpec.Type == DATABASE_TYPE_ORACLE) || (instanceSpec.Type == DATABASE_TYPE_SQLSERVER)
+	if isClosedSourceEngine {
+		if inputProfiles.Software.Id == "" && inputProfiles.Software.Name == "" {
+			log.Error(errors.New("software profile not provided"), "Provide software profile info", "dbType", instanceSpec.Type)
+			return nil, fmt.Errorf("software profile is a mandatory input for %s database", instanceSpec.Type)
+		}
+	}
 
+	software, err := inputProfiles.Software.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_SOFTWARE, SoftwareOOBProfileResolverForSingleInstance)
+	if err != nil {
+		log.Error(err, "Software Profile could not be resolved or is not in READY state", "Input Profile", inputProfiles.Software)
+		return nil, err
+	}
+
+	// Network Profile
+	network, err := inputProfiles.Network.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_NETWORK, NetworkOOBProfileResolver)
+	if err != nil {
+		log.Error(err, "Network Profile could not be resolved", "Input Profile", inputProfiles.Network)
+		return nil, err
+	}
+
+	// DB Param Profile
+	dbParam, err := inputProfiles.DbParam.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_DATABASE_PARAMETER, DbParamOOBProfileResolver)
+	if err != nil {
+		log.Error(err, "DbParam Profile could not be resolved", "Input Profile", inputProfiles.DbParam)
+		return nil, err
+	}
+
+	profilesMap = map[string]ProfileResponse{
+		PROFILE_TYPE_COMPUTE:            compute,
+		PROFILE_TYPE_SOFTWARE:           software,
+		PROFILE_TYPE_NETWORK:            network,
+		PROFILE_TYPE_DATABASE_PARAMETER: dbParam,
+	}
+
+	log.Info("Returning from ndb_api_helpers.GetProfiles", "profiles map", profilesMap)
 	return
 }
 

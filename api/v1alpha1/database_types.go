@@ -130,7 +130,7 @@ type Profile struct {
 	// +optional
 	Id string `json:"id"`
 	// +optional
-	VersionId string `json:"versionId"`
+	Name string `json:"name"`
 }
 
 // NDB API client model types
@@ -214,6 +214,8 @@ type ProfileResponse struct {
 	EngineType      string `json:"engineType"`
 	LatestVersionId string `json:"latestVersionId"`
 	Topology        string `json:"topology"`
+	SystemProfile   bool   `json:"systemProfile"`
+	Status          string `json:"status"`
 }
 
 // +kubebuilder:object:generate:=false

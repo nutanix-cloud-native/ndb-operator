@@ -77,6 +77,8 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_GENERIC,
 			LatestVersionId: "v-id-1",
 			Topology:        v1alpha1.TOPOLOGY_ALL,
+			Status:          "READY",
+			SystemProfile:   true,
 		},
 		{
 			Id:              "1.1",
@@ -85,14 +87,8 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_GENERIC,
 			LatestVersionId: "v-id-1",
 			Topology:        v1alpha1.TOPOLOGY_ALL,
-		},
-		{
-			Id:              "2",
-			Name:            "b",
-			Type:            v1alpha1.PROFILE_TYPE_STORAGE,
-			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_GENERIC,
-			LatestVersionId: "v-id-2",
-			Topology:        v1alpha1.TOPOLOGY_ALL,
+			Status:          "READY",
+			SystemProfile:   true,
 		},
 		{
 			Id:              "3",
@@ -101,6 +97,18 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_POSTGRES,
 			LatestVersionId: "v-id-3",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Status:          "READY",
+			SystemProfile:   true,
+		},
+		{
+			Id:              "3NotReady",
+			Name:            "Software_Profile_Not_Ready",
+			Type:            v1alpha1.PROFILE_TYPE_SOFTWARE,
+			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_POSTGRES,
+			LatestVersionId: "v-id-3",
+			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Status:          "NOT_YET_CREATED",
+			SystemProfile:   true,
 		},
 		{
 			Id:              "4",
@@ -109,6 +117,8 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MYSQL,
 			LatestVersionId: "v-id-4",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Status:          "READY",
+			SystemProfile:   true,
 		},
 		{
 			Id:              "5",
@@ -117,6 +127,8 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MONGODB,
 			LatestVersionId: "v-id-5",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Status:          "READY",
+			SystemProfile:   true,
 		},
 		{
 			Id:              "6",
@@ -125,6 +137,8 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_POSTGRES,
 			LatestVersionId: "v-id-6",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Status:          "READY",
+			SystemProfile:   true,
 		},
 		{
 			Id:              "7",
@@ -133,6 +147,8 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MYSQL,
 			LatestVersionId: "v-id-7",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Status:          "READY",
+			SystemProfile:   true,
 		},
 		{
 			Id:              "8",
@@ -141,6 +157,8 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MONGODB,
 			LatestVersionId: "v-id-8",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Status:          "READY",
+			SystemProfile:   true,
 		},
 		{
 			Id:              "9",
@@ -149,6 +167,8 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_POSTGRES,
 			LatestVersionId: "v-id-9",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Status:          "READY",
+			SystemProfile:   true,
 		},
 		{
 			Id:              "10",
@@ -157,6 +177,8 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MYSQL,
 			LatestVersionId: "v-id-10",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Status:          "READY",
+			SystemProfile:   true,
 		},
 		{
 			Id:              "11",
@@ -165,6 +187,8 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MONGODB,
 			LatestVersionId: "v-id-11",
 			Topology:        v1alpha1.TOPOLOGY_SINGLE,
+			Status:          "READY",
+			SystemProfile:   true,
 		},
 	},
 }
