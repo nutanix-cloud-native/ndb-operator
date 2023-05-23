@@ -221,20 +221,20 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileR
 
 // TODO: Once the database_types refactoring is over, move out below methods to  profile_helper.go
 var ComputeOOBProfileResolver = func(p ProfileResponse) bool {
-	return p.Type == PROFILE_TYPE_COMPUTE &&
+	return p.Type == PROFILE_TYPE_COMPUTE && p.SystemProfile &&
 		strings.EqualFold(p.Name, PROFILE_DEFAULT_OOB_SMALL_COMPUTE)
 }
 
 var SoftwareOOBProfileResolverForSingleInstance = func(p ProfileResponse) bool {
-	return p.Type == PROFILE_TYPE_SOFTWARE && p.Topology == TOPOLOGY_SINGLE
+	return p.Type == PROFILE_TYPE_SOFTWARE && p.SystemProfile && p.Topology == TOPOLOGY_SINGLE
 }
 
 var NetworkOOBProfileResolver = func(p ProfileResponse) bool {
-	return p.Type == PROFILE_TYPE_NETWORK
+	return p.SystemProfile && p.Type == PROFILE_TYPE_NETWORK
 }
 
 var DbParamOOBProfileResolver = func(p ProfileResponse) bool {
-	return p.Type == PROFILE_TYPE_DATABASE_PARAMETER
+	return p.SystemProfile && p.Type == PROFILE_TYPE_DATABASE_PARAMETER
 }
 
 // Fetches all the profiles and returns a map of profiles
