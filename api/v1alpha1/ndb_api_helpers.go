@@ -245,6 +245,8 @@ func GetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, instanceSp
 	log.Info("Entered ndb_api_helpers.GetProfiles", "Input profiles", inputProfiles)
 
 	allProfiles, err := GetAllProfiles(ctx, ndbclient)
+
+	// profiles need to be in the ready state
 	activeProfiles := util.Filter(allProfiles, func(p ProfileResponse) bool { return p.Status == PROFILE_STATUS_READY })
 	if err != nil {
 		log.Error(err, "Profiles could not be fetched")

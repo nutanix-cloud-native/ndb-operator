@@ -336,7 +336,7 @@ func profilesListGenerator() []v1alpha1.ProfileResponse {
 	return allProfiles[:]
 }
 
-func TestResolveOOBSoftwareProfileByEmptyNameAndID(t *testing.T) {
+func TestResolveOOBSoftwareProfile_ByEmptyNameAndID_ResolvesOk(t *testing.T) {
 	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 	pgSpecificProfiles := util.Filter(allProfiles, func(p v1alpha1.ProfileResponse) bool {
@@ -350,14 +350,12 @@ func TestResolveOOBSoftwareProfileByEmptyNameAndID(t *testing.T) {
 		v1alpha1.PROFILE_TYPE_SOFTWARE,
 		v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
-	if err != nil {
-		t.Errorf("should not return an error")
-	}
-
+	assert.Nil(t, err)
+	// assert that its OOB profile
 	assert.True(t, resolvedSoftwareProfile.SystemProfile)
 }
 
-func TestResolveSoftwareProfileByName(t *testing.T) {
+func TestResolveSoftwareProfileByName_ByName_ResolvesOk(t *testing.T) {
 	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 	pgSpecificProfiles := util.Filter(allProfiles, func(p v1alpha1.ProfileResponse) bool {
@@ -373,16 +371,11 @@ func TestResolveSoftwareProfileByName(t *testing.T) {
 		v1alpha1.PROFILE_TYPE_SOFTWARE,
 		v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
-	if err != nil {
-		t.Errorf("should not return an error")
-	}
-
-	if resolvedSoftwareProfile.Name != "Software_Profile_1" {
-		t.Errorf("software profile names should match")
-	}
+	assert.Nil(t, err)
+	assert.Equal(t, resolvedSoftwareProfile.Name, "Software_Profile_1")
 }
 
-func TestResolveSoftwareProfileByNameMismatch(t *testing.T) {
+func TestResolveSoftwareProfile_ByNameMismatch_throwsError(t *testing.T) {
 	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 	pgSpecificProfiles := util.Filter(allProfiles, func(p v1alpha1.ProfileResponse) bool {
@@ -390,7 +383,7 @@ func TestResolveSoftwareProfileByNameMismatch(t *testing.T) {
 	})
 
 	inputProfile := v1alpha1.Profile{
-		Name: "Software_Profile_#1",
+		Name: "Software_Profile_#1", // profile with this name does not exist
 	}
 
 	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
@@ -398,16 +391,13 @@ func TestResolveSoftwareProfileByNameMismatch(t *testing.T) {
 		v1alpha1.PROFILE_TYPE_SOFTWARE,
 		v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
-	if err == nil {
-		t.Errorf("should return an error")
-	}
+	assert.NotNil(t, err)
+	// should return an error and an empty profile
+	assert.Equal(t, resolvedSoftwareProfile, (v1alpha1.ProfileResponse{}))
 
-	if resolvedSoftwareProfile != (v1alpha1.ProfileResponse{}) {
-		t.Errorf("should return a nil profile")
-	}
 }
 
-func TestResolveComputeProfileByName(t *testing.T) {
+func TestResolveComputeProfileByName_resolvesOk(t *testing.T) {
 	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 
@@ -415,17 +405,17 @@ func TestResolveComputeProfileByName(t *testing.T) {
 		Name: "Compute_Profile_1",
 	}
 
-	_, err := inputProfile.Resolve(ctx,
+	resolvedComputeProfile, err := inputProfile.Resolve(ctx,
 		allProfiles,
 		v1alpha1.PROFILE_TYPE_COMPUTE,
 		v1alpha1.ComputeOOBProfileResolver)
 
-	if err != nil {
-		t.Errorf("should not return an error")
-	}
+	assert.Nil(t, err)
+	assert.Equal(t, resolvedComputeProfile.Name, "Compute_Profile_1")
 }
 
-func TestResolveComputeProfileByNameCaseMismatch(t *testing.T) {
+// case mismatch is not supported, profile name is case-sensitive
+func TestResolveComputeProfileByNameCaseMismatch_throwsError(t *testing.T) {
 	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 
@@ -433,17 +423,16 @@ func TestResolveComputeProfileByNameCaseMismatch(t *testing.T) {
 		Name: "compute_Profile_1",
 	}
 
-	_, err := inputProfile.Resolve(ctx,
+	resolvedComputeProfile, err := inputProfile.Resolve(ctx,
 		allProfiles,
 		v1alpha1.PROFILE_TYPE_COMPUTE,
 		v1alpha1.ComputeOOBProfileResolver)
 
-	if err == nil {
-		t.Errorf("should not return an error")
-	}
+	assert.NotNil(t, err)
+	assert.Equal(t, resolvedComputeProfile, v1alpha1.ProfileResponse{})
 }
 
-func TestResolveComputeProfileById(t *testing.T) {
+func TestResolveComputeProfileById_resolvesOk(t *testing.T) {
 	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 
@@ -451,15 +440,13 @@ func TestResolveComputeProfileById(t *testing.T) {
 		Id: "cp-id-2",
 	}
 
-	_, err := inputProfile.Resolve(ctx,
+	resolvedComputeProfile, err := inputProfile.Resolve(ctx,
 		allProfiles,
 		v1alpha1.PROFILE_TYPE_COMPUTE,
 		v1alpha1.ComputeOOBProfileResolver)
 
-	if err != nil {
-		t.Errorf("should not return an error")
-	}
-
+	assert.Nil(t, err)
+	assert.Equal(t, resolvedComputeProfile.Id, "cp-id-2")
 }
 
 func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
