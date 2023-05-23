@@ -299,7 +299,7 @@ func GetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, instanceSp
 		PROFILE_TYPE_DATABASE_PARAMETER: dbParam,
 	}
 
-	log.Info("Generated", "profiles map", profilesMap)
+	log.Info("Returning from ndb_api_helpers.GetProfiles", "profiles map", profilesMap)
 	return
 }
 
