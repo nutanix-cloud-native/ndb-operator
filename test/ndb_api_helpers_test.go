@@ -134,6 +134,29 @@ func TestProfiles(t *testing.T) {
 	}
 }
 
+func TestGetProfilesFailsWhenSoftwareProfileNotProvidedForClosedSourceDBs(t *testing.T) {
+
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+
+	Instance := v1alpha1.Instance{}
+	softwareProfile := v1alpha1.Profile{}
+	Instance.Profiles.Software = softwareProfile
+
+	//Test
+	dbTypes := []string{"oracle", "sqlserver"}
+	for _, dbType := range dbTypes {
+		Instance.Type = dbType
+		_, err := v1alpha1.GetProfiles(context.Background(), ndbclient, Instance)
+
+		if err == nil {
+			assert.EqualError(t, err, "software profile is a mandatory input for oracle type of database")
+		}
+	}
+}
+
 func TestGetProfilesOnlyGetsTheSmallOOBComputeProfileWhenNoProfileInfoIsProvided(t *testing.T) {
 
 	//Set
@@ -324,7 +347,6 @@ func TestResolveOOBSoftwareProfileByEmptyNameAndID(t *testing.T) {
 	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
 		pgSpecificProfiles,
 		v1alpha1.PROFILE_TYPE_SOFTWARE,
-		v1alpha1.DATABASE_TYPE_POSTGRES,
 		v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err != nil {
@@ -348,7 +370,6 @@ func TestResolveSoftwareProfileByName(t *testing.T) {
 	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
 		pgSpecificProfiles,
 		v1alpha1.PROFILE_TYPE_SOFTWARE,
-		v1alpha1.DATABASE_TYPE_POSTGRES,
 		v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err != nil {
@@ -357,26 +378,6 @@ func TestResolveSoftwareProfileByName(t *testing.T) {
 
 	if resolvedSoftwareProfile.Name != "Software_Profile_1" {
 		t.Errorf("software profile names should match")
-	}
-}
-
-func TestResolveSoftwareProfileResolutionErrorForOracle(t *testing.T) {
-	allProfiles := profilesListGenerator()
-	ctx := context.Background()
-	oracleSpecificProfiles := util.Filter(allProfiles, func(p v1alpha1.ProfileResponse) bool {
-		return p.EngineType == "oracle"
-	})
-
-	inputProfile := v1alpha1.Profile{}
-
-	_, err := inputProfile.Resolve(ctx,
-		oracleSpecificProfiles,
-		v1alpha1.PROFILE_TYPE_SOFTWARE,
-		v1alpha1.DATABASE_TYPE_ORACLE,
-		v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
-
-	if err == nil {
-		t.Errorf("should return an error as software profile input is required for oracle")
 	}
 }
 
@@ -394,7 +395,6 @@ func TestResolveSoftwareProfileByNameMismatch(t *testing.T) {
 	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
 		pgSpecificProfiles,
 		v1alpha1.PROFILE_TYPE_SOFTWARE,
-		v1alpha1.DATABASE_TYPE_POSTGRES,
 		v1alpha1.SoftwareOOBProfileResolverForSingleInstance)
 
 	if err == nil {
@@ -417,7 +417,6 @@ func TestResolveComputeProfileByName(t *testing.T) {
 	_, err := inputProfile.Resolve(ctx,
 		allProfiles,
 		v1alpha1.PROFILE_TYPE_COMPUTE,
-		v1alpha1.DATABASE_TYPE_POSTGRES,
 		v1alpha1.ComputeOOBProfileResolver)
 
 	if err != nil {
@@ -436,7 +435,6 @@ func TestResolveComputeProfileByNameCaseMismatch(t *testing.T) {
 	_, err := inputProfile.Resolve(ctx,
 		allProfiles,
 		v1alpha1.PROFILE_TYPE_COMPUTE,
-		v1alpha1.DATABASE_TYPE_POSTGRES,
 		v1alpha1.ComputeOOBProfileResolver)
 
 	if err == nil {
@@ -455,7 +453,6 @@ func TestResolveComputeProfileById(t *testing.T) {
 	_, err := inputProfile.Resolve(ctx,
 		allProfiles,
 		v1alpha1.PROFILE_TYPE_COMPUTE,
-		v1alpha1.DATABASE_TYPE_POSTGRES,
 		v1alpha1.ComputeOOBProfileResolver)
 
 	if err != nil {

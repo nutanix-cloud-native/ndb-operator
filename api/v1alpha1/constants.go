@@ -29,16 +29,16 @@ const (
 	DATABASE_ENGINE_TYPE_GENERIC   = "Generic"
 	DATABASE_ENGINE_TYPE_MONGODB   = "mongodb_database"
 	DATABASE_ENGINE_TYPE_MYSQL     = "mysql_database"
+	DATABASE_ENGINE_TYPE_ORACLE    = "oracle_database"
 	DATABASE_ENGINE_TYPE_POSTGRES  = "postgres_database"
 	DATABASE_ENGINE_TYPE_SQLSERVER = "sqlserver_database"
-	DATABASE_ENGINE_TYPE_ORACLE    = "oracle_database"
 
 	DATABASE_TYPE_GENERIC   = "generic"
 	DATABASE_TYPE_MONGODB   = "mongodb"
 	DATABASE_TYPE_MYSQL     = "mysql"
+	DATABASE_TYPE_ORACLE    = "oracle"
 	DATABASE_TYPE_POSTGRES  = "postgres"
 	DATABASE_TYPE_SQLSERVER = "sqlserver"
-	DATABASE_TYPE_ORACLE    = "oracle"
 
 	FINALIZER_DATABASE_INSTANCE = "ndb.nutanix.com/finalizerdatabaseinstance"
 	FINALIZER_DATABASE_SERVER   = "ndb.nutanix.com/finalizerdatabaseserver"
@@ -52,7 +52,7 @@ const (
 	PROFILE_TYPE_NETWORK            = "Network"
 	PROFILE_TYPE_SOFTWARE           = "Software"
 
-	DEFAULT_OOB_SMALL_COMPUTE = "DEFAULT_OOB_SMALL_COMPUTE"
+	PROFILE_DEFAULT_OOB_SMALL_COMPUTE = "DEFAULT_OOB_SMALL_COMPUTE"
 
 	PROFILE_STATUS_READY = "READY"
 

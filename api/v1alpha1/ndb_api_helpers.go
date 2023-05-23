@@ -159,10 +159,10 @@ func GetNoneTimeMachineSLA(ctx context.Context, ndbclient *ndbclient.NDBClient) 
 
 // +kubebuilder:object:generate:=false
 type ProfileResolver interface {
-	Resolve(ctx context.Context, allProfiles []ProfileResponse, pType string, dbEngine string, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error)
+	Resolve(ctx context.Context, allProfiles []ProfileResponse, pType string, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error)
 }
 
-func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileResponse, pType string, dbType string, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error) {
+func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileResponse, pType string, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api_helpers.resolve", "input profile", inputProfile)
 
@@ -171,40 +171,26 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileR
 
 	var profileByName, profileById ProfileResponse
 
-	// validation of software profile for closed-source db engines
-	isClosedSourceEngine := (dbType == DATABASE_TYPE_ORACLE) || (dbType == DATABASE_TYPE_SQLSERVER)
-
-	if pType == PROFILE_TYPE_SOFTWARE && isClosedSourceEngine {
-		if !isNameProvided && !isIdProvided {
-			log.Error(errors.New("software profile not provided for closed-source database"), "Provide software profile info", "dbType", dbType)
-			return ProfileResponse{}, fmt.Errorf("software profile is a mandatory input for %s type of database", dbType)
-		}
-	}
-
 	// resolve the profile based on provided input, return an error if not resolved
 	if isNameProvided {
-		profileByName, err = util.FindFirst(allProfiles, func(pr ProfileResponse) bool {
-			return pr.Name == name
-		})
+		profileByName, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Name == name })
 	}
 
 	if isIdProvided && err == nil {
-		profileById, err = util.FindFirst(allProfiles, func(pr ProfileResponse) bool {
-			return pr.Id == id
-		})
+		profileById, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Id == id })
 	}
 
 	if err != nil {
-		log.Error(err, "could not resolve profile by id or name", "id", id, "name", name)
+		log.Error(err, "could not resolve profile by id or name", "profile type", pType, "id", id, "name", name)
 		return ProfileResponse{}, fmt.Errorf("could not resolve profile by id=%v or name=%v", id, name)
 	}
 
 	/*
-		1. if both name & id NOT provided -> resolve the OOB profile
-		2. if both name & id provided -> Resolve by both & ensure that both resolved profiles are same
-		3. if only id provided -> resolve by id
-		4. if only name provided -> resolve by name
-		5. else throw an error
+		1. if both name & id not provided => resolve the OOB profile
+		2. else if both name & id are provided => resolve by both & ensure that both resolved profiles are match
+		3. else if only id provided => resolve by id
+		4. else if only name provided => resolve by name
+		5. else => throw an error
 	*/
 	if !isNameProvided && !isIdProvided { // OOB
 		log.Info("Attempting to resolve the OOB profile, no id or name provided in the spec", "Profile", pType)
@@ -236,7 +222,7 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileR
 // TODO: Once the database_types refactoring is over, move out below methods to  profile_helper.go
 var ComputeOOBProfileResolver = func(p ProfileResponse) bool {
 	return p.Type == PROFILE_TYPE_COMPUTE &&
-		strings.EqualFold(p.Name, DEFAULT_OOB_SMALL_COMPUTE)
+		strings.EqualFold(p.Name, PROFILE_DEFAULT_OOB_SMALL_COMPUTE)
 }
 
 var SoftwareOOBProfileResolverForSingleInstance = func(p ProfileResponse) bool {
@@ -268,28 +254,37 @@ func GetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, instanceSp
 	dbEngineSpecific := util.Filter(activeProfiles, func(p ProfileResponse) bool { return p.EngineType == GetDatabaseEngineName(instanceSpec.Type) })
 
 	// Compute Profile
-	compute, err := inputProfiles.Compute.Resolve(ctx, activeProfiles, PROFILE_TYPE_COMPUTE, instanceSpec.Type, ComputeOOBProfileResolver)
+	compute, err := inputProfiles.Compute.Resolve(ctx, activeProfiles, PROFILE_TYPE_COMPUTE, ComputeOOBProfileResolver)
 	if err != nil {
 		log.Error(err, "Compute Profile could not be resolved", "Input Profile", inputProfiles.Compute)
 		return nil, err
 	}
 
 	// Software Profile
-	software, err := inputProfiles.Software.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_SOFTWARE, instanceSpec.Type, SoftwareOOBProfileResolverForSingleInstance)
+	// validation of software profile for closed-source db engines
+	isClosedSourceEngine := (instanceSpec.Type == DATABASE_TYPE_ORACLE) || (instanceSpec.Type == DATABASE_TYPE_SQLSERVER)
+	if isClosedSourceEngine {
+		if inputProfiles.Software.Id == "" && inputProfiles.Software.Name == "" {
+			log.Error(errors.New("software profile not provided"), "Provide software profile info", "dbType", instanceSpec.Type)
+			return nil, fmt.Errorf("software profile is a mandatory input for %s type of database", instanceSpec.Type)
+		}
+	}
+
+	software, err := inputProfiles.Software.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_SOFTWARE, SoftwareOOBProfileResolverForSingleInstance)
 	if err != nil {
 		log.Error(err, "Software Profile could not be resolved or is not in READY state", "Input Profile", inputProfiles.Software)
 		return nil, err
 	}
 
 	// Network Profile
-	network, err := inputProfiles.Network.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_NETWORK, instanceSpec.Type, NetworkOOBProfileResolver)
+	network, err := inputProfiles.Network.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_NETWORK, NetworkOOBProfileResolver)
 	if err != nil {
 		log.Error(err, "Network Profile could not be resolved", "Input Profile", inputProfiles.Network)
 		return nil, err
 	}
 
 	// DB Param Profile
-	dbParam, err := inputProfiles.DbParam.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_DATABASE_PARAMETER, instanceSpec.Type, DbParamOOBProfileResolver)
+	dbParam, err := inputProfiles.DbParam.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_DATABASE_PARAMETER, DbParamOOBProfileResolver)
 	if err != nil {
 		log.Error(err, "DbParam Profile could not be resolved", "Input Profile", inputProfiles.DbParam)
 		return nil, err
