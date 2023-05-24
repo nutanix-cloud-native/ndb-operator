@@ -230,7 +230,7 @@ var SoftwareOOBProfileResolverForSingleInstance = func(p ProfileResponse) bool {
 }
 
 var NetworkOOBProfileResolver = func(p ProfileResponse) bool {
-	return p.SystemProfile && p.Type == PROFILE_TYPE_NETWORK
+	return p.Type == PROFILE_TYPE_NETWORK // && strings.Contains(p.Name, fmt.Sprint("DEFAULT_OOB_%dSQL_NETWORK", ) )
 }
 
 var DbParamOOBProfileResolver = func(p ProfileResponse) bool {
