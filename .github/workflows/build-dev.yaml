@@ -41,7 +41,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Build container
+      - name: Build container image
         env:
           IMAGE_TAG_BASE: ${{ github.repository }}_build_container_test
         run: make docker-build
