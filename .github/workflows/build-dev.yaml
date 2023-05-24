@@ -7,7 +7,6 @@ on:
 
 jobs:
   build-binary:
-    name: Build Binary
     runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
@@ -34,7 +33,6 @@ jobs:
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
   build-container:
-    name: Build Container
     runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
