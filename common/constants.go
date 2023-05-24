@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package common
 
 const (
 	DATABASE_CR_STATUS_DELETING     = "DELETING"
@@ -48,7 +48,7 @@ const (
 	NDB_PARAM_SSH_PUBLIC_KEY = "ssh_public_key"
 
 	PROFILE_DEFAULT_OOB_SMALL_COMPUTE = "DEFAULT_OOB_SMALL_COMPUTE"
-	
+
 	PROFILE_STATUS_READY = "READY"
 
 	PROFILE_TYPE_COMPUTE            = "Compute"

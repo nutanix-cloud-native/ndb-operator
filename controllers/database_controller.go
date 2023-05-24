@@ -34,8 +34,9 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/common"
+	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/ndbclient"
-	"github.com/nutanix-cloud-native/ndb-operator/util"
 )
 
 // DatabaseReconciler reconciles a Database object
@@ -91,11 +92,11 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if database.ObjectMeta.DeletionTimestamp.IsZero() {
 		// The object is not being deleted,
 		// if it does not have our finalizer then add the finalizer(s) and update the object.
-		if !controllerutil.ContainsFinalizer(database, ndbv1alpha1.FINALIZER_DATABASE_INSTANCE) {
-			return r.addFinalizer(ctx, req, ndbv1alpha1.FINALIZER_DATABASE_INSTANCE, database)
+		if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
+			return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_INSTANCE, database)
 		}
-		if !controllerutil.ContainsFinalizer(database, ndbv1alpha1.FINALIZER_DATABASE_SERVER) {
-			return r.addFinalizer(ctx, req, ndbv1alpha1.FINALIZER_DATABASE_SERVER, database)
+		if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
+			return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_SERVER, database)
 		}
 	} else {
 		// The object is under deletion. Perform deletion based on the finalizers we've added.

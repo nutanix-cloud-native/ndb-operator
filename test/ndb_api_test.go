@@ -22,7 +22,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndbclient"
 )
 
@@ -42,7 +42,7 @@ func TestGetAllSLAs(t *testing.T) {
 	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
-	value, _ := v1alpha1.GetAllSLAs(context.Background(), ndbclient)
+	value, _ := ndb_api.GetAllSLAs(context.Background(), ndbclient)
 	if len(value) == 0 {
 		t.Error("Could not fetch mock slas")
 	}
@@ -61,7 +61,7 @@ func TestGetAllSLAsThrowsErrorWhenClientReturnsNon200(t *testing.T) {
 	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
-	_, err := v1alpha1.GetAllSLAs(context.Background(), ndbclient)
+	_, err := ndb_api.GetAllSLAs(context.Background(), ndbclient)
 	if err == nil {
 		t.Error("GetAllSLAs should return an error when client responds with non 200 status.")
 	}
@@ -74,7 +74,7 @@ func TestGetAllProfiles(t *testing.T) {
 	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
-	value, _ := v1alpha1.GetAllProfiles(context.Background(), ndbclient)
+	value, _ := ndb_api.GetAllProfiles(context.Background(), ndbclient)
 	t.Log(len(value))
 	if len(value) == 0 {
 		t.Error("Could not fetch mock profiles")
@@ -94,7 +94,7 @@ func TestGetAllProfileThrowsErrorWhenClientReturnsNon200(t *testing.T) {
 	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
-	_, err := v1alpha1.GetAllProfiles(context.Background(), ndbclient)
+	_, err := ndb_api.GetAllProfiles(context.Background(), ndbclient)
 	if err == nil {
 		t.Error("TestGetAllProfiles should return an error when client responds with non 200 status.")
 	}
