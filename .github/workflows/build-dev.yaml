@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build-container:
+  build-binary:
     runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
@@ -32,3 +32,16 @@ jobs:
           exit-code: "1"
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+  build-container:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build container image
+        env:
+          IMAGE_TAG_BASE: ${{ github.repository }}_build_container_test
+        run: make docker-build
