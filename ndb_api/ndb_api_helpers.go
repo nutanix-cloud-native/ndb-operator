@@ -26,25 +26,25 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
-	"github.com/nutanix-cloud-native/ndb-operator/ndbclient"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // This function generates and returns a request for provisioning a database (and a dbserver vm) on NDB
 // The database provisioned has a NONE time machine SLA attached to it, and uses the default OOB profiles
-func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBClient, dbSpec v1alpha1.DatabaseSpec, reqData map[string]interface{}) (requestBody *DatabaseProvisionRequest, err error) {
+func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDBClient, dbSpec v1alpha1.DatabaseSpec, reqData map[string]interface{}) (requestBody *DatabaseProvisionRequest, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api_helpers.GenerateProvisioningRequest", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 
 	// Fetching the NONE TM SLA
-	sla, err := GetNoneTimeMachineSLA(ctx, ndbclient)
+	sla, err := GetNoneTimeMachineSLA(ctx, ndb_client)
 	if err != nil {
 		log.Error(err, "Error occurred while getting NONE TM SLA", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 		return
 	}
 
 	// Fetch the OOB profiles for the database
-	profilesMap, err := GetProfiles(ctx, ndbclient, dbSpec.Instance)
+	profilesMap, err := GetProfiles(ctx, ndb_client, dbSpec.Instance)
 	if err != nil {
 		log.Error(err, "Error occurred while getting OOB profiles", "database name", dbSpec.Instance.DatabaseInstanceName, "database type", dbSpec.Instance.Type)
 		return
@@ -144,8 +144,8 @@ func GenerateProvisioningRequest(ctx context.Context, ndbclient *ndbclient.NDBCl
 
 // Fetches all the SLAs from the ndb and returns the NONE TM SLA.
 // Returns an error if not found.
-func GetNoneTimeMachineSLA(ctx context.Context, ndbclient *ndbclient.NDBClient) (sla SLAResponse, err error) {
-	slas, err := GetAllSLAs(ctx, ndbclient)
+func GetNoneTimeMachineSLA(ctx context.Context, ndb_client *ndb_client.NDBClient) (sla SLAResponse, err error) {
+	slas, err := GetAllSLAs(ctx, ndb_client)
 	if err != nil {
 		return
 	}
@@ -160,12 +160,12 @@ func GetNoneTimeMachineSLA(ctx context.Context, ndbclient *ndbclient.NDBClient) 
 
 // Fetches all the profiles and returns a map of profiles
 // Returns an error if any profile is not found
-func GetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, instanceSpec v1alpha1.Instance) (profilesMap map[string]ProfileResponse, err error) {
+func GetProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, instanceSpec v1alpha1.Instance) (profilesMap map[string]ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	inputProfiles := instanceSpec.Profiles
 	log.Info("Entered ndb_api_helpers.GetProfiles", "Input profiles", inputProfiles)
 
-	allProfiles, err := GetAllProfiles(ctx, ndbclient)
+	allProfiles, err := GetAllProfiles(ctx, ndb_client)
 
 	// profiles need to be in the ready state
 	activeProfiles := util.Filter(allProfiles, func(p ProfileResponse) bool { return p.Status == common.PROFILE_STATUS_READY })
@@ -174,7 +174,9 @@ func GetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, instanceSp
 		return
 	}
 
-	dbEngineSpecific := util.Filter(activeProfiles, func(p ProfileResponse) bool { return p.EngineType == GetDatabaseEngineName(instanceSpec.Type) })
+	dbEngineSpecific := util.Filter(activeProfiles, func(p ProfileResponse) bool {
+		return p.EngineType == GetDatabaseEngineName(instanceSpec.Type)
+	})
 
 	computeProfileInput := Profile{
 		Profile:     inputProfiles.Compute,

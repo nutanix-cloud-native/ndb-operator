@@ -14,8 +14,9 @@ COPY main.go main.go
 COPY api/ api/
 COPY controllers/ controllers/
 
-COPY util/ util/
-COPY ndbclient/ ndbclient/
+COPY common/ common/
+COPY ndb_api/ ndb_api/
+COPY ndb_client/ ndb_client/
 
 
 # Build

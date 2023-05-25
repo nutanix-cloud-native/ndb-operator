@@ -24,12 +24,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/nutanix-cloud-native/ndb-operator/ndbclient"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // Fetches all the databases on the NDB instance and retutns a slice of the databases
-func GetAllDatabases(ctx context.Context, ndbClient *ndbclient.NDBClient) (databases []DatabaseResponse, err error) {
+func GetAllDatabases(ctx context.Context, ndbClient *ndb_client.NDBClient) (databases []DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllDatabases")
 	if ndbClient == nil {
@@ -66,7 +66,7 @@ func GetAllDatabases(ctx context.Context, ndbClient *ndbclient.NDBClient) (datab
 }
 
 // Fetches and returns a database by an Id
-func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id string) (database DatabaseResponse, err error) {
+func GetDatabaseById(ctx context.Context, ndbClient *ndb_client.NDBClient, id string) (database DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetDatabaseById", "databaseId", id)
 	if ndbClient == nil {
@@ -110,7 +110,7 @@ func GetDatabaseById(ctx context.Context, ndbClient *ndbclient.NDBClient, id str
 
 // Provisions a database instance based on the database provisioning request
 // Returns the task info summary response for the operation
-func ProvisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, req *DatabaseProvisionRequest) (task TaskInfoSummaryResponse, err error) {
+func ProvisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, req *DatabaseProvisionRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.ProvisionDatabase")
 	if ndbClient == nil {
@@ -147,7 +147,7 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, req 
 }
 
 // Fetches and returns all the available profiles as a profile slice
-func GetAllProfiles(ctx context.Context, ndbClient *ndbclient.NDBClient) (profiles []ProfileResponse, err error) {
+func GetAllProfiles(ctx context.Context, ndbClient *ndb_client.NDBClient) (profiles []ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllProfiles")
 	if ndbClient == nil {
@@ -183,7 +183,7 @@ func GetAllProfiles(ctx context.Context, ndbClient *ndbclient.NDBClient) (profil
 }
 
 // Fetches and returns all the SLAs as a sla slice
-func GetAllSLAs(ctx context.Context, ndbClient *ndbclient.NDBClient) (slas []SLAResponse, err error) {
+func GetAllSLAs(ctx context.Context, ndbClient *ndb_client.NDBClient) (slas []SLAResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllSLAs")
 	if ndbClient == nil {
@@ -220,7 +220,7 @@ func GetAllSLAs(ctx context.Context, ndbClient *ndbclient.NDBClient) (slas []SLA
 
 // Deprovisions a database instance given a database id
 // Returns the task info summary response for the operation
-func DeprovisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, id string, req DatabaseDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
+func DeprovisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, id string, req DatabaseDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.DeprovisionDatabase", "databaseId", id)
 	if ndbClient == nil {
@@ -263,7 +263,7 @@ func DeprovisionDatabase(ctx context.Context, ndbClient *ndbclient.NDBClient, id
 
 // Deprovisions a database server vm given a server id
 // Returns the task info summary response for the operation
-func DeprovisionDatabaseServer(ctx context.Context, ndbClient *ndbclient.NDBClient, id string, req DatabaseServerDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
+func DeprovisionDatabaseServer(ctx context.Context, ndbClient *ndb_client.NDBClient, id string, req DatabaseServerDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.DeprovisionDatabaseServer", "dbServerId", id)
 	if ndbClient == nil {

@@ -36,7 +36,7 @@ import (
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
-	"github.com/nutanix-cloud-native/ndb-operator/ndbclient"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 )
 
 // DatabaseReconciler reconciles a Database object
@@ -86,7 +86,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if caCert == "" {
 		log.Info("Ca-cert not found, falling back to host's HTTPs certs.")
 	}
-	ndbClient := ndbclient.NewNDBClient(username, password, NDBInfo.Server, caCert, NDBInfo.SkipCertificateVerification)
+	ndbClient := ndb_client.NewNDBClient(username, password, NDBInfo.Server, caCert, NDBInfo.SkipCertificateVerification)
 
 	// Examine DeletionTimestamp to determine if object is under deletion
 	if database.ObjectMeta.DeletionTimestamp.IsZero() {

@@ -30,7 +30,7 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
-	"github.com/nutanix-cloud-native/ndb-operator/ndbclient"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,10 +39,10 @@ func TestGetNoneTimeMachineSLA(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
-	sla, err := ndb_api.GetNoneTimeMachineSLA(context.Background(), ndbclient)
+	sla, err := ndb_api.GetNoneTimeMachineSLA(context.Background(), ndb_client)
 
 	//Assert
 	if err != nil {
@@ -89,10 +89,10 @@ func TestGetNoneTimeMachineSLAReturnsErrorWhenNoneTimeMachineNotFound(t *testing
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
-	sla, err := ndb_api.GetNoneTimeMachineSLA(context.Background(), ndbclient)
+	sla, err := ndb_api.GetNoneTimeMachineSLA(context.Background(), ndb_client)
 	//Assert
 	if err == nil {
 		t.Errorf("GetNoneTimeMachineSLA should return an error when NONE time machine does not exists")
@@ -107,14 +107,14 @@ func TestProfiles(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	Instance := v1alpha1.Instance{}
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
 		Instance.Type = dbType
-		profileMap, _ := ndb_api.GetProfiles(context.Background(), ndbclient, Instance)
+		profileMap, _ := ndb_api.GetProfiles(context.Background(), ndb_client, Instance)
 
 		//Assert
 		profileTypes := []string{
@@ -142,7 +142,7 @@ func TestGetProfilesFailsWhenSoftwareProfileNotProvidedForClosedSourceDBs(t *tes
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	Instance := v1alpha1.Instance{}
 	softwareProfile := v1alpha1.Profile{}
@@ -152,7 +152,7 @@ func TestGetProfilesFailsWhenSoftwareProfileNotProvidedForClosedSourceDBs(t *tes
 	dbTypes := []string{"oracle", "sqlserver"}
 	for _, dbType := range dbTypes {
 		Instance.Type = dbType
-		_, err := ndb_api.GetProfiles(context.Background(), ndbclient, Instance)
+		_, err := ndb_api.GetProfiles(context.Background(), ndb_client, Instance)
 
 		if err == nil {
 			assert.EqualError(t, err, fmt.Sprintf("software profile is a mandatory input for %s database", dbType))
@@ -165,14 +165,14 @@ func TestGetProfilesOnlyGetsTheSmallOOBComputeProfileWhenNoProfileInfoIsProvided
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	Instance := v1alpha1.Instance{}
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
 		Instance.Type = dbType
-		profileMap, _ := ndb_api.GetProfiles(context.Background(), ndbclient, Instance)
+		profileMap, _ := ndb_api.GetProfiles(context.Background(), ndb_client, Instance)
 
 		//Assert
 		computeProfile := profileMap[common.PROFILE_TYPE_COMPUTE]
@@ -187,7 +187,7 @@ func TestGetProfilesSoftwareProfileNotReadyState(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	Instance := v1alpha1.Instance{}
 	inputSoftwareSpec := v1alpha1.Profile{Name: "Software_Profile_Not_Ready"}
@@ -196,7 +196,7 @@ func TestGetProfilesSoftwareProfileNotReadyState(t *testing.T) {
 	dbTypes := []string{"postgres"}
 	for _, dbType := range dbTypes {
 		Instance.Type = dbType
-		profileMap, _ := ndb_api.GetProfiles(context.Background(), ndbclient, Instance)
+		profileMap, _ := ndb_api.GetProfiles(context.Background(), ndb_client, Instance)
 
 		//Assert
 		software := profileMap[common.PROFILE_TYPE_SOFTWARE]
@@ -229,14 +229,14 @@ func TestGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	Instance := v1alpha1.Instance{}
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
 		Instance.Type = dbType
-		_, err := ndb_api.GetProfiles(context.Background(), ndbclient, Instance)
+		_, err := ndb_api.GetProfiles(context.Background(), ndb_client, Instance)
 		// None of the profile criteria should match the mocked response
 		// t.Log(err)
 		if err == nil {
@@ -507,7 +507,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -531,7 +531,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
 			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
 		}
 
-		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData)
+		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, dbSpec, reqData)
 		t.Log(err)
 		if err == nil {
 			t.Errorf("GenerateProvisioningRequest should return an error when NONE time machine is not found")
@@ -602,7 +602,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfProfilesNotFound(t *testing.T)
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -626,7 +626,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfProfilesNotFound(t *testing.T)
 			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
 		}
 
-		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData)
+		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, dbSpec, reqData)
 		t.Log(err)
 		if err == nil {
 			t.Errorf("GenerateProvisioningRequest should return an error when profiles are not found")
@@ -638,7 +638,7 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -662,7 +662,7 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
 		}
 
-		request, _ := ndb_api.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData)
+		request, _ := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, dbSpec, reqData)
 
 		//Assert
 		if request.DatabaseType != ndb_api.GetDatabaseEngineName(dbType) {
@@ -750,7 +750,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfDBPasswordIsEmpty(t *testing.T
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -774,7 +774,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfDBPasswordIsEmpty(t *testing.T
 			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
 		}
 
-		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData)
+		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, dbSpec, reqData)
 		t.Log(err)
 		if err == nil {
 			t.Errorf("GenerateProvisioningRequest should return an error when db password is empty")
@@ -845,7 +845,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -869,7 +869,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 			common.NDB_PARAM_SSH_PUBLIC_KEY: "",
 		}
 
-		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndbclient, dbSpec, reqData)
+		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, dbSpec, reqData)
 		t.Log(err)
 		if err == nil {
 			t.Errorf("GenerateProvisioningRequest should return an error when ssh key is empty")
