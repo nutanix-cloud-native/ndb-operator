@@ -26,9 +26,10 @@ spec:
       software:
         name: ""
         id: ""
+      # A Software profile is a mandatory input for closed-source engines: SQL Server & Oracle
       network:
-        name: ""
-        id: ""
+        name: "Network Profile Name"
+        id: "Network Profile ID"
       dbParam:
         name: ""
         id: ""

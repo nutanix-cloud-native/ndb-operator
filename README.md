@@ -128,6 +128,7 @@ spec:
       software:
         name: ""
         id: ""
+      # A Network profile is a mandatory input for all databases, there is no OOB network profile
       network:
         id: ""
         name: ""

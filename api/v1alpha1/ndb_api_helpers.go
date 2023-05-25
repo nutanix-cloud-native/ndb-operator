@@ -229,8 +229,9 @@ var SoftwareOOBProfileResolverForSingleInstance = func(p ProfileResponse) bool {
 	return p.Type == PROFILE_TYPE_SOFTWARE && p.SystemProfile && p.Topology == TOPOLOGY_SINGLE
 }
 
+// There is no OOB Network Profile
 var NetworkOOBProfileResolver = func(p ProfileResponse) bool {
-	return p.Type == PROFILE_TYPE_NETWORK // && strings.Contains(p.Name, fmt.Sprint("DEFAULT_OOB_%dSQL_NETWORK", ) )
+	return p.Type == PROFILE_TYPE_NETWORK
 }
 
 var DbParamOOBProfileResolver = func(p ProfileResponse) bool {
@@ -279,6 +280,10 @@ func GetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, instanceSp
 	}
 
 	// Network Profile
+	if inputProfiles.Network.Id == "" && inputProfiles.Network.Name == "" {
+		log.Error(errors.New("network profile not provided"), "specify the mandatory network profile info.")
+		return nil, fmt.Errorf("network profile is a mandatory input for all types of databases")
+	}
 	network, err := inputProfiles.Network.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_NETWORK, NetworkOOBProfileResolver)
 	if err != nil {
 		log.Error(err, "Network Profile could not be resolved", "Input Profile", inputProfiles.Network)
