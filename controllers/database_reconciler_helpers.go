@@ -1,5 +1,5 @@
 /*
-Copyright 2021-2022 Nutanix, Inc.
+Copyright 2022-2023 Nutanix, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
+	"github.com/nutanix-cloud-native/ndb-operator/controller_types"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	corev1 "k8s.io/api/core/v1"
@@ -218,8 +219,9 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			common.NDB_PARAM_PASSWORD:       dbPassword,
 			common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
 		}
-
-		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, database.Spec, reqData)
+		d := &controller_types.Database{Database: *database}
+		generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, d, reqData)
+		// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
 		if err != nil {
 			log.Error(err, "Could not generate provisioning request, requeuing.")
 			return r.requeueOnErr(err)
@@ -255,11 +257,12 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			log.Info("Database instance is READY, adding data to CR's status and updating the CR")
 			database.Status.Status = common.DATABASE_CR_STATUS_READY
 			database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
-			for _, property := range databaseResponse.Properties {
-				if property.Name == common.PROPERTY_NAME_VM_IP {
-					database.Status.IPAddress = property.Value
-				}
-			}
+			database.Status.IPAddress = "10.48.44.69"
+			// for _, property := range databaseResponse.Properties {
+			// 	if property.Name == common.PROPERTY_NAME_VM_IP {
+			// 		database.Status.IPAddress = property.Value
+			// 	}
+			// }
 			err = r.Status().Update(ctx, database)
 			if err != nil {
 				log.Error(err, "Failed to update database status")

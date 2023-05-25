@@ -1,5 +1,5 @@
 /*
-Copyright 2021-2022 Nutanix, Inc.
+Copyright 2022-2023 Nutanix, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -146,78 +146,6 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, req
 	return
 }
 
-// Fetches and returns all the available profiles as a profile slice
-func GetAllProfiles(ctx context.Context, ndbClient *ndb_client.NDBClient) (profiles []ProfileResponse, err error) {
-	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.GetAllProfiles")
-	if ndbClient == nil {
-		err = errors.New("nil reference")
-		log.Error(err, "Received nil ndbClient reference")
-		return
-	}
-	res, err := ndbClient.Get("profiles")
-	if err != nil || res == nil || res.StatusCode != http.StatusOK {
-		if err == nil {
-			if res != nil {
-				err = fmt.Errorf("GET /profiles responded with %d", res.StatusCode)
-			} else {
-				err = fmt.Errorf("GET /profiles responded with nil response")
-			}
-		}
-		log.Error(err, "Error occurred while fetching profiles")
-		return
-	}
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in GetAllProfiles")
-		return
-	}
-	err = json.Unmarshal(body, &profiles)
-	if err != nil {
-		log.Error(err, "Error occurred trying to unmarshal.")
-		return
-	}
-	log.Info("Returning from ndb_api.GetAllProfiles")
-	return
-}
-
-// Fetches and returns all the SLAs as a sla slice
-func GetAllSLAs(ctx context.Context, ndbClient *ndb_client.NDBClient) (slas []SLAResponse, err error) {
-	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.GetAllSLAs")
-	if ndbClient == nil {
-		err = errors.New("nil reference")
-		log.Error(err, "Received nil ndbClient reference")
-		return
-	}
-	res, err := ndbClient.Get("slas")
-	if err != nil || res == nil || res.StatusCode != http.StatusOK {
-		if err == nil {
-			if res != nil {
-				err = fmt.Errorf("GET /slas responded with %d", res.StatusCode)
-			} else {
-				err = fmt.Errorf("GET /slas responded with nil response")
-			}
-		}
-		log.Error(err, "Error occurred while fetching slas")
-		return
-	}
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in GetAllSLAs")
-		return
-	}
-	err = json.Unmarshal(body, &slas)
-	if err != nil {
-		log.Error(err, "Error occurred trying to unmarshal.")
-		return
-	}
-	log.Info("Returning from ndb_api.GetAllSLAs")
-	return
-}
-
 // Deprovisions a database instance given a database id
 // Returns the task info summary response for the operation
 func DeprovisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, id string, req DatabaseDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
@@ -258,48 +186,5 @@ func DeprovisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, i
 		return
 	}
 	log.Info("Returning from ndb_api.DeprovisionDatabase")
-	return
-}
-
-// Deprovisions a database server vm given a server id
-// Returns the task info summary response for the operation
-func DeprovisionDatabaseServer(ctx context.Context, ndbClient *ndb_client.NDBClient, id string, req DatabaseServerDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
-	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.DeprovisionDatabaseServer", "dbServerId", id)
-	if ndbClient == nil {
-		err = errors.New("nil reference")
-		log.Error(err, "Received nil ndbClient reference")
-		return
-	}
-	if id == "" {
-		err = fmt.Errorf("id is empty")
-		log.Error(err, "no database server id provided")
-		return
-	}
-	res, err := ndbClient.Delete("dbservers/"+id, req)
-	if err != nil || res == nil || res.StatusCode != http.StatusOK {
-		if err == nil {
-			if res != nil {
-				err = fmt.Errorf("DELETE /dbservers/%s responded with %d", id, res.StatusCode)
-			} else {
-				err = fmt.Errorf("DELETE /dbservers/%s responded with nil response", id)
-			}
-		}
-		log.Error(err, "Error occurred deprovisioning database server")
-		return
-	}
-	log.Info("DELETE /dbservers/"+id, "HTTP status code", res.StatusCode)
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in DeprovisionDatabaseServer")
-		return
-	}
-	err = json.Unmarshal(body, &task)
-	if err != nil {
-		log.Error(err, "Error occurred trying to unmarshal.")
-		return
-	}
-	log.Info("Returning from ndb_api.DeprovisionDatabaseServer")
 	return
 }

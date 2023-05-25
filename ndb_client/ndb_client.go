@@ -1,5 +1,5 @@
 /*
-Copyright 2021-2022 Nutanix, Inc.
+Copyright 2022-2023 Nutanix, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ func NewNDBClient(username, password, url, caCert string, skipVerify bool) *NDBC
 
 func (ndbClient *NDBClient) Get(path string) (*http.Response, error) {
 	url := ndbClient.url + "/" + path
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		// fmt.Println(err)
 		return nil, err
@@ -58,7 +58,7 @@ func (ndbClient *NDBClient) Get(path string) (*http.Response, error) {
 func (ndbClient *NDBClient) Post(path string, body interface{}) (*http.Response, error) {
 	url := ndbClient.url + "/" + path
 	payload, _ := json.Marshal(body)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
 	if err != nil {
 		// fmt.Println(err)
 		return nil, err
@@ -71,7 +71,7 @@ func (ndbClient *NDBClient) Post(path string, body interface{}) (*http.Response,
 func (ndbClient *NDBClient) Delete(path string, body interface{}) (*http.Response, error) {
 	url := ndbClient.url + "/" + path
 	payload, _ := json.Marshal(body)
-	req, err := http.NewRequest("DELETE", url, bytes.NewBuffer(payload))
+	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(payload))
 	if err != nil {
 		// fmt.Println(err)
 		return nil, err

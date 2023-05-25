@@ -14,17 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package ndb_api
 
 import (
-	"encoding/json"
+	"context"
+	"fmt"
+
+	"github.com/nutanix-cloud-native/ndb-operator/common"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 )
 
-// A utility function to convert an interface to a string
-func ToString(x interface{}) string {
-	s, err := json.Marshal(x)
+// Fetches all the SLAs from the ndb and returns the NONE TM SLA.
+// Returns an error if not found.
+func GetNoneTimeMachineSLA(ctx context.Context, ndb_client *ndb_client.NDBClient) (sla SLAResponse, err error) {
+	slas, err := GetAllSLAs(ctx, ndb_client)
 	if err != nil {
-		return ""
+		return
 	}
-	return string(s)
+	for _, s := range slas {
+		if s.Name == common.SLA_NAME_NONE {
+			sla = s
+			return
+		}
+	}
+	return sla, fmt.Errorf("NONE TimeMachine not found")
 }
