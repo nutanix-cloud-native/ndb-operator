@@ -174,15 +174,18 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileR
 	// resolve the profile based on provided input, return an error if not resolved
 	if isNameProvided {
 		profileByName, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Type == pType && p.Name == name })
+		if err != nil {
+			log.Error(err, "could not resolve profile by name", "profile type", pType, "name", name)
+			return ProfileResponse{}, fmt.Errorf("could not resolve profile using the provided name=%v", name)
+		}
 	}
 
-	if isIdProvided && err == nil {
+	if isIdProvided {
 		profileById, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Type == pType && p.Id == id })
-	}
-
-	if err != nil {
-		log.Error(err, "could not resolve profile by id or name", "profile type", pType, "id", id, "name", name)
-		return ProfileResponse{}, fmt.Errorf("could not resolve profile by id=%v or name=%v", id, name)
+		if err != nil {
+			log.Error(err, "could not resolve profile by name", "profile type", pType, "id", id)
+			return ProfileResponse{}, fmt.Errorf("could not resolve profile using the provided id=%v", id)
+		}
 	}
 
 	/*
