@@ -25,11 +25,8 @@ spec:
     - jsonPath: .status.status
       name: Status
       type: string
-    - jsonPath: .status.id
-      name: Database Instance ID
-      type: string
-    - jsonPath: .status.dbServerId
-      name: Database Server ID
+    - jsonPath: .status.type
+      name: Type
       type: string
     name: v1alpha1
     schema:
@@ -160,11 +157,14 @@ spec:
                 type: string
               status:
                 type: string
+              type:
+                type: string
             required:
             - dbServerId
             - id
             - ipAddress
             - status
+            - type
             type: object
         type: object
     served: true

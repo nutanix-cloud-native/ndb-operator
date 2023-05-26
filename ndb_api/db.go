@@ -33,7 +33,7 @@ func GetAllDatabases(ctx context.Context, ndbClient *ndb_client.NDBClient) (data
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllDatabases")
 	if ndbClient == nil {
-		err = errors.New("nil reference")
+		err = errors.New("nil reference: received nil reference for ndbClient")
 		log.Error(err, "Received nil ndbClient reference")
 		return
 	}

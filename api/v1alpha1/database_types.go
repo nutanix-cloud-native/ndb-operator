@@ -37,6 +37,7 @@ type DatabaseStatus struct {
 	Id               string `json:"id"`
 	Status           string `json:"status"`
 	DatabaseServerId string `json:"dbServerId"`
+	Type             string `json:"type"`
 }
 
 // Database is the Schema for the databases API
@@ -45,8 +46,7 @@ type DatabaseStatus struct {
 // +kubebuilder:resource:shortName={"db","dbs"}
 // +kubebuilder:printcolumn:name="IP Address",type=string,JSONPath=`.status.ipAddress`
 // +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
-// +kubebuilder:printcolumn:name="Database Instance ID",type=string,JSONPath=`.status.id`
-// +kubebuilder:printcolumn:name="Database Server ID",type=string,JSONPath=`.status.dbServerId`
+// +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.status.type`
 type Database struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

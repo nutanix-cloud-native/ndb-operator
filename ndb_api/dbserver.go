@@ -34,7 +34,7 @@ func DeprovisionDatabaseServer(ctx context.Context, ndbClient *ndb_client.NDBCli
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.DeprovisionDatabaseServer", "dbServerId", id)
 	if ndbClient == nil {
-		err = errors.New("nil reference")
+		err = errors.New("nil reference: received nil reference for ndbClient")
 		log.Error(err, "Received nil ndbClient reference")
 		return
 	}

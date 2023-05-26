@@ -188,7 +188,7 @@ func TestGetProfilesFailsWhenSoftwareProfileNotProvidedForClosedSourceDBs(t *tes
 	}
 }
 
-func TestGetProfilesOnlyGetsTheSmallOOBComputeProfileWhenNoProfileInfoIsProvided(t *testing.T) {
+func TestGetProfilesGetsSmallProfile_IfNoComputeProfileInfoProvided(t *testing.T) {
 
 	//Set
 	server := GetServerTestHelper(t)
@@ -197,6 +197,7 @@ func TestGetProfilesOnlyGetsTheSmallOOBComputeProfileWhenNoProfileInfoIsProvided
 
 	Database := v1alpha1.Database{}
 	Instance := v1alpha1.Instance{}
+
 	Database.Spec.Instance = Instance
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
@@ -282,6 +283,17 @@ func TestGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
 
 func profilesListGenerator() []ndb_api.ProfileResponse {
 
+	oob_compute_profile := ndb_api.ProfileResponse{
+		Id:              "DEFAULT_OOB_SMALL_COMPUTE",
+		Name:            "DEFAULT_OOB_SMALL_COMPUTE",
+		Type:            "Compute",
+		EngineType:      "Generic",
+		LatestVersionId: "cp-vid-",
+		Topology:        "test topology",
+		SystemProfile:   true,
+		Status:          "READY",
+	}
+
 	custom_generic_compute := ndb_api.ProfileResponse{
 		Id:              "cp-id-1",
 		Name:            "Compute_Profile_1",
@@ -360,6 +372,7 @@ func profilesListGenerator() []ndb_api.ProfileResponse {
 	}
 
 	allProfiles := [10]ndb_api.ProfileResponse{
+		oob_compute_profile,
 		custom_generic_compute,
 		oob_generic_compute,
 		oob_oracle_software,
@@ -370,6 +383,21 @@ func profilesListGenerator() []ndb_api.ProfileResponse {
 	}
 
 	return allProfiles[:]
+}
+
+func TestGetProfilesOOBComputeProfileResolved(t *testing.T) {
+	ctx := context.Background()
+	allProfiles := profilesListGenerator()
+
+	inputProfile := GetProfileResolvers(v1alpha1.Database{})[common.PROFILE_TYPE_COMPUTE]
+
+	resolvedComputeProfile, err := inputProfile.Resolve(ctx,
+		allProfiles,
+		ndb_api.ComputeOOBProfileResolver)
+
+	assert.Nil(t, err)
+	// assert that its OOB profile
+	assert.True(t, resolvedComputeProfile.SystemProfile)
 }
 
 func TestResolveOOBSoftwareProfile_ByEmptyNameAndID_ResolvesOk(t *testing.T) {
@@ -713,6 +741,7 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
+
 	for _, dbType := range dbTypes {
 		dbSpec := v1alpha1.DatabaseSpec{
 			NDB: v1alpha1.NDB{

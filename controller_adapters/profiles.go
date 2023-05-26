@@ -57,15 +57,18 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ndb_api.
 	// resolve the profile based on provided input, return an error if not resolved
 	if isNameProvided {
 		profileByName, err = util.FindFirst(allProfiles, func(p ndb_api.ProfileResponse) bool { return p.Name == name })
+		if err != nil {
+			log.Error(err, "could not resolve profile by name", "profile type", inputProfile.ProfileType, "name", name)
+			return ndb_api.ProfileResponse{}, fmt.Errorf("could not resolve profile using the provided name=%v", name)
+		}
 	}
 
-	if isIdProvided && err == nil {
-		profileById, err = util.FindFirst(allProfiles, func(p ndb_api.ProfileResponse) bool { return p.Id == id })
-	}
-
-	if err != nil {
-		log.Error(err, "could not resolve profile by id or name", "profile type", inputProfile.ProfileType, "id", id, "name", name)
-		return ndb_api.ProfileResponse{}, fmt.Errorf("could not resolve profile by id=%v or name=%v", id, name)
+	if isIdProvided {
+		profileById, err = util.FindFirst(allProfiles, func(p ndb_api.ProfileResponse) bool { return p.Type == inputProfile.ProfileType && p.Id == id })
+		if err != nil {
+			log.Error(err, "could not resolve profile by id", "profile type", inputProfile.ProfileType, "id", id)
+			return ndb_api.ProfileResponse{}, fmt.Errorf("could not resolve profile using the provided id=%v", id)
+		}
 	}
 
 	/*

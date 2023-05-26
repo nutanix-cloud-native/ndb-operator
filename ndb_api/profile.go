@@ -33,7 +33,7 @@ func GetAllProfiles(ctx context.Context, ndbClient *ndb_client.NDBClient) (profi
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllProfiles")
 	if ndbClient == nil {
-		err = errors.New("nil reference")
+		err = errors.New("nil reference: received nil reference for ndbClient")
 		log.Error(err, "Received nil ndbClient reference")
 		return
 	}
