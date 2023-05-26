@@ -234,7 +234,7 @@ var SoftwareOOBProfileResolverForSingleInstance = func(p ProfileResponse) bool {
 
 // There is no OOB Network Profile
 var NetworkOOBProfileResolver = func(p ProfileResponse) bool {
-	return p.Type == PROFILE_TYPE_NETWORK
+	return p.Type == PROFILE_TYPE_NETWORK && p.Topology == TOPOLOGY_SINGLE
 }
 
 var DbParamOOBProfileResolver = func(p ProfileResponse) bool {

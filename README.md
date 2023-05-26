@@ -119,7 +119,8 @@ spec:
 
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
-    # name is case-sensitive. id is the UUID of the profile. Profile should be in the "READY" state
+    # Name is case-sensitive. ID is the UUID of the profile. Profile should be in the "READY" state
+    # "id" & "name" are optional. If none provided, OOB may be resolved to any profile of that type
     profiles:
       compute:
         id: ""
@@ -128,7 +129,6 @@ spec:
       software:
         name: ""
         id: ""
-      # A Network profile is a mandatory input for all databases, there is no OOB network profile
       network:
         id: ""
         name: ""
