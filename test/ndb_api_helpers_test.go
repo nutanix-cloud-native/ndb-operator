@@ -114,7 +114,7 @@ package test
 // 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 // 	for _, dbType := range dbTypes {
 // 		Instance.Type = dbType
-// 		profileMap, _ := ndb_api.GetProfiles(context.Background(), ndb_client, Instance)
+// 		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, Instance)
 
 // 		//Assert
 // 		profileTypes := []string{

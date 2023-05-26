@@ -25,9 +25,9 @@ import (
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
-	"github.com/nutanix-cloud-native/ndb-operator/controller_types"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
+	"github.com/nutanix-cloud-native/ndb-operator/wrapper_implementations"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -219,8 +219,8 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			common.NDB_PARAM_PASSWORD:       dbPassword,
 			common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
 		}
-		d := &controller_types.Database{Database: *database}
-		generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, d, reqData)
+		d := &wrapper_implementations.Database{Database: *database}
+		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, d, reqData)
 		// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
 		if err != nil {
 			log.Error(err, "Could not generate provisioning request, requeuing.")
@@ -257,12 +257,11 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			log.Info("Database instance is READY, adding data to CR's status and updating the CR")
 			database.Status.Status = common.DATABASE_CR_STATUS_READY
 			database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
-			database.Status.IPAddress = "10.48.44.69"
-			// for _, property := range databaseResponse.Properties {
-			// 	if property.Name == common.PROPERTY_NAME_VM_IP {
-			// 		database.Status.IPAddress = property.Value
-			// 	}
-			// }
+			for _, property := range databaseResponse.Properties {
+				if property.Name == common.PROPERTY_NAME_VM_IP {
+					database.Status.IPAddress = property.Value
+				}
+			}
 			err = r.Status().Update(ctx, database)
 			if err != nil {
 				log.Error(err, "Failed to update database status")

@@ -14,21 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller_types
+package wrapper_implementations
 
 import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
-	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// Wrapper over api/v1alpha1.Profile
+// required to provide implementation of the
+// ProfileResolver interface defined in the package ndb_api
 type Profile struct {
 	v1alpha1.Profile
 	ProfileType string
@@ -99,21 +100,4 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ndb_api.
 	}
 
 	return ndb_api.ProfileResponse{}, fmt.Errorf("could not resolve the profile by Name or Id, err=%v", err)
-}
-
-var ComputeOOBProfileResolver = func(p ndb_api.ProfileResponse) bool {
-	return p.Type == common.PROFILE_TYPE_COMPUTE && p.SystemProfile &&
-		strings.EqualFold(p.Name, common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE)
-}
-
-var SoftwareOOBProfileResolverForSingleInstance = func(p ndb_api.ProfileResponse) bool {
-	return p.Type == common.PROFILE_TYPE_SOFTWARE && p.SystemProfile && p.Topology == common.TOPOLOGY_SINGLE
-}
-
-var NetworkOOBProfileResolver = func(p ndb_api.ProfileResponse) bool {
-	return p.Type == common.PROFILE_TYPE_NETWORK
-}
-
-var DbParamOOBProfileResolver = func(p ndb_api.ProfileResponse) bool {
-	return p.SystemProfile && p.Type == common.PROFILE_TYPE_DATABASE_PARAMETER
 }
