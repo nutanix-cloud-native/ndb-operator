@@ -173,11 +173,11 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileR
 
 	// resolve the profile based on provided input, return an error if not resolved
 	if isNameProvided {
-		profileByName, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Name == name })
+		profileByName, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Type == pType && p.Name == name })
 	}
 
 	if isIdProvided && err == nil {
-		profileById, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Id == id })
+		profileById, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Type == pType && p.Id == id })
 	}
 
 	if err != nil {
@@ -282,7 +282,7 @@ func GetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, instanceSp
 	// Network Profile
 	if inputProfiles.Network.Id == "" && inputProfiles.Network.Name == "" {
 		log.Error(errors.New("network profile not provided"), "specify the mandatory network profile info.")
-		return nil, fmt.Errorf("network profile is a mandatory input for all types of databases")
+		return nil, fmt.Errorf("network profile is a mandatory input")
 	}
 	network, err := inputProfiles.Network.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_NETWORK, NetworkOOBProfileResolver)
 	if err != nil {
