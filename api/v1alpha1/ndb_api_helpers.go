@@ -201,7 +201,7 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileR
 
 		if err != nil {
 			log.Error(err, "Error resolving OOB Profile", "type", pType)
-			return ProfileResponse{}, fmt.Errorf("no OOB profile found of type=%v", pType)
+			return ProfileResponse{}, fmt.Errorf("no OOB profile found of type %v", pType)
 		}
 		return oobProfile, nil
 
@@ -234,7 +234,8 @@ var SoftwareOOBProfileResolverForSingleInstance = func(p ProfileResponse) bool {
 
 // There is no OOB Network Profile
 var NetworkOOBProfileResolver = func(p ProfileResponse) bool {
-	return p.Type == PROFILE_TYPE_NETWORK && p.Topology == TOPOLOGY_SINGLE
+	topologyCheck := (p.Topology == TOPOLOGY_SINGLE || p.Topology == TOPOLOGY_ALL)
+	return p.Type == PROFILE_TYPE_NETWORK && topologyCheck
 }
 
 var DbParamOOBProfileResolver = func(p ProfileResponse) bool {

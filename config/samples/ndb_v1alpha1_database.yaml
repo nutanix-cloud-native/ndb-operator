@@ -22,11 +22,10 @@ spec:
       compute:
         name: ""
         id: ""
-      # A Software profile is a mandatory input for closed-source engines: SQL Server & Oracle
+      # A Software profile is a mandatory input for proprietary (closed-source) engines such as SQL Server & Oracle
       software:
         name: ""
         id: ""
-      # A Software profile is a mandatory input for closed-source engines: SQL Server & Oracle
       network:
         name: ""
         id: ""
