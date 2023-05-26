@@ -283,12 +283,6 @@ func GetProfiles(ctx context.Context, ndbclient *ndbclient.NDBClient, instanceSp
 	}
 
 	// Network Profile
-
-	// Re-discuss this if this need to be enabled
-	// if inputProfiles.Network.Id == "" && inputProfiles.Network.Name == "" {
-	// 	log.Error(errors.New("network profile not provided"), "specify the mandatory network profile info.")
-	// 	return nil, fmt.Errorf("network profile is a mandatory input")
-	// }
 	network, err := inputProfiles.Network.Resolve(ctx, dbEngineSpecific, PROFILE_TYPE_NETWORK, NetworkOOBProfileResolver)
 	if err != nil {
 		log.Error(err, "Network Profile could not be resolved", "Input Profile", inputProfiles.Network)

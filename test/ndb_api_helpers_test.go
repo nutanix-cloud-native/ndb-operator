@@ -108,7 +108,6 @@ func TestProfiles(t *testing.T) {
 	ndbclient := ndbclient.NewNDBClient("username", "password", server.URL, "", true)
 
 	Instance := v1alpha1.Instance{}
-	Instance.Profiles.Network = v1alpha1.Profile{Id: "DO_NOT_DELETE_THIS_NETWORK_PROFILE"}
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
@@ -172,7 +171,7 @@ func TestGetProfilesGetsSmallProfile_IfNoComputeProfileInfoProvided(t *testing.T
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 	for _, dbType := range dbTypes {
 		Instance.Type = dbType
-		Instance.Profiles.Network = v1alpha1.Profile{Id: "DO_NOT_DELETE_THIS_NETWORK_PROFILE"}
+
 		profileMap, _ := v1alpha1.GetProfiles(context.Background(), ndbclient, Instance)
 
 		//Assert
@@ -351,7 +350,7 @@ func profilesListGenerator() []v1alpha1.ProfileResponse {
 	return allProfiles[:]
 }
 
-func TestGetProfilesWhenNameMatchButIdMismatch(t *testing.T) {
+func TestGetProfilesOOBComputeProfileResolved(t *testing.T) {
 	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 
@@ -668,8 +667,6 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 	//Test
 	dbTypes := []string{"postgres", "mysql", "mongodb"}
 
-	profiles := v1alpha1.Profiles{Network: v1alpha1.Profile{Id: "DO_NOT_DELETE_THIS_NETWORK_PROFILE"}}
-
 	for _, dbType := range dbTypes {
 		dbSpec := v1alpha1.DatabaseSpec{
 			NDB: v1alpha1.NDB{
@@ -682,7 +679,6 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 				Type:                 dbType,
 				DatabaseInstanceName: dbType + "-instance-test",
 				TimeZone:             "UTC",
-				Profiles:             profiles,
 			},
 		}
 

@@ -191,8 +191,8 @@ var MockResponsesMap = map[string]interface{}{
 			SystemProfile:   true,
 		},
 		{
-			Id:              "DO_NOT_DELETE_THIS_NETWORK_PROFILE",
-			Name:            "DO_NOT_DELETE_THIS_NETWORK_PROFILE",
+			Id:              "id-pg-nw-1",
+			Name:            "DEFAULT_OOB_POSTGRESQL_NETWORK",
 			Type:            v1alpha1.PROFILE_TYPE_NETWORK,
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_POSTGRES,
 			LatestVersionId: "v-id-6",
@@ -201,8 +201,8 @@ var MockResponsesMap = map[string]interface{}{
 			SystemProfile:   true,
 		},
 		{
-			Id:              "DO_NOT_DELETE_THIS_NETWORK_PROFILE",
-			Name:            "DO_NOT_DELETE_THIS_NETWORK_PROFILE",
+			Id:              "id-mongo-nw-1",
+			Name:            "DEFAULT_OOB_MONGODB_NETWORK",
 			Type:            v1alpha1.PROFILE_TYPE_NETWORK,
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MONGODB,
 			LatestVersionId: "v-id-6",
@@ -211,8 +211,8 @@ var MockResponsesMap = map[string]interface{}{
 			SystemProfile:   true,
 		},
 		{
-			Id:              "DO_NOT_DELETE_THIS_NETWORK_PROFILE",
-			Name:            "DO_NOT_DELETE_THIS_NETWORK_PROFILE",
+			Id:              "id-mysql-nw-1",
+			Name:            "DEFAULT_OOB_MYSQL_NETWORK",
 			Type:            v1alpha1.PROFILE_TYPE_NETWORK,
 			EngineType:      v1alpha1.DATABASE_ENGINE_TYPE_MYSQL,
 			LatestVersionId: "v-id-6",
