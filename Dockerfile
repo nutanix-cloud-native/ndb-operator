@@ -15,7 +15,7 @@ COPY common/ common/
 COPY controllers/ controllers/
 COPY ndb_api/ ndb_api/
 COPY ndb_client/ ndb_client/
-COPY wrapper_implementations/ wrapper_implementations/
+COPY controller_adapters/ controller_adapters/
 COPY main.go main.go
 
 

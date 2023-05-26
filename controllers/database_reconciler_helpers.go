@@ -25,9 +25,9 @@ import (
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
+	"github.com/nutanix-cloud-native/ndb-operator/controller_adapters"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
-	"github.com/nutanix-cloud-native/ndb-operator/wrapper_implementations"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -219,7 +219,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			common.NDB_PARAM_PASSWORD:       dbPassword,
 			common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
 		}
-		d := &wrapper_implementations.Database{Database: *database}
+		d := &controller_adapters.Database{Database: *database}
 		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, d, reqData)
 		// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
 		if err != nil {

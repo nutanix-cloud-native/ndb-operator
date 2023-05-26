@@ -1,939 +1,1022 @@
-// /*
-// Copyright 2022-2023 Nutanix, Inc.
+/*
+Copyright 2022-2023 Nutanix, Inc.
 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-//     http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-// */
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package test
 
-// import (
-// 	"context"
-// 	"encoding/json"
-// 	"fmt"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"reflect"
-// 	"strings"
-// 	"testing"
-
-// 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
-// 	"github.com/nutanix-cloud-native/ndb-operator/common"
-// 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
-// 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
-// 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
-// 	"github.com/stretchr/testify/assert"
-// )
-
-// func TestGetNoneTimeMachineSLA(t *testing.T) {
-
-// 	//Set
-// 	server := GetServerTestHelper(t)
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	//Test
-// 	sla, err := ndb_api.GetNoneTimeMachineSLA(context.Background(), ndb_client)
-
-// 	//Assert
-// 	if err != nil {
-// 		t.Errorf("Could not get NONE TM, error: %s", err)
-// 	}
-// 	if sla.Name != common.SLA_NAME_NONE {
-// 		t.Error("Could not fetch mock slas")
-// 	}
-// }
-
-// func TestGetNoneTimeMachineSLAReturnsErrorWhenNoneTimeMachineNotFound(t *testing.T) {
-
-// 	//Set
-// 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if !checkAuthTestHelper(r) {
-// 			t.Errorf("Invalid Authentication Credentials")
-// 		} else {
-// 			resp, _ := json.Marshal([]ndb_api.SLAResponse{
-// 				{
-// 					Id:                 "sla-1-id",
-// 					Name:               "SLA 1",
-// 					UniqueName:         "SLA 1 Unique Name",
-// 					Description:        "SLA 1 Description",
-// 					DailyRetention:     1,
-// 					WeeklyRetention:    2,
-// 					MonthlyRetention:   3,
-// 					QuarterlyRetention: 4,
-// 					YearlyRetention:    5,
-// 				},
-// 				{
-// 					Id:                 "sla-2-id",
-// 					Name:               "SLA 2",
-// 					UniqueName:         "SLA 2 Unique Name",
-// 					Description:        "SLA 2 Description",
-// 					DailyRetention:     1,
-// 					WeeklyRetention:    2,
-// 					MonthlyRetention:   3,
-// 					QuarterlyRetention: 4,
-// 					YearlyRetention:    5,
-// 				},
-// 			})
-// 			w.WriteHeader(http.StatusOK)
-// 			w.Write(resp)
-// 		}
-// 	}))
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	//Test
-// 	sla, err := ndb_api.GetNoneTimeMachineSLA(context.Background(), ndb_client)
-// 	//Assert
-// 	if err == nil {
-// 		t.Errorf("GetNoneTimeMachineSLA should return an error when NONE time machine does not exists")
-// 	}
-// 	if sla != (ndb_api.SLAResponse{}) {
-// 		t.Error("GetNoneTimeMachineSLA should respond with an empty SLA when NONE time machine is not found")
-// 	}
-// }
-
-// func TestProfiles(t *testing.T) {
-
-// 	//Set
-// 	server := GetServerTestHelper(t)
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	Instance := v1alpha1.Instance{}
-// 	//Test
-// 	dbTypes := []string{"postgres", "mysql", "mongodb"}
-// 	for _, dbType := range dbTypes {
-// 		Instance.Type = dbType
-// 		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, Instance)
-
-// 		//Assert
-// 		profileTypes := []string{
-// 			common.PROFILE_TYPE_COMPUTE,
-// 			common.PROFILE_TYPE_SOFTWARE,
-// 			common.PROFILE_TYPE_NETWORK,
-// 			common.PROFILE_TYPE_DATABASE_PARAMETER,
-// 		}
-// 		for _, profileType := range profileTypes {
-// 			profile := profileMap[profileType]
-// 			//Assert that no profileType is empty
-// 			if profile == (ndb_api.ProfileResponse{}) {
-// 				t.Errorf("Empty profile type %s for dbType %s", profileType, dbType)
-// 			}
-// 			//Assert that profile EngineType matches the database engine or the generic type
-// 			if profile.EngineType != ndb_api.GetDatabaseEngineName(dbType) && profile.EngineType != common.DATABASE_ENGINE_TYPE_GENERIC {
-// 				t.Errorf("Profile engine type %s for dbType %s does not match", profile.EngineType, dbType)
-// 			}
-// 		}
-// 	}
-// }
-
-// func TestGetProfilesFailsWhenSoftwareProfileNotProvidedForClosedSourceDBs(t *testing.T) {
-
-// 	//Set
-// 	server := GetServerTestHelper(t)
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	Instance := v1alpha1.Instance{}
-// 	softwareProfile := v1alpha1.Profile{}
-// 	Instance.Profiles.Software = softwareProfile
-
-// 	//Test
-// 	dbTypes := []string{"oracle", "sqlserver"}
-// 	for _, dbType := range dbTypes {
-// 		Instance.Type = dbType
-// 		_, err := ndb_api.GetProfiles(context.Background(), ndb_client, Instance)
-
-// 		if err == nil {
-// 			assert.EqualError(t, err, fmt.Sprintf("software profile is a mandatory input for %s database", dbType))
-// 		}
-// 	}
-// }
-
-// func TestGetProfilesOnlyGetsTheSmallOOBComputeProfileWhenNoProfileInfoIsProvided(t *testing.T) {
-
-// 	//Set
-// 	server := GetServerTestHelper(t)
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	Instance := v1alpha1.Instance{}
-// 	//Test
-// 	dbTypes := []string{"postgres", "mysql", "mongodb"}
-// 	for _, dbType := range dbTypes {
-// 		Instance.Type = dbType
-// 		profileMap, _ := ndb_api.GetProfiles(context.Background(), ndb_client, Instance)
-
-// 		//Assert
-// 		computeProfile := profileMap[common.PROFILE_TYPE_COMPUTE]
-// 		if !strings.Contains(strings.ToLower(computeProfile.Name), "small") {
-// 			t.Errorf("Expected small oob compute profile, but got: %s", computeProfile.Name)
-// 		}
-// 	}
-// }
-
-// func TestGetProfilesSoftwareProfileNotReadyState(t *testing.T) {
-
-// 	//Set
-// 	server := GetServerTestHelper(t)
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	Instance := v1alpha1.Instance{}
-// 	inputSoftwareSpec := v1alpha1.Profile{Name: "Software_Profile_Not_Ready"}
-// 	Instance.Profiles.Software = inputSoftwareSpec
-// 	//Test
-// 	dbTypes := []string{"postgres"}
-// 	for _, dbType := range dbTypes {
-// 		Instance.Type = dbType
-// 		profileMap, _ := ndb_api.GetProfiles(context.Background(), ndb_client, Instance)
-
-// 		//Assert
-// 		software := profileMap[common.PROFILE_TYPE_SOFTWARE]
-// 		if software != (ndb_api.ProfileResponse{}) {
-// 			t.Errorf("Expected software profile to be not found, but got: %s", software.Name)
-// 		}
-// 	}
-// }
-
-// func TestGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
-
-// 	//Set
-// 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if !checkAuthTestHelper(r) {
-// 			t.Errorf("Invalid Authentication Credentials")
-// 		} else {
-// 			resp, _ := json.Marshal([]ndb_api.ProfileResponse{
-// 				{
-// 					Id:              "1",
-// 					Name:            "a",
-// 					Type:            "test type",
-// 					EngineType:      "test engine",
-// 					LatestVersionId: "v-id-1",
-// 					Topology:        "test topology",
-// 					Status:          "READY",
-// 				},
-// 			})
-// 			w.WriteHeader(http.StatusOK)
-// 			w.Write(resp)
-// 		}
-// 	}))
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	Instance := v1alpha1.Instance{}
-// 	//Test
-// 	dbTypes := []string{"postgres", "mysql", "mongodb"}
-// 	for _, dbType := range dbTypes {
-// 		Instance.Type = dbType
-// 		_, err := ndb_api.GetProfiles(context.Background(), ndb_client, Instance)
-// 		// None of the profile criteria should match the mocked response
-// 		// t.Log(err)
-// 		if err == nil {
-// 			t.Errorf("GetProfiles should have retuned an error when none of the profiles matc the criteria.")
-// 		}
-
-// 	}
-// }
-
-// func profilesListGenerator() []ndb_api.ProfileResponse {
-
-// 	custom_generic_compute := ndb_api.ProfileResponse{
-// 		Id:              "cp-id-1",
-// 		Name:            "Compute_Profile_1",
-// 		Type:            "Compute",
-// 		EngineType:      "Generic",
-// 		LatestVersionId: "cp-vid-1",
-// 		Topology:        "test topology",
-// 		SystemProfile:   false,
-// 		Status:          "READY",
-// 	}
-
-// 	oob_generic_compute := ndb_api.ProfileResponse{
-// 		Id:              "cp-id-2",
-// 		Name:            "small",
-// 		Type:            "Compute",
-// 		EngineType:      "Generic",
-// 		LatestVersionId: "cp-vid-2",
-// 		Topology:        "test topology",
-// 		SystemProfile:   true,
-// 		Status:          "READY",
-// 	}
-
-// 	oob_oracle_software := ndb_api.ProfileResponse{
-// 		Id:              "sw-id-5",
-// 		Name:            "Software_Profile_5",
-// 		Type:            "Software",
-// 		EngineType:      "oracle",
-// 		LatestVersionId: "sw-vid-5",
-// 		Topology:        "single",
-// 		SystemProfile:   true,
-// 		Status:          "READY",
-// 	}
-
-// 	oob_postgres_software := ndb_api.ProfileResponse{
-// 		Id:              "sw-id-1",
-// 		Name:            "Software_Profile_1",
-// 		Type:            "Software",
-// 		EngineType:      "postgres",
-// 		LatestVersionId: "sw-vid-1",
-// 		Topology:        "single",
-// 		SystemProfile:   true,
-// 		Status:          "READY",
-// 	}
-
-// 	oob_postgres_software_not_ready := ndb_api.ProfileResponse{
-// 		Id:              "sw-id-2",
-// 		Name:            "Software_Profile_Not_READY",
-// 		Type:            "Software",
-// 		EngineType:      "postgres",
-// 		LatestVersionId: "sw-vid-2",
-// 		Topology:        "single",
-// 		SystemProfile:   false,
-// 		Status:          "NOT_YET_CREATED",
-// 	}
-
-// 	oob_postgres_network := ndb_api.ProfileResponse{
-// 		Id:              "nw-id-1",
-// 		Name:            "Network_Profile_1",
-// 		Type:            "Network",
-// 		EngineType:      "postgres",
-// 		LatestVersionId: "nw-vid-1",
-// 		Topology:        "test topology",
-// 		SystemProfile:   true,
-// 		Status:          "READY",
-// 	}
-
-// 	oob_postgres_dbparam := ndb_api.ProfileResponse{
-// 		Id:              "dbp-id-1",
-// 		Name:            "DBParam_Profile_1",
-// 		Type:            "DBParam",
-// 		EngineType:      "postgres",
-// 		LatestVersionId: "dbp-vid-1",
-// 		Topology:        "test topology",
-// 		SystemProfile:   true,
-// 		Status:          "READY",
-// 	}
-
-// 	allProfiles := [10]ndb_api.ProfileResponse{
-// 		custom_generic_compute,
-// 		oob_generic_compute,
-// 		oob_oracle_software,
-// 		oob_postgres_software,
-// 		oob_postgres_software_not_ready,
-// 		oob_postgres_network,
-// 		oob_postgres_dbparam,
-// 	}
-
-// 	return allProfiles[:]
-// }
-
-// func TestResolveOOBSoftwareProfile_ByEmptyNameAndID_ResolvesOk(t *testing.T) {
-// 	ctx := context.Background()
-// 	allProfiles := profilesListGenerator()
-// 	pgSpecificProfiles := util.Filter(allProfiles, func(p ndb_api.ProfileResponse) bool {
-// 		return p.EngineType == "postgres"
-// 	})
-
-// 	inputProfile := ndb_api.Profile{}
-
-// 	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
-// 		pgSpecificProfiles,
-// 		ndb_api.SoftwareOOBProfileResolverForSingleInstance)
-
-// 	assert.Nil(t, err)
-// 	// assert that its OOB profile
-// 	assert.True(t, resolvedSoftwareProfile.SystemProfile)
-// }
-
-// func TestResolveSoftwareProfileByName_ByName_ResolvesOk(t *testing.T) {
-// 	ctx := context.Background()
-// 	allProfiles := profilesListGenerator()
-// 	pgSpecificProfiles := util.Filter(allProfiles, func(p ndb_api.ProfileResponse) bool {
-// 		return p.EngineType == "postgres"
-// 	})
-
-// 	inputProfile := ndb_api.Profile{
-// 		Profile: v1alpha1.Profile{
-// 			Name: "Software_Profile_1",
-// 		},
-// 	}
-
-// 	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
-// 		pgSpecificProfiles,
-// 		ndb_api.SoftwareOOBProfileResolverForSingleInstance)
-
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, resolvedSoftwareProfile.Name, "Software_Profile_1")
-// }
-
-// func TestResolveSoftwareProfile_ByNameMismatch_throwsError(t *testing.T) {
-// 	ctx := context.Background()
-// 	allProfiles := profilesListGenerator()
-// 	pgSpecificProfiles := util.Filter(allProfiles, func(p ndb_api.ProfileResponse) bool {
-// 		return p.EngineType == "postgres"
-// 	})
-
-// 	inputProfile := ndb_api.Profile{
-// 		Profile: v1alpha1.Profile{
-// 			Name: "Software_Profile_#1", // profile with this name does not exist
-// 		},
-// 	}
-
-// 	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
-// 		pgSpecificProfiles,
-// 		ndb_api.SoftwareOOBProfileResolverForSingleInstance)
-
-// 	assert.NotNil(t, err)
-// 	// should return an error and an empty profile
-// 	assert.Equal(t, resolvedSoftwareProfile, (ndb_api.ProfileResponse{}))
-
-// }
-
-// func TestResolveComputeProfileByName_resolvesOk(t *testing.T) {
-// 	ctx := context.Background()
-// 	allProfiles := profilesListGenerator()
-
-// 	inputProfile := ndb_api.Profile{
-// 		Profile: v1alpha1.Profile{
-// 			Name: "Compute_Profile_1",
-// 		},
-// 	}
-
-// 	resolvedComputeProfile, err := inputProfile.Resolve(ctx,
-// 		allProfiles,
-// 		ndb_api.ComputeOOBProfileResolver)
-
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, resolvedComputeProfile.Name, "Compute_Profile_1")
-// }
-
-// // case mismatch is not supported, profile name is case-sensitive
-// func TestResolveComputeProfileByNameCaseMismatch_throwsError(t *testing.T) {
-// 	ctx := context.Background()
-// 	allProfiles := profilesListGenerator()
-
-// 	inputProfile := ndb_api.Profile{
-// 		Profile: v1alpha1.Profile{
-// 			Name: "compute_Profile_1",
-// 		},
-// 	}
-
-// 	resolvedComputeProfile, err := inputProfile.Resolve(ctx,
-// 		allProfiles,
-// 		ndb_api.ComputeOOBProfileResolver)
-
-// 	assert.NotNil(t, err)
-// 	assert.Equal(t, resolvedComputeProfile, ndb_api.ProfileResponse{})
-// }
-
-// func TestResolveComputeProfileById_resolvesOk(t *testing.T) {
-// 	ctx := context.Background()
-// 	allProfiles := profilesListGenerator()
-
-// 	inputProfile := ndb_api.Profile{
-// 		Profile: v1alpha1.Profile{
-// 			Id: "cp-id-2",
-// 		},
-// 	}
-
-// 	resolvedComputeProfile, err := inputProfile.Resolve(ctx,
-// 		allProfiles,
-// 		ndb_api.ComputeOOBProfileResolver)
-
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, resolvedComputeProfile.Id, "cp-id-2")
-// }
-
-// func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
-
-// 	//Set
-// 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if !checkAuthTestHelper(r) {
-// 			t.Errorf("Invalid Authentication Credentials")
-// 		} else {
-// 			var response interface{}
-// 			if r.URL.Path == "/profiles" {
-// 				response = []ndb_api.ProfileResponse{
-// 					{
-// 						Id:              "1",
-// 						Name:            "a",
-// 						Type:            "test type",
-// 						EngineType:      "test engine",
-// 						LatestVersionId: "v-id-1",
-// 						Topology:        "test topology",
-// 						Status:          "READY",
-// 					},
-// 				}
-// 			} else if r.URL.Path == "/slas" {
-// 				response = []ndb_api.SLAResponse{
-// 					{
-// 						Id:                 "sla-1-id",
-// 						Name:               "SLA 1",
-// 						UniqueName:         "SLA 1 Unique Name",
-// 						Description:        "SLA 1 Description",
-// 						DailyRetention:     1,
-// 						WeeklyRetention:    2,
-// 						MonthlyRetention:   3,
-// 						QuarterlyRetention: 4,
-// 						YearlyRetention:    5,
-// 					},
-// 					{
-// 						Id:                 "sla-2-id",
-// 						Name:               "SLA 2",
-// 						UniqueName:         "SLA 2 Unique Name",
-// 						Description:        "SLA 2 Description",
-// 						DailyRetention:     1,
-// 						WeeklyRetention:    2,
-// 						MonthlyRetention:   3,
-// 						QuarterlyRetention: 4,
-// 						YearlyRetention:    5,
-// 					},
-// 				}
-// 			}
-// 			resp, _ := json.Marshal(response)
-// 			w.WriteHeader(http.StatusOK)
-// 			w.Write(resp)
-// 		}
-// 	}))
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	//Test
-// 	dbTypes := []string{"postgres", "mysql", "mongodb"}
-// 	for _, dbType := range dbTypes {
-// 		dbSpec := v1alpha1.DatabaseSpec{
-// 			NDB: v1alpha1.NDB{
-// 				Server:           "abc.def.ghi.jkl/v99/api",
-// 				ClusterId:        "test-cluster-id",
-// 				CredentialSecret: "qwertyuiop",
-// 			},
-// 			Instance: v1alpha1.Instance{
-// 				DatabaseNames:        []string{"a", "b", "c", "d"},
-// 				Type:                 dbType,
-// 				DatabaseInstanceName: dbType + "-instance-test",
-// 				TimeZone:             "UTC",
-// 			},
-// 		}
-
-// 		reqData := map[string]interface{}{
-// 			common.NDB_PARAM_PASSWORD:       "qwerty",
-// 			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
-// 		}
-
-// 		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, dbSpec, reqData)
-// 		t.Log(err)
-// 		if err == nil {
-// 			t.Errorf("GenerateProvisioningRequest should return an error when NONE time machine is not found")
-// 		}
-// 	}
-// }
-
-// func TestGenerateProvisioningRequestReturnsErrorIfProfilesNotFound(t *testing.T) {
-
-// 	//Set
-// 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if !checkAuthTestHelper(r) {
-// 			t.Errorf("Invalid Authentication Credentials")
-// 		} else {
-// 			var response interface{}
-// 			if r.URL.Path == "/profiles" {
-// 				response = []ndb_api.ProfileResponse{
-// 					{
-// 						Id:              "1",
-// 						Name:            "a",
-// 						Type:            "test type",
-// 						EngineType:      "test engine",
-// 						LatestVersionId: "v-id-1",
-// 						Topology:        "test topology",
-// 						Status:          "READY",
-// 					},
-// 				}
-// 			} else if r.URL.Path == "/slas" {
-// 				response = []ndb_api.SLAResponse{
-// 					{
-// 						Id:                 "sla-1-id",
-// 						Name:               "SLA 1",
-// 						UniqueName:         "SLA 1 Unique Name",
-// 						Description:        "SLA 1 Description",
-// 						DailyRetention:     1,
-// 						WeeklyRetention:    2,
-// 						MonthlyRetention:   3,
-// 						QuarterlyRetention: 4,
-// 						YearlyRetention:    5,
-// 					},
-// 					{
-// 						Id:                 "sla-2-id",
-// 						Name:               "SLA 2",
-// 						UniqueName:         "SLA 2 Unique Name",
-// 						Description:        "SLA 2 Description",
-// 						DailyRetention:     1,
-// 						WeeklyRetention:    2,
-// 						MonthlyRetention:   3,
-// 						QuarterlyRetention: 4,
-// 						YearlyRetention:    5,
-// 					},
-// 					{
-// 						Id:                 NONE_SLA_ID,
-// 						Name:               common.SLA_NAME_NONE,
-// 						UniqueName:         "SLA 3 Unique Name",
-// 						Description:        "SLA 3 Description",
-// 						DailyRetention:     1,
-// 						WeeklyRetention:    2,
-// 						MonthlyRetention:   3,
-// 						QuarterlyRetention: 4,
-// 						YearlyRetention:    5,
-// 					},
-// 				}
-// 			}
-// 			resp, _ := json.Marshal(response)
-// 			w.WriteHeader(http.StatusOK)
-// 			w.Write(resp)
-// 		}
-// 	}))
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	//Test
-// 	dbTypes := []string{"postgres", "mysql", "mongodb"}
-// 	for _, dbType := range dbTypes {
-// 		dbSpec := v1alpha1.DatabaseSpec{
-// 			NDB: v1alpha1.NDB{
-// 				Server:           "abc.def.ghi.jkl/v99/api",
-// 				ClusterId:        "test-cluster-id",
-// 				CredentialSecret: "test-credential-secret-name",
-// 			},
-// 			Instance: v1alpha1.Instance{
-// 				DatabaseNames:        []string{"a", "b", "c", "d"},
-// 				Type:                 dbType,
-// 				DatabaseInstanceName: dbType + "-instance-test",
-// 				TimeZone:             "UTC",
-// 			},
-// 		}
-
-// 		reqData := map[string]interface{}{
-// 			common.NDB_PARAM_PASSWORD:       "qwerty",
-// 			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
-// 		}
-
-// 		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, dbSpec, reqData)
-// 		t.Log(err)
-// 		if err == nil {
-// 			t.Errorf("GenerateProvisioningRequest should return an error when profiles are not found")
-// 		}
-// 	}
-// }
-// func TestGenerateProvisioningRequest(t *testing.T) {
-
-// 	//Set
-// 	server := GetServerTestHelper(t)
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	//Test
-// 	dbTypes := []string{"postgres", "mysql", "mongodb"}
-// 	for _, dbType := range dbTypes {
-// 		dbSpec := v1alpha1.DatabaseSpec{
-// 			NDB: v1alpha1.NDB{
-// 				Server:           "abc.def.ghi.jkl/v99/api",
-// 				ClusterId:        "test-cluster-id",
-// 				CredentialSecret: "test-credential-secret-name",
-// 			},
-// 			Instance: v1alpha1.Instance{
-// 				DatabaseNames:        []string{"a", "b", "c", "d"},
-// 				Type:                 dbType,
-// 				DatabaseInstanceName: dbType + "-instance-test",
-// 				TimeZone:             "UTC",
-// 			},
-// 		}
-
-// 		reqData := map[string]interface{}{
-// 			common.NDB_PARAM_PASSWORD:       "qwerty",
-// 			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
-// 		}
-
-// 		request, _ := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, dbSpec, reqData)
-
-// 		//Assert
-// 		if request.DatabaseType != ndb_api.GetDatabaseEngineName(dbType) {
-// 			t.Errorf("Database Engine type mismatch. Want: %s, got: %s", ndb_api.GetDatabaseEngineName(dbType), request.DatabaseType)
-// 		}
-
-// 		if request.SoftwareProfileId == "" || request.SoftwareProfileVersionId == "" {
-// 			t.Logf("SoftwareProfileId or SoftwareProfileVersionId is empty")
-// 		}
-// 		if request.ComputeProfileId == "" {
-// 			t.Logf("ComputeProfileId is empty")
-// 		}
-// 		if request.NetworkProfileId == "" {
-// 			t.Logf("NetworkProfileId is empty")
-// 		}
-// 		if request.DbParameterProfileId == "" {
-// 			t.Logf("DbParameterProfileId is empty")
-// 		}
-// 		if request.TimeMachineInfo.SlaId != NONE_SLA_ID {
-// 			t.Logf("NONE time machine sla not selected")
-// 		}
-// 	}
-// }
-
-// func TestGenerateProvisioningRequestReturnsErrorIfDBPasswordIsEmpty(t *testing.T) {
-
-// 	//Set
-// 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if !checkAuthTestHelper(r) {
-// 			t.Errorf("Invalid Authentication Credentials")
-// 		} else {
-// 			var response interface{}
-// 			if r.URL.Path == "/profiles" {
-// 				response = []ndb_api.ProfileResponse{
-// 					{
-// 						Id:              "1",
-// 						Name:            "a",
-// 						Type:            "test type",
-// 						EngineType:      "test engine",
-// 						LatestVersionId: "v-id-1",
-// 						Topology:        "test topology",
-// 						Status:          "READY",
-// 					},
-// 				}
-// 			} else if r.URL.Path == "/slas" {
-// 				response = []ndb_api.SLAResponse{
-// 					{
-// 						Id:                 "sla-1-id",
-// 						Name:               "SLA 1",
-// 						UniqueName:         "SLA 1 Unique Name",
-// 						Description:        "SLA 1 Description",
-// 						DailyRetention:     1,
-// 						WeeklyRetention:    2,
-// 						MonthlyRetention:   3,
-// 						QuarterlyRetention: 4,
-// 						YearlyRetention:    5,
-// 					},
-// 					{
-// 						Id:                 "sla-2-id",
-// 						Name:               "SLA 2",
-// 						UniqueName:         "SLA 2 Unique Name",
-// 						Description:        "SLA 2 Description",
-// 						DailyRetention:     1,
-// 						WeeklyRetention:    2,
-// 						MonthlyRetention:   3,
-// 						QuarterlyRetention: 4,
-// 						YearlyRetention:    5,
-// 					},
-// 					{
-// 						Id:                 NONE_SLA_ID,
-// 						Name:               common.SLA_NAME_NONE,
-// 						UniqueName:         "SLA 3 Unique Name",
-// 						Description:        "SLA 3 Description",
-// 						DailyRetention:     1,
-// 						WeeklyRetention:    2,
-// 						MonthlyRetention:   3,
-// 						QuarterlyRetention: 4,
-// 						YearlyRetention:    5,
-// 					},
-// 				}
-// 			}
-// 			resp, _ := json.Marshal(response)
-// 			w.WriteHeader(http.StatusOK)
-// 			w.Write(resp)
-// 		}
-// 	}))
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	//Test
-// 	dbTypes := []string{"postgres", "mysql", "mongodb"}
-// 	for _, dbType := range dbTypes {
-// 		dbSpec := v1alpha1.DatabaseSpec{
-// 			NDB: v1alpha1.NDB{
-// 				Server:           "abc.def.ghi.jkl/v99/api",
-// 				ClusterId:        "test-cluster-id",
-// 				CredentialSecret: "test-credential-secret-name",
-// 			},
-// 			Instance: v1alpha1.Instance{
-// 				DatabaseNames:        []string{"a", "b", "c", "d"},
-// 				Type:                 dbType,
-// 				DatabaseInstanceName: dbType + "-instance-test",
-// 				TimeZone:             "UTC",
-// 			},
-// 		}
-
-// 		reqData := map[string]interface{}{
-// 			common.NDB_PARAM_PASSWORD:       "",
-// 			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
-// 		}
-
-// 		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, dbSpec, reqData)
-// 		t.Log(err)
-// 		if err == nil {
-// 			t.Errorf("GenerateProvisioningRequest should return an error when db password is empty")
-// 		}
-// 	}
-// }
-
-// func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
-
-// 	//Set
-// 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if !checkAuthTestHelper(r) {
-// 			t.Errorf("Invalid Authentication Credentials")
-// 		} else {
-// 			var response interface{}
-// 			if r.URL.Path == "/profiles" {
-// 				response = []ndb_api.ProfileResponse{
-// 					{
-// 						Id:              "1",
-// 						Name:            "a",
-// 						Type:            "test type",
-// 						EngineType:      "test engine",
-// 						LatestVersionId: "v-id-1",
-// 						Topology:        "test topology",
-// 						Status:          "READY",
-// 					},
-// 				}
-// 			} else if r.URL.Path == "/slas" {
-// 				response = []ndb_api.SLAResponse{
-// 					{
-// 						Id:                 "sla-1-id",
-// 						Name:               "SLA 1",
-// 						UniqueName:         "SLA 1 Unique Name",
-// 						Description:        "SLA 1 Description",
-// 						DailyRetention:     1,
-// 						WeeklyRetention:    2,
-// 						MonthlyRetention:   3,
-// 						QuarterlyRetention: 4,
-// 						YearlyRetention:    5,
-// 					},
-// 					{
-// 						Id:                 "sla-2-id",
-// 						Name:               "SLA 2",
-// 						UniqueName:         "SLA 2 Unique Name",
-// 						Description:        "SLA 2 Description",
-// 						DailyRetention:     1,
-// 						WeeklyRetention:    2,
-// 						MonthlyRetention:   3,
-// 						QuarterlyRetention: 4,
-// 						YearlyRetention:    5,
-// 					},
-// 					{
-// 						Id:                 NONE_SLA_ID,
-// 						Name:               common.SLA_NAME_NONE,
-// 						UniqueName:         "SLA 3 Unique Name",
-// 						Description:        "SLA 3 Description",
-// 						DailyRetention:     1,
-// 						WeeklyRetention:    2,
-// 						MonthlyRetention:   3,
-// 						QuarterlyRetention: 4,
-// 						YearlyRetention:    5,
-// 					},
-// 				}
-// 			}
-// 			resp, _ := json.Marshal(response)
-// 			w.WriteHeader(http.StatusOK)
-// 			w.Write(resp)
-// 		}
-// 	}))
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-// 	//Test
-// 	dbTypes := []string{"postgres", "mysql", "mongodb"}
-// 	for _, dbType := range dbTypes {
-// 		dbSpec := v1alpha1.DatabaseSpec{
-// 			NDB: v1alpha1.NDB{
-// 				Server:           "abc.def.ghi.jkl/v99/api",
-// 				ClusterId:        "test-cluster-id",
-// 				CredentialSecret: "test-credential-secret-name",
-// 			},
-// 			Instance: v1alpha1.Instance{
-// 				DatabaseNames:        []string{"a", "b", "c", "d"},
-// 				Type:                 dbType,
-// 				DatabaseInstanceName: dbType + "-instance-test",
-// 				TimeZone:             "UTC",
-// 			},
-// 		}
-
-// 		reqData := map[string]interface{}{
-// 			common.NDB_PARAM_PASSWORD:       "qwertyuiop",
-// 			common.NDB_PARAM_SSH_PUBLIC_KEY: "",
-// 		}
-
-// 		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, dbSpec, reqData)
-// 		t.Log(err)
-// 		if err == nil {
-// 			t.Errorf("GenerateProvisioningRequest should return an error when ssh key is empty")
-// 		}
-// 	}
-// }
-
-// func TestGetByDatabaseType(t *testing.T) {
-// 	// Test with MySQL database type
-// 	MySQLExpectedArgs, err := ndb_api.GetActionArgumentsByDatabaseType(common.DATABASE_TYPE_MYSQL)
-
-// 	if err != nil {
-// 		t.Error("Error while fetching mysql args", "err", err)
-// 	}
-
-// 	expectedMySqlArgs := []ndb_api.ActionArgument{
-// 		{
-// 			Name:  "listener_port",
-// 			Value: "3306",
-// 		},
-// 	}
-
-// 	if !reflect.DeepEqual(MySQLExpectedArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMySqlArgs) {
-// 		t.Errorf("Expected %v, but got %v", expectedMySqlArgs, MySQLExpectedArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
-// 	}
-
-// 	// Test with Postgres database type
-// 	postgresArgs, err := ndb_api.GetActionArgumentsByDatabaseType(common.DATABASE_TYPE_POSTGRES)
-// 	if err != nil {
-// 		t.Error("Error while fetching postgres args", "err", err)
-// 	}
-// 	expectedPostgresArgs := []ndb_api.ActionArgument{
-// 		{Name: "proxy_read_port", Value: "5001"},
-// 		{Name: "listener_port", Value: "5432"},
-// 		{Name: "proxy_write_port", Value: "5000"},
-// 		{Name: "enable_synchronous_mode", Value: "false"},
-// 		{Name: "auto_tune_staging_drive", Value: "true"},
-// 		{Name: "backup_policy", Value: "primary_only"},
-// 	}
-// 	if !reflect.DeepEqual(postgresArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedPostgresArgs) {
-// 		t.Errorf("Expected %v, but got %v", expectedPostgresArgs, postgresArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
-// 	}
-
-// 	// Test with MongoDB database type
-// 	mongodbArgs, err := ndb_api.GetActionArgumentsByDatabaseType(common.DATABASE_TYPE_MONGODB)
-// 	if err != nil {
-// 		t.Error("Error while fetching mongodbArgs", "err", err)
-// 	}
-// 	expectedMongodbArgs := []ndb_api.ActionArgument{
-// 		{Name: "listener_port", Value: "27017"},
-// 		{Name: "log_size", Value: "100"},
-// 		{Name: "journal_size", Value: "100"},
-// 		{Name: "restart_mongod", Value: "true"},
-// 		{Name: "working_dir", Value: "/tmp"},
-// 		{Name: "db_user", Value: "admin"},
-// 		{Name: "backup_policy", Value: "primary_only"},
-// 	}
-// 	if !reflect.DeepEqual(mongodbArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMongodbArgs) {
-// 		t.Errorf("Expected %v, but got %v", expectedMongodbArgs, mongodbArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
-// 	}
-
-// 	// Test with unknown database type
-// 	unknownArgs, err := ndb_api.GetActionArgumentsByDatabaseType("unknown")
-// 	if err == nil {
-// 		t.Errorf("Expected error for unknown database type, but got %v", unknownArgs)
-// 	}
-// }
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/common"
+	"github.com/nutanix-cloud-native/ndb-operator/common/util"
+	"github.com/nutanix-cloud-native/ndb-operator/controller_adapters"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestGetNoneTimeMachineSLA(t *testing.T) {
+
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	sla, err := ndb_api.GetNoneTimeMachineSLA(context.Background(), ndb_client)
+
+	//Assert
+	if err != nil {
+		t.Errorf("Could not get NONE TM, error: %s", err)
+	}
+	if sla.Name != common.SLA_NAME_NONE {
+		t.Error("Could not fetch mock slas")
+	}
+}
+
+func TestGetNoneTimeMachineSLAReturnsErrorWhenNoneTimeMachineNotFound(t *testing.T) {
+
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			resp, _ := json.Marshal([]ndb_api.SLAResponse{
+				{
+					Id:                 "sla-1-id",
+					Name:               "SLA 1",
+					UniqueName:         "SLA 1 Unique Name",
+					Description:        "SLA 1 Description",
+					DailyRetention:     1,
+					WeeklyRetention:    2,
+					MonthlyRetention:   3,
+					QuarterlyRetention: 4,
+					YearlyRetention:    5,
+				},
+				{
+					Id:                 "sla-2-id",
+					Name:               "SLA 2",
+					UniqueName:         "SLA 2 Unique Name",
+					Description:        "SLA 2 Description",
+					DailyRetention:     1,
+					WeeklyRetention:    2,
+					MonthlyRetention:   3,
+					QuarterlyRetention: 4,
+					YearlyRetention:    5,
+				},
+			})
+			w.WriteHeader(http.StatusOK)
+			w.Write(resp)
+		}
+	}))
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	sla, err := ndb_api.GetNoneTimeMachineSLA(context.Background(), ndb_client)
+	//Assert
+	if err == nil {
+		t.Errorf("GetNoneTimeMachineSLA should return an error when NONE time machine does not exists")
+	}
+	if sla != (ndb_api.SLAResponse{}) {
+		t.Error("GetNoneTimeMachineSLA should respond with an empty SLA when NONE time machine is not found")
+	}
+}
+
+func GetProfileResolvers(d v1alpha1.Database) ndb_api.ProfileResolvers {
+	profileResolvers := make(ndb_api.ProfileResolvers)
+
+	profileResolvers[common.PROFILE_TYPE_COMPUTE] = &controller_adapters.Profile{
+		Profile:     d.Spec.Instance.Profiles.Compute,
+		ProfileType: common.PROFILE_TYPE_COMPUTE,
+	}
+	profileResolvers[common.PROFILE_TYPE_SOFTWARE] = &controller_adapters.Profile{
+		Profile:     d.Spec.Instance.Profiles.Software,
+		ProfileType: common.PROFILE_TYPE_SOFTWARE,
+	}
+	profileResolvers[common.PROFILE_TYPE_NETWORK] = &controller_adapters.Profile{
+		Profile:     d.Spec.Instance.Profiles.Network,
+		ProfileType: common.PROFILE_TYPE_NETWORK,
+	}
+	profileResolvers[common.PROFILE_TYPE_DATABASE_PARAMETER] = &controller_adapters.Profile{
+		Profile:     d.Spec.Instance.Profiles.DbParam,
+		ProfileType: common.PROFILE_TYPE_DATABASE_PARAMETER,
+	}
+
+	return profileResolvers
+
+}
+
+func TestProfiles(t *testing.T) {
+
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+	Database := v1alpha1.Database{}
+	Instance := v1alpha1.Instance{}
+	Database.Spec.Instance = Instance
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	for _, dbType := range dbTypes {
+		Instance.Type = dbType
+		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
+
+		//Assert
+		profileTypes := []string{
+			common.PROFILE_TYPE_COMPUTE,
+			common.PROFILE_TYPE_SOFTWARE,
+			common.PROFILE_TYPE_NETWORK,
+			common.PROFILE_TYPE_DATABASE_PARAMETER,
+		}
+		for _, profileType := range profileTypes {
+			profile := profileMap[profileType]
+			//Assert that no profileType is empty
+			if profile == (ndb_api.ProfileResponse{}) {
+				t.Errorf("Empty profile type %s for dbType %s", profileType, dbType)
+			}
+			//Assert that profile EngineType matches the database engine or the generic type
+			if profile.EngineType != ndb_api.GetDatabaseEngineName(dbType) && profile.EngineType != common.DATABASE_ENGINE_TYPE_GENERIC {
+				t.Errorf("Profile engine type %s for dbType %s does not match", profile.EngineType, dbType)
+			}
+		}
+	}
+}
+
+func TestGetProfilesFailsWhenSoftwareProfileNotProvidedForClosedSourceDBs(t *testing.T) {
+
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	Database := v1alpha1.Database{}
+	Instance := v1alpha1.Instance{}
+	Database.Spec.Instance = Instance
+	softwareProfile := v1alpha1.Profile{}
+	Instance.Profiles.Software = softwareProfile
+
+	//Test
+	dbTypes := []string{"oracle", "sqlserver"}
+	for _, dbType := range dbTypes {
+		Instance.Type = dbType
+		_, err := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
+
+		if err == nil {
+			assert.EqualError(t, err, fmt.Sprintf("software profile is a mandatory input for %s database", dbType))
+		}
+	}
+}
+
+func TestGetProfilesOnlyGetsTheSmallOOBComputeProfileWhenNoProfileInfoIsProvided(t *testing.T) {
+
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	Database := v1alpha1.Database{}
+	Instance := v1alpha1.Instance{}
+	Database.Spec.Instance = Instance
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	for _, dbType := range dbTypes {
+		Instance.Type = dbType
+		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
+
+		//Assert
+		computeProfile := profileMap[common.PROFILE_TYPE_COMPUTE]
+		if !strings.Contains(strings.ToLower(computeProfile.Name), "small") {
+			t.Errorf("Expected small oob compute profile, but got: %s", computeProfile.Name)
+		}
+	}
+}
+
+func TestGetProfilesSoftwareProfileNotReadyState(t *testing.T) {
+
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	Database := v1alpha1.Database{}
+	Instance := v1alpha1.Instance{}
+	Instance.Profiles.Software = v1alpha1.Profile{Name: "Software_Profile_Not_Ready"}
+	Database.Spec.Instance = Instance
+
+	//Test
+	dbTypes := []string{"postgres"}
+	for _, dbType := range dbTypes {
+		Instance.Type = dbType
+		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
+
+		//Assert
+		software := profileMap[common.PROFILE_TYPE_SOFTWARE]
+		if software != (ndb_api.ProfileResponse{}) {
+			t.Errorf("Expected software profile to be not found, but got: %s", software.Name)
+		}
+	}
+}
+
+func TestGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
+
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			resp, _ := json.Marshal([]ndb_api.ProfileResponse{
+				{
+					Id:              "1",
+					Name:            "a",
+					Type:            "test type",
+					EngineType:      "test engine",
+					LatestVersionId: "v-id-1",
+					Topology:        "test topology",
+					Status:          "READY",
+				},
+			})
+			w.WriteHeader(http.StatusOK)
+			w.Write(resp)
+		}
+	}))
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	Database := v1alpha1.Database{}
+	Instance := v1alpha1.Instance{}
+	Database.Spec.Instance = Instance
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	for _, dbType := range dbTypes {
+		Instance.Type = dbType
+		_, err := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
+		// None of the profile criteria should match the mocked response
+		// t.Log(err)
+		if err == nil {
+			t.Errorf("GetProfiles should have retuned an error when none of the profiles matc the criteria.")
+		}
+
+	}
+}
+
+func profilesListGenerator() []ndb_api.ProfileResponse {
+
+	custom_generic_compute := ndb_api.ProfileResponse{
+		Id:              "cp-id-1",
+		Name:            "Compute_Profile_1",
+		Type:            "Compute",
+		EngineType:      "Generic",
+		LatestVersionId: "cp-vid-1",
+		Topology:        "test topology",
+		SystemProfile:   false,
+		Status:          "READY",
+	}
+
+	oob_generic_compute := ndb_api.ProfileResponse{
+		Id:              "cp-id-2",
+		Name:            "small",
+		Type:            "Compute",
+		EngineType:      "Generic",
+		LatestVersionId: "cp-vid-2",
+		Topology:        "test topology",
+		SystemProfile:   true,
+		Status:          "READY",
+	}
+
+	oob_oracle_software := ndb_api.ProfileResponse{
+		Id:              "sw-id-5",
+		Name:            "Software_Profile_5",
+		Type:            "Software",
+		EngineType:      "oracle",
+		LatestVersionId: "sw-vid-5",
+		Topology:        "single",
+		SystemProfile:   true,
+		Status:          "READY",
+	}
+
+	oob_postgres_software := ndb_api.ProfileResponse{
+		Id:              "sw-id-1",
+		Name:            "Software_Profile_1",
+		Type:            "Software",
+		EngineType:      "postgres",
+		LatestVersionId: "sw-vid-1",
+		Topology:        "single",
+		SystemProfile:   true,
+		Status:          "READY",
+	}
+
+	oob_postgres_software_not_ready := ndb_api.ProfileResponse{
+		Id:              "sw-id-2",
+		Name:            "Software_Profile_Not_READY",
+		Type:            "Software",
+		EngineType:      "postgres",
+		LatestVersionId: "sw-vid-2",
+		Topology:        "single",
+		SystemProfile:   false,
+		Status:          "NOT_YET_CREATED",
+	}
+
+	oob_postgres_network := ndb_api.ProfileResponse{
+		Id:              "nw-id-1",
+		Name:            "Network_Profile_1",
+		Type:            "Network",
+		EngineType:      "postgres",
+		LatestVersionId: "nw-vid-1",
+		Topology:        "test topology",
+		SystemProfile:   true,
+		Status:          "READY",
+	}
+
+	oob_postgres_dbparam := ndb_api.ProfileResponse{
+		Id:              "dbp-id-1",
+		Name:            "DBParam_Profile_1",
+		Type:            "DBParam",
+		EngineType:      "postgres",
+		LatestVersionId: "dbp-vid-1",
+		Topology:        "test topology",
+		SystemProfile:   true,
+		Status:          "READY",
+	}
+
+	allProfiles := [10]ndb_api.ProfileResponse{
+		custom_generic_compute,
+		oob_generic_compute,
+		oob_oracle_software,
+		oob_postgres_software,
+		oob_postgres_software_not_ready,
+		oob_postgres_network,
+		oob_postgres_dbparam,
+	}
+
+	return allProfiles[:]
+}
+
+func TestResolveOOBSoftwareProfile_ByEmptyNameAndID_ResolvesOk(t *testing.T) {
+	ctx := context.Background()
+	allProfiles := profilesListGenerator()
+	pgSpecificProfiles := util.Filter(allProfiles, func(p ndb_api.ProfileResponse) bool {
+		return p.EngineType == "postgres"
+	})
+
+	inputProfile := GetProfileResolvers(v1alpha1.Database{})[common.PROFILE_TYPE_SOFTWARE]
+
+	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
+		pgSpecificProfiles,
+		ndb_api.SoftwareOOBProfileResolverForSingleInstance)
+
+	assert.Nil(t, err)
+	// assert that its OOB profile
+	assert.True(t, resolvedSoftwareProfile.SystemProfile)
+}
+
+func TestResolveSoftwareProfileByName_ByName_ResolvesOk(t *testing.T) {
+	ctx := context.Background()
+	allProfiles := profilesListGenerator()
+	pgSpecificProfiles := util.Filter(allProfiles, func(p ndb_api.ProfileResponse) bool {
+		return p.EngineType == "postgres"
+	})
+
+	inputProfile := GetProfileResolvers(v1alpha1.Database{
+		Spec: v1alpha1.DatabaseSpec{
+			Instance: v1alpha1.Instance{
+				Profiles: v1alpha1.Profiles{
+					Software: v1alpha1.Profile{
+						Name: "Software_Profile_1",
+					},
+				},
+			},
+		},
+	})[common.PROFILE_TYPE_SOFTWARE]
+
+	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
+		pgSpecificProfiles,
+		ndb_api.SoftwareOOBProfileResolverForSingleInstance)
+
+	assert.Nil(t, err)
+	assert.Equal(t, resolvedSoftwareProfile.Name, "Software_Profile_1")
+}
+
+func TestResolveSoftwareProfile_ByNameMismatch_throwsError(t *testing.T) {
+	ctx := context.Background()
+	allProfiles := profilesListGenerator()
+	pgSpecificProfiles := util.Filter(allProfiles, func(p ndb_api.ProfileResponse) bool {
+		return p.EngineType == "postgres"
+	})
+
+	inputProfile := GetProfileResolvers(v1alpha1.Database{
+		Spec: v1alpha1.DatabaseSpec{
+			Instance: v1alpha1.Instance{
+				Profiles: v1alpha1.Profiles{
+					Software: v1alpha1.Profile{
+						Name: "Software_Profile_#1", // profile with this name does not exist
+					},
+				},
+			},
+		},
+	})[common.PROFILE_TYPE_SOFTWARE]
+
+	resolvedSoftwareProfile, err := inputProfile.Resolve(ctx,
+		pgSpecificProfiles,
+		ndb_api.SoftwareOOBProfileResolverForSingleInstance)
+
+	assert.NotNil(t, err)
+	// should return an error and an empty profile
+	assert.Equal(t, resolvedSoftwareProfile, (ndb_api.ProfileResponse{}))
+
+}
+
+func TestResolveComputeProfileByName_resolvesOk(t *testing.T) {
+	ctx := context.Background()
+	allProfiles := profilesListGenerator()
+
+	inputProfile := GetProfileResolvers(v1alpha1.Database{
+		Spec: v1alpha1.DatabaseSpec{
+			Instance: v1alpha1.Instance{
+				Profiles: v1alpha1.Profiles{
+					Compute: v1alpha1.Profile{
+						Name: "Compute_Profile_1",
+					},
+				},
+			},
+		},
+	})[common.PROFILE_TYPE_COMPUTE]
+
+	resolvedComputeProfile, err := inputProfile.Resolve(ctx,
+		allProfiles,
+		ndb_api.ComputeOOBProfileResolver)
+
+	assert.Nil(t, err)
+	assert.Equal(t, resolvedComputeProfile.Name, "Compute_Profile_1")
+}
+
+// case mismatch is not supported, profile name is case-sensitive
+func TestResolveComputeProfileByNameCaseMismatch_throwsError(t *testing.T) {
+	ctx := context.Background()
+	allProfiles := profilesListGenerator()
+
+	inputProfile := GetProfileResolvers(v1alpha1.Database{
+		Spec: v1alpha1.DatabaseSpec{
+			Instance: v1alpha1.Instance{
+				Profiles: v1alpha1.Profiles{
+					Compute: v1alpha1.Profile{
+						Name: "compute_Profile_1",
+					},
+				},
+			},
+		},
+	})[common.PROFILE_TYPE_COMPUTE]
+
+	resolvedComputeProfile, err := inputProfile.Resolve(ctx,
+		allProfiles,
+		ndb_api.ComputeOOBProfileResolver)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, resolvedComputeProfile, ndb_api.ProfileResponse{})
+}
+
+func TestResolveComputeProfileById_resolvesOk(t *testing.T) {
+	ctx := context.Background()
+	allProfiles := profilesListGenerator()
+
+	inputProfile := GetProfileResolvers(v1alpha1.Database{
+		Spec: v1alpha1.DatabaseSpec{
+			Instance: v1alpha1.Instance{
+				Profiles: v1alpha1.Profiles{
+					Compute: v1alpha1.Profile{
+						Id: "cp-id-2",
+					},
+				},
+			},
+		},
+	})[common.PROFILE_TYPE_COMPUTE]
+
+	resolvedComputeProfile, err := inputProfile.Resolve(ctx,
+		allProfiles,
+		ndb_api.ComputeOOBProfileResolver)
+
+	assert.Nil(t, err)
+	assert.Equal(t, resolvedComputeProfile.Id, "cp-id-2")
+}
+
+func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
+
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			var response interface{}
+			if r.URL.Path == "/profiles" {
+				response = []ndb_api.ProfileResponse{
+					{
+						Id:              "1",
+						Name:            "a",
+						Type:            "test type",
+						EngineType:      "test engine",
+						LatestVersionId: "v-id-1",
+						Topology:        "test topology",
+						Status:          "READY",
+					},
+				}
+			} else if r.URL.Path == "/slas" {
+				response = []ndb_api.SLAResponse{
+					{
+						Id:                 "sla-1-id",
+						Name:               "SLA 1",
+						UniqueName:         "SLA 1 Unique Name",
+						Description:        "SLA 1 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+					{
+						Id:                 "sla-2-id",
+						Name:               "SLA 2",
+						UniqueName:         "SLA 2 Unique Name",
+						Description:        "SLA 2 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+				}
+			}
+			resp, _ := json.Marshal(response)
+			w.WriteHeader(http.StatusOK)
+			w.Write(resp)
+		}
+	}))
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	for _, dbType := range dbTypes {
+		dbSpec := v1alpha1.DatabaseSpec{
+			NDB: v1alpha1.NDB{
+				Server:           "abc.def.ghi.jkl/v99/api",
+				ClusterId:        "test-cluster-id",
+				CredentialSecret: "qwertyuiop",
+			},
+			Instance: v1alpha1.Instance{
+				DatabaseNames:        []string{"a", "b", "c", "d"},
+				Type:                 dbType,
+				DatabaseInstanceName: dbType + "-instance-test",
+				TimeZone:             "UTC",
+			},
+		}
+
+		reqData := map[string]interface{}{
+			common.NDB_PARAM_PASSWORD:       "qwerty",
+			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
+		}
+		db := &controller_adapters.Database{Database: v1alpha1.Database{
+			Spec: dbSpec,
+		}}
+		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, db, reqData)
+		t.Log(err)
+		if err == nil {
+			t.Errorf("GenerateProvisioningRequest should return an error when NONE time machine is not found")
+		}
+	}
+}
+
+func TestGenerateProvisioningRequestReturnsErrorIfProfilesNotFound(t *testing.T) {
+
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			var response interface{}
+			if r.URL.Path == "/profiles" {
+				response = []ndb_api.ProfileResponse{
+					{
+						Id:              "1",
+						Name:            "a",
+						Type:            "test type",
+						EngineType:      "test engine",
+						LatestVersionId: "v-id-1",
+						Topology:        "test topology",
+						Status:          "READY",
+					},
+				}
+			} else if r.URL.Path == "/slas" {
+				response = []ndb_api.SLAResponse{
+					{
+						Id:                 "sla-1-id",
+						Name:               "SLA 1",
+						UniqueName:         "SLA 1 Unique Name",
+						Description:        "SLA 1 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+					{
+						Id:                 "sla-2-id",
+						Name:               "SLA 2",
+						UniqueName:         "SLA 2 Unique Name",
+						Description:        "SLA 2 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+					{
+						Id:                 NONE_SLA_ID,
+						Name:               common.SLA_NAME_NONE,
+						UniqueName:         "SLA 3 Unique Name",
+						Description:        "SLA 3 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+				}
+			}
+			resp, _ := json.Marshal(response)
+			w.WriteHeader(http.StatusOK)
+			w.Write(resp)
+		}
+	}))
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	for _, dbType := range dbTypes {
+		dbSpec := v1alpha1.DatabaseSpec{
+			NDB: v1alpha1.NDB{
+				Server:           "abc.def.ghi.jkl/v99/api",
+				ClusterId:        "test-cluster-id",
+				CredentialSecret: "test-credential-secret-name",
+			},
+			Instance: v1alpha1.Instance{
+				DatabaseNames:        []string{"a", "b", "c", "d"},
+				Type:                 dbType,
+				DatabaseInstanceName: dbType + "-instance-test",
+				TimeZone:             "UTC",
+			},
+		}
+
+		reqData := map[string]interface{}{
+			common.NDB_PARAM_PASSWORD:       "qwerty",
+			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
+		}
+
+		db := &controller_adapters.Database{Database: v1alpha1.Database{
+			Spec: dbSpec,
+		}}
+
+		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, db, reqData)
+		t.Log(err)
+		if err == nil {
+			t.Errorf("GenerateProvisioningRequest should return an error when profiles are not found")
+		}
+	}
+}
+
+func TestGenerateProvisioningRequest(t *testing.T) {
+
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	for _, dbType := range dbTypes {
+		dbSpec := v1alpha1.DatabaseSpec{
+			NDB: v1alpha1.NDB{
+				Server:           "abc.def.ghi.jkl/v99/api",
+				ClusterId:        "test-cluster-id",
+				CredentialSecret: "test-credential-secret-name",
+			},
+			Instance: v1alpha1.Instance{
+				DatabaseNames:        []string{"a", "b", "c", "d"},
+				Type:                 dbType,
+				DatabaseInstanceName: dbType + "-instance-test",
+				TimeZone:             "UTC",
+			},
+		}
+
+		reqData := map[string]interface{}{
+			common.NDB_PARAM_PASSWORD:       "qwerty",
+			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
+		}
+
+		db := &controller_adapters.Database{Database: v1alpha1.Database{
+			Spec: dbSpec,
+		}}
+
+		request, _ := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, db, reqData)
+
+		//Assert
+		if request.DatabaseType != ndb_api.GetDatabaseEngineName(dbType) {
+			t.Errorf("Database Engine type mismatch. Want: %s, got: %s", ndb_api.GetDatabaseEngineName(dbType), request.DatabaseType)
+		}
+
+		if request.SoftwareProfileId == "" || request.SoftwareProfileVersionId == "" {
+			t.Logf("SoftwareProfileId or SoftwareProfileVersionId is empty")
+		}
+		if request.ComputeProfileId == "" {
+			t.Logf("ComputeProfileId is empty")
+		}
+		if request.NetworkProfileId == "" {
+			t.Logf("NetworkProfileId is empty")
+		}
+		if request.DbParameterProfileId == "" {
+			t.Logf("DbParameterProfileId is empty")
+		}
+		if request.TimeMachineInfo.SlaId != NONE_SLA_ID {
+			t.Logf("NONE time machine sla not selected")
+		}
+	}
+}
+
+func TestGenerateProvisioningRequestReturnsErrorIfDBPasswordIsEmpty(t *testing.T) {
+
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			var response interface{}
+			if r.URL.Path == "/profiles" {
+				response = []ndb_api.ProfileResponse{
+					{
+						Id:              "1",
+						Name:            "a",
+						Type:            "test type",
+						EngineType:      "test engine",
+						LatestVersionId: "v-id-1",
+						Topology:        "test topology",
+						Status:          "READY",
+					},
+				}
+			} else if r.URL.Path == "/slas" {
+				response = []ndb_api.SLAResponse{
+					{
+						Id:                 "sla-1-id",
+						Name:               "SLA 1",
+						UniqueName:         "SLA 1 Unique Name",
+						Description:        "SLA 1 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+					{
+						Id:                 "sla-2-id",
+						Name:               "SLA 2",
+						UniqueName:         "SLA 2 Unique Name",
+						Description:        "SLA 2 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+					{
+						Id:                 NONE_SLA_ID,
+						Name:               common.SLA_NAME_NONE,
+						UniqueName:         "SLA 3 Unique Name",
+						Description:        "SLA 3 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+				}
+			}
+			resp, _ := json.Marshal(response)
+			w.WriteHeader(http.StatusOK)
+			w.Write(resp)
+		}
+	}))
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	for _, dbType := range dbTypes {
+		dbSpec := v1alpha1.DatabaseSpec{
+			NDB: v1alpha1.NDB{
+				Server:           "abc.def.ghi.jkl/v99/api",
+				ClusterId:        "test-cluster-id",
+				CredentialSecret: "test-credential-secret-name",
+			},
+			Instance: v1alpha1.Instance{
+				DatabaseNames:        []string{"a", "b", "c", "d"},
+				Type:                 dbType,
+				DatabaseInstanceName: dbType + "-instance-test",
+				TimeZone:             "UTC",
+			},
+		}
+
+		reqData := map[string]interface{}{
+			common.NDB_PARAM_PASSWORD:       "",
+			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
+		}
+
+		db := &controller_adapters.Database{Database: v1alpha1.Database{
+			Spec: dbSpec,
+		}}
+
+		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, db, reqData)
+		t.Log(err)
+		if err == nil {
+			t.Errorf("GenerateProvisioningRequest should return an error when db password is empty")
+		}
+	}
+}
+
+func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
+
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			var response interface{}
+			if r.URL.Path == "/profiles" {
+				response = []ndb_api.ProfileResponse{
+					{
+						Id:              "1",
+						Name:            "a",
+						Type:            "test type",
+						EngineType:      "test engine",
+						LatestVersionId: "v-id-1",
+						Topology:        "test topology",
+						Status:          "READY",
+					},
+				}
+			} else if r.URL.Path == "/slas" {
+				response = []ndb_api.SLAResponse{
+					{
+						Id:                 "sla-1-id",
+						Name:               "SLA 1",
+						UniqueName:         "SLA 1 Unique Name",
+						Description:        "SLA 1 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+					{
+						Id:                 "sla-2-id",
+						Name:               "SLA 2",
+						UniqueName:         "SLA 2 Unique Name",
+						Description:        "SLA 2 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+					{
+						Id:                 NONE_SLA_ID,
+						Name:               common.SLA_NAME_NONE,
+						UniqueName:         "SLA 3 Unique Name",
+						Description:        "SLA 3 Description",
+						DailyRetention:     1,
+						WeeklyRetention:    2,
+						MonthlyRetention:   3,
+						QuarterlyRetention: 4,
+						YearlyRetention:    5,
+					},
+				}
+			}
+			resp, _ := json.Marshal(response)
+			w.WriteHeader(http.StatusOK)
+			w.Write(resp)
+		}
+	}))
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	for _, dbType := range dbTypes {
+		dbSpec := v1alpha1.DatabaseSpec{
+			NDB: v1alpha1.NDB{
+				Server:           "abc.def.ghi.jkl/v99/api",
+				ClusterId:        "test-cluster-id",
+				CredentialSecret: "test-credential-secret-name",
+			},
+			Instance: v1alpha1.Instance{
+				DatabaseNames:        []string{"a", "b", "c", "d"},
+				Type:                 dbType,
+				DatabaseInstanceName: dbType + "-instance-test",
+				TimeZone:             "UTC",
+			},
+		}
+
+		reqData := map[string]interface{}{
+			common.NDB_PARAM_PASSWORD:       "qwertyuiop",
+			common.NDB_PARAM_SSH_PUBLIC_KEY: "",
+		}
+
+		db := &controller_adapters.Database{Database: v1alpha1.Database{
+			Spec: dbSpec,
+		}}
+
+		_, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, db, reqData)
+		t.Log(err)
+		if err == nil {
+			t.Errorf("GenerateProvisioningRequest should return an error when ssh key is empty")
+		}
+	}
+}
+
+func TestGetByDatabaseType(t *testing.T) {
+	// Test with MySQL database type
+	MySQLExpectedArgs, err := controller_adapters.GetActionArgumentsByDatabaseType(common.DATABASE_TYPE_MYSQL)
+
+	if err != nil {
+		t.Error("Error while fetching mysql args", "err", err)
+	}
+
+	expectedMySqlArgs := []ndb_api.ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "3306",
+		},
+	}
+
+	if !reflect.DeepEqual(MySQLExpectedArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMySqlArgs) {
+		t.Errorf("Expected %v, but got %v", expectedMySqlArgs, MySQLExpectedArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
+	}
+
+	// Test with Postgres database type
+	postgresArgs, err := controller_adapters.GetActionArgumentsByDatabaseType(common.DATABASE_TYPE_POSTGRES)
+	if err != nil {
+		t.Error("Error while fetching postgres args", "err", err)
+	}
+	expectedPostgresArgs := []ndb_api.ActionArgument{
+		{Name: "proxy_read_port", Value: "5001"},
+		{Name: "listener_port", Value: "5432"},
+		{Name: "proxy_write_port", Value: "5000"},
+		{Name: "enable_synchronous_mode", Value: "false"},
+		{Name: "auto_tune_staging_drive", Value: "true"},
+		{Name: "backup_policy", Value: "primary_only"},
+	}
+	if !reflect.DeepEqual(postgresArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedPostgresArgs) {
+		t.Errorf("Expected %v, but got %v", expectedPostgresArgs, postgresArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
+	}
+
+	// Test with MongoDB database type
+	mongodbArgs, err := controller_adapters.GetActionArgumentsByDatabaseType(common.DATABASE_TYPE_MONGODB)
+	if err != nil {
+		t.Error("Error while fetching mongodbArgs", "err", err)
+	}
+	expectedMongodbArgs := []ndb_api.ActionArgument{
+		{Name: "listener_port", Value: "27017"},
+		{Name: "log_size", Value: "100"},
+		{Name: "journal_size", Value: "100"},
+		{Name: "restart_mongod", Value: "true"},
+		{Name: "working_dir", Value: "/tmp"},
+		{Name: "db_user", Value: "admin"},
+		{Name: "backup_policy", Value: "primary_only"},
+	}
+	if !reflect.DeepEqual(mongodbArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMongodbArgs) {
+		t.Errorf("Expected %v, but got %v", expectedMongodbArgs, mongodbArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
+	}
+
+	// Test with unknown database type
+	unknownArgs, err := controller_adapters.GetActionArgumentsByDatabaseType("unknown")
+	if err == nil {
+		t.Errorf("Expected error for unknown database type, but got %v", unknownArgs)
+	}
+}

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package wrapper_implementations
+package controller_adapters
 
 import (
 	"errors"
@@ -31,6 +31,13 @@ type DatabaseActionArgs interface {
 // MysqlActionArgs implements the DatabaseActionArgs interface
 type MysqlActionArgs struct{}
 
+// PostgresActionArgs implements the DatabaseActionArgs interface
+type PostgresActionArgs struct{}
+
+// MongodbActionArgs implements the DatabaseActionArgs interface
+type MongodbActionArgs struct{}
+
+// DatabaseActionArgs implementation for the type MysqlActionArgs
 func (m *MysqlActionArgs) Get(dbSpec v1alpha1.DatabaseSpec) []ndb_api.ActionArgument {
 	return []ndb_api.ActionArgument{
 		{
@@ -40,9 +47,7 @@ func (m *MysqlActionArgs) Get(dbSpec v1alpha1.DatabaseSpec) []ndb_api.ActionArgu
 	}
 }
 
-// PostgresActionArgs implements the DatabaseActionArgs interface
-type PostgresActionArgs struct{}
-
+// DatabaseActionArgs implementation for the type PostgresActionArgs
 func (p *PostgresActionArgs) Get(dbSpec v1alpha1.DatabaseSpec) []ndb_api.ActionArgument {
 	return []ndb_api.ActionArgument{
 		{
@@ -72,9 +77,7 @@ func (p *PostgresActionArgs) Get(dbSpec v1alpha1.DatabaseSpec) []ndb_api.ActionA
 	}
 }
 
-// MongodbActionArgs implements the DatabaseActionArgs interface
-type MongodbActionArgs struct{}
-
+// DatabaseActionArgs implementation for the type MongodbActionArgs
 func (m *MongodbActionArgs) Get(dbSpec v1alpha1.DatabaseSpec) []ndb_api.ActionArgument {
 	return []ndb_api.ActionArgument{
 		{
@@ -108,7 +111,7 @@ func (m *MongodbActionArgs) Get(dbSpec v1alpha1.DatabaseSpec) []ndb_api.ActionAr
 	}
 }
 
-// Returns action arguments based on the type of database
+// Returns the concrete implementation type of action arguments based on the type of database
 func GetActionArgumentsByDatabaseType(databaseType string) (DatabaseActionArgs, error) {
 	var dbTypeActionArgs DatabaseActionArgs
 	switch databaseType {
