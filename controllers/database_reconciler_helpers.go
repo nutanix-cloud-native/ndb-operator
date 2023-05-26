@@ -234,6 +234,9 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		database.Status.Status = ndbv1alpha1.DATABASE_CR_STATUS_PROVISIONING
 		database.Status.Id = taskResponse.EntityId
 
+		// Updating the type in the Database Status based on the input
+		database.Status.Type = database.Spec.Instance.Type
+
 		err = r.Status().Update(ctx, database)
 		if err != nil {
 			log.Error(err, "Failed to update database status")
@@ -247,6 +250,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			log.Error(err, "An error occurred while trying to get the database with id: "+database.Status.Id)
 			r.requeueOnErr(err)
 		}
+
 		// if READY => Change status
 		// log.Info("DEBUG Database Response: " + util.ToString(databaseResponse))
 		if databaseResponse.Status == ndbv1alpha1.DATABASE_CR_STATUS_READY {

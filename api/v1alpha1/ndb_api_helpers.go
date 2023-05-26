@@ -173,16 +173,19 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileR
 
 	// resolve the profile based on provided input, return an error if not resolved
 	if isNameProvided {
-		profileByName, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Name == name })
+		profileByName, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Type == pType && p.Name == name })
+		if err != nil {
+			log.Error(err, "could not resolve profile by name", "profile type", pType, "name", name)
+			return ProfileResponse{}, fmt.Errorf("could not resolve profile using the provided name=%v", name)
+		}
 	}
 
-	if isIdProvided && err == nil {
-		profileById, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Id == id })
-	}
-
-	if err != nil {
-		log.Error(err, "could not resolve profile by id or name", "profile type", pType, "id", id, "name", name)
-		return ProfileResponse{}, fmt.Errorf("could not resolve profile by id=%v or name=%v", id, name)
+	if isIdProvided {
+		profileById, err = util.FindFirst(allProfiles, func(p ProfileResponse) bool { return p.Type == pType && p.Id == id })
+		if err != nil {
+			log.Error(err, "could not resolve profile by id", "profile type", pType, "id", id)
+			return ProfileResponse{}, fmt.Errorf("could not resolve profile using the provided id=%v", id)
+		}
 	}
 
 	/*
@@ -198,7 +201,7 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ProfileR
 
 		if err != nil {
 			log.Error(err, "Error resolving OOB Profile", "type", pType)
-			return ProfileResponse{}, fmt.Errorf("no OOB profile found of type=%v", pType)
+			return ProfileResponse{}, fmt.Errorf("no OOB profile found of type %v", pType)
 		}
 		return oobProfile, nil
 
@@ -229,8 +232,10 @@ var SoftwareOOBProfileResolverForSingleInstance = func(p ProfileResponse) bool {
 	return p.Type == PROFILE_TYPE_SOFTWARE && p.SystemProfile && p.Topology == TOPOLOGY_SINGLE
 }
 
+// There is no OOB Network Profile
 var NetworkOOBProfileResolver = func(p ProfileResponse) bool {
-	return p.SystemProfile && p.Type == PROFILE_TYPE_NETWORK
+	topologyCheck := (p.Topology == TOPOLOGY_SINGLE || p.Topology == TOPOLOGY_ALL)
+	return p.Type == PROFILE_TYPE_NETWORK && topologyCheck
 }
 
 var DbParamOOBProfileResolver = func(p ProfileResponse) bool {
