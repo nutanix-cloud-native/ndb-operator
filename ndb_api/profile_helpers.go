@@ -33,7 +33,7 @@ import (
 func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, databaseType string, profileResolvers ProfileResolvers) (profilesMap map[string]ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 
-	log.Info("Entered ndb_api_helpers.GetProfiles", "Input profiles", profileResolvers)
+	log.Info("Entered ndb_api.GetProfiles", "Input profiles", profileResolvers)
 
 	allProfiles, err := GetAllProfiles(ctx, ndb_client)
 
@@ -97,7 +97,7 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 		common.PROFILE_TYPE_DATABASE_PARAMETER: dbParam,
 	}
 
-	log.Info("Returning from ndb_api_helpers.GetProfiles", "profiles map", profilesMap)
+	log.Info("Returning from ndb_api.GetProfiles", "profiles map", profilesMap)
 	return
 }
 

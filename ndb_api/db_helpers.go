@@ -30,7 +30,7 @@ import (
 // The database provisioned has a NONE time machine SLA attached to it, and uses the default OOB profiles
 func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDBClient, database DatabaseInterface, reqData map[string]interface{}) (requestBody *DatabaseProvisionRequest, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api_helpers.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+	log.Info("Entered ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
 
 	// Fetching the NONE TM SLA
 	sla, err := GetNoneTimeMachineSLA(ctx, ndb_client)
@@ -124,17 +124,10 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		},
 	}
 	// Setting action arguments based on database type
-	// dbTypeActionArgs, err := GetActionArgumentsByDatabaseType(database.GetDBInstanceType())
-
-	if err != nil {
-		log.Error(err, "Error occurred while getting dbTypeActionArgs", "database type", database.GetDBInstanceType())
-		return
-	}
-
 	requestBody.ActionArguments = append(requestBody.ActionArguments, database.GetDBInstanceActionArguments()...)
 
 	log.Info("Database Provisioning", "requestBody", requestBody)
-	log.Info("Returning from ndb_api_helpers.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+	log.Info("Returning from ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
 	return
 }
 

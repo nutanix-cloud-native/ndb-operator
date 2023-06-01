@@ -219,8 +219,9 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			common.NDB_PARAM_PASSWORD:       dbPassword,
 			common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
 		}
-		d := &controller_adapters.Database{Database: *database}
-		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, d, reqData)
+
+		databaseAdapter := &controller_adapters.Database{Database: *database}
+		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
 		// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
 		if err != nil {
 			log.Error(err, "Could not generate provisioning request, requeuing.")
