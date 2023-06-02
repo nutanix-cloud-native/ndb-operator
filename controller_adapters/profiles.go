@@ -47,7 +47,7 @@ func (p *Profile) GetId() (id string) {
 
 func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ndb_api.ProfileResponse, filter func(p ndb_api.ProfileResponse) bool) (profile ndb_api.ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api_helpers.resolve", "input profile", inputProfile)
+	log.Info("Entered controller_adapters.resolve", "input profile", inputProfile)
 
 	name, id := inputProfile.Name, inputProfile.Id
 	isNameProvided, isIdProvided := name != "", id != ""

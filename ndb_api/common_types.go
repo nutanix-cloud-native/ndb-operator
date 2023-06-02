@@ -17,9 +17,16 @@ limitations under the License.
 package ndb_api
 
 type DatabaseNode struct {
-	Id               string `json:"id"`
-	Name             string `json:"name"`
-	DatabaseServerId string `json:"dbServerId"`
+	Id               string         `json:"id"`
+	Name             string         `json:"name"`
+	DatabaseServerId string         `json:"dbServerId"`
+	DbServer         DatabaseServer `json:"dbserver"`
+}
+
+type DatabaseServer struct {
+	Id          string   `json:"id"`
+	Name        string   `json:"name"`
+	IPAddresses []string `json:"ipAddresses"`
 }
 
 type TimeMachineInfo struct {

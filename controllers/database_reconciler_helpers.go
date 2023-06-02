@@ -262,15 +262,13 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			log.Info("Database instance is READY, adding data to CR's status and updating the CR")
 			database.Status.Status = common.DATABASE_CR_STATUS_READY
 			database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
-			for _, property := range databaseResponse.Properties {
-				if property.Name == common.PROPERTY_NAME_VM_IP {
-					database.Status.IPAddress = property.Value
+			database.Status.IPAddress = databaseResponse.DatabaseNodes[0].DbServer.IPAddresses[0]
+			if database.Status.IPAddress != "" {
+				err = r.Status().Update(ctx, database)
+				if err != nil {
+					log.Error(err, "Failed to update database status")
+					return r.requeueOnErr(err)
 				}
-			}
-			err = r.Status().Update(ctx, database)
-			if err != nil {
-				log.Error(err, "Failed to update database status")
-				return r.requeueOnErr(err)
 			}
 		}
 		// If database instance is not yet ready, requeue with wait
