@@ -54,9 +54,9 @@ type DataProtectionStatus struct {
 	Type        string `json:"type,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:shortName={"dp","dps"}
 // DataProtection is the Schema for the dataprotections API
 type DataProtection struct {
 	metav1.TypeMeta   `json:",inline"`

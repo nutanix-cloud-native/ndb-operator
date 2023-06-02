@@ -12,6 +12,9 @@ spec:
     kind: DataProtection
     listKind: DataProtectionList
     plural: dataprotections
+    shortNames:
+    - dp
+    - dps
     singular: dataprotection
   scope: Namespaced
   versions:
