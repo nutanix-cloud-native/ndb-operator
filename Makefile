@@ -252,3 +252,17 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+# Adds 4 files (xyz.go, xyz_helpers.go, xyz_request_types.go, xyz_response_types.go)
+# under the ndb_api directory. This rule is intended for use by developers.
+.PHONY: add-api
+add-api:
+ifndef api
+	@echo "parameter 'api' missing, Usage: make add-api api='foo'"
+	@exit 1
+else
+	touch ndb_api/$(api).go && echo "package ndb_api" > ndb_api/$(api).go
+	touch ndb_api/$(api)_helpers.go && echo "package ndb_api" > ndb_api/$(api)_helpers.go
+	touch ndb_api/$(api)_request_types.go && echo "package ndb_api" > ndb_api/$(api)_request_types.go
+	touch ndb_api/$(api)_response_types.go && echo "package ndb_api" > ndb_api/$(api)_response_types.go
+endif

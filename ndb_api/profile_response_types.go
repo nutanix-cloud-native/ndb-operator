@@ -1,5 +1,5 @@
 /*
-Copyright 2021-2022 Nutanix, Inc.
+Copyright 2022-2023 Nutanix, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,17 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package ndb_api
 
-import (
-	"encoding/json"
-)
-
-// A utility function to convert an interface to a string
-func ToString(x interface{}) string {
-	s, err := json.Marshal(x)
-	if err != nil {
-		return ""
-	}
-	return string(s)
+type ProfileResponse struct {
+	Id              string `json:"id"`
+	Name            string `json:"name"`
+	Type            string `json:"type"`
+	EngineType      string `json:"engineType"`
+	LatestVersionId string `json:"latestVersionId"`
+	Topology        string `json:"topology"`
+	SystemProfile   bool   `json:"systemProfile"`
+	Status          string `json:"status"`
 }

@@ -10,12 +10,13 @@ COPY go.sum go.sum
 RUN go mod download
 
 # Copy the go source
-COPY main.go main.go
 COPY api/ api/
+COPY common/ common/
 COPY controllers/ controllers/
-
-COPY util/ util/
-COPY ndbclient/ ndbclient/
+COPY ndb_api/ ndb_api/
+COPY ndb_client/ ndb_client/
+COPY controller_adapters/ controller_adapters/
+COPY main.go main.go
 
 
 # Build

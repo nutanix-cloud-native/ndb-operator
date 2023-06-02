@@ -3,8 +3,8 @@ package test
 import (
 	"context"
 
-	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
-	"github.com/nutanix-cloud-native/ndb-operator/util"
+	"github.com/nutanix-cloud-native/ndb-operator/common"
+	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -46,8 +46,8 @@ var _ = Describe("Test Secret Utility", func() {
 				},
 				Type: corev1.SecretTypeOpaque,
 				StringData: map[string]string{
-					ndbv1alpha1.NDB_PARAM_USERNAME: username,
-					ndbv1alpha1.NDB_PARAM_PASSWORD: password,
+					common.NDB_PARAM_USERNAME: username,
+					common.NDB_PARAM_PASSWORD: password,
 				},
 			}
 			instanceSecret = &corev1.Secret{
@@ -57,8 +57,8 @@ var _ = Describe("Test Secret Utility", func() {
 				},
 				Type: corev1.SecretTypeOpaque,
 				StringData: map[string]string{
-					ndbv1alpha1.NDB_PARAM_PASSWORD:       password,
-					ndbv1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+					common.NDB_PARAM_PASSWORD:       password,
+					common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
 				},
 			}
 			By("Creating the Namespace to perform the tests")
@@ -93,11 +93,11 @@ var _ = Describe("Test Secret Utility", func() {
 			Expect(err).To(Not(HaveOccurred()))
 			//Checking data from ndb secret
 			// username
-			data, err := util.GetDataFromSecret(ctx, k8sClient, ndbSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_USERNAME)
+			data, err := util.GetDataFromSecret(ctx, k8sClient, ndbSecretName, namespaceName, common.SECRET_DATA_KEY_USERNAME)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(data).To(Equal(username))
 			// password
-			data, err = util.GetDataFromSecret(ctx, k8sClient, ndbSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_PASSWORD)
+			data, err = util.GetDataFromSecret(ctx, k8sClient, ndbSecretName, namespaceName, common.SECRET_DATA_KEY_PASSWORD)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(data).To(Equal(password))
 
@@ -107,11 +107,11 @@ var _ = Describe("Test Secret Utility", func() {
 			Expect(err).To(Not(HaveOccurred()))
 			//Checking data from instance secret
 			// password
-			data, err = util.GetDataFromSecret(ctx, k8sClient, instanceSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_PASSWORD)
+			data, err = util.GetDataFromSecret(ctx, k8sClient, instanceSecretName, namespaceName, common.SECRET_DATA_KEY_PASSWORD)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(data).To(Equal(password))
 			// ssh key
-			data, err = util.GetDataFromSecret(ctx, k8sClient, instanceSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_SSH_PUBLIC_KEY)
+			data, err = util.GetDataFromSecret(ctx, k8sClient, instanceSecretName, namespaceName, common.SECRET_DATA_KEY_SSH_PUBLIC_KEY)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(data).To(Equal(sshPublicKey))
 
@@ -119,13 +119,13 @@ var _ = Describe("Test Secret Utility", func() {
 			// To simulate the situation when no secrets are present
 			_ = k8sClient.Delete(ctx, ndbSecret)
 			_ = k8sClient.Delete(ctx, instanceSecret)
-			_, err = util.GetDataFromSecret(ctx, k8sClient, ndbSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_USERNAME)
+			_, err = util.GetDataFromSecret(ctx, k8sClient, ndbSecretName, namespaceName, common.SECRET_DATA_KEY_USERNAME)
 			Expect(err).To(HaveOccurred())
-			_, err = util.GetDataFromSecret(ctx, k8sClient, ndbSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_PASSWORD)
+			_, err = util.GetDataFromSecret(ctx, k8sClient, ndbSecretName, namespaceName, common.SECRET_DATA_KEY_PASSWORD)
 			Expect(err).To(HaveOccurred())
-			_, err = util.GetDataFromSecret(ctx, k8sClient, instanceSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_PASSWORD)
+			_, err = util.GetDataFromSecret(ctx, k8sClient, instanceSecretName, namespaceName, common.SECRET_DATA_KEY_PASSWORD)
 			Expect(err).To(HaveOccurred())
-			_, err = util.GetDataFromSecret(ctx, k8sClient, instanceSecretName, namespaceName, ndbv1alpha1.SECRET_DATA_KEY_SSH_PUBLIC_KEY)
+			_, err = util.GetDataFromSecret(ctx, k8sClient, instanceSecretName, namespaceName, common.SECRET_DATA_KEY_SSH_PUBLIC_KEY)
 			Expect(err).To(HaveOccurred())
 		})
 	})

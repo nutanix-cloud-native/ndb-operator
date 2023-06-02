@@ -1,5 +1,5 @@
 /*
-Copyright 2021-2022 Nutanix, Inc.
+Copyright 2022-2023 Nutanix, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import (
 	b64 "encoding/base64"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/common"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -103,8 +104,8 @@ var _ = Describe("Database controller", func() {
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
-					ndbv1alpha1.NDB_PARAM_USERNAME: []byte(b64.StdEncoding.EncodeToString([]byte(username))),
-					ndbv1alpha1.NDB_PARAM_PASSWORD: []byte(b64.StdEncoding.EncodeToString([]byte(password))),
+					common.NDB_PARAM_USERNAME: []byte(b64.StdEncoding.EncodeToString([]byte(username))),
+					common.NDB_PARAM_PASSWORD: []byte(b64.StdEncoding.EncodeToString([]byte(password))),
 				},
 			}
 			instanceSecret = &corev1.Secret{
@@ -114,8 +115,8 @@ var _ = Describe("Database controller", func() {
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
-					ndbv1alpha1.NDB_PARAM_PASSWORD:       []byte(b64.StdEncoding.EncodeToString([]byte(password))),
-					ndbv1alpha1.NDB_PARAM_SSH_PUBLIC_KEY: []byte(b64.StdEncoding.EncodeToString([]byte(sshPublicKey))),
+					common.NDB_PARAM_PASSWORD:       []byte(b64.StdEncoding.EncodeToString([]byte(password))),
+					common.NDB_PARAM_SSH_PUBLIC_KEY: []byte(b64.StdEncoding.EncodeToString([]byte(sshPublicKey))),
 				},
 			}
 
