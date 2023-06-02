@@ -20,23 +20,29 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // DataProtectionSpec defines the desired state of DataProtection
 type DataProtectionSpec struct {
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=restore
-	Type     string  `json:"type,omitempty"`
-	Database string  `json:"database,omitempty"` // represents Database CR Name
-	Name     string  `json:"name,omitempty"`
-	Restore  Restore `json:"restore,omitempty"` // represents Restore config
+	Type string `json:"type"`
+	// +kubebuilder:validation:Required
+	Database string `json:"database"` // represents Database CR Name
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// +kubebuilder:validation:Required
+	Restore Restore `json:"restore"` // represents Restore config
 }
 
 type Restore struct {
-	SnapshotId string `json:"snapshotId,omitempty"`
-	Name       string `json:"name,omitempty"`
-	Database   string `json:"database,omitempty"`
-	Status     string `json:"status,omitempty"`
+	// +kubebuilder:validation:Required
+	Snapshot Snapshot `json:"snapshot"`
+}
+
+type Snapshot struct {
+	// +kubebuilder:validation:Required
+	Id string `json:"id"`
 }
 
 // DataProtectionStatus defines the observed state of DataProtection

@@ -9,4 +9,9 @@ metadata:
     app.kubernetes.io/created-by: ndb-operator
   name: dataprotection-sample
 spec:
-  # TODO(user): Add fields here
+  type: restore
+  database: db1
+  name: restore_db1
+  restore:
+    snapshot:
+      id: 63ac21ae-d52f-4dd5-afc5-21861052a62c

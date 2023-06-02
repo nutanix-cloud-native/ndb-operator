@@ -41,19 +41,25 @@ spec:
                 type: string
               restore:
                 properties:
-                  database:
-                    type: string
-                  name:
-                    type: string
-                  snapshotId:
-                    type: string
-                  status:
-                    type: string
+                  snapshot:
+                    properties:
+                      id:
+                        type: string
+                    required:
+                    - id
+                    type: object
+                required:
+                - snapshot
                 type: object
               type:
                 enum:
                 - restore
                 type: string
+            required:
+            - database
+            - name
+            - restore
+            - type
             type: object
           status:
             description: DataProtectionStatus defines the observed state of DataProtection
