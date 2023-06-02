@@ -26,15 +26,6 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 )
 
-// func TestGetAllDatabases(t *testing.T) {
-
-// 	server := util.GetServerTestHelper(t, "/databases")
-// 	defer server.Close()
-// 	ndb_client := ndb_client.NewNDBClient("username", "passwdord", server.URL)
-// 	value := GetAllDatabases(ndb_client)
-// 	t.Log(value)
-// }
-
 func TestGetAllSLAs(t *testing.T) {
 	//Set
 	server := GetServerTestHelper(t)
