@@ -1,0 +1,27 @@
+# permissions for end users to view dataprotections.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: dataprotection-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: ndb-operator
+    app.kubernetes.io/part-of: ndb-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: dataprotection-viewer-role
+rules:
+- apiGroups:
+  - ndb.nutanix.com
+  resources:
+  - dataprotections
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ndb.nutanix.com
+  resources:
+  - dataprotections/status
+  verbs:
+  - get
