@@ -110,6 +110,50 @@ type Instance struct {
 	Type string `json:"type"`
 	// +optional
 	Profiles Profiles `json:"profiles"`
+	// +optional
+	// Information related to time machine that is to be associated with this database
+	TMInfo TimeMachineInfo `json:"timeMachine"`
+}
+
+// Time Machine details
+type TimeMachineInfo struct {
+	// +optional
+	Name string `json:"name"`
+	// +optional
+	Description string `json:"description"`
+	// +kubebuilder:default:=NONE
+	// Name of the SLA to be used
+	SLAName string `json:"sla"`
+	// +kubebuilder:validation:Format=`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`
+	// +kubebuilder:validation:ErrorMessage="Invalid time format. Use the 24-hour format (HH:MM:SS)."
+	// +optional
+	// Daily snapshot time in HH:MM:SS (24 hour format)
+	DailySnapshotTime string `json:"dailySnapshotTime"`
+	// +kubebuilder:default:=1
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=6
+	// Number of snapshots per day
+	SnapshotsPerDay int `json:"snapshotsPerDay"`
+	// +kubebuilder:validation:Enum=15;30;60;90;120
+	// +kubebuilder:default=30
+	// Log catch up frequency in minutes
+	LogCatchUpFrequency int `json:"logCatchUpFrequency"`
+	// +kubebuilder:validation:Enum=MONDAY;TUESDAY;WEDNESDAY;THURSDAY;FRIDAY;SATURDAY;SUNDAY
+	// +kubebuilder:default=FRIDAY
+	// Day of the week for weekly snapshot
+	WeeklySnapshotDay string `json:"weeklySnapshotDay"`
+	// +kubebuilder:default:=15
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=28
+	// Day of the month for monthly snapshot
+	MonthlySnapshotDay int `json:"monthlySnapshotDay"`
+	// +kubebuilder:validation:Enum=Jan;Feb;Mar
+	// +kubebuilder:default=Jan
+	// Start month for the quarterly snapshot
+	// Jan => Jan, Apr, Jul, Oct.
+	// Feb => Feb, May, Aug, Nov.
+	// Mar => Mar, Jun, Sep, Dec.
+	QuarterlySnapshots string `json:"quarterlySnapshots"`
 }
 
 type Profiles struct {

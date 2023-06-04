@@ -17,6 +17,7 @@ limitations under the License.
 package controller_adapters
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
@@ -83,4 +84,80 @@ func (d *Database) GetProfileResolvers() ndb_api.ProfileResolvers {
 
 	return profileResolvers
 
+}
+
+func (d *Database) GetTMDetails() (tmName, tmDescription, slaName string) {
+	tmInfo := d.Spec.Instance.TMInfo
+
+	tmName = tmInfo.Name
+	tmDescription = tmInfo.Description
+	slaName = tmInfo.SLAName
+
+	if tmName == "" {
+		tmName = d.GetDBInstanceName() + "_TM"
+	}
+	if tmDescription == "" {
+		tmDescription = "Time Machine for " + d.GetDBInstanceName()
+	}
+	if slaName == "" {
+		slaName = common.SLA_NAME_NONE
+	}
+
+	return
+}
+
+func (d *Database) GetTMSchedule() (schedule ndb_api.Schedule, err error) {
+	tmInfo := d.Spec.Instance.TMInfo
+	hhmmssDaily := strings.Split(tmInfo.DailySnapshotTime, ":")
+	hh, err := strconv.Atoi(hhmmssDaily[0])
+	if err != nil {
+		// TODO: Handle error
+		return
+	}
+	mm, err := strconv.Atoi(hhmmssDaily[1])
+	if err != nil {
+		// TODO: Handle error
+		return
+	}
+	ss, err := strconv.Atoi(hhmmssDaily[2])
+	if err != nil {
+		// TODO: Handle error
+		return
+	}
+	schedule = ndb_api.Schedule{
+		SnapshotTimeOfDay: ndb_api.SnapshotTimeOfDay{
+			Hours:   hh,
+			Minutes: mm,
+			Seconds: ss,
+		},
+
+		ContinuousSchedule: ndb_api.ContinuousSchedule{
+			Enabled:           true,
+			LogBackupInterval: tmInfo.LogCatchUpFrequency,
+			SnapshotsPerDay:   tmInfo.SnapshotsPerDay,
+		},
+
+		WeeklySchedule: ndb_api.WeeklySchedule{
+			Enabled:   true,
+			DayOfWeek: tmInfo.WeeklySnapshotDay,
+		},
+
+		MonthlySchedule: ndb_api.MonthlySchedule{
+			Enabled:    true,
+			DayOfMonth: tmInfo.MonthlySnapshotDay,
+		},
+
+		QuarterlySchedule: ndb_api.QuarterlySchedule{
+			Enabled:    true,
+			StartMonth: tmInfo.QuarterlySnapshots,
+			DayOfMonth: tmInfo.MonthlySnapshotDay,
+		},
+
+		YearlySchedule: ndb_api.YearlySchedule{
+			Enabled:    false,
+			DayOfMonth: 31,
+			Month:      "DECEMBER",
+		},
+	}
+	return
 }

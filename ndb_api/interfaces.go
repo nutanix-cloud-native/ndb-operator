@@ -37,4 +37,6 @@ type DatabaseInterface interface {
 	GetNDBClusterId() string
 	GetDBInstanceActionArguments() []ActionArgument
 	GetProfileResolvers() ProfileResolvers
+	GetTMDetails() (string, string, string)
+	GetTMSchedule() (Schedule, error)
 }

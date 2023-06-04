@@ -32,10 +32,18 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
 
+	// Fetching the TM details
+	tmName, tmDescription, slaName := database.GetTMDetails()
 	// Fetching the NONE TM SLA
-	sla, err := GetNoneTimeMachineSLA(ctx, ndb_client)
+	sla, err := GetSLAByName(ctx, ndb_client, slaName)
 	if err != nil {
-		log.Error(err, "Error occurred while getting NONE TM SLA", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+		log.Error(err, "Error occurred while getting TM SLA", "SLA Name", slaName)
+		return
+	}
+
+	schedule, err := database.GetTMSchedule()
+	if err != nil {
+		log.Error(err, "Error occurred while generating the Time Machine Schedule")
 		return
 	}
 
@@ -91,10 +99,10 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		AutoTuneStagingDrive:     true,
 
 		TimeMachineInfo: TimeMachineInfo{
-			Name:             database.GetDBInstanceName() + "_TM",
-			Description:      sla.Description,
+			Name:             tmName,
+			Description:      tmDescription,
 			SlaId:            sla.Id,
-			Schedule:         make(map[string]string),
+			Schedule:         schedule,
 			Tags:             make([]string, 0),
 			AutoTuneLogDrive: true,
 		},
