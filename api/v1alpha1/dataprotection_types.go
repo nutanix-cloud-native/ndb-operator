@@ -24,6 +24,7 @@ import (
 
 // DataProtectionSpec defines the desired state of DataProtection
 type DataProtectionSpec struct {
+	NDB NDB `json:"ndb"`
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=restore
 	Type string `json:"type"`
@@ -47,6 +48,7 @@ type Snapshot struct {
 
 // DataProtectionStatus defines the observed state of DataProtection
 type DataProtectionStatus struct {
+	Status      string `json:"status,omitempty"`
 	Name        string `json:"name,omitempty"`
 	Database    string `json:"database,omitempty"`
 	OperationId string `json:"operationId"`
@@ -57,7 +59,6 @@ type DataProtectionStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:shortName={"dp","dps"}
-// DataProtection is the Schema for the dataprotections API
 type DataProtection struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

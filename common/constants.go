@@ -17,6 +17,8 @@ limitations under the License.
 package common
 
 const (
+	DATAPROTECTION_CR_STATUS_EMPTY = ""
+
 	DATABASE_CR_STATUS_DELETING     = "DELETING"
 	DATABASE_CR_STATUS_EMPTY        = ""
 	DATABASE_CR_STATUS_READY        = "READY"
