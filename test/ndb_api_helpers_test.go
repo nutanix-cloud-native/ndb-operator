@@ -754,6 +754,14 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 				Type:                 dbType,
 				DatabaseInstanceName: dbType + "-instance-test",
 				TimeZone:             "UTC",
+				TMInfo: v1alpha1.TimeMachineInfo{
+					QuarterlySnapshots:  "Jan",
+					SnapshotsPerDay:     4,
+					LogCatchUpFrequency: 90,
+					WeeklySnapshotDay:   "WEDNESDAY",
+					MonthlySnapshotDay:  24,
+					DailySnapshotTime:   "12:34:56",
+				},
 			},
 		}
 
@@ -766,7 +774,10 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 			Spec: dbSpec,
 		}}
 
-		request, _ := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, db, reqData)
+		request, err := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, db, reqData)
+		if err != nil {
+			t.Error(err)
+		}
 
 		//Assert
 		if request.DatabaseType != ndb_api.GetDatabaseEngineName(dbType) {
