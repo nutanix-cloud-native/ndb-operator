@@ -147,6 +147,44 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, req
 	return
 }
 
+// Provisions a database instance based on the database provisioning request
+// Returns the task info summary response for the operation
+func RestoreDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, req *DatabaseRestoreRequest, databaseId string) (task TaskInfoSummaryResponse, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered ndb_api.RestoreDatabase")
+	if ndbClient == nil {
+		err = errors.New("nil reference")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
+	res, err := ndbClient.Post(fmt.Sprintf("databases/%s/restore", databaseId), req)
+	if err != nil || res == nil || res.StatusCode != http.StatusOK {
+		if err == nil {
+			if res != nil {
+				err = fmt.Errorf("POST databases/provision responded with %d", res.StatusCode)
+			} else {
+				err = fmt.Errorf("POST databases/provision responded with nil response")
+			}
+		}
+		log.Error(err, "Error occurred provisioning database")
+		return
+	}
+	log.Info("POST databases/provision", "HTTP status code", res.StatusCode)
+	body, err := io.ReadAll(res.Body)
+	defer res.Body.Close()
+	if err != nil {
+		log.Error(err, "Error occurred reading response.Body in ProvisionDatabase")
+		return
+	}
+	err = json.Unmarshal(body, &task)
+	if err != nil {
+		log.Error(err, "Error occurred trying to unmarshal.")
+		return
+	}
+	log.Info("Returning from ndb_api.RestoreDatabase")
+	return
+}
+
 // Deprovisions a database instance given a database id
 // Returns the task info summary response for the operation
 func DeprovisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, id string, req DatabaseDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {

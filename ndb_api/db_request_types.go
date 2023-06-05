@@ -20,11 +20,11 @@ type DatabaseProvisionRequest struct {
 	DatabaseType             string           `json:"databaseType"`
 	Name                     string           `json:"name"`
 	DatabaseDescription      string           `json:"databaseDescription"`
-	SoftwareProfileId        string           `json:"softwareProfileId"`
-	SoftwareProfileVersionId string           `json:"softwareProfileVersionId"`
-	ComputeProfileId         string           `json:"computeProfileId"`
-	NetworkProfileId         string           `json:"networkProfileId"`
-	DbParameterProfileId     string           `json:"dbParameterProfileId"`
+	SoftwareProfileId        string           `json:"softwareProfileId" validate:"uuid"`
+	SoftwareProfileVersionId string           `json:"softwareProfileVersionId" validate:"uuid"`
+	ComputeProfileId         string           `json:"computeProfileId" validate:"uuid"`
+	NetworkProfileId         string           `json:"networkProfileId" validate:"uuid"`
+	DbParameterProfileId     string           `json:"dbParameterProfileId" validate:"uuid"`
 	NewDbServerTimeZone      string           `json:"newDbServerTimeZone"`
 	CreateDbServer           bool             `json:"createDbserver"`
 	NodeCount                int              `json:"nodeCount"`
@@ -44,4 +44,8 @@ type DatabaseDeprovisionRequest struct {
 	Forced               bool `json:"forced"`
 	DeleteTimeMachine    bool `json:"deleteTimeMachine"`
 	DeleteLogicalCluster bool `json:"deleteLogicalCluster"`
+}
+
+type DatabaseRestoreRequest struct {
+	SnapshotId string `json:"snapshotId" validate:"required,uuid"`
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package ndb_api
 
 import (
+	"github.com/go-playground/validator"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 )
 
@@ -44,4 +45,9 @@ func GetDatabasePortByType(dbType string) int32 {
 	default:
 		return -1
 	}
+}
+
+func ValidateDatabaseRestoreRequest(restoreReq DatabaseRestoreRequest) error {
+	err := validator.New().Struct(restoreReq)
+	return err
 }

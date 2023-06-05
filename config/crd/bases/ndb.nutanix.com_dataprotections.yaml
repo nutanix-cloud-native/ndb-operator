@@ -41,26 +41,6 @@ spec:
                 type: string
               name:
                 type: string
-              ndb:
-                description: Details of the NDB installation
-                properties:
-                  clusterId:
-                    type: string
-                  credentialSecret:
-                    description: Name of the secret holding the credentials for NDB
-                      (username and password)
-                    type: string
-                  server:
-                    type: string
-                  skipCertificateVerification:
-                    default: false
-                    description: Skip server's certificate and hostname verification
-                    type: boolean
-                required:
-                - clusterId
-                - credentialSecret
-                - server
-                type: object
               restore:
                 properties:
                   snapshot:
@@ -80,7 +60,6 @@ spec:
             required:
             - database
             - name
-            - ndb
             - restore
             - type
             type: object
@@ -92,6 +71,8 @@ spec:
               name:
                 type: string
               operationId:
+                type: string
+              status:
                 type: string
               timestamp:
                 type: string

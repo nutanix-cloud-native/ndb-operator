@@ -70,7 +70,20 @@ func (r *DataProtectionReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	log.Info("DataProtection CR Status: " + util.ToString(dataprotection.Status))
 
-	NDBInfo := dataprotection.Spec.NDB
+	database := &ndbv1alpha1.Database{}
+	err = r.Get(ctx, req.NamespacedName, database)
+
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Return and don't requeue
+			log.Info("Database resource not found. Ignoring since object must be deleted")
+			return r.doNotRequeue()
+		}
+	}
+
+	NDBInfo := database.Spec.NDB
+
 	username, password, caCert, err := r.getNDBCredentials(ctx, NDBInfo.CredentialSecret, req.Namespace)
 	if err != nil || username == "" || password == "" {
 		var errStatement string
@@ -89,7 +102,7 @@ func (r *DataProtectionReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	ndbClient := ndb_client.NewNDBClient(username, password, NDBInfo.Server, caCert, NDBInfo.SkipCertificateVerification)
 
 	// Synchronize the database CR with the database instance on NDB.
-	return r.handleSync(ctx, dataprotection, ndbClient, req)
+	return r.handleSync(ctx, dataprotection, database, ndbClient, req)
 }
 
 // SetupWithManager sets up the controller with the Manager.

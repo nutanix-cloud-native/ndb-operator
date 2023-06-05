@@ -6,6 +6,7 @@ import (
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -40,22 +41,60 @@ func (r *DataProtectionReconciler) getNDBCredentials(ctx context.Context, name, 
 	return
 }
 
-// The handleSync function synchronizes the database CR's with the database instance in NDB
-// It handles the transition from EMPTY (initial state) => PROVISIONING => RUNNING
+// The handleSync function synchronizes the DataProtection CR's with the DP instance in NDB
+// It handles the transition from EMPTY (initial state) => Unassigned => Running => Succeeded/Failed
 // and updates the status accordingly. The update() triggers an implicit requeue of the reconcile request.
-func (r *DataProtectionReconciler) handleSync(ctx context.Context, dataprotection *ndbv1alpha1.DataProtection, ndbClient *ndb_client.NDBClient, req ctrl.Request) (ctrl.Result, error) {
+func (r *DataProtectionReconciler) handleSync(ctx context.Context,
+	dataprotection *ndbv1alpha1.DataProtection, database *ndbv1alpha1.Database,
+	ndbClient *ndb_client.NDBClient, req ctrl.Request) (ctrl.Result, error) {
+
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.handleSync")
 
 	switch dataprotection.Status.Status {
 
-	case common.DATAPROTECTION_CR_STATUS_EMPTY:
+	case common.DPCR_STATUS_EMPTY:
 		// DP Status.Status is empty => Restore a DB
-		log.Info("Restpring a database instance with NDB.")
+		log.Info("Restoring a DB...")
 
-	case common.DATABASE_CR_STATUS_PROVISIONING:
+		generatedReq, err := ndb_api.GenerateRestoreRequestFromSnapshot(ctx, ndbClient, dataprotection.Spec.Restore.Snapshot.Id)
+		validation_error := ndb_api.ValidateDatabaseRestoreRequest(*generatedReq)
 
-	case common.DATABASE_CR_STATUS_READY:
+		if validation_error != nil {
+			log.Error(err, "Could not generate restore request, re-queuing.")
+			return r.requeueOnErr(err)
+		}
+
+		if err != nil {
+			log.Error(err, "Could not generate restore request, re-queuing.")
+			return r.requeueOnErr(err)
+		}
+
+		taskResponse, err := ndb_api.RestoreDatabase(ctx, ndbClient, generatedReq, database.Status.Id)
+		if err != nil {
+			log.Error(err, "An error occurred while trying to provision the database")
+			return r.requeueOnErr(err)
+		}
+		// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
+
+		log.Info("Setting database CR status to provisioning and id as " + taskResponse.EntityId)
+		database.Status.Status = common.DATABASE_CR_STATUS_PROVISIONING
+		database.Status.Id = taskResponse.EntityId
+
+		// Updating the type in the Database Status based on the input
+		database.Status.Type = database.Spec.Instance.Type
+
+		err = r.Status().Update(ctx, database)
+		if err != nil {
+			log.Error(err, "Failed to update database status")
+			return r.requeueOnErr(err)
+		}
+
+	case common.DPCR_STATUS_UNASSIGNED, common.DPCR_STATUS_RUNNING:
+
+	case common.DPCR_STATUS_SUCCEEDED:
+
+	case common.DPCR_STATUS_FAILED:
 
 	default:
 		// Do Nothing

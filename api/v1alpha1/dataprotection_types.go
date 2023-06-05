@@ -24,7 +24,6 @@ import (
 
 // DataProtectionSpec defines the desired state of DataProtection
 type DataProtectionSpec struct {
-	NDB NDB `json:"ndb"`
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=restore
 	Type string `json:"type"`

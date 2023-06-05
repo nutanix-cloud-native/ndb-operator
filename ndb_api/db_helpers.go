@@ -143,3 +143,11 @@ func GenerateDeprovisionDatabaseRequest() (req *DatabaseDeprovisionRequest) {
 	}
 	return
 }
+
+// This function generates and returns a request for restoring a database from a snapshot
+func GenerateRestoreRequestFromSnapshot(ctx context.Context, ndb_client *ndb_client.NDBClient, snapshotId string) (requestBody *DatabaseRestoreRequest, err error) {
+	requestBody = &DatabaseRestoreRequest{
+		SnapshotId: snapshotId,
+	}
+	return
+}
