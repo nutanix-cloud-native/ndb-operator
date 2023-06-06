@@ -224,13 +224,13 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
 
 		if err != nil {
-			log.Error(err, "Could not generate provisioning request, requeuing.")
+			log.Error(err, "Could not generate provisioning request, requeuing...")
 			return r.requeueOnErr(err)
 		}
 
 		validation_err := ndb_api.ValidateDatabaseProvisionRequest(*generatedReq)
 		if validation_err != nil {
-			log.Error(err, "Could not validate generated provisioning request, re-queuing.")
+			log.Error(err, "Could not validate generated provisioning request, not re-queuing...")
 			return r.doNotRequeue()
 		}
 
