@@ -932,7 +932,7 @@ func TestProvisionRequestValidation(t *testing.T) {
 		// Except ComputeProfileId, all other profileIds are invalid, so the length should be 4
 		assert.Equal(t, len(err.(validator.ValidationErrors)), 4)
 
-		// All of the errors should fail on uuid validation
+		// All the failures should be on uuid validation
 		for _, err := range err.(validator.ValidationErrors) {
 			assert.Equal(t, err.ActualTag(), "uuid")
 			// only ComputeProfileId is a valid UUID, so the validation should not fail for that
