@@ -929,12 +929,15 @@ func TestProvisionRequestValidation(t *testing.T) {
 
 		assert.NotNil(t, err)
 
-		// All of the 5 UUIDs do not conform to the UUID requirements, hence expect 5 validation errors
-		assert.Equal(t, len(err.(validator.ValidationErrors)), 5)
+		// Except ComputeProfileId, all other profileIds are invalid, so the length should be 4
+		assert.Equal(t, len(err.(validator.ValidationErrors)), 4)
 
 		// All of the errors should fail on uuid validation
 		for _, err := range err.(validator.ValidationErrors) {
 			assert.Equal(t, err.ActualTag(), "uuid")
+			// only ComputeProfileId is a valid UUID, so the validation should not fail for that
+			assert.NotEqual(t, err.StructField(), "ComputeProfileId")
+
 		}
 	}
 

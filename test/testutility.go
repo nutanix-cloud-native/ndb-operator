@@ -72,7 +72,7 @@ var MockResponsesMap = map[string]interface{}{
 
 	"GET /profiles": []ndb_api.ProfileResponse{
 		{
-			Id:              "1",
+			Id:              "f5d31b43-0c7a-45fc-bf7c-a2b4cdbff9c0",
 			Name:            "a",
 			Type:            common.PROFILE_TYPE_COMPUTE,
 			EngineType:      common.DATABASE_ENGINE_TYPE_GENERIC,
@@ -82,7 +82,7 @@ var MockResponsesMap = map[string]interface{}{
 			SystemProfile:   true,
 		},
 		{
-			Id:              "1.1",
+			Id:              "06b2d9fd-aae3-4eb8-9e25-1f00043c3e27",
 			Name:            "DEFAULT_OOB_SMALL_COMPUTE",
 			Type:            common.PROFILE_TYPE_COMPUTE,
 			EngineType:      common.DATABASE_ENGINE_TYPE_GENERIC,
