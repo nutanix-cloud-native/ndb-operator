@@ -26,6 +26,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-playground/validator"
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
@@ -888,6 +889,51 @@ func TestGenerateProvisioningRequestReturnsErrorIfDBPasswordIsEmpty(t *testing.T
 			t.Errorf("GenerateProvisioningRequest should return an error when db password is empty")
 		}
 	}
+}
+
+func TestProvisionRequestValidation(t *testing.T) {
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	dbTypes := []string{"postgres", "mysql", "mongodb"}
+
+	for _, dbType := range dbTypes {
+		dbSpec := v1alpha1.DatabaseSpec{
+			NDB: v1alpha1.NDB{
+				Server:           "abc.def.ghi.jkl/v99/api",
+				ClusterId:        "test-cluster-id",
+				CredentialSecret: "test-credential-secret-name",
+			},
+			Instance: v1alpha1.Instance{
+				DatabaseNames:        []string{"a", "b", "c", "d"},
+				Type:                 dbType,
+				DatabaseInstanceName: dbType + "-instance-test",
+				TimeZone:             "UTC",
+			},
+		}
+
+		reqData := map[string]interface{}{
+			common.NDB_PARAM_PASSWORD:       "qwerty",
+			common.NDB_PARAM_SSH_PUBLIC_KEY: "qwertyuiop",
+		}
+
+		db := &controller_adapters.Database{Database: v1alpha1.Database{
+			Spec: dbSpec,
+		}}
+
+		request, _ := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, db, reqData)
+		err := ndb_api.ValidateDatabaseProvisionRequest(*request)
+
+		assert.NotNil(t, err)
+
+		for _, err := range err.(validator.ValidationErrors) {
+			assert.Equal(t, err.ActualTag(), "uuid")
+		}
+	}
+
 }
 
 func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
