@@ -47,7 +47,7 @@ func GetDatabasePortByType(dbType string) int32 {
 	}
 }
 
-func ValidateDatabaseProvisionRequest(restoreReq DatabaseProvisionRequest) error {
-	err := validator.New().Struct(restoreReq)
+func ValidateDatabaseProvisionRequest(req DatabaseProvisionRequest) error {
+	err := validator.New().Struct(req)
 	return err
 }

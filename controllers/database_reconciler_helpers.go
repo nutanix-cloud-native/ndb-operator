@@ -231,7 +231,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		validation_err := ndb_api.ValidateDatabaseProvisionRequest(*generatedReq)
 		if validation_err != nil {
 			log.Error(err, "Could not validate generated provisioning request, re-queuing.")
-			return r.requeueOnErr(err)
+			return r.doNotRequeue()
 		}
 
 		taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
