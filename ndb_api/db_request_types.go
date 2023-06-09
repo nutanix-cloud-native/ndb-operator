@@ -38,18 +38,6 @@ type DatabaseProvisionRequest struct {
 	DatabaseName             string           `json:"databaseName,omitempty"`
 }
 
-type MSSQLProvDecorator struct {
-	provRequest  DatabaseProvisionRequest
-	DatabaseName string
-}
-
-func (m *MSSQLProvDecorator) addActionArguments(args string) {
-	m.provRequest.ActionArguments = append(m.provRequest.ActionArguments, ActionArgument{
-		Name:  "vm_dbserver_admin_password",
-		Value: args,
-	})
-}
-
 type DatabaseDeprovisionRequest struct {
 	Delete               bool `json:"delete"`
 	Remove               bool `json:"remove"`
