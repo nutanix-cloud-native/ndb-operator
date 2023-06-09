@@ -36,6 +36,7 @@ const (
 	DATABASE_TYPE_GENERIC   = "generic"
 	DATABASE_TYPE_MONGODB   = "mongodb"
 	DATABASE_TYPE_MYSQL     = "mysql"
+	DATABASE_TYPE_MSSQL     = "mssql"
 	DATABASE_TYPE_ORACLE    = "oracle"
 	DATABASE_TYPE_POSTGRES  = "postgres"
 	DATABASE_TYPE_SQLSERVER = "sqlserver"

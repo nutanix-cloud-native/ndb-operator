@@ -55,12 +55,6 @@ func (d *Database) GetNDBClusterId() string {
 	return d.Spec.NDB.ClusterId
 }
 
-func (d *Database) GetDBInstanceActionArguments() []ndb_api.ActionArgument {
-	dbTypeActionArgs, _ := GetActionArgumentsByDatabaseType(d.GetDBInstanceType())
-	// TODO: Handle error
-	return dbTypeActionArgs.Get(d.Spec)
-}
-
 func (d *Database) GetProfileResolvers() ndb_api.ProfileResolvers {
 	profileResolvers := make(ndb_api.ProfileResolvers)
 

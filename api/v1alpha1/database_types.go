@@ -105,7 +105,7 @@ type Instance struct {
 	// +kubebuilder:default:=UTC
 	// +optional
 	TimeZone string `json:"timezone"`
-	// +kubebuilder:validation:Enum=mysql;postgres;mongodb
+	// +kubebuilder:validation:Enum=mysql;postgres;mongodb;mssql
 	// +kubebuilder:default:=postgres
 	Type string `json:"type"`
 	// +optional

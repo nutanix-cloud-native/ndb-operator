@@ -46,32 +46,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		return
 	}
 
-	database_names := database.GetDBInstanceDatabaseNames()
-
-	// Type assertion
-	dbPassword, ok := reqData[common.NDB_PARAM_PASSWORD].(string)
-	if !ok || dbPassword == "" {
-		err = errors.New("invalid database password")
-		var errStatement string
-		if !ok {
-			errStatement = "Type assertion failed for database password. Expected a string value"
-		} else {
-			errStatement = "Empty database password"
-		}
-		log.Error(err, errStatement)
-	}
-	// Type assertion
-	SSHPublicKey, ok := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
-	if !ok || SSHPublicKey == "" {
-		err = errors.New("invalid ssh public key")
-		var errStatement string
-		if !ok {
-			errStatement = "Type assertion failed for SSHPublicKey. Expected a string value"
-		} else {
-			errStatement = "Empty SSHPublicKey"
-		}
-		log.Error(err, errStatement)
-	}
+	validateReqData(ctx, database.GetDBInstanceType(), reqData)
 	// Creating a provisioning request based on the database type
 	requestBody = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(database.GetDBInstanceType()),
@@ -86,7 +61,6 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		CreateDbServer:           true,
 		NodeCount:                1,
 		NxClusterId:              database.GetNDBClusterId(),
-		SSHPublicKey:             SSHPublicKey,
 		Clustered:                false,
 		AutoTuneStagingDrive:     true,
 
@@ -110,21 +84,14 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 				Value: "dbserver for " + database.GetDBInstanceName(),
 			},
 			{
-				Name:  "database_names",
-				Value: database_names,
-			},
-			{
-				Name:  "db_password",
-				Value: dbPassword,
-			},
-			{
 				Name:  "database_size",
 				Value: strconv.Itoa(database.GetDBInstanceSize()),
 			},
 		},
 	}
-	// Setting action arguments based on database type
-	requestBody.ActionArguments = append(requestBody.ActionArguments, database.GetDBInstanceActionArguments()...)
+	// Appending request body based on database type
+	reqAppender, err := GetDbProvRequestAppender(database.GetDBInstanceType())
+	requestBody = reqAppender.appendRequest(requestBody, database, reqData)
 
 	log.Info("Database Provisioning", "requestBody", requestBody)
 	log.Info("Returning from ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
@@ -140,6 +107,39 @@ func GenerateDeprovisionDatabaseRequest() (req *DatabaseDeprovisionRequest) {
 		Forced:               false,
 		DeleteTimeMachine:    true,
 		DeleteLogicalCluster: true,
+	}
+	return
+
+}
+
+func validateReqData(ctx context.Context, databaseInstanceType string, reqData map[string]interface{}) (err error) {
+	log := ctrllog.FromContext(ctx)
+	dbPassword, ok := reqData[common.NDB_PARAM_PASSWORD].(string)
+	// Type Assertion for dbPassword
+	if !ok || dbPassword == "" {
+		err = errors.New("invalid database password")
+		var errStatement string
+		if !ok {
+			errStatement = "Type assertion failed for database password. Expected a string value"
+		} else {
+			errStatement = "Empty database password"
+		}
+		log.Error(err, errStatement)
+	}
+
+	// Type Assertion for SSHKey
+	if databaseInstanceType != common.DATABASE_TYPE_MSSQL {
+		SSHPublicKey, ok := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+		if !ok || SSHPublicKey == "" {
+			err := errors.New("invalid ssh public key")
+			var errStatement string
+			if !ok {
+				errStatement = "Type assertion failed for SSHPublicKey. Expected a string value"
+			} else {
+				errStatement = "Empty SSHPublicKey"
+			}
+			log.Error(err, errStatement)
+		}
 	}
 	return
 }

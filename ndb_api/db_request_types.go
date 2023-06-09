@@ -29,12 +29,25 @@ type DatabaseProvisionRequest struct {
 	CreateDbServer           bool             `json:"createDbserver"`
 	NodeCount                int              `json:"nodeCount"`
 	NxClusterId              string           `json:"nxClusterId"`
-	SSHPublicKey             string           `json:"sshPublicKey"`
+	SSHPublicKey             string           `json:"sshPublicKey,omitempty"`
 	Clustered                bool             `json:"clustered"`
 	AutoTuneStagingDrive     bool             `json:"autoTuneStagingDrive"`
 	TimeMachineInfo          TimeMachineInfo  `json:"timeMachineInfo"`
 	ActionArguments          []ActionArgument `json:"actionArguments"`
 	Nodes                    []Node           `json:"nodes"`
+	DatabaseName             string           `json:"databaseName,omitempty"`
+}
+
+type MSSQLProvDecorator struct {
+	provRequest  DatabaseProvisionRequest
+	DatabaseName string
+}
+
+func (m *MSSQLProvDecorator) addActionArguments(args string) {
+	m.provRequest.ActionArguments = append(m.provRequest.ActionArguments, ActionArgument{
+		Name:  "vm_dbserver_admin_password",
+		Value: args,
+	})
 }
 
 type DatabaseDeprovisionRequest struct {
