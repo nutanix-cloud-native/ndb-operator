@@ -29,6 +29,29 @@ import (
 type DatabaseSpec struct {
 	NDB      NDB      `json:"ndb"`
 	Instance Instance `json:"databaseInstance"`
+	Clone    Clone    `json:"clone"`
+}
+
+// Clone instance specific details
+type Clone struct {
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// +kubebuilder:validation:Required
+	ClusterId string `json:"clusterId"`
+	// +kubebuilder:validation:Required
+	CredentialSecret string `json:"credentialSecret"`
+	// +kubebuilder:validation:Required
+	TimeMachineId string `json:"timeMachineId"`
+	// +kubebuilder:validation:Required
+	SnapshotId string `json:"snapshotId"`
+	// +kubebuilder:validation:Required
+	TimeZone string `json:"timezone"`
+	// +kubebuilder:validation:Required
+	VmName string `json:"vmName"`
+	// +kubebuilder:validation:Required
+	DBPassword string `json:"dbPassword"`
+	// +kubebuilder:validation:Required
+	Profiles Profiles `json:"profiles"`
 }
 
 // DatabaseStatus defines the observed state of Database
