@@ -196,90 +196,188 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.handleSync")
 
-	switch database.Status.Status {
+	//  ######################################## PROVISIONING ########################################
 
-	case common.DATABASE_CR_STATUS_EMPTY:
-		// DB Status.Status is empty => Provision a DB
-		log.Info("Provisioning a database instance with NDB.")
+	if !database.Spec.IsClone {
+		switch database.Status.Status {
 
-		dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
-		if err != nil || dbPassword == "" || sshPublicKey == "" {
-			var errStatement string
-			if err == nil {
-				errStatement = "Database instance password and ssh key cannot be empty"
-				err = fmt.Errorf("empty DB instance credentials")
-			} else {
-				errStatement = "An error occured while fetching the DB Instance Secrets"
+		case common.DATABASE_CR_STATUS_EMPTY:
+			// DB Status.Status is empty => Provision a DB
+			log.Info("Provisioning a database instance with NDB.")
+
+			dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
+			if err != nil || dbPassword == "" || sshPublicKey == "" {
+				var errStatement string
+				if err == nil {
+					errStatement = "Database instance password and ssh key cannot be empty"
+					err = fmt.Errorf("empty DB instance credentials")
+				} else {
+					errStatement = "An error occured while fetching the DB Instance Secrets"
+				}
+				log.Error(err, errStatement)
+				return r.requeueOnErr(err)
 			}
-			log.Error(err, errStatement)
-			return r.requeueOnErr(err)
-		}
 
-		reqData := map[string]interface{}{
-			common.NDB_PARAM_PASSWORD:       dbPassword,
-			common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
-		}
+			reqData := map[string]interface{}{
+				common.NDB_PARAM_PASSWORD:       dbPassword,
+				common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+			}
 
-		databaseAdapter := &controller_adapters.Database{Database: *database}
-		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
-		// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
-		if err != nil {
-			log.Error(err, "Could not generate provisioning request, requeuing.")
-			return r.requeueOnErr(err)
-		}
+			databaseAdapter := &controller_adapters.Database{Database: *database}
+			generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
+			// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
+			if err != nil {
+				log.Error(err, "Could not generate provisioning request, requeuing.")
+				return r.requeueOnErr(err)
+			}
 
-		taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
-		if err != nil {
-			log.Error(err, "An error occurred while trying to provision the database")
-			return r.requeueOnErr(err)
-		}
-		// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
+			taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
+			if err != nil {
+				log.Error(err, "An error occurred while trying to provision the database")
+				return r.requeueOnErr(err)
+			}
+			// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
 
-		log.Info("Setting database CR status to provisioning and id as " + taskResponse.EntityId)
-		database.Status.Status = common.DATABASE_CR_STATUS_PROVISIONING
-		database.Status.Id = taskResponse.EntityId
+			log.Info("Setting database CR status to provisioning and id as " + taskResponse.EntityId)
+			database.Status.Status = common.DATABASE_CR_STATUS_PROVISIONING
+			database.Status.Id = taskResponse.EntityId
 
-		// Updating the type in the Database Status based on the input
-		database.Status.Type = database.Spec.Instance.Type
+			// Updating the type in the Database Status based on the input
+			database.Status.Type = database.Spec.Instance.Type
+			// Updating the isClone in the Database Status based on the input
+			database.Status.IsClone = false
 
-		err = r.Status().Update(ctx, database)
-		if err != nil {
-			log.Error(err, "Failed to update database status")
-			return r.requeueOnErr(err)
-		}
+			err = r.Status().Update(ctx, database)
+			if err != nil {
+				log.Error(err, "Failed to update database status")
+				return r.requeueOnErr(err)
+			}
 
-	case common.DATABASE_CR_STATUS_PROVISIONING:
-		// Check the status of the DB
-		databaseResponse, err := ndb_api.GetDatabaseById(ctx, ndbClient, database.Status.Id)
-		if err != nil {
-			log.Error(err, "An error occurred while trying to get the database with id: "+database.Status.Id)
-			r.requeueOnErr(err)
-		}
+		case common.DATABASE_CR_STATUS_PROVISIONING:
+			// Check the status of the DB
+			databaseResponse, err := ndb_api.GetDatabaseById(ctx, ndbClient, database.Status.Id)
+			if err != nil {
+				log.Error(err, "An error occurred while trying to get the database with id: "+database.Status.Id)
+				r.requeueOnErr(err)
+			}
 
-		// if READY => Change status
-		// log.Info("DEBUG Database Response: " + util.ToString(databaseResponse))
-		if databaseResponse.Status == common.DATABASE_CR_STATUS_READY {
-			log.Info("Database instance is READY, adding data to CR's status and updating the CR")
-			database.Status.Status = common.DATABASE_CR_STATUS_READY
-			database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
-			database.Status.IPAddress = databaseResponse.DatabaseNodes[0].DbServer.IPAddresses[0]
-			if database.Status.IPAddress != "" {
-				err = r.Status().Update(ctx, database)
-				if err != nil {
-					log.Error(err, "Failed to update database status")
-					return r.requeueOnErr(err)
+			// if READY => Change status
+			// log.Info("DEBUG Database Response: " + util.ToString(databaseResponse))
+			if databaseResponse.Status == common.DATABASE_CR_STATUS_READY {
+				log.Info("Database instance is READY, adding data to CR's status and updating the CR")
+				database.Status.Status = common.DATABASE_CR_STATUS_READY
+				database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
+				database.Status.IPAddress = databaseResponse.DatabaseNodes[0].DbServer.IPAddresses[0]
+				if database.Status.IPAddress != "" {
+					err = r.Status().Update(ctx, database)
+					if err != nil {
+						log.Error(err, "Failed to update database status")
+						return r.requeueOnErr(err)
+					}
 				}
 			}
+			// If database instance is not yet ready, requeue with wait
+			return r.requeueWithTimeout(15)
+
+		case common.DATABASE_CR_STATUS_READY:
+			r.setupConnectivity(ctx, database, req)
+			return r.requeueWithTimeout(15)
+
+		default:
+			// Do Nothing
 		}
-		// If database instance is not yet ready, requeue with wait
-		return r.requeueWithTimeout(15)
 
-	case common.DATABASE_CR_STATUS_READY:
-		r.setupConnectivity(ctx, database, req)
-		return r.requeueWithTimeout(15)
+		//  ######################################## CLONING ########################################
 
-	default:
-		// Do Nothing
+	} else {
+		switch database.Status.Status {
+
+		case common.DATABASE_CR_STATUS_EMPTY:
+			// Clone Status.Status is empty => Create a clone
+			log.Info("Cloning a database...")
+
+			dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Clone.CredentialSecret, req.Namespace)
+			if err != nil || dbPassword == "" || sshPublicKey == "" {
+				var errStatement string
+				if err == nil {
+					errStatement = "Clone instance password and ssh key cannot be empty"
+					err = fmt.Errorf("empty clone instance credentials")
+				} else {
+					errStatement = "An error occured while fetching the Clone Secrets"
+				}
+				log.Error(err, errStatement)
+				return r.requeueOnErr(err)
+			}
+
+			reqData := map[string]interface{}{
+				common.NDB_PARAM_PASSWORD:       dbPassword,
+				common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+			}
+
+			databaseAdapter := &controller_adapters.Database{Database: *database}
+			generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
+			// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
+			if err != nil {
+				log.Error(err, "Could not generate provisioning request, requeuing.")
+				return r.requeueOnErr(err)
+			}
+
+			taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
+			if err != nil {
+				log.Error(err, "An error occurred while trying to provision the database")
+				return r.requeueOnErr(err)
+			}
+			// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
+
+			log.Info("Setting database CR status to provisioning and id as " + taskResponse.EntityId)
+			database.Status.Status = common.DATABASE_CR_STATUS_PROVISIONING
+			database.Status.Id = taskResponse.EntityId
+
+			// Updating the type in the Database Status based on the input
+			database.Status.Type = database.Spec.Instance.Type
+			// Updating the isClone in the Database Status based on the input
+			database.Status.IsClone = true
+
+			err = r.Status().Update(ctx, database)
+			if err != nil {
+				log.Error(err, "Failed to update database status")
+				return r.requeueOnErr(err)
+			}
+
+		case common.DATABASE_CR_STATUS_PROVISIONING:
+			// Check the status of the DB
+			databaseResponse, err := ndb_api.GetDatabaseById(ctx, ndbClient, database.Status.Id)
+			if err != nil {
+				log.Error(err, "An error occurred while trying to get the database with id: "+database.Status.Id)
+				r.requeueOnErr(err)
+			}
+
+			// if READY => Change status
+			// log.Info("DEBUG Database Response: " + util.ToString(databaseResponse))
+			if databaseResponse.Status == common.DATABASE_CR_STATUS_READY {
+				log.Info("Database instance is READY, adding data to CR's status and updating the CR")
+				database.Status.Status = common.DATABASE_CR_STATUS_READY
+				database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
+				database.Status.IPAddress = databaseResponse.DatabaseNodes[0].DbServer.IPAddresses[0]
+				if database.Status.IPAddress != "" {
+					err = r.Status().Update(ctx, database)
+					if err != nil {
+						log.Error(err, "Failed to update database status")
+						return r.requeueOnErr(err)
+					}
+				}
+			}
+			// If database instance is not yet ready, requeue with wait
+			return r.requeueWithTimeout(15)
+
+		case common.DATABASE_CR_STATUS_READY:
+			r.setupConnectivity(ctx, database, req)
+			return r.requeueWithTimeout(15)
+
+		default:
+			// Do Nothing
+		}
+
 	}
 
 	return r.doNotRequeue()

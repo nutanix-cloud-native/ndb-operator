@@ -183,6 +183,8 @@ spec:
                 - databaseNames
                 - type
                 type: object
+              isClone:
+                type: boolean
               ndb:
                 description: Details of the NDB installation
                 properties:
@@ -206,6 +208,7 @@ spec:
             required:
             - clone
             - databaseInstance
+            - isClone
             - ndb
             type: object
           status:
@@ -217,6 +220,8 @@ spec:
                 type: string
               ipAddress:
                 type: string
+              isClone:
+                type: boolean
               status:
                 type: string
               type:
@@ -225,6 +230,7 @@ spec:
             - dbServerId
             - id
             - ipAddress
+            - isClone
             - status
             - type
             type: object
