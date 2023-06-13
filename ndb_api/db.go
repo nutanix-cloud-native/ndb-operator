@@ -113,29 +113,31 @@ func GetDatabaseById(ctx context.Context, ndbClient *ndb_client.NDBClient, id st
 // Returns the task info summary response for the operation
 func CloneDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, req *DatabaseCloneRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.ProvisionDatabase")
+	log.Info("Entered ndb_api.CloneDatabase")
 	if ndbClient == nil {
 		err = errors.New("nil reference")
 		log.Error(err, "Received nil ndbClient reference")
 		return
 	}
-	res, err := ndbClient.Post("databases/provision", req)
+
+	cloneUrl := fmt.Sprintf("tms/%s/clones", req.TimeMachineId)
+	res, err := ndbClient.Post(cloneUrl, req)
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
 			if res != nil {
-				err = fmt.Errorf("POST databases/provision responded with %d", res.StatusCode)
+				err = fmt.Errorf("POST %v responded with %d", cloneUrl, res.StatusCode)
 			} else {
-				err = fmt.Errorf("POST databases/provision responded with nil response")
+				err = fmt.Errorf("POST %v responded with nil response", cloneUrl)
 			}
 		}
-		log.Error(err, "Error occurred provisioning database")
+		log.Error(err, "Error occurred cloning a database")
 		return
 	}
-	log.Info("POST databases/provision", "HTTP status code", res.StatusCode)
+	log.Info("POST %v", "HTTP status code", cloneUrl, res.StatusCode)
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in ProvisionDatabase")
+		log.Error(err, "Error occurred reading response.Body in CloneDatabase")
 		return
 	}
 	err = json.Unmarshal(body, &task)
@@ -143,7 +145,7 @@ func CloneDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, req *Da
 		log.Error(err, "Error occurred trying to unmarshal.")
 		return
 	}
-	log.Info("Returning from ndb_api.ProvisionDatabase")
+	log.Info("Returning from ndb_api.CloneDatabase")
 	return
 }
 
