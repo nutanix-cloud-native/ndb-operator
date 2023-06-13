@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -740,7 +739,7 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
-	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	dbTypes := []string{"postgres", "mysql", "mongodb", "mssql"}
 
 	for _, dbType := range dbTypes {
 		dbSpec := v1alpha1.DatabaseSpec{
@@ -986,66 +985,5 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 		if err == nil {
 			t.Errorf("GenerateProvisioningRequest should return an error when ssh key is empty")
 		}
-	}
-}
-
-func TestGetByDatabaseType(t *testing.T) {
-	// Test with MySQL database type
-	MySQLExpectedArgs, err := controller_adapters.GetActionArgumentsByDatabaseType(common.DATABASE_TYPE_MYSQL)
-
-	if err != nil {
-		t.Error("Error while fetching mysql args", "err", err)
-	}
-
-	expectedMySqlArgs := []ndb_api.ActionArgument{
-		{
-			Name:  "listener_port",
-			Value: "3306",
-		},
-	}
-
-	if !reflect.DeepEqual(MySQLExpectedArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMySqlArgs) {
-		t.Errorf("Expected %v, but got %v", expectedMySqlArgs, MySQLExpectedArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
-	}
-
-	// Test with Postgres database type
-	postgresArgs, err := controller_adapters.GetActionArgumentsByDatabaseType(common.DATABASE_TYPE_POSTGRES)
-	if err != nil {
-		t.Error("Error while fetching postgres args", "err", err)
-	}
-	expectedPostgresArgs := []ndb_api.ActionArgument{
-		{Name: "proxy_read_port", Value: "5001"},
-		{Name: "listener_port", Value: "5432"},
-		{Name: "proxy_write_port", Value: "5000"},
-		{Name: "enable_synchronous_mode", Value: "false"},
-		{Name: "auto_tune_staging_drive", Value: "true"},
-		{Name: "backup_policy", Value: "primary_only"},
-	}
-	if !reflect.DeepEqual(postgresArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedPostgresArgs) {
-		t.Errorf("Expected %v, but got %v", expectedPostgresArgs, postgresArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
-	}
-
-	// Test with MongoDB database type
-	mongodbArgs, err := controller_adapters.GetActionArgumentsByDatabaseType(common.DATABASE_TYPE_MONGODB)
-	if err != nil {
-		t.Error("Error while fetching mongodbArgs", "err", err)
-	}
-	expectedMongodbArgs := []ndb_api.ActionArgument{
-		{Name: "listener_port", Value: "27017"},
-		{Name: "log_size", Value: "100"},
-		{Name: "journal_size", Value: "100"},
-		{Name: "restart_mongod", Value: "true"},
-		{Name: "working_dir", Value: "/tmp"},
-		{Name: "db_user", Value: "admin"},
-		{Name: "backup_policy", Value: "primary_only"},
-	}
-	if !reflect.DeepEqual(mongodbArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}), expectedMongodbArgs) {
-		t.Errorf("Expected %v, but got %v", expectedMongodbArgs, mongodbArgs.Get(v1alpha1.DatabaseSpec{Instance: v1alpha1.Instance{DatabaseInstanceName: "test"}}))
-	}
-
-	// Test with unknown database type
-	unknownArgs, err := controller_adapters.GetActionArgumentsByDatabaseType("unknown")
-	if err == nil {
-		t.Errorf("Expected error for unknown database type, but got %v", unknownArgs)
 	}
 }

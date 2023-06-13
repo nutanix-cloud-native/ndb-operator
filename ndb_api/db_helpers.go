@@ -39,14 +39,20 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		return
 	}
 
-	// Fetch the OOB profiles for the database
+	// Fetch the required profiles for the database
 	profilesMap, err := ResolveProfiles(ctx, ndb_client, database.GetDBInstanceType(), database.GetProfileResolvers())
 	if err != nil {
-		log.Error(err, "Error occurred while getting OOB profiles", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+		log.Error(err, "Error occurred while getting required profiles", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
 		return
 	}
+	reqData[common.PROFILE_MAP_PARAM] = profilesMap
 
-	validateReqData(ctx, database.GetDBInstanceType(), reqData)
+	// Validate request data
+	err = validateReqData(ctx, database.GetDBInstanceType(), reqData)
+	if err != nil {
+		log.Error(err, "Error occurred while validating reqData", "reqData", reqData)
+		return
+	}
 	// Creating a provisioning request based on the database type
 	requestBody = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(database.GetDBInstanceType()),
@@ -90,8 +96,8 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		},
 	}
 	// Appending request body based on database type
-	reqAppender, err := GetDbProvRequestAppender(database.GetDBInstanceType())
-	requestBody = reqAppender.appendRequest(requestBody, database, reqData)
+	appender, err := GetDbProvRequestAppender(database.GetDBInstanceType())
+	requestBody = appender.appendRequest(requestBody, database, reqData)
 
 	log.Info("Database Provisioning", "requestBody", requestBody)
 	log.Info("Returning from ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
@@ -125,13 +131,14 @@ func validateReqData(ctx context.Context, databaseInstanceType string, reqData m
 			errStatement = "Empty database password"
 		}
 		log.Error(err, errStatement)
+		return
 	}
 
 	// Type Assertion for SSHKey
 	if databaseInstanceType != common.DATABASE_TYPE_MSSQL {
 		SSHPublicKey, ok := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 		if !ok || SSHPublicKey == "" {
-			err := errors.New("invalid ssh public key")
+			err = errors.New("invalid ssh public key")
 			var errStatement string
 			if !ok {
 				errStatement = "Type assertion failed for SSHPublicKey. Expected a string value"
@@ -139,7 +146,222 @@ func validateReqData(ctx context.Context, databaseInstanceType string, reqData m
 				errStatement = "Empty SSHPublicKey"
 			}
 			log.Error(err, errStatement)
+			return
 		}
+	}
+	return
+}
+
+type DBProvisionRequestAppender interface {
+	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest
+}
+
+type MSSQLProvisionRequestAppender struct{}
+
+type MongoDbProvisionRequestAppender struct{}
+
+type PostgresProvisionRequestAppender struct{}
+
+type MySqlProvisionRequestAppender struct{}
+
+func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+	req.DatabaseName = string(database.GetDBInstanceDatabaseNames())
+	adminPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+	profileMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
+	dbParamInstanceProfile := profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE]
+
+	actionArgs := []ActionArgument{
+		{
+			Name:  "working_dir",
+			Value: "C:\\temp",
+		},
+		{
+			Name:  "sql_user_name",
+			Value: "sa",
+		},
+		{
+			Name:  "authentication_mode",
+			Value: "windows",
+		},
+		{
+			Name:  "delete_vm_on_failure",
+			Value: "false",
+		},
+		{
+			Name:  "is_gmsa_sql_service_account",
+			Value: "false",
+		},
+		{
+			Name:  "provision_from_backup",
+			Value: "false",
+		},
+		{
+			Name:  "distribute_database_data",
+			Value: "true",
+		},
+		{
+			Name:  "retain_database_in_restoring_mode",
+			Value: "false",
+		},
+		{
+			Name:  "dbserver_name",
+			Value: database.GetDBInstanceName(),
+		},
+		{
+			Name:  "server_collation",
+			Value: "SQL_Latin1_General_CP1_CI_AS",
+		},
+		{
+			Name:  "database_collation",
+			Value: "SQL_Latin1_General_CP1_CI_AS",
+		},
+		{
+			Name:  "dbParameterProfileIdInstance",
+			Value: dbParamInstanceProfile.Id,
+		},
+		{
+			Name:  "vm_dbserver_admin_password",
+			Value: adminPassword,
+		},
+	}
+
+	req.ActionArguments = append(req.ActionArguments, actionArgs...)
+
+	return req
+}
+
+func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+	databaseNames := database.GetDBInstanceDatabaseNames()
+	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+
+	req.SSHPublicKey = SSHPublicKey
+	actionArgs := []ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "27017",
+		},
+		{
+			Name:  "log_size",
+			Value: "100",
+		},
+		{
+			Name:  "journal_size",
+			Value: "100",
+		},
+		{
+			Name:  "restart_mongod",
+			Value: "true",
+		},
+		{
+			Name:  "working_dir",
+			Value: "/tmp",
+		},
+		{
+			Name:  "db_user",
+			Value: "admin",
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
+		},
+		{
+			Name:  "db_password",
+			Value: dbPassword,
+		},
+		{
+			Name:  "database_names",
+			Value: databaseNames,
+		},
+	}
+
+	req.ActionArguments = append(req.ActionArguments, actionArgs...)
+	return req
+}
+
+func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+	databaseNames := database.GetDBInstanceDatabaseNames()
+	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+
+	req.SSHPublicKey = SSHPublicKey
+	actionArgs := []ActionArgument{
+		{
+			Name:  "proxy_read_port",
+			Value: "5001",
+		},
+		{
+			Name:  "listener_port",
+			Value: "5432",
+		},
+		{
+			Name:  "proxy_write_port",
+			Value: "5000",
+		},
+		{
+			Name:  "enable_synchronous_mode",
+			Value: "false",
+		},
+		{
+			Name:  "auto_tune_staging_drive",
+			Value: "true",
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
+		},
+		{
+			Name:  "db_password",
+			Value: dbPassword,
+		},
+		{
+			Name:  "database_names",
+			Value: databaseNames,
+		},
+	}
+
+	req.ActionArguments = append(req.ActionArguments, actionArgs...)
+	return req
+}
+
+func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+	databaseNames := database.GetDBInstanceDatabaseNames()
+	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+
+	req.SSHPublicKey = SSHPublicKey
+	actionArgs := []ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "3306",
+		},
+		{
+			Name:  "db_password",
+			Value: dbPassword,
+		},
+		{
+			Name:  "database_names",
+			Value: databaseNames,
+		},
+	}
+
+	req.ActionArguments = append(req.ActionArguments, actionArgs...)
+	return req
+}
+
+func GetDbProvRequestAppender(databaseType string) (requestAppender DBProvisionRequestAppender, err error) {
+	//var dbProvRequestAppender DBProvisionRequestAppender
+	switch databaseType {
+	case common.DATABASE_TYPE_MYSQL:
+		requestAppender = &MySqlProvisionRequestAppender{}
+	case common.DATABASE_TYPE_POSTGRES:
+		requestAppender = &PostgresProvisionRequestAppender{}
+	case common.DATABASE_TYPE_MONGODB:
+		requestAppender = &MongoDbProvisionRequestAppender{}
+	case common.DATABASE_TYPE_MSSQL:
+		requestAppender = &MSSQLProvisionRequestAppender{}
+	default:
+		return nil, errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb")
 	}
 	return
 }
