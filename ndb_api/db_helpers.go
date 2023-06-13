@@ -144,6 +144,119 @@ func GenerateDeprovisionDatabaseRequest() (req *DatabaseDeprovisionRequest) {
 	return
 }
 
-// func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClient, database DatabaseInterface, reqData map[string]interface{}) (requestBody *DatabaseCloneRequest, err error) {
+func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClient, database DatabaseInterface, reqData map[string]interface{}) (requestBody *DatabaseCloneRequest, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered ndb_api.GenerateCloningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
 
-// }
+	// Fetch the OOB profiles for the database
+	profilesMap, err := ResolveProfiles(ctx, ndb_client, database.GetDBInstanceType(), database.GetProfileResolvers())
+	if err != nil {
+		log.Error(err, "Error occurred while getting OOB profiles", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+		return
+	}
+
+	database_names := database.GetDBInstanceDatabaseNames()
+
+	// Type assertion
+	dbPassword, ok := reqData[common.NDB_PARAM_PASSWORD].(string)
+	if !ok || dbPassword == "" {
+		err = errors.New("invalid database password")
+		var errStatement string
+		if !ok {
+			errStatement = "Type assertion failed for database password. Expected a string value"
+		} else {
+			errStatement = "Empty database password"
+		}
+		log.Error(err, errStatement)
+	}
+	// Type assertion
+	SSHPublicKey, ok := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	if !ok || SSHPublicKey == "" {
+		err = errors.New("invalid ssh public key")
+		var errStatement string
+		if !ok {
+			errStatement = "Type assertion failed for SSHPublicKey. Expected a string value"
+		} else {
+			errStatement = "Empty SSHPublicKey"
+		}
+		log.Error(err, errStatement)
+	}
+
+	TimeMachineId, ok := reqData[common.NDB_PARAM_TIME_MACHINE_ID].(string)
+	if !ok || TimeMachineId == "" {
+		err = errors.New("invalid Time Machine ID")
+		var errStatement string
+		if !ok {
+			errStatement = "Type assertion failed for Time Machine Id. Expected a string value"
+		} else {
+			errStatement = "Empty Time Machine Id"
+		}
+		log.Error(err, errStatement)
+	}
+
+	SnapshotId, ok := reqData[common.NDB_PARAM_SNAPSHOT_ID].(string)
+	if !ok || TimeMachineId == "" {
+		err = errors.New("invalid Snapshot ID")
+		var errStatement string
+		if !ok {
+			errStatement = "Type assertion failed for Snapshot Id. Expected a string value"
+		} else {
+			errStatement = "Empty Snapshot Id"
+		}
+		log.Error(err, errStatement)
+	}
+
+	// Creating a provisioning request based on the database type
+	requestBody = &DatabaseCloneRequest{
+		Name:                     database.GetDBInstanceName(),
+		DatabaseDescription:      "Database provisioned by ndb-operator: " + database.GetDBInstanceName(),
+		CreateDbServer:           true,
+		Clustered:                false,
+		SSHPublicKey:             SSHPublicKey,
+		DBServerId:               "",
+		DBServerClusterId:        "",
+		DBServerLogicalClusterId: "",
+		TimeMachineId:            TimeMachineId,
+		SnapshotId:               SnapshotId,
+		UserPitrTimestamp:        "",
+		LatestSnapshot:           false,
+		NodeCount:                1,
+		Nodes: []Node{
+			{
+				Properties: make([]string, 0),
+				VmName:     database.GetDBInstanceName() + "_VM",
+			},
+		},
+		ActionArguments: []ActionArgument{
+			{
+				Name:  "dbserver_description",
+				Value: "dbserver for " + database.GetDBInstanceName(),
+			},
+			{
+				Name:  "database_names",
+				Value: database_names,
+			},
+			{
+				Name:  "db_password",
+				Value: dbPassword,
+			},
+			{
+				Name:  "database_size",
+				Value: strconv.Itoa(database.GetDBInstanceSize()),
+			},
+		},
+		VmPassword: "",
+
+		ComputeProfileId:     profilesMap[common.PROFILE_TYPE_COMPUTE].Id,
+		NetworkProfileId:     profilesMap[common.PROFILE_TYPE_NETWORK].Id,
+		DbParameterProfileId: profilesMap[common.PROFILE_TYPE_DATABASE_PARAMETER].Id,
+		NewDbServerTimeZone:  database.GetDBInstanceTimeZone(),
+	}
+
+	// Check the need for this
+	// requestBody.ActionArguments = append(requestBody.ActionArguments, database.GetDBInstanceActionArguments()...)
+
+	log.Info("Database Cloning", "requestBody", requestBody)
+	log.Info("Returning from ndb_api.GenerateCloningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+	return
+}

@@ -64,10 +64,9 @@ type DatabaseCloneRequest struct {
 	NodeCount                int              `json:"nodeCount"`
 	Nodes                    []Node           `json:"nodes"`
 	ActionArguments          []ActionArgument `json:"actionArguments"`
-	// check for tags
-
-	ComputeProfileId     string `json:"computeProfileId"`
-	NetworkProfileId     string `json:"networkProfileId"`
-	DbParameterProfileId string `json:"dbParameterProfileId"`
-	NewDbServerTimeZone  string `json:"newDbServerTimeZone"`
+	VmPassword               string           `json:"vmPassword"`
+	ComputeProfileId         string           `json:"computeProfileId"`
+	NetworkProfileId         string           `json:"networkProfileId"`
+	DbParameterProfileId     string           `json:"dbParameterProfileId"`
+	NewDbServerTimeZone      string           `json:"newDbServerTimeZone"`
 }

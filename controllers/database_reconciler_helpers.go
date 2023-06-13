@@ -45,10 +45,10 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.handleSync")
 
-	if !database.Spec.IsClone { // provisioning
-		r.handleProvisioningSync(ctx, database, ndbClient, req)
-	} else { // CLONING
+	if database.Spec.IsClone { // CLONING
 		r.handleCloningSync(ctx, database, ndbClient, req)
+	} else { // provisioning
+		r.handleProvisioningSync(ctx, database, ndbClient, req)
 	}
 
 	return r.doNotRequeue()
@@ -205,14 +205,17 @@ func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database 
 	return nil
 }
 
-func (r *DatabaseReconciler) handleCloningSync(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient, req ctrl.Request) (ctrl.Result, error) {
+func (r *DatabaseReconciler) handleCloningSync(ctx context.Context, database *ndbv1alpha1.Database,
+	ndbClient *ndb_client.NDBClient, req ctrl.Request) (ctrl.Result, error) {
+
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered database_reconciler_helpers.handleSync")
+	log.Info("Entered database_reconciler_helpers.handleCloningSync")
 
 	switch database.Status.Status {
 
 	case common.DATABASE_CR_STATUS_EMPTY:
-		// Clone Status.Status is empty => Create a clone
+		// Clone Status is EMPTY => Create a cloning request
+
 		log.Info("Cloning a database...")
 
 		dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Clone.CredentialSecret, req.Namespace)
@@ -229,26 +232,25 @@ func (r *DatabaseReconciler) handleCloningSync(ctx context.Context, database *nd
 		}
 
 		reqData := map[string]interface{}{
-			common.NDB_PARAM_PASSWORD:       dbPassword,
-			common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+			common.NDB_PARAM_PASSWORD:        dbPassword,
+			common.NDB_PARAM_SSH_PUBLIC_KEY:  sshPublicKey,
+			common.NDB_PARAM_TIME_MACHINE_ID: database.Spec.Clone.TimeMachineId,
 		}
 
 		databaseAdapter := &controller_adapters.Database{Database: *database}
-		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
-		// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
+		generatedReq, err := ndb_api.GenerateCloningRequest(ctx, ndbClient, databaseAdapter, reqData)
 		if err != nil {
-			log.Error(err, "Could not generate provisioning request, requeuing.")
+			log.Error(err, "Could not generate a cloning request, requeuing.")
 			return r.requeueOnErr(err)
 		}
 
-		taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
+		taskResponse, err := ndb_api.CloneDatabase(ctx, ndbClient, generatedReq)
 		if err != nil {
 			log.Error(err, "An error occurred while trying to provision the database")
 			return r.requeueOnErr(err)
 		}
-		// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
 
-		log.Info("Setting database CR status to provisioning and id as " + taskResponse.EntityId)
+		log.Info("Setting clone CR status to provisioning and id as " + taskResponse.EntityId)
 		database.Status.Status = common.DATABASE_CR_STATUS_PROVISIONING
 		database.Status.Id = taskResponse.EntityId
 
@@ -274,7 +276,7 @@ func (r *DatabaseReconciler) handleCloningSync(ctx context.Context, database *nd
 		// if READY => Change status
 		// log.Info("DEBUG Database Response: " + util.ToString(databaseResponse))
 		if databaseResponse.Status == common.DATABASE_CR_STATUS_READY {
-			log.Info("Database instance is READY, adding data to CR's status and updating the CR")
+			log.Info("Clone instance is READY, adding data to CR's status and updating the CR")
 			database.Status.Status = common.DATABASE_CR_STATUS_READY
 			database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
 			database.Status.IPAddress = databaseResponse.DatabaseNodes[0].DbServer.IPAddresses[0]
