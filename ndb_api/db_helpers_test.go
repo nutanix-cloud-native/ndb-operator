@@ -66,8 +66,6 @@ func TestValidateReqData(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		//password := tc.reqData[common.NDB_PARAM_PASSWORD]
-		//sshkey := tc.reqData[common.NDB_PARAM_SSH_PUBLIC_KEY]
 		got := validateReqData(context.Background(), tc.databaseType, tc.reqData)
 		if !reflect.DeepEqual(tc.expected, got) {
 			t.Fatalf("expected: %v, got: %v", tc.expected, got)
