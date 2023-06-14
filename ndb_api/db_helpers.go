@@ -152,6 +152,7 @@ func validateReqData(ctx context.Context, databaseInstanceType string, reqData m
 	return
 }
 
+// Appends request based on database type
 type DBProvisionRequestAppender interface {
 	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest
 }
@@ -349,8 +350,8 @@ func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 	return req
 }
 
+// Get specific implementation of the DBProvisionRequestAppender interface based on the provided databaseType
 func GetDbProvRequestAppender(databaseType string) (requestAppender DBProvisionRequestAppender, err error) {
-	//var dbProvRequestAppender DBProvisionRequestAppender
 	switch databaseType {
 	case common.DATABASE_TYPE_MYSQL:
 		requestAppender = &MySqlProvisionRequestAppender{}
