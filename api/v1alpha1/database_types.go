@@ -28,6 +28,7 @@ import (
 // DatabaseSpec defines the desired state of Database
 type DatabaseSpec struct {
 	NDB      NDB      `json:"ndb"`
+	IsClone  bool     `json:"isClone"`
 	Instance Instance `json:"databaseInstance"`
 }
 

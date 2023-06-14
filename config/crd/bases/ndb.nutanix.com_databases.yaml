@@ -122,6 +122,8 @@ spec:
                 - databaseNames
                 - type
                 type: object
+              isClone:
+                type: boolean
               ndb:
                 description: Details of the NDB installation
                 properties:
@@ -144,6 +146,7 @@ spec:
                 type: object
             required:
             - databaseInstance
+            - isClone
             - ndb
             type: object
           status:
