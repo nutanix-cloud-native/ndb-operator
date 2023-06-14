@@ -739,7 +739,8 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
-	dbTypes := []string{"postgres", "mysql", "mongodb", "mssql"}
+	dbTypes := []string{common.DATABASE_TYPE_POSTGRES, common.DATABASE_TYPE_MONGODB,
+		common.DATABASE_TYPE_MSSQL, common.DATABASE_TYPE_MYSQL}
 
 	for _, dbType := range dbTypes {
 		dbSpec := v1alpha1.DatabaseSpec{
