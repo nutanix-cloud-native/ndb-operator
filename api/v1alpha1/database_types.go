@@ -124,6 +124,9 @@ type Profiles struct {
 
 	// +optional
 	DbParam Profile `json:"dbParam"`
+
+	// +optional
+	DbParamInstance Profile `json:"dbParamInstance"`
 }
 
 type Profile struct {

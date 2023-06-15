@@ -122,6 +122,11 @@ func GetProfileResolvers(d v1alpha1.Database) ndb_api.ProfileResolvers {
 		ProfileType: common.PROFILE_TYPE_DATABASE_PARAMETER,
 	}
 
+	profileResolvers[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE] = &controller_adapters.Profile{
+		Profile:     d.Spec.Instance.Profiles.DbParamInstance,
+		ProfileType: common.PROFILE_TYPE_DATABASE_PARAMETER,
+	}
+
 	return profileResolvers
 
 }
@@ -136,7 +141,7 @@ func TestProfiles(t *testing.T) {
 	Instance := v1alpha1.Instance{}
 	Database.Spec.Instance = Instance
 	//Test
-	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	dbTypes := []string{"postgres", "mysql", "mongodb", "mssql"}
 	for _, dbType := range dbTypes {
 		Instance.Type = dbType
 		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
@@ -147,6 +152,7 @@ func TestProfiles(t *testing.T) {
 			common.PROFILE_TYPE_SOFTWARE,
 			common.PROFILE_TYPE_NETWORK,
 			common.PROFILE_TYPE_DATABASE_PARAMETER,
+			common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE,
 		}
 		for _, profileType := range profileTypes {
 			profile := profileMap[profileType]

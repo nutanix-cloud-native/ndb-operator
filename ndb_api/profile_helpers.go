@@ -52,7 +52,7 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 	softwareProfileResolver := profileResolvers[common.PROFILE_TYPE_SOFTWARE]
 	networkProfileResolver := profileResolvers[common.PROFILE_TYPE_NETWORK]
 	dbParamProfileResolver := profileResolvers[common.PROFILE_TYPE_DATABASE_PARAMETER]
-	dbParamInstanceProfileResolver := profileResolvers[common.PROFILE_TYPE_DATABASE_PARAMETER]
+	dbParamInstanceProfileResolver := profileResolvers[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE]
 
 	// Compute Profile
 	compute, err := computeProfileResolver.Resolve(ctx, activeProfiles, ComputeOOBProfileResolver)

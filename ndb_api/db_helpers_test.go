@@ -47,7 +47,7 @@ func TestValidateReqData(t *testing.T) {
 			},
 			expected: errorInvalidPassword,
 		},
-		{ // Throw error if datbase is not MSSQL and SSHKey is empty
+		{ // Throw error if database is not MSSQL and SSHKey is empty
 			databaseType: common.DATABASE_TYPE_POSTGRES,
 			reqData: reqData{
 				common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,

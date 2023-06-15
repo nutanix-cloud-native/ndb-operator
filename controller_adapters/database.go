@@ -74,6 +74,10 @@ func (d *Database) GetProfileResolvers() ndb_api.ProfileResolvers {
 		Profile:     d.Spec.Instance.Profiles.DbParam,
 		ProfileType: common.PROFILE_TYPE_DATABASE_PARAMETER,
 	}
+	profileResolvers[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE] = &Profile{
+		Profile:     d.Spec.Instance.Profiles.DbParamInstance,
+		ProfileType: common.PROFILE_TYPE_DATABASE_PARAMETER,
+	}
 
 	return profileResolvers
 

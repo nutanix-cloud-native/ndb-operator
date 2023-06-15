@@ -45,6 +45,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		log.Error(err, "Error occurred while getting required profiles", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
 		return
 	}
+	// Required for dbParameterProfileIdInstance in MSSQL action args
 	reqData[common.PROFILE_MAP_PARAM] = profilesMap
 
 	// Validate request data
