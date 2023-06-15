@@ -206,10 +206,11 @@ func GetDatabaseCreator(database *ndbv1alpha1.Database) DatabaseCreator {
 	}
 }
 
+// Clone a new DB implementation
 func (p *CloneDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.Database,
 	ndbClient *ndb_client.NDBClient, r *DatabaseReconciler, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("in Clone database operation")
+	log.Info("in Clone Database operation...")
 
 	dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
 	if err != nil || dbPassword == "" || sshPublicKey == "" {
@@ -262,10 +263,11 @@ func (p *CloneDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.Data
 	return r.doNotRequeue()
 }
 
+// Provision a new DB implementation
 func (p *ProvisionDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.Database,
 	ndbClient *ndb_client.NDBClient, r *DatabaseReconciler, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("in Provision operation")
+	log.Info("in Provision DB operation...")
 	dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
 	if err != nil || dbPassword == "" || sshPublicKey == "" {
 		var errStatement string
