@@ -28,12 +28,12 @@ const (
 	DATABASE_DEFAULT_PORT_MYSQL    = 3306
 	DATABASE_DEFAULT_PORT_POSTGRES = 5432
 
-	DATABASE_ENGINE_TYPE_GENERIC   = "Generic"
-	DATABASE_ENGINE_TYPE_MONGODB   = "mongodb_database"
-	DATABASE_ENGINE_TYPE_MYSQL     = "mysql_database"
-	DATABASE_ENGINE_TYPE_ORACLE    = "oracle_database"
-	DATABASE_ENGINE_TYPE_POSTGRES  = "postgres_database"
-	DATABASE_ENGINE_TYPE_SQLSERVER = "sqlserver_database"
+	DATABASE_ENGINE_TYPE_GENERIC  = "Generic"
+	DATABASE_ENGINE_TYPE_MONGODB  = "mongodb_database"
+	DATABASE_ENGINE_TYPE_MYSQL    = "mysql_database"
+	DATABASE_ENGINE_TYPE_ORACLE   = "oracle_database"
+	DATABASE_ENGINE_TYPE_POSTGRES = "postgres_database"
+	DATABASE_ENGINE_TYPE_MSSQL    = "sqlserver_database"
 
 	DATABASE_TYPE_GENERIC   = "generic"
 	DATABASE_TYPE_MONGODB   = "mongodb"

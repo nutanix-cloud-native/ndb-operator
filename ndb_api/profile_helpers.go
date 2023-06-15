@@ -131,5 +131,6 @@ var DbParamOOBProfileResolver = func(p ProfileResponse) bool {
 }
 
 var DbParamInstanceOOBProfileResolver = func(p ProfileResponse) bool {
+	// The DB Instance profile has the topology type as "instance"
 	return p.SystemProfile && p.Type == common.PROFILE_TYPE_DATABASE_PARAMETER && p.Topology == common.TOPOLOGY_INSTANCE
 }
