@@ -1,0 +1,20 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: db-pgtest
+spec:
+  ndb:
+    clusterId: <cluster-id>
+    credentialSecret: ndb-secret-pg-si
+    server: https://<ip-for-ndb>:8443/era/v0.9
+    skipCertificateVerification: true
+  databaseInstance:
+    databaseInstanceName: "manav-pgtest"
+    databaseNames:
+      - database_one
+      - database_two
+      - database_three
+    credentialSecret: db-secret-pg-si
+    size: 100
+    timezone: "UTC"
+    type: postgres
