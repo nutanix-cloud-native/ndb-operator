@@ -28,6 +28,46 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// Provisions a database instance based on the database provisioning request
+// Returns the task info summary response for the operation
+func CloneDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, req *DatabaseCloneRequest) (task TaskInfoSummaryResponse, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered ndb_api.CloneDatabase")
+	if ndbClient == nil {
+		err = errors.New("nil reference")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
+
+	cloneUrl := fmt.Sprintf("tms/%s/clones", req.TimeMachineId)
+	res, err := ndbClient.Post(cloneUrl, req)
+	if err != nil || res == nil || res.StatusCode != http.StatusOK {
+		if err == nil {
+			if res != nil {
+				err = fmt.Errorf("POST %v responded with %d", cloneUrl, res.StatusCode)
+			} else {
+				err = fmt.Errorf("POST %v responded with nil response", cloneUrl)
+			}
+		}
+		log.Error(err, "Error occurred cloning a database")
+		return
+	}
+	log.Info("POST %v", "HTTP status code", cloneUrl, res.StatusCode)
+	body, err := io.ReadAll(res.Body)
+	defer res.Body.Close()
+	if err != nil {
+		log.Error(err, "Error occurred reading response.Body in CloneDatabase")
+		return
+	}
+	err = json.Unmarshal(body, &task)
+	if err != nil {
+		log.Error(err, "Error occurred trying to unmarshal.")
+		return
+	}
+	log.Info("Returning from ndb_api.CloneDatabase")
+	return
+}
+
 // Fetches all the databases on the NDB instance and retutns a slice of the databases
 func GetAllDatabases(ctx context.Context, ndbClient *ndb_client.NDBClient) (databases []DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)

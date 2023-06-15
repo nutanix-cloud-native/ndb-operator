@@ -119,6 +119,106 @@ func GenerateDeprovisionDatabaseRequest() (req *DatabaseDeprovisionRequest) {
 
 }
 
+// This function generates and returns a request for provisioning a database (and a dbserver vm) on NDB
+// The database provisioned has a NONE time machine SLA attached to it, and uses the default OOB profiles
+func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClient, database DatabaseInterface, reqData map[string]interface{}) (requestBody *DatabaseCloneRequest, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+
+	// Fetch the required profiles for the database
+	profilesMap, err := ResolveProfiles(ctx, ndb_client, database.GetDBInstanceType(), database.GetProfileResolvers())
+	if err != nil {
+		log.Error(err, "Error occurred while getting required profiles", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+		return
+	}
+	// Required for dbParameterProfileIdInstance in MSSQL action args
+	reqData[common.PROFILE_MAP_PARAM] = profilesMap
+	log.Info("removing software profile from the reqData")
+	delete(profilesMap, common.PROFILE_TYPE_SOFTWARE)
+	log.Info("profilesMap after removing software profile", profilesMap)
+
+	// Validate request data
+	err = validateReqData(ctx, database.GetDBInstanceType(), reqData)
+	if err != nil {
+		log.Error(err, "Error occurred while validating reqData", "reqData", reqData)
+		return
+	}
+
+	// Creating a provisioning request based on the database type
+	requestBody = &DatabaseCloneRequest{
+		Name:                     database.GetDBInstanceName(),
+		DatabaseDescription:      "Clone provisioned by ndb-operator: " + database.GetDBInstanceName(),
+		CreateDbServer:           true,
+		Clustered:                false,
+		DBServerId:               "",
+		DBServerClusterId:        "",
+		DBServerLogicalClusterId: "",
+		TimeMachineId:            reqData[common.NDB_PARAM_TIME_MACHINE_ID].(string),
+		SnapshotId:               reqData[common.NDB_PARAM_SNAPSHOT_ID].(string),
+		UserPitrTimestamp:        "",
+		LatestSnapshot:           false,
+		NodeCount:                1,
+		Nodes: []Node{
+			{
+				Properties: make([]string, 0),
+				VmName:     database.GetDBInstanceName() + "_VM",
+			},
+		},
+		ActionArguments: []ActionArgument{
+			{
+				Name:  "dbserver_description",
+				Value: "dbserver for " + database.GetDBInstanceName(),
+			},
+			{
+				Name:  "db_password",
+				Value: reqData[common.NDB_PARAM_DB_PASSWORD].(string),
+			},
+			{
+				Name:  "database_size",
+				Value: strconv.Itoa(database.GetDBInstanceSize()),
+			},
+		},
+		VmPassword: "",
+
+		ComputeProfileId:     profilesMap[common.PROFILE_TYPE_COMPUTE].Id,
+		NetworkProfileId:     profilesMap[common.PROFILE_TYPE_NETWORK].Id,
+		DbParameterProfileId: profilesMap[common.PROFILE_TYPE_DATABASE_PARAMETER].Id,
+		NewDbServerTimeZone:  database.GetDBInstanceTimeZone(),
+	}
+	// Appending request body based on database type
+	// appender, err := GetDbProvRequestAppender(database.GetDBInstanceType())
+	// requestBody = appender.appendRequest(requestBody, database, reqData)
+
+	log.Info("Database Provisioning", "requestBody", requestBody)
+	log.Info("Returning from ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+	return
+}
+
+type DatabaseCloneRequest struct {
+	Name                     string           `json:"name"`
+	DatabaseDescription      string           `json:"databaseDescription"`
+	CreateDbServer           bool             `json:"createDbserver"`
+	Clustered                bool             `json:"clustered"`
+	NxClusterId              string           `json:"nxClusterId"`
+	SSHPublicKey             string           `json:"sshPublicKey"`
+	DBServerId               string           `json:"dbserverId"`
+	DBServerClusterId        string           `json:"dbserverClusterId"`
+	DBServerLogicalClusterId string           `json:"dbserverLogicalClusterId"`
+	TimeMachineId            string           `json:"timeMachineId"`
+	SnapshotId               string           `json:"snapshotId"`
+	UserPitrTimestamp        string           `json:"userPitrTimestamp"`
+	TimeZone                 string           `json:"timezone"`
+	LatestSnapshot           bool             `json:"latestSnapshot"`
+	NodeCount                int              `json:"nodeCount"`
+	Nodes                    []Node           `json:"nodes"`
+	ActionArguments          []ActionArgument `json:"actionArguments"`
+	VmPassword               string           `json:"vmPassword"`
+	ComputeProfileId         string           `json:"computeProfileId"`
+	NetworkProfileId         string           `json:"networkProfileId"`
+	DbParameterProfileId     string           `json:"dbParameterProfileId"`
+	NewDbServerTimeZone      string           `json:"newDbServerTimeZone"`
+}
+
 func validateReqData(ctx context.Context, databaseInstanceType string, reqData map[string]interface{}) (err error) {
 	log := ctrllog.FromContext(ctx)
 	dbPassword, ok := reqData[common.NDB_PARAM_PASSWORD].(string)

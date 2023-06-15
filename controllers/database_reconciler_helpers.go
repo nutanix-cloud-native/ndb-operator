@@ -216,23 +216,26 @@ func (p *CloneDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.Data
 	if err != nil || dbPassword == "" || sshPublicKey == "" {
 		var errStatement string
 		if err == nil {
-			errStatement = "Database instance password and ssh key cannot be empty"
-			err = fmt.Errorf("empty DB instance credentials")
+			errStatement = "Clone Database instance password and ssh key cannot be empty"
+			err = fmt.Errorf("empty Clone DB instance credentials")
 		} else {
-			errStatement = "An error occured while fetching the DB Instance Secrets"
+			errStatement = "An error occured while fetching the Clone DB Instance Secrets"
 		}
 		log.Error(err, errStatement)
 		return r.requeueOnErr(err)
 	}
 
 	reqData := map[string]interface{}{
-		common.NDB_PARAM_PASSWORD:       dbPassword,
-		common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+		common.NDB_PARAM_PASSWORD:        dbPassword,
+		common.NDB_PARAM_SSH_PUBLIC_KEY:  sshPublicKey,
+		common.NDB_PARAM_TIME_MACHINE_ID: database.Spec.Clone.TimeMachineId,
+		common.NDB_PARAM_SNAPSHOT_ID:     database.Spec.Clone.SnapshotId,
+		common.NDB_PARAM_DB_PASSWORD:     database.Spec.Clone.DBPassword,
 	}
 
 	databaseAdapter := &controller_adapters.Database{Database: *database}
 	// change it to clone request
-	generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
+	generatedReq, err := ndb_api.GenerateCloningRequest(ctx, ndbClient, databaseAdapter, reqData)
 	log.Info("Clone Request Body", generatedReq)
 	if err != nil {
 		log.Error(err, "Could not generate cloning request, requeuing.")
@@ -240,7 +243,7 @@ func (p *CloneDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.Data
 	}
 
 	// send the clone request
-	taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
+	taskResponse, err := ndb_api.CloneDatabase(ctx, ndbClient, generatedReq)
 	if err != nil {
 		log.Error(err, "An error occurred while trying to provision the database")
 		return r.requeueOnErr(err)
