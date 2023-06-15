@@ -277,12 +277,36 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 	switch database.Status.Status {
 
 	case common.DATABASE_CR_STATUS_EMPTY:
-		// DB Status.Status is empty => Provision a DB
+		// DB/Clone Status.Status is empty => Provision a DB/Clone
 		log.Info("Provisioning a database instance with NDB.")
-
-	case common.DATABASE_CR_STATUS_PROVISIONING:
 		dbCreator := GetDatabaseCreator(database)
 		dbCreator.CreateDatabase(ctx, database, ndbClient, r, req)
+
+	case common.DATABASE_CR_STATUS_PROVISIONING:
+		// Check the status of the DB
+		databaseResponse, err := ndb_api.GetDatabaseById(ctx, ndbClient, database.Status.Id)
+		if err != nil {
+			log.Error(err, "An error occurred while trying to get the database with id: "+database.Status.Id)
+			r.requeueOnErr(err)
+		}
+
+		// if READY => Change status
+		// log.Info("DEBUG Database Response: " + util.ToString(databaseResponse))
+		if databaseResponse.Status == common.DATABASE_CR_STATUS_READY {
+			log.Info("Clone instance is READY, adding data to CR's status and updating the CR")
+			database.Status.Status = common.DATABASE_CR_STATUS_READY
+			database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
+			database.Status.IPAddress = databaseResponse.DatabaseNodes[0].DbServer.IPAddresses[0]
+			if database.Status.IPAddress != "" {
+				err = r.Status().Update(ctx, database)
+				if err != nil {
+					log.Error(err, "Failed to update database status")
+					return r.requeueOnErr(err)
+				}
+			}
+		}
+		// If database instance is not yet ready, requeue with wait
+		return r.requeueWithTimeout(15)
 
 	case common.DATABASE_CR_STATUS_READY:
 		r.setupConnectivity(ctx, database, req)
