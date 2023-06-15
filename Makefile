@@ -267,6 +267,13 @@ else
 	touch ndb_api/$(api)_response_types.go && echo "package ndb_api" > ndb_api/$(api)_response_types.go
 endif
 
+# Usage: Export the environment variables before running the target
+# KUBECONFIG='...' 
+# DB_SECRET_PASSWORD='...'
+# NDB_SECRET_USERNAME='...'
+# NDB_SECRET_PASSWORD='...'
+# NDB_SERVER='https://...:8443/era/v0.9'
+# NDB_CLUSTER_ID='...'
 .PHONY: run-automation
 run-automation: install
 	go test ./automation -v -timeout 60m

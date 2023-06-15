@@ -127,7 +127,32 @@ func teardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database
 		ns = database.Namespace
 	}
 
-	//TODO: Delete secrets after the db has been deleted
+	// Delete Database
+	if database != nil {
+		database.Spec.NDB.Server = os.Getenv("NDB-SERVER")
+		database.Spec.NDB.ClusterId = os.Getenv("NDB-CLUSTER-ID")
+		err := v1alpha1ClientSet.Databases(database.Namespace).Delete(database.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			log.Printf("Error while deleting Database %s: %s\n", database.Name, err)
+		} else {
+			log.Printf("Database %s deleted\n", database.Name)
+		}
+		waitAndRetryFunction(time.Minute, 10, func() (err error) {
+			database, err = v1alpha1ClientSet.Databases(database.Namespace).Get(database.Name, metav1.GetOptions{})
+			if err != nil {
+				return nil
+			}
+			if (database == &ndbv1alpha1.Database{}) {
+				log.Println("Received empty database")
+				return nil
+			}
+			statusMessage := "DB " + database.Name + " is not yet deleted"
+			log.Println(statusMessage)
+			err = errors.New(statusMessage)
+			return
+		})
+	}
+
 	// Delete Secrets
 	if dbSecret != nil {
 		dbSecret.StringData[common.SECRET_DATA_KEY_USERNAME] = os.Getenv("DB-SECRET-USERNAME")
@@ -147,18 +172,6 @@ func teardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database
 			log.Printf("Secret %s deleted\n", ndbSecret.Name)
 		} else {
 			log.Printf("Error while deleting secret %s: %s\n", ndbSecret.Name, err)
-		}
-	}
-
-	// Delete Database
-	if database != nil {
-		database.Spec.NDB.Server = os.Getenv("NDB-SERVER")
-		database.Spec.NDB.ClusterId = os.Getenv("NDB-CLUSTER-ID")
-		err := v1alpha1ClientSet.Databases(database.Namespace).Delete(database.Name, &metav1.DeleteOptions{})
-		if err != nil {
-			log.Printf("Error while deleting Database %s: %s\n", database.Name, err)
-		} else {
-			log.Printf("Database %s deleted\n", database.Name)
 		}
 	}
 

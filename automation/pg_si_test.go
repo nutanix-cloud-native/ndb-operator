@@ -45,6 +45,9 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	logFile := "./PostgresqlSingleInstanceTestSuite.log"
 
 	// Setup output log file
+	if _, err := os.Stat(logFile); err == nil {
+		_ = os.Remove(logFile)
+	}
 	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatal(err)
@@ -163,18 +166,17 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestAppConnectivity() {
 	// Send GET request
 	resp, err := client.Get("http://localhost:30000")
 	if err != nil {
-		log.Println("Error:", err)
+		log.Println("Error while performing GET:", err)
 		suite.T().FailNow()
 	}
 	defer resp.Body.Close()
-
+	log.Println("Response status:", string(resp.Status))
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("Error:", err)
+		log.Println("Error while reading response:", err)
 		suite.T().FailNow()
 	}
-
 	// Print the response body
 	log.Println("Response:", string(body))
 	assert := assert.New(suite.T())
