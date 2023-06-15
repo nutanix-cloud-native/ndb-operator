@@ -31,9 +31,11 @@ type DatabaseSpec struct {
 	// +optional
 	// +kubebuilder:default:=new
 	// +kubebuilder:validation:Enum=new;clone
-	ProvisionType string   `json:"provisionType"`
-	Instance      Instance `json:"databaseInstance"`
-	Clone         Clone    `json:"clone"`
+	ProvisionType string `json:"provisionType"`
+	// +optional
+	Instance Instance `json:"databaseInstance"`
+	// +optional
+	Clone Clone `json:"clone"`
 }
 
 // Clone instance specific details

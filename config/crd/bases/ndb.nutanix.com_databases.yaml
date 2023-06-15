@@ -210,8 +210,6 @@ spec:
                 - clone
                 type: string
             required:
-            - clone
-            - databaseInstance
             - ndb
             type: object
           status:
