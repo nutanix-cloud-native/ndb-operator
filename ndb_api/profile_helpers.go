@@ -52,6 +52,7 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 	softwareProfileResolver := profileResolvers[common.PROFILE_TYPE_SOFTWARE]
 	networkProfileResolver := profileResolvers[common.PROFILE_TYPE_NETWORK]
 	dbParamProfileResolver := profileResolvers[common.PROFILE_TYPE_DATABASE_PARAMETER]
+	dbParamInstanceProfileResolver := profileResolvers[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE]
 
 	// Compute Profile
 	compute, err := computeProfileResolver.Resolve(ctx, activeProfiles, ComputeOOBProfileResolver)
@@ -86,15 +87,26 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 	// DB Param Profile
 	dbParam, err := dbParamProfileResolver.Resolve(ctx, dbEngineSpecific, DbParamOOBProfileResolver)
 	if err != nil {
-		log.Error(err, "DbParam Profile could not be resolved", "Input Profile", networkProfileResolver)
+		log.Error(err, "DbParam Profile could not be resolved", "Input Profile", dbParamProfileResolver)
 		return nil, err
 	}
 
+	// DB Param Instance Profile
+	dbParamInstance, err := dbParamInstanceProfileResolver.Resolve(ctx, dbEngineSpecific, DbParamOOBProfileResolver)
+	if err != nil {
+		// Database Parameter Instance profile is required only for sql server
+		if databaseType == common.DATABASE_TYPE_SQLSERVER {
+			log.Error(err, "Db Param Instance Profile could not be resolved", "Input Profile", dbParamInstanceProfileResolver)
+			return nil, err
+		}
+	}
+
 	profilesMap = map[string]ProfileResponse{
-		common.PROFILE_TYPE_COMPUTE:            compute,
-		common.PROFILE_TYPE_SOFTWARE:           software,
-		common.PROFILE_TYPE_NETWORK:            network,
-		common.PROFILE_TYPE_DATABASE_PARAMETER: dbParam,
+		common.PROFILE_TYPE_COMPUTE:                     compute,
+		common.PROFILE_TYPE_SOFTWARE:                    software,
+		common.PROFILE_TYPE_NETWORK:                     network,
+		common.PROFILE_TYPE_DATABASE_PARAMETER:          dbParam,
+		common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE: dbParamInstance,
 	}
 
 	log.Info("Returning from ndb_api.GetProfiles", "profiles map", profilesMap)
@@ -116,4 +128,8 @@ var NetworkOOBProfileResolver = func(p ProfileResponse) bool {
 
 var DbParamOOBProfileResolver = func(p ProfileResponse) bool {
 	return p.SystemProfile && p.Type == common.PROFILE_TYPE_DATABASE_PARAMETER
+}
+
+var DbParamInstanceOOBProfileResolver = func(p ProfileResponse) bool {
+	return p.SystemProfile && p.Type == common.PROFILE_TYPE_DATABASE_PARAMETER && p.Topology == common.TOPOLOGY_INSTANCE
 }

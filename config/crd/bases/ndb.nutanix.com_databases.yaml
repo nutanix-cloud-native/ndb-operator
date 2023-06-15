@@ -176,6 +176,7 @@ spec:
                     - mysql
                     - postgres
                     - mongodb
+                    - mssql
                     type: string
                 required:
                 - credentialSecret

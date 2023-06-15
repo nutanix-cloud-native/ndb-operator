@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+package ndb_api
 
 import (
 	"crypto/sha256"
@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
-	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 )
 
 const mock_username = "username"
@@ -34,7 +33,7 @@ const mock_password = "password"
 const NONE_SLA_ID = "NONE_SLA_ID"
 
 var MockResponsesMap = map[string]interface{}{
-	"GET /slas": []ndb_api.SLAResponse{
+	"GET /slas": []SLAResponse{
 		{
 			Id:                 "sla-1-id",
 			Name:               "SLA 1",
@@ -70,7 +69,7 @@ var MockResponsesMap = map[string]interface{}{
 		},
 	},
 
-	"GET /profiles": []ndb_api.ProfileResponse{
+	"GET /profiles": []ProfileResponse{
 		{
 			Id:              "1",
 			Name:            "a",
@@ -218,46 +217,6 @@ var MockResponsesMap = map[string]interface{}{
 			EngineType:      common.DATABASE_ENGINE_TYPE_MYSQL,
 			LatestVersionId: "v-id-6",
 			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "id-mssql-sw-1",
-			Name:            "mssqlSW",
-			Type:            common.PROFILE_TYPE_SOFTWARE,
-			EngineType:      common.DATABASE_ENGINE_TYPE_SQLSERVER,
-			LatestVersionId: "mssql-id-1",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "id-mssql-nw-1",
-			Name:            "mssqlNW",
-			Type:            common.PROFILE_TYPE_NETWORK,
-			EngineType:      common.DATABASE_ENGINE_TYPE_SQLSERVER,
-			LatestVersionId: "mssql-id-1",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "id-mssql-db-1",
-			Name:            "mssqlDB",
-			Type:            common.PROFILE_TYPE_DATABASE_PARAMETER,
-			EngineType:      common.DATABASE_ENGINE_TYPE_SQLSERVER,
-			LatestVersionId: "v-id-10",
-			Topology:        common.TOPOLOGY_DATABASE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "id-mssql-dbi-1",
-			Name:            "mssqlDBI",
-			Type:            common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE,
-			EngineType:      common.DATABASE_ENGINE_TYPE_SQLSERVER,
-			LatestVersionId: "v-id-10",
-			Topology:        common.TOPOLOGY_INSTANCE,
 			Status:          "READY",
 			SystemProfile:   true,
 		},
