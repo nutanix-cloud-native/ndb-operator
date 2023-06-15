@@ -209,14 +209,63 @@ func GetDatabaseCreator(database *ndbv1alpha1.Database) DatabaseCreator {
 func (p *CloneDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.Database,
 	ndbClient *ndb_client.NDBClient, r *DatabaseReconciler, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("in ProvisionDB implementation")
+	log.Info("in Clone database operation")
+
+	dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
+	if err != nil || dbPassword == "" || sshPublicKey == "" {
+		var errStatement string
+		if err == nil {
+			errStatement = "Database instance password and ssh key cannot be empty"
+			err = fmt.Errorf("empty DB instance credentials")
+		} else {
+			errStatement = "An error occured while fetching the DB Instance Secrets"
+		}
+		log.Error(err, errStatement)
+		return r.requeueOnErr(err)
+	}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_PASSWORD:       dbPassword,
+		common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+	}
+
+	databaseAdapter := &controller_adapters.Database{Database: *database}
+	// change it to clone request
+	generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
+	log.Info("Clone Request Body", generatedReq)
+	if err != nil {
+		log.Error(err, "Could not generate cloning request, requeuing.")
+		return r.requeueOnErr(err)
+	}
+
+	// send the clone request
+	taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
+	if err != nil {
+		log.Error(err, "An error occurred while trying to provision the database")
+		return r.requeueOnErr(err)
+	}
+
+	log.Info("Setting Clone database CR status to provisioning and id as " + taskResponse.EntityId)
+	database.Status.Status = common.DATABASE_CR_STATUS_PROVISIONING
+	database.Status.Id = taskResponse.EntityId
+
+	// Updating the type in the Database Status based on the input
+	database.Status.Type = database.Spec.Instance.Type
+	database.Status.ProvisionType = database.Spec.ProvisionType
+
+	err = r.Status().Update(ctx, database)
+	if err != nil {
+		log.Error(err, "Failed to update clone database status")
+		return r.requeueOnErr(err)
+	}
+
 	return r.doNotRequeue()
 }
 
 func (p *ProvisionDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.Database,
 	ndbClient *ndb_client.NDBClient, r *DatabaseReconciler, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("in ProvisionDB implementation")
+	log.Info("in Provision operation")
 	dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
 	if err != nil || dbPassword == "" || sshPublicKey == "" {
 		var errStatement string
@@ -237,7 +286,7 @@ func (p *ProvisionDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.
 
 	databaseAdapter := &controller_adapters.Database{Database: *database}
 	generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
-	// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
+	log.Info("Provision Request Body", generatedReq)
 	if err != nil {
 		log.Error(err, "Could not generate provisioning request, requeuing.")
 		return r.requeueOnErr(err)
