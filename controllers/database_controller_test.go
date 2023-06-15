@@ -81,6 +81,7 @@ var _ = Describe("Database controller", func() {
 					Namespace: namespaceName,
 				},
 				Spec: ndbv1alpha1.DatabaseSpec{
+					ProvisionType: "new",
 					NDB: ndbv1alpha1.NDB{
 						ClusterId:        "abcd",
 						CredentialSecret: ndbSecretName,

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
@@ -198,7 +199,7 @@ type DatabaseCreator interface {
 }
 
 func GetDatabaseCreator(database *ndbv1alpha1.Database) DatabaseCreator {
-	if database.Spec.IsClone {
+	if strings.Compare(database.Spec.ProvisionType, "clone") == 0 {
 		return &CloneDB{}
 	} else {
 		return &ProvisionDB{}
@@ -255,6 +256,7 @@ func (p *ProvisionDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.
 
 	// Updating the type in the Database Status based on the input
 	database.Status.Type = database.Spec.Instance.Type
+	database.Status.ProvisionType = database.Spec.ProvisionType
 
 	err = r.Status().Update(ctx, database)
 	if err != nil {

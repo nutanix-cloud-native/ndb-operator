@@ -48,6 +48,67 @@ spec:
           spec:
             description: DatabaseSpec defines the desired state of Database
             properties:
+              clone:
+                description: Clone instance specific details
+                properties:
+                  clusterId:
+                    type: string
+                  credentialSecret:
+                    type: string
+                  dbPassword:
+                    type: string
+                  name:
+                    type: string
+                  profiles:
+                    properties:
+                      compute:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                      dbParam:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                      network:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                      software:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                    type: object
+                  snapshotId:
+                    type: string
+                  timeMachineId:
+                    type: string
+                  timezone:
+                    type: string
+                  vmName:
+                    type: string
+                required:
+                - clusterId
+                - credentialSecret
+                - dbPassword
+                - name
+                - profiles
+                - snapshotId
+                - timeMachineId
+                - timezone
+                - vmName
+                type: object
               databaseInstance:
                 description: Database instance specific details
                 properties:
@@ -122,8 +183,6 @@ spec:
                 - databaseNames
                 - type
                 type: object
-              isClone:
-                type: boolean
               ndb:
                 description: Details of the NDB installation
                 properties:
@@ -144,9 +203,15 @@ spec:
                 - credentialSecret
                 - server
                 type: object
+              provisionType:
+                default: new
+                enum:
+                - new
+                - clone
+                type: string
             required:
+            - clone
             - databaseInstance
-            - isClone
             - ndb
             type: object
           status:
@@ -158,6 +223,8 @@ spec:
                 type: string
               ipAddress:
                 type: string
+              provisionType:
+                type: string
               status:
                 type: string
               type:
@@ -166,6 +233,7 @@ spec:
             - dbServerId
             - id
             - ipAddress
+            - provisionType
             - status
             - type
             type: object
