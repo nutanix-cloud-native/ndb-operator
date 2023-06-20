@@ -135,6 +135,10 @@ spec:
       dbParam:
         name: ""
         id: ""
+      # Only applicable for MSSQL databases
+      dbParamInstance:
+        name: ""
+        id: ""
 
 ```
 
