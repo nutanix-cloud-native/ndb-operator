@@ -28,10 +28,15 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 )
 
-const mock_username = "username"
-const mock_password = "password"
-
-const NONE_SLA_ID = "NONE_SLA_ID"
+const (
+	MSSQL_TEST_SW_PROFILE_NAME  = "mssqlSW"
+	MSSQL_TEST_SW_PROFILE_ID    = "id-mssql-sw-1"
+	MSSQL_TEST_DBI_PROFILE_NAME = "mssqlDBI"
+	MSSQL_TEST_DBI_PROFILE_ID   = "id-mssql-dbi-1"
+	mock_username               = "username"
+	mock_password               = "password"
+	NONE_SLA_ID                 = "NONE_SLA_ID"
+)
 
 var MockResponsesMap = map[string]interface{}{
 	"GET /slas": []ndb_api.SLAResponse{
@@ -222,8 +227,8 @@ var MockResponsesMap = map[string]interface{}{
 			SystemProfile:   true,
 		},
 		{
-			Id:              "id-mssql-sw-1",
-			Name:            "mssqlSW",
+			Id:              MSSQL_TEST_SW_PROFILE_ID,
+			Name:            MSSQL_TEST_SW_PROFILE_NAME,
 			Type:            common.PROFILE_TYPE_SOFTWARE,
 			EngineType:      common.DATABASE_ENGINE_TYPE_MSSQL,
 			LatestVersionId: "mssql-id-1",
@@ -252,9 +257,9 @@ var MockResponsesMap = map[string]interface{}{
 			SystemProfile:   true,
 		},
 		{
-			Id:              "id-mssql-dbi-1",
-			Name:            "mssqlDBI",
-			Type:            common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE,
+			Id:              MSSQL_TEST_DBI_PROFILE_ID,
+			Name:            MSSQL_TEST_DBI_PROFILE_NAME,
+			Type:            common.PROFILE_TYPE_DATABASE_PARAMETER,
 			EngineType:      common.DATABASE_ENGINE_TYPE_MSSQL,
 			LatestVersionId: "v-id-10",
 			Topology:        common.TOPOLOGY_INSTANCE,

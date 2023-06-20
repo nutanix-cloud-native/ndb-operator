@@ -131,6 +131,18 @@ func GetProfileResolvers(d v1alpha1.Database) ndb_api.ProfileResolvers {
 
 }
 
+func createTestProfilesForMSSQL(Database *v1alpha1.Database) {
+	softwareProfile := v1alpha1.Profile{}
+	softwareProfile.Id = MSSQL_TEST_SW_PROFILE_ID
+	softwareProfile.Name = MSSQL_TEST_SW_PROFILE_NAME
+	Database.Spec.Instance.Profiles.Software = softwareProfile
+
+	dbInstanceProfile := v1alpha1.Profile{}
+	dbInstanceProfile.Id = MSSQL_TEST_DBI_PROFILE_ID
+	dbInstanceProfile.Name = MSSQL_TEST_DBI_PROFILE_NAME
+	Database.Spec.Instance.Profiles.DbParamInstance = dbInstanceProfile
+}
+
 func TestProfiles(t *testing.T) {
 
 	//Set
@@ -140,11 +152,10 @@ func TestProfiles(t *testing.T) {
 	Database := v1alpha1.Database{}
 	Instance := v1alpha1.Instance{}
 	Database.Spec.Instance = Instance
+
 	//Test
-	dbTypes := []string{"postgres", "mysql", "mongodb", "mssql"}
+	dbTypes := []string{common.DATABASE_TYPE_POSTGRES, common.DATABASE_TYPE_MYSQL, common.DATABASE_TYPE_MONGODB, common.DATABASE_TYPE_MSSQL}
 	for _, dbType := range dbTypes {
-		Instance.Type = dbType
-		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
 
 		//Assert
 		profileTypes := []string{
@@ -152,14 +163,25 @@ func TestProfiles(t *testing.T) {
 			common.PROFILE_TYPE_SOFTWARE,
 			common.PROFILE_TYPE_NETWORK,
 			common.PROFILE_TYPE_DATABASE_PARAMETER,
-			common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE,
 		}
+		// Create required profile for close sourced engine
+		if dbType == common.DATABASE_TYPE_MSSQL {
+			profileTypes = append(profileTypes, common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE)
+			createTestProfilesForMSSQL(&Database)
+		}
+		Instance.Type = dbType
+		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
+
+		t.Log(Database)
+		t.Log(profileTypes)
+
 		for _, profileType := range profileTypes {
 			profile := profileMap[profileType]
 			//Assert that no profileType is empty
 			if profile == (ndb_api.ProfileResponse{}) {
 				t.Errorf("Empty profile type %s for dbType %s", profileType, dbType)
 			}
+			t.Log(profile.EngineType)
 			//Assert that profile EngineType matches the database engine or the generic type
 			if profile.EngineType != ndb_api.GetDatabaseEngineName(dbType) && profile.EngineType != common.DATABASE_ENGINE_TYPE_GENERIC {
 				t.Errorf("Profile engine type %s for dbType %s does not match", profile.EngineType, dbType)
@@ -182,7 +204,7 @@ func TestGetProfilesFailsWhenSoftwareProfileNotProvidedForClosedSourceDBs(t *tes
 	Instance.Profiles.Software = softwareProfile
 
 	//Test
-	dbTypes := []string{"oracle", "sqlserver"}
+	dbTypes := []string{common.DATABASE_TYPE_ORACLE, common.DATABASE_TYPE_MSSQL}
 	for _, dbType := range dbTypes {
 		Instance.Type = dbType
 		_, err := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
@@ -205,7 +227,7 @@ func TestGetProfilesGetsSmallProfile_IfNoComputeProfileInfoProvided(t *testing.T
 
 	Database.Spec.Instance = Instance
 	//Test
-	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	dbTypes := []string{common.DATABASE_TYPE_POSTGRES, common.DATABASE_TYPE_MYSQL, common.DATABASE_TYPE_MONGODB}
 	for _, dbType := range dbTypes {
 		Instance.Type = dbType
 		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
@@ -231,7 +253,7 @@ func TestGetProfilesSoftwareProfileNotReadyState(t *testing.T) {
 	Database.Spec.Instance = Instance
 
 	//Test
-	dbTypes := []string{"postgres"}
+	dbTypes := []string{common.DATABASE_TYPE_POSTGRES}
 	for _, dbType := range dbTypes {
 		Instance.Type = dbType
 		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
@@ -273,7 +295,7 @@ func TestGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
 	Instance := v1alpha1.Instance{}
 	Database.Spec.Instance = Instance
 	//Test
-	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	dbTypes := []string{common.DATABASE_TYPE_POSTGRES, common.DATABASE_TYPE_MYSQL, common.DATABASE_TYPE_MONGODB}
 	for _, dbType := range dbTypes {
 		Instance.Type = dbType
 		_, err := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
@@ -292,7 +314,7 @@ func profilesListGenerator() []ndb_api.ProfileResponse {
 		Id:              "DEFAULT_OOB_SMALL_COMPUTE",
 		Name:            "DEFAULT_OOB_SMALL_COMPUTE",
 		Type:            "Compute",
-		EngineType:      "Generic",
+		EngineType:      common.DATABASE_ENGINE_TYPE_GENERIC,
 		LatestVersionId: "cp-vid-",
 		Topology:        "test topology",
 		SystemProfile:   true,
@@ -303,7 +325,7 @@ func profilesListGenerator() []ndb_api.ProfileResponse {
 		Id:              "cp-id-1",
 		Name:            "Compute_Profile_1",
 		Type:            "Compute",
-		EngineType:      "Generic",
+		EngineType:      common.DATABASE_ENGINE_TYPE_GENERIC,
 		LatestVersionId: "cp-vid-1",
 		Topology:        "test topology",
 		SystemProfile:   false,
@@ -314,7 +336,7 @@ func profilesListGenerator() []ndb_api.ProfileResponse {
 		Id:              "cp-id-2",
 		Name:            "small",
 		Type:            "Compute",
-		EngineType:      "Generic",
+		EngineType:      common.DATABASE_ENGINE_TYPE_GENERIC,
 		LatestVersionId: "cp-vid-2",
 		Topology:        "test topology",
 		SystemProfile:   true,
@@ -325,7 +347,7 @@ func profilesListGenerator() []ndb_api.ProfileResponse {
 		Id:              "sw-id-5",
 		Name:            "Software_Profile_5",
 		Type:            "Software",
-		EngineType:      "oracle",
+		EngineType:      common.DATABASE_ENGINE_TYPE_ORACLE,
 		LatestVersionId: "sw-vid-5",
 		Topology:        "single",
 		SystemProfile:   true,
@@ -336,7 +358,7 @@ func profilesListGenerator() []ndb_api.ProfileResponse {
 		Id:              "sw-id-1",
 		Name:            "Software_Profile_1",
 		Type:            "Software",
-		EngineType:      "postgres",
+		EngineType:      common.DATABASE_ENGINE_TYPE_POSTGRES,
 		LatestVersionId: "sw-vid-1",
 		Topology:        "single",
 		SystemProfile:   true,
@@ -347,7 +369,7 @@ func profilesListGenerator() []ndb_api.ProfileResponse {
 		Id:              "sw-id-2",
 		Name:            "Software_Profile_Not_READY",
 		Type:            "Software",
-		EngineType:      "postgres",
+		EngineType:      common.DATABASE_ENGINE_TYPE_POSTGRES,
 		LatestVersionId: "sw-vid-2",
 		Topology:        "single",
 		SystemProfile:   false,
@@ -358,7 +380,7 @@ func profilesListGenerator() []ndb_api.ProfileResponse {
 		Id:              "nw-id-1",
 		Name:            "Network_Profile_1",
 		Type:            "Network",
-		EngineType:      "postgres",
+		EngineType:      common.DATABASE_ENGINE_TYPE_POSTGRES,
 		LatestVersionId: "nw-vid-1",
 		Topology:        "test topology",
 		SystemProfile:   true,
@@ -369,7 +391,7 @@ func profilesListGenerator() []ndb_api.ProfileResponse {
 		Id:              "dbp-id-1",
 		Name:            "DBParam_Profile_1",
 		Type:            "DBParam",
-		EngineType:      "postgres",
+		EngineType:      common.DATABASE_ENGINE_TYPE_POSTGRES,
 		LatestVersionId: "dbp-vid-1",
 		Topology:        "test topology",
 		SystemProfile:   true,
@@ -409,7 +431,7 @@ func TestResolveOOBSoftwareProfile_ByEmptyNameAndID_ResolvesOk(t *testing.T) {
 	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 	pgSpecificProfiles := util.Filter(allProfiles, func(p ndb_api.ProfileResponse) bool {
-		return p.EngineType == "postgres"
+		return p.EngineType == common.DATABASE_ENGINE_TYPE_POSTGRES
 	})
 
 	inputProfile := GetProfileResolvers(v1alpha1.Database{})[common.PROFILE_TYPE_SOFTWARE]
@@ -427,7 +449,7 @@ func TestResolveSoftwareProfileByName_ByName_ResolvesOk(t *testing.T) {
 	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 	pgSpecificProfiles := util.Filter(allProfiles, func(p ndb_api.ProfileResponse) bool {
-		return p.EngineType == "postgres"
+		return p.EngineType == common.DATABASE_ENGINE_TYPE_POSTGRES
 	})
 
 	inputProfile := GetProfileResolvers(v1alpha1.Database{
@@ -454,7 +476,7 @@ func TestResolveSoftwareProfile_ByNameMismatch_throwsError(t *testing.T) {
 	ctx := context.Background()
 	allProfiles := profilesListGenerator()
 	pgSpecificProfiles := util.Filter(allProfiles, func(p ndb_api.ProfileResponse) bool {
-		return p.EngineType == "postgres"
+		return p.EngineType == common.DATABASE_ENGINE_TYPE_POSTGRES
 	})
 
 	inputProfile := GetProfileResolvers(v1alpha1.Database{
@@ -607,7 +629,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfNoneTMNotFound(t *testing.T) {
 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
-	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	dbTypes := []string{common.DATABASE_TYPE_POSTGRES, common.DATABASE_TYPE_MYSQL, common.DATABASE_TYPE_MONGODB}
 	for _, dbType := range dbTypes {
 		dbSpec := v1alpha1.DatabaseSpec{
 			NDB: v1alpha1.NDB{
@@ -772,6 +794,10 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 			Spec: dbSpec,
 		}}
 
+		if dbType == common.DATABASE_TYPE_MSSQL {
+			createTestProfilesForMSSQL(&db.Database)
+		}
+
 		request, _ := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, db, reqData)
 
 		//Assert
@@ -863,7 +889,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfDBPasswordIsEmpty(t *testing.T
 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
-	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	dbTypes := []string{common.DATABASE_TYPE_POSTGRES, common.DATABASE_TYPE_MYSQL, common.DATABASE_TYPE_MONGODB}
 	for _, dbType := range dbTypes {
 		dbSpec := v1alpha1.DatabaseSpec{
 			NDB: v1alpha1.NDB{
@@ -962,7 +988,7 @@ func TestGenerateProvisioningRequestReturnsErrorIfSSHKeyIsEmpty(t *testing.T) {
 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
 
 	//Test
-	dbTypes := []string{"postgres", "mysql", "mongodb"}
+	dbTypes := []string{common.DATABASE_TYPE_POSTGRES, common.DATABASE_TYPE_MYSQL, common.DATABASE_TYPE_MONGODB}
 	for _, dbType := range dbTypes {
 		dbSpec := v1alpha1.DatabaseSpec{
 			NDB: v1alpha1.NDB{
