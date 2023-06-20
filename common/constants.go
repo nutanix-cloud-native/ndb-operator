@@ -16,6 +16,7 @@ limitations under the License.
 
 package common
 
+// Constants are defined in lexographical order
 const (
 	DATABASE_CR_STATUS_DELETING     = "DELETING"
 	DATABASE_CR_STATUS_EMPTY        = ""
@@ -23,22 +24,23 @@ const (
 	DATABASE_CR_STATUS_PROVISIONING = "PROVISIONING"
 
 	DATABASE_DEFAULT_PORT_MONGODB  = 27017
+	DATABASE_DEFAULT_PORT_MSSQL    = 1433
 	DATABASE_DEFAULT_PORT_MYSQL    = 3306
 	DATABASE_DEFAULT_PORT_POSTGRES = 5432
 
-	DATABASE_ENGINE_TYPE_GENERIC   = "Generic"
-	DATABASE_ENGINE_TYPE_MONGODB   = "mongodb_database"
-	DATABASE_ENGINE_TYPE_MYSQL     = "mysql_database"
-	DATABASE_ENGINE_TYPE_ORACLE    = "oracle_database"
-	DATABASE_ENGINE_TYPE_POSTGRES  = "postgres_database"
-	DATABASE_ENGINE_TYPE_SQLSERVER = "sqlserver_database"
+	DATABASE_ENGINE_TYPE_GENERIC  = "Generic"
+	DATABASE_ENGINE_TYPE_MONGODB  = "mongodb_database"
+	DATABASE_ENGINE_TYPE_MSSQL    = "sqlserver_database"
+	DATABASE_ENGINE_TYPE_MYSQL    = "mysql_database"
+	DATABASE_ENGINE_TYPE_ORACLE   = "oracle_database"
+	DATABASE_ENGINE_TYPE_POSTGRES = "postgres_database"
 
-	DATABASE_TYPE_GENERIC   = "generic"
-	DATABASE_TYPE_MONGODB   = "mongodb"
-	DATABASE_TYPE_MYSQL     = "mysql"
-	DATABASE_TYPE_ORACLE    = "oracle"
-	DATABASE_TYPE_POSTGRES  = "postgres"
-	DATABASE_TYPE_SQLSERVER = "sqlserver"
+	DATABASE_TYPE_GENERIC  = "generic"
+	DATABASE_TYPE_MONGODB  = "mongodb"
+	DATABASE_TYPE_MSSQL    = "mssql"
+	DATABASE_TYPE_MYSQL    = "mysql"
+	DATABASE_TYPE_ORACLE   = "oracle"
+	DATABASE_TYPE_POSTGRES = "postgres"
 
 	FINALIZER_DATABASE_INSTANCE = "ndb.nutanix.com/finalizerdatabaseinstance"
 	FINALIZER_DATABASE_SERVER   = "ndb.nutanix.com/finalizerdatabaseserver"
@@ -49,12 +51,15 @@ const (
 
 	PROFILE_DEFAULT_OOB_SMALL_COMPUTE = "DEFAULT_OOB_SMALL_COMPUTE"
 
+	PROFILE_MAP_PARAM = "profileMap"
+
 	PROFILE_STATUS_READY = "READY"
 
-	PROFILE_TYPE_COMPUTE            = "Compute"
-	PROFILE_TYPE_DATABASE_PARAMETER = "Database_Parameter"
-	PROFILE_TYPE_NETWORK            = "Network"
-	PROFILE_TYPE_SOFTWARE           = "Software"
+	PROFILE_TYPE_COMPUTE                     = "Compute"
+	PROFILE_TYPE_DATABASE_PARAMETER          = "Database_Parameter"
+	PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE = "Database_Parameter_Instance"
+	PROFILE_TYPE_NETWORK                     = "Network"
+	PROFILE_TYPE_SOFTWARE                    = "Software"
 
 	PROPERTY_NAME_VM_IP = "vm_ip"
 
