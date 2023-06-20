@@ -28,6 +28,8 @@ func GetDatabaseEngineName(dbType string) string {
 		return common.DATABASE_ENGINE_TYPE_MYSQL
 	case common.DATABASE_TYPE_MONGODB:
 		return common.DATABASE_ENGINE_TYPE_MONGODB
+	case common.DATABASE_TYPE_MSSQL:
+		return common.DATABASE_ENGINE_TYPE_MSSQL
 	default:
 		return ""
 	}
@@ -41,6 +43,8 @@ func GetDatabasePortByType(dbType string) int32 {
 		return common.DATABASE_DEFAULT_PORT_MONGODB
 	case common.DATABASE_TYPE_MYSQL:
 		return common.DATABASE_DEFAULT_PORT_MYSQL
+	case common.DATABASE_TYPE_MSSQL:
+		return common.DATABASE_DEFAULT_PORT_MSSQL
 	default:
 		return -1
 	}

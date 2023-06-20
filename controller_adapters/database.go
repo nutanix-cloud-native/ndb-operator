@@ -56,12 +56,6 @@ func (d *Database) GetNDBClusterId() string {
 	return d.Spec.NDB.ClusterId
 }
 
-func (d *Database) GetDBInstanceActionArguments() []ndb_api.ActionArgument {
-	dbTypeActionArgs, _ := GetActionArgumentsByDatabaseType(d.GetDBInstanceType())
-	// TODO: Handle error
-	return dbTypeActionArgs.Get(d.Spec)
-}
-
 func (d *Database) GetProfileResolvers() ndb_api.ProfileResolvers {
 	profileResolvers := make(ndb_api.ProfileResolvers)
 
@@ -79,6 +73,10 @@ func (d *Database) GetProfileResolvers() ndb_api.ProfileResolvers {
 	}
 	profileResolvers[common.PROFILE_TYPE_DATABASE_PARAMETER] = &Profile{
 		Profile:     d.Spec.Instance.Profiles.DbParam,
+		ProfileType: common.PROFILE_TYPE_DATABASE_PARAMETER,
+	}
+	profileResolvers[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE] = &Profile{
+		Profile:     d.Spec.Instance.Profiles.DbParamInstance,
 		ProfileType: common.PROFILE_TYPE_DATABASE_PARAMETER,
 	}
 

@@ -35,7 +35,6 @@ type DatabaseInterface interface {
 	GetDBInstanceTimeZone() string
 	GetDBInstanceSize() int
 	GetNDBClusterId() string
-	GetDBInstanceActionArguments() []ActionArgument
 	GetProfileResolvers() ProfileResolvers
 	GetTMDetails() (string, string, string)
 	GetTMSchedule() (Schedule, error)
