@@ -9,6 +9,7 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 )
 
+// Test constants
 const (
 	TEST_PASSWORD = "testPassword"
 	TEST_SSHKEY   = "testSSHKey"
