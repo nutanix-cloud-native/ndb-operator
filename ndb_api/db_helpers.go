@@ -150,6 +150,7 @@ func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClien
 		DatabaseDescription:      "Clone provisioned by ndb-operator: " + database.GetDBInstanceName(),
 		CreateDbServer:           true,
 		Clustered:                false,
+		NxClusterId:              reqData[common.NDB_PARAM_NX_CLUSTER_ID].(string),
 		DBServerId:               "",
 		DBServerClusterId:        "",
 		DBServerLogicalClusterId: "",

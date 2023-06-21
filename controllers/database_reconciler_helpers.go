@@ -231,31 +231,32 @@ func (p *CloneDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.Data
 		common.NDB_PARAM_TIME_MACHINE_ID: database.Spec.Clone.TimeMachineId,
 		common.NDB_PARAM_SNAPSHOT_ID:     database.Spec.Clone.SnapshotId,
 		common.NDB_PARAM_DB_PASSWORD:     database.Spec.Clone.DBPassword,
+		common.NDB_PARAM_NX_CLUSTER_ID:   database.Spec.Clone.ClusterId,
 	}
 
 	databaseAdapter := &controller_adapters.Database{Database: *database}
 	// change it to clone request
 	generatedReq, err := ndb_api.GenerateCloningRequest(ctx, ndbClient, databaseAdapter, reqData)
-	log.Info("Clone Request Body", generatedReq)
+	log.Info("Clone Request Body", "request body", generatedReq)
 	if err != nil {
 		log.Error(err, "Could not generate cloning request, requeuing.")
 		return r.requeueOnErr(err)
 	}
 
-	// send the clone request
-	taskResponse, err := ndb_api.CloneDatabase(ctx, ndbClient, generatedReq)
-	if err != nil {
-		log.Error(err, "An error occurred while trying to provision the database")
-		return r.requeueOnErr(err)
-	}
+	// // send the clone request
+	// taskResponse, err := ndb_api.CloneDatabase(ctx, ndbClient, generatedReq)
+	// if err != nil {
+	// 	log.Error(err, "An error occurred while trying to provision the database")
+	// 	return r.requeueOnErr(err)
+	// }
 
-	log.Info("Setting Clone database CR status to provisioning and id as " + taskResponse.EntityId)
-	database.Status.Status = common.DATABASE_CR_STATUS_PROVISIONING
-	database.Status.Id = taskResponse.EntityId
+	// log.Info("Setting Clone database CR status to provisioning and id as " + taskResponse.EntityId)
+	// database.Status.Status = common.DATABASE_CR_STATUS_PROVISIONING
+	// database.Status.Id = taskResponse.EntityId
 
-	// Updating the type in the Database Status based on the input
-	database.Status.Type = database.Spec.Instance.Type
-	database.Status.ProvisionType = database.Spec.ProvisionType
+	// // Updating the type in the Database Status based on the input
+	// database.Status.Type = database.Spec.Instance.Type
+	// database.Status.ProvisionType = database.Spec.ProvisionType
 
 	err = r.Status().Update(ctx, database)
 	if err != nil {
@@ -291,7 +292,7 @@ func (p *ProvisionDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.
 
 	databaseAdapter := &controller_adapters.Database{Database: *database}
 	generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
-	log.Info("Provision Request Body", generatedReq)
+	log.Info("Provision Request Body", "request body", generatedReq)
 	if err != nil {
 		log.Error(err, "Could not generate provisioning request, requeuing.")
 		return r.requeueOnErr(err)
