@@ -40,11 +40,15 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 	}
 
 	// Fetch the required profiles for the database
+	// Fetch the required profiles for the database
 	profilesMap, err := ResolveProfiles(ctx, ndb_client, database.GetDBInstanceType(), database.GetProfileResolvers())
 	if err != nil {
 		log.Error(err, "Error occurred while getting required profiles", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+		log.Error(err, "Error occurred while getting required profiles", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
 		return
 	}
+	// Required for dbParameterProfileIdInstance in MSSQL action args
+	reqData[common.PROFILE_MAP_PARAM] = profilesMap
 	// Required for dbParameterProfileIdInstance in MSSQL action args
 	reqData[common.PROFILE_MAP_PARAM] = profilesMap
 
@@ -54,6 +58,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		log.Error(err, "Error occurred while validating reqData", "reqData", reqData)
 		return
 	}
+
 	// Creating a provisioning request based on the database type
 	requestBody = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(database.GetDBInstanceType()),
@@ -98,6 +103,9 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 	}
 	// Appending request body based on database type
 	appender, err := GetDbProvRequestAppender(database.GetDBInstanceType())
+	requestBody = appender.appendRequest(requestBody, database, reqData)
+	// Appending request body based on database type
+	appender, err = GetDbProvRequestAppender(database.GetDBInstanceType())
 	requestBody = appender.appendRequest(requestBody, database, reqData)
 
 	log.Info("Database Provisioning", "requestBody", requestBody)
@@ -219,53 +227,6 @@ type DatabaseCloneRequest struct {
 	DbParameterProfileId     string           `json:"dbParameterProfileId"`
 	NewDbServerTimeZone      string           `json:"newDbServerTimeZone"`
 }
-
-func validateReqData(ctx context.Context, databaseInstanceType string, reqData map[string]interface{}) (err error) {
-	log := ctrllog.FromContext(ctx)
-	dbPassword, ok := reqData[common.NDB_PARAM_PASSWORD].(string)
-	// Type Assertion for dbPassword
-	if !ok || dbPassword == "" {
-		err = errors.New("invalid database password")
-		var errStatement string
-		if !ok {
-			errStatement = "Type assertion failed for database password. Expected a string value"
-		} else {
-			errStatement = "Empty database password"
-		}
-		log.Error(err, errStatement)
-		return
-	}
-
-	// Type Assertion for SSHKey
-	if databaseInstanceType != common.DATABASE_TYPE_MSSQL {
-		SSHPublicKey, ok := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
-		if !ok || SSHPublicKey == "" {
-			err = errors.New("invalid ssh public key")
-			var errStatement string
-			if !ok {
-				errStatement = "Type assertion failed for SSHPublicKey. Expected a string value"
-			} else {
-				errStatement = "Empty SSHPublicKey"
-			}
-			log.Error(err, errStatement)
-			return
-		}
-	}
-	return
-}
-
-// Appends request based on database type
-type DBProvisionRequestAppender interface {
-	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest
-}
-
-type MSSQLProvisionRequestAppender struct{}
-
-type MongoDbProvisionRequestAppender struct{}
-
-type PostgresProvisionRequestAppender struct{}
-
-type MySqlProvisionRequestAppender struct{}
 
 func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
 	req.DatabaseName = string(database.GetDBInstanceDatabaseNames())
@@ -451,6 +412,53 @@ func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 	req.ActionArguments = append(req.ActionArguments, actionArgs...)
 	return req
 }
+
+func validateReqData(ctx context.Context, databaseInstanceType string, reqData map[string]interface{}) (err error) {
+	log := ctrllog.FromContext(ctx)
+	dbPassword, ok := reqData[common.NDB_PARAM_PASSWORD].(string)
+	// Type Assertion for dbPassword
+	if !ok || dbPassword == "" {
+		err = errors.New("invalid database password")
+		var errStatement string
+		if !ok {
+			errStatement = "Type assertion failed for database password. Expected a string value"
+		} else {
+			errStatement = "Empty database password"
+		}
+		log.Error(err, errStatement)
+		return
+	}
+
+	// Type Assertion for SSHKey
+	if databaseInstanceType != common.DATABASE_TYPE_MSSQL {
+		SSHPublicKey, ok := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+		if !ok || SSHPublicKey == "" {
+			err = errors.New("invalid ssh public key")
+			var errStatement string
+			if !ok {
+				errStatement = "Type assertion failed for SSHPublicKey. Expected a string value"
+			} else {
+				errStatement = "Empty SSHPublicKey"
+			}
+			log.Error(err, errStatement)
+			return
+		}
+	}
+	return
+}
+
+// Appends request based on database type
+type DBProvisionRequestAppender interface {
+	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest
+}
+
+type MSSQLProvisionRequestAppender struct{}
+
+type MongoDbProvisionRequestAppender struct{}
+
+type PostgresProvisionRequestAppender struct{}
+
+type MySqlProvisionRequestAppender struct{}
 
 // Get specific implementation of the DBProvisionRequestAppender interface based on the provided databaseType
 func GetDbProvRequestAppender(databaseType string) (requestAppender DBProvisionRequestAppender, err error) {

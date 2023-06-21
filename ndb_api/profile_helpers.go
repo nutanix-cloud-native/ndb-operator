@@ -63,7 +63,7 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 
 	// Software Profile
 	// validation of software profile for closed-source db engines
-	isClosedSourceEngine := (databaseType == common.DATABASE_TYPE_ORACLE) || (databaseType == common.DATABASE_TYPE_SQLSERVER)
+	isClosedSourceEngine := (databaseType == common.DATABASE_TYPE_ORACLE) || (databaseType == common.DATABASE_TYPE_MSSQL)
 	if isClosedSourceEngine {
 		if softwareProfileResolver.GetId() == "" && softwareProfileResolver.GetName() == "" {
 			log.Error(errors.New("software profile not provided"), "Provide software profile info", "dbType", databaseType)
@@ -92,12 +92,14 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 	}
 
 	// DB Param Instance Profile
-	dbParamInstance, err := dbParamInstanceProfileResolver.Resolve(ctx, dbEngineSpecific, DbParamOOBProfileResolver)
+	dbParamInstance, err := dbParamInstanceProfileResolver.Resolve(ctx, dbEngineSpecific, DbParamInstanceOOBProfileResolver)
 	if err != nil {
 		// Database Parameter Instance profile is required only for sql server
-		if databaseType == common.DATABASE_TYPE_SQLSERVER {
+		if databaseType == common.DATABASE_TYPE_MSSQL {
 			log.Error(err, "Db Param Instance Profile could not be resolved", "Input Profile", dbParamInstanceProfileResolver)
 			return nil, err
+		} else {
+			err = nil
 		}
 	}
 
@@ -131,5 +133,6 @@ var DbParamOOBProfileResolver = func(p ProfileResponse) bool {
 }
 
 var DbParamInstanceOOBProfileResolver = func(p ProfileResponse) bool {
+	// The DB Instance profile has the topology type as "instance"
 	return p.SystemProfile && p.Type == common.PROFILE_TYPE_DATABASE_PARAMETER && p.Topology == common.TOPOLOGY_INSTANCE
 }
