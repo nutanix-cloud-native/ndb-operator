@@ -46,3 +46,28 @@ type DatabaseDeprovisionRequest struct {
 	DeleteTimeMachine    bool `json:"deleteTimeMachine"`
 	DeleteLogicalCluster bool `json:"deleteLogicalCluster"`
 }
+
+type DatabaseCloneRequest struct {
+	Name                     string           `json:"name"`
+	DatabaseDescription      string           `json:"databaseDescription"`
+	CreateDbServer           bool             `json:"createDbserver"`
+	Clustered                bool             `json:"clustered"`
+	NxClusterId              string           `json:"nxClusterId"`
+	SSHPublicKey             string           `json:"sshPublicKey"`
+	DBServerId               string           `json:"dbserverId"`
+	DBServerClusterId        string           `json:"dbserverClusterId"`
+	DBServerLogicalClusterId string           `json:"dbserverLogicalClusterId"`
+	TimeMachineId            string           `json:"timeMachineId"`
+	SnapshotId               string           `json:"snapshotId"`
+	UserPitrTimestamp        string           `json:"userPitrTimestamp"`
+	TimeZone                 string           `json:"timezone"`
+	LatestSnapshot           bool             `json:"latestSnapshot"`
+	NodeCount                int              `json:"nodeCount"`
+	Nodes                    []Node           `json:"nodes"`
+	ActionArguments          []ActionArgument `json:"actionArguments"`
+	VmPassword               string           `json:"vmPassword"`
+	ComputeProfileId         string           `json:"computeProfileId"`
+	NetworkProfileId         string           `json:"networkProfileId"`
+	DbParameterProfileId     string           `json:"dbParameterProfileId"`
+	NewDbServerTimeZone      string           `json:"newDbServerTimeZone"`
+}

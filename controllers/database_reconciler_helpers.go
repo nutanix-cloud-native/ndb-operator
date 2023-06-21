@@ -225,19 +225,23 @@ func (p *CloneDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.Data
 	}
 
 	reqData := map[string]interface{}{
-		common.NDB_PARAM_PASSWORD:       dbPassword,
-		common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+		common.NDB_PARAM_PASSWORD:        dbPassword,
+		common.NDB_PARAM_SSH_PUBLIC_KEY:  sshPublicKey,
+		common.NDB_PARAM_TIME_MACHINE_ID: database.Spec.Clone.TimeMachineId,
+		common.NDB_PARAM_SNAPSHOT_ID:     database.Spec.Clone.SnapshotId,
+		common.NDB_PARAM_DB_PASSWORD:     database.Spec.Clone.DBPassword,
+		common.NDB_PARAM_NX_CLUSTER_ID:   database.Spec.Clone.ClusterId,
 	}
 
 	databaseAdapter := &controller_adapters.Database{Database: *database}
-	generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
+	generatedReq, err := ndb_api.GenerateCloningRequest(ctx, ndbClient, databaseAdapter, reqData)
 	log.Info("Clone Request Body", "request body", generatedReq)
 	if err != nil {
 		log.Error(err, "Could not generate provisioning request, requeuing.")
 		return r.requeueOnErr(err)
 	}
 
-	taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
+	taskResponse, err := ndb_api.CloneDatabase(ctx, ndbClient, generatedReq)
 	if err != nil {
 		log.Error(err, "An error occurred while trying to provision the database")
 		return r.requeueOnErr(err)

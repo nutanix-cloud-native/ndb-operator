@@ -105,6 +105,82 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 	return
 }
 
+// This function generates and returns a request for provisioning a database (and a dbserver vm) on NDB
+// The database provisioned has a NONE time machine SLA attached to it, and uses the default OOB profiles
+func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClient, database DatabaseInterface, reqData map[string]interface{}) (requestBody *DatabaseCloneRequest, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered ndb_api.GenerateCloningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+
+	// Fetch the required profiles for the database
+	profilesMap, err := ResolveProfiles(ctx, ndb_client, database.GetDBInstanceType(), database.GetProfileResolvers())
+	if err != nil {
+		log.Error(err, "Error occurred while getting required profiles", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+		return
+	}
+	// Required for dbParameterProfileIdInstance in MSSQL action args
+	reqData[common.PROFILE_MAP_PARAM] = profilesMap
+
+	// cloned db will use same software profile as the source db
+	delete(reqData, common.PROFILE_TYPE_SOFTWARE)
+
+	// Validate request data
+	err = validateReqData(ctx, database.GetDBInstanceType(), reqData)
+	if err != nil {
+		log.Error(err, "Error occurred while validating reqData", "reqData", reqData)
+		return
+	}
+	// Creating a provisioning request based on the database type
+	requestBody = &DatabaseCloneRequest{
+		Name:                     database.GetDBInstanceName(),
+		DatabaseDescription:      "Clone provisioned by ndb-operator: " + database.GetDBInstanceName(),
+		CreateDbServer:           true,
+		Clustered:                false,
+		NxClusterId:              reqData[common.NDB_PARAM_NX_CLUSTER_ID].(string),
+		DBServerId:               "",
+		DBServerClusterId:        "",
+		DBServerLogicalClusterId: "",
+		TimeMachineId:            reqData[common.NDB_PARAM_TIME_MACHINE_ID].(string),
+		SnapshotId:               reqData[common.NDB_PARAM_SNAPSHOT_ID].(string),
+		UserPitrTimestamp:        "",
+		LatestSnapshot:           false,
+		NodeCount:                1,
+		Nodes: []Node{
+			{
+				Properties: make([]string, 0),
+				VmName:     database.GetDBInstanceName() + "_VM",
+			},
+		},
+		ActionArguments: []ActionArgument{
+			{
+				Name:  "dbserver_description",
+				Value: "dbserver for " + database.GetDBInstanceName(),
+			},
+			{
+				Name:  "db_password",
+				Value: reqData[common.NDB_PARAM_DB_PASSWORD].(string),
+			},
+			{
+				Name:  "database_size",
+				Value: strconv.Itoa(database.GetDBInstanceSize()),
+			},
+		},
+		VmPassword: "",
+
+		ComputeProfileId:     profilesMap[common.PROFILE_TYPE_COMPUTE].Id,
+		NetworkProfileId:     profilesMap[common.PROFILE_TYPE_NETWORK].Id,
+		DbParameterProfileId: profilesMap[common.PROFILE_TYPE_DATABASE_PARAMETER].Id,
+		NewDbServerTimeZone:  database.GetDBInstanceTimeZone(),
+	}
+
+	// // Appending request body based on database type
+	// appender, err := GetDbProvRequestAppender(database.GetDBInstanceType())
+	// requestBody = appender.appendRequest(requestBody, database, reqData)
+
+	log.Info("Database Cloning", "requestBody", requestBody)
+	log.Info("Returning from ndb_api.GenerateCloningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+	return
+}
+
 // Returns a request to delete a database instance
 func GenerateDeprovisionDatabaseRequest() (req *DatabaseDeprovisionRequest) {
 	req = &DatabaseDeprovisionRequest{

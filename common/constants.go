@@ -45,9 +45,14 @@ const (
 	FINALIZER_DATABASE_INSTANCE = "ndb.nutanix.com/finalizerdatabaseinstance"
 	FINALIZER_DATABASE_SERVER   = "ndb.nutanix.com/finalizerdatabaseserver"
 
-	NDB_PARAM_USERNAME       = "username"
-	NDB_PARAM_PASSWORD       = "password"
-	NDB_PARAM_SSH_PUBLIC_KEY = "ssh_public_key"
+	NDB_PARAM_DB_PASSWORD     = "dbPassword"
+	NDB_PARAM_PASSWORD        = "password" // password for NDB Server
+	NDB_PARAM_SNAPSHOT_ID     = "snapshotId"
+	NDB_PARAM_SSH_PUBLIC_KEY  = "ssh_public_key"
+	NDB_PARAM_TIME_MACHINE_ID = "timeMachineId"
+	NDB_PARAM_USERNAME        = "username"
+
+	NDB_PARAM_NX_CLUSTER_ID = "clusterId"
 
 	PROFILE_DEFAULT_OOB_SMALL_COMPUTE = "DEFAULT_OOB_SMALL_COMPUTE"
 
