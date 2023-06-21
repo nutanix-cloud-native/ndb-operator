@@ -26,7 +26,6 @@ const (
 
 	DATABASE_DEFAULT_PORT_MONGODB  = 27017
 	DATABASE_DEFAULT_PORT_MSSQL    = 1433
-	DATABASE_DEFAULT_PORT_MSSQL    = 1433
 	DATABASE_DEFAULT_PORT_MYSQL    = 3306
 	DATABASE_DEFAULT_PORT_POSTGRES = 5432
 
@@ -40,7 +39,6 @@ const (
 	DATABASE_TYPE_GENERIC  = "generic"
 	DATABASE_TYPE_MONGODB  = "mongodb"
 	DATABASE_TYPE_MSSQL    = "mssql"
-	DATABASE_TYPE_MSSQL    = "mssql"
 	DATABASE_TYPE_MYSQL    = "mysql"
 	DATABASE_TYPE_ORACLE   = "oracle"
 	DATABASE_TYPE_POSTGRES = "postgres"
@@ -48,18 +46,16 @@ const (
 	FINALIZER_DATABASE_INSTANCE = "ndb.nutanix.com/finalizerdatabaseinstance"
 	FINALIZER_DATABASE_SERVER   = "ndb.nutanix.com/finalizerdatabaseserver"
 
-	NDB_PARAM_USERNAME = "username"
-	// password for NDB Server
-	NDB_PARAM_PASSWORD        = "password"
+	NDB_PARAM_DB_PASSWORD     = "dbPassword"
+	NDB_PARAM_PASSWORD        = "password" // password for NDB Server
+	NDB_PARAM_SNAPSHOT_ID     = "snapshotId"
 	NDB_PARAM_SSH_PUBLIC_KEY  = "ssh_public_key"
 	NDB_PARAM_TIME_MACHINE_ID = "timeMachineId"
-	NDB_PARAM_SNAPSHOT_ID     = "snapshotId"
-	NDB_PARAM_DB_PASSWORD     = "dbPassword"
-	NDB_PARAM_NX_CLUSTER_ID   = "clusterId"
+	NDB_PARAM_USERNAME        = "username"
+
+	NDB_PARAM_NX_CLUSTER_ID = "clusterId"
 
 	PROFILE_DEFAULT_OOB_SMALL_COMPUTE = "DEFAULT_OOB_SMALL_COMPUTE"
-
-	PROFILE_MAP_PARAM = "profileMap"
 
 	PROFILE_MAP_PARAM = "profileMap"
 
@@ -67,7 +63,6 @@ const (
 
 	PROFILE_TYPE_COMPUTE                     = "Compute"
 	PROFILE_TYPE_DATABASE_PARAMETER          = "Database_Parameter"
-	PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE = "Database_Parameter_Instance"
 	PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE = "Database_Parameter_Instance"
 	PROFILE_TYPE_NETWORK                     = "Network"
 	PROFILE_TYPE_SOFTWARE                    = "Software"

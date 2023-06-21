@@ -29,8 +29,6 @@ func GetDatabaseEngineName(dbType string) string {
 	case common.DATABASE_TYPE_MONGODB:
 		return common.DATABASE_ENGINE_TYPE_MONGODB
 	case common.DATABASE_TYPE_MSSQL:
-		return common.DATABASE_ENGINE_TYPE_SQLSERVER
-	case common.DATABASE_TYPE_MSSQL:
 		return common.DATABASE_ENGINE_TYPE_MSSQL
 	default:
 		return ""
