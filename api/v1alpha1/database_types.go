@@ -27,8 +27,37 @@ import (
 
 // DatabaseSpec defines the desired state of Database
 type DatabaseSpec struct {
-	NDB      NDB      `json:"ndb"`
+	NDB NDB `json:"ndb"`
+	// +optional
+	// +kubebuilder:default:=new
+	// +kubebuilder:validation:Enum=new;clone
+	ProvisionType string `json:"provisionType"`
+	// +optional
 	Instance Instance `json:"databaseInstance"`
+	// +optional
+	Clone Clone `json:"clone"`
+}
+
+// Clone instance specific details
+type Clone struct {
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// +kubebuilder:validation:Required
+	ClusterId string `json:"clusterId"`
+	// +kubebuilder:validation:Required
+	CredentialSecret string `json:"credentialSecret"`
+	// +kubebuilder:validation:Required
+	TimeMachineId string `json:"timeMachineId"`
+	// +kubebuilder:validation:Required
+	SnapshotId string `json:"snapshotId"`
+	// +kubebuilder:validation:Required
+	TimeZone string `json:"timezone"`
+	// +kubebuilder:validation:Required
+	VmName string `json:"vmName"`
+	// +kubebuilder:validation:Required
+	DBPassword string `json:"dbPassword"`
+	// +kubebuilder:validation:Required
+	Profiles Profiles `json:"profiles"`
 }
 
 // DatabaseStatus defines the observed state of Database
@@ -38,6 +67,7 @@ type DatabaseStatus struct {
 	Status           string `json:"status"`
 	DatabaseServerId string `json:"dbServerId"`
 	Type             string `json:"type"`
+	ProvisionType    string `json:"provisionType"`
 }
 
 // Database is the Schema for the databases API
