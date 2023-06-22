@@ -32,3 +32,6 @@ spec:
       dbParam:
         name: ""
         id: ""
+      dbParamInstance:
+        name: ""
+        id: ""

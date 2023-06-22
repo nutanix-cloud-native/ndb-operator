@@ -86,6 +86,13 @@ spec:
                           name:
                             type: string
                         type: object
+                      dbParamInstance:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
                       network:
                         properties:
                           id:
