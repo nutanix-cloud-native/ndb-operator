@@ -97,7 +97,7 @@ var _ = Describe("Database controller", func() {
 					},
 				},
 			}
-
+			// fmt.Printf("Manav %v", util.ToString(database))
 			ndbSecret = &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      ndbSecretName,

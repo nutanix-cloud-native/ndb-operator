@@ -88,19 +88,22 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 	ndbClient := ndb_client.NewNDBClient(username, password, NDBInfo.Server, caCert, NDBInfo.SkipCertificateVerification)
 
-	// Examine DeletionTimestamp to determine if object is under deletion
-	if database.ObjectMeta.DeletionTimestamp.IsZero() {
-		// The object is not being deleted,
-		// if it does not have our finalizer then add the finalizer(s) and update the object.
-		if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
-			return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_INSTANCE, database)
+	// To be updated for clone case later, temporarily commented as the "size" validation is failing
+	if database.Spec.ProvisionType == "new" {
+		// Examine DeletionTimestamp to determine if object is under deletion
+		if database.ObjectMeta.DeletionTimestamp.IsZero() {
+			// The object is not being deleted,
+			// if it does not have our finalizer then add the finalizer(s) and update the object.
+			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
+				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_INSTANCE, database)
+			}
+			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
+				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_SERVER, database)
+			}
+		} else {
+			// The object is under deletion. Perform deletion based on the finalizers we've added.
+			return r.handleDelete(ctx, database, ndbClient)
 		}
-		if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
-			return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_SERVER, database)
-		}
-	} else {
-		// The object is under deletion. Perform deletion based on the finalizers we've added.
-		return r.handleDelete(ctx, database, ndbClient)
 	}
 
 	// To check and handle the case when the database ha been deleted/aborted externally (not through the operator).

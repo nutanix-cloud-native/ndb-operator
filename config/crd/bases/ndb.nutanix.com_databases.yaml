@@ -54,6 +54,8 @@ spec:
                   clusterId:
                     type: string
                   credentialSecret:
+                    description: Name of the secret holding the credentials for the
+                      database instance (password and ssh key)
                     type: string
                   dbPassword:
                     type: string
@@ -103,6 +105,14 @@ spec:
                     type: string
                   timezone:
                     type: string
+                  type:
+                    default: postgres
+                    enum:
+                    - mysql
+                    - postgres
+                    - mongodb
+                    - mssql
+                    type: string
                   vmName:
                     type: string
                 required:
@@ -114,6 +124,7 @@ spec:
                 - snapshotId
                 - timeMachineId
                 - timezone
+                - type
                 - vmName
                 type: object
               databaseInstance:

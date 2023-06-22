@@ -33,7 +33,7 @@ import (
 func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, databaseType string, profileResolvers ProfileResolvers) (profilesMap map[string]ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 
-	log.Info("Entered ndb_api.GetProfiles", "Input profiles", profileResolvers)
+	log.Info("Entered ndb_api.ResolveProfiles", "Input profiles", profileResolvers)
 
 	allProfiles, err := GetAllProfiles(ctx, ndb_client)
 
@@ -55,14 +55,17 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 	dbParamInstanceProfileResolver := profileResolvers[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE]
 
 	// Compute Profile
+	log.Info("Resolving compute profile...")
 	compute, err := computeProfileResolver.Resolve(ctx, activeProfiles, ComputeOOBProfileResolver)
 	if err != nil {
 		log.Error(err, "Compute Profile could not be resolved", "Input Profile", computeProfileResolver)
 		return nil, err
 	}
+	log.Info("Resolved compute profile...")
 
 	// Software Profile
 	// validation of software profile for closed-source db engines
+	log.Info("Resolving software profile...")
 	isClosedSourceEngine := (databaseType == common.DATABASE_TYPE_ORACLE) || (databaseType == common.DATABASE_TYPE_MSSQL)
 	if isClosedSourceEngine {
 		if softwareProfileResolver.GetId() == "" && softwareProfileResolver.GetName() == "" {
@@ -76,22 +79,28 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 		log.Error(err, "Software Profile could not be resolved or is not in READY state", "Input Profile", softwareProfileResolver)
 		return nil, err
 	}
+	log.Info("Resolved software profile...")
 
 	// Network Profile
+	log.Info("Resolving network profile...")
 	network, err := networkProfileResolver.Resolve(ctx, dbEngineSpecific, NetworkOOBProfileResolver)
 	if err != nil {
 		log.Error(err, "Network Profile could not be resolved", "Input Profile", networkProfileResolver)
 		return nil, err
 	}
+	log.Info("Resolved network profile...")
 
 	// DB Param Profile
+	log.Info("Resolving dbParam profile...")
 	dbParam, err := dbParamProfileResolver.Resolve(ctx, dbEngineSpecific, DbParamOOBProfileResolver)
 	if err != nil {
 		log.Error(err, "DbParam Profile could not be resolved", "Input Profile", dbParamProfileResolver)
 		return nil, err
 	}
+	log.Info("Resolved dbParam profile...")
 
 	// DB Param Instance Profile
+	log.Info("Resolving dbParamInstance profile...")
 	dbParamInstance, err := dbParamInstanceProfileResolver.Resolve(ctx, dbEngineSpecific, DbParamInstanceOOBProfileResolver)
 	if err != nil {
 		// Database Parameter Instance profile is required only for sql server
@@ -102,6 +111,7 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 			err = nil
 		}
 	}
+	log.Info("Resolved dbParamInstance profile...")
 
 	profilesMap = map[string]ProfileResponse{
 		common.PROFILE_TYPE_COMPUTE:                     compute,

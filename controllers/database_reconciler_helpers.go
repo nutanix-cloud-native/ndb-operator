@@ -211,7 +211,7 @@ func (p *CloneDB) CreateDatabase(ctx context.Context, database *ndbv1alpha1.Data
 	ndbClient *ndb_client.NDBClient, r *DatabaseReconciler, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("in Clone DB operation...")
-	dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
+	dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Clone.CredentialSecret, req.Namespace)
 	if err != nil || dbPassword == "" || sshPublicKey == "" {
 		var errStatement string
 		if err == nil {

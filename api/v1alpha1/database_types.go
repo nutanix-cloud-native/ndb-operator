@@ -45,6 +45,7 @@ type Clone struct {
 	// +kubebuilder:validation:Required
 	ClusterId string `json:"clusterId"`
 	// +kubebuilder:validation:Required
+	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
 	// +kubebuilder:validation:Required
 	TimeMachineId string `json:"timeMachineId"`
@@ -58,6 +59,9 @@ type Clone struct {
 	DBPassword string `json:"dbPassword"`
 	// +kubebuilder:validation:Required
 	Profiles Profiles `json:"profiles"`
+	// +kubebuilder:validation:Enum=mysql;postgres;mongodb;mssql
+	// +kubebuilder:default:=postgres
+	Type string `json:"type"`
 }
 
 // DatabaseStatus defines the observed state of Database
