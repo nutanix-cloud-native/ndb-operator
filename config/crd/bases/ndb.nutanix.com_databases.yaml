@@ -86,6 +86,13 @@ spec:
                           name:
                             type: string
                         type: object
+                      dbParamInstance:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
                       network:
                         properties:
                           id:
@@ -115,6 +122,7 @@ spec:
                     - mysql
                     - postgres
                     - mongodb
+                    - mssql
                     type: string
                 required:
                 - credentialSecret
