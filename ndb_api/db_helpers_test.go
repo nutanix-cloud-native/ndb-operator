@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 )
 
 // Test constants
@@ -404,4 +405,49 @@ func TestMySqlProvisionRequestAppender(t *testing.T) {
 	// Verify that the mock method was called with the expected arguments
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 
+}
+
+func TestGenerateProvisioningRequest_WithoutValidTMDetails_ReturnsError(t *testing.T) {
+
+	tests := []struct {
+		slaName       string
+		tmSchedule    Schedule
+		tmScheduleErr error
+		expectedError error
+	}{
+		{
+			slaName:       "SLA 1",
+			tmSchedule:    Schedule{},
+			tmScheduleErr: errors.New("err_xyz"),
+			expectedError: errors.New("err_xyz"),
+		},
+		{
+			slaName:       "SLA-NOT-FOUND",
+			tmSchedule:    Schedule{},
+			tmScheduleErr: errors.New("err_xyz"),
+			expectedError: errors.New("SLA SLA-NOT-FOUND not found"),
+		},
+	}
+
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+	}
+
+	for _, tc := range tests {
+		mockDatabase := &MockDatabaseInterface{}
+		mockDatabase.On("GetDBInstanceName").Return("db_instance_name")
+		mockDatabase.On("GetDBInstanceType").Return("db_instance_type")
+		mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", tc.slaName)
+		mockDatabase.On("GetTMSchedule").Return(tc.tmSchedule, tc.tmScheduleErr)
+
+		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, mockDatabase, reqData)
+
+		if err != tc.expectedError && err.Error() != tc.expectedError.Error() {
+			t.Fatalf("expected: %v, got: %v", tc.expectedError, err)
+		}
+	}
 }

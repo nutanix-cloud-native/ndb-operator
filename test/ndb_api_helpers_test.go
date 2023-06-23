@@ -34,74 +34,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetNoneTimeMachineSLA(t *testing.T) {
-
-	//Set
-	server := GetServerTestHelper(t)
-	defer server.Close()
-	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-	//Test
-	sla, err := ndb_api.GetNoneTimeMachineSLA(context.Background(), ndb_client)
-
-	//Assert
-	if err != nil {
-		t.Errorf("Could not get NONE TM, error: %s", err)
-	}
-	if sla.Name != common.SLA_NAME_NONE {
-		t.Error("Could not fetch mock slas")
-	}
-}
-
-func TestGetNoneTimeMachineSLAReturnsErrorWhenNoneTimeMachineNotFound(t *testing.T) {
-
-	//Set
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !checkAuthTestHelper(r) {
-			t.Errorf("Invalid Authentication Credentials")
-		} else {
-			resp, _ := json.Marshal([]ndb_api.SLAResponse{
-				{
-					Id:                 "sla-1-id",
-					Name:               "SLA 1",
-					UniqueName:         "SLA 1 Unique Name",
-					Description:        "SLA 1 Description",
-					DailyRetention:     1,
-					WeeklyRetention:    2,
-					MonthlyRetention:   3,
-					QuarterlyRetention: 4,
-					YearlyRetention:    5,
-				},
-				{
-					Id:                 "sla-2-id",
-					Name:               "SLA 2",
-					UniqueName:         "SLA 2 Unique Name",
-					Description:        "SLA 2 Description",
-					DailyRetention:     1,
-					WeeklyRetention:    2,
-					MonthlyRetention:   3,
-					QuarterlyRetention: 4,
-					YearlyRetention:    5,
-				},
-			})
-			w.WriteHeader(http.StatusOK)
-			w.Write(resp)
-		}
-	}))
-	defer server.Close()
-	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-	//Test
-	sla, err := ndb_api.GetNoneTimeMachineSLA(context.Background(), ndb_client)
-	//Assert
-	if err == nil {
-		t.Errorf("GetNoneTimeMachineSLA should return an error when NONE time machine does not exists")
-	}
-	if sla != (ndb_api.SLAResponse{}) {
-		t.Error("GetNoneTimeMachineSLA should respond with an empty SLA when NONE time machine is not found")
-	}
-}
-
 func GetProfileResolvers(d v1alpha1.Database) ndb_api.ProfileResolvers {
 	profileResolvers := make(ndb_api.ProfileResolvers)
 
@@ -807,7 +739,6 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 		}
 
 		request, _ := ndb_api.GenerateProvisioningRequest(context.Background(), ndb_client, db, reqData)
-
 
 		//Assert
 		if request.DatabaseType != ndb_api.GetDatabaseEngineName(dbType) {

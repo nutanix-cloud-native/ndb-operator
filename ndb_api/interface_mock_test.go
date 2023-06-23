@@ -9,6 +9,11 @@ type MockDatabaseInterface struct {
 	mock.Mock
 }
 
+// MockProfileResolverInterface is a mock implementation of the ProfileResolver interface
+type MockProfileResolverInterface struct {
+	mock.Mock
+}
+
 // GetDBInstanceName is a mock implementation of the GetDBInstanceName method
 func (m *MockDatabaseInterface) GetDBInstanceName() string {
 	args := m.Called()
@@ -49,4 +54,16 @@ func (m *MockDatabaseInterface) GetNDBClusterId() string {
 func (m *MockDatabaseInterface) GetProfileResolvers() ProfileResolvers {
 	args := m.Called()
 	return args.Get(0).(ProfileResolvers)
+}
+
+// GetTMDetails is a mock implementation of the GetTMDetails method
+func (m *MockDatabaseInterface) GetTMDetails() (string, string, string) {
+	args := m.Called()
+	return args.String(0), args.String(1), args.String(2)
+}
+
+// GetTMDetails is a mock implementation of the GetTMDetails method
+func (m *MockDatabaseInterface) GetTMSchedule() (Schedule, error) {
+	args := m.Called()
+	return args.Get(0).(Schedule), args.Get(1).(error)
 }
