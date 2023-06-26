@@ -56,11 +56,11 @@ func (r *Database) ValidateCreate() error {
 	databaselog.Info("validate create", "name", r.Name)
 
 	if r.Spec.NDB == (NDB{}) {
-		return field.Invalid(field.NewPath("ndb"), r.Spec.NDB, "NDB field must not be null")
+		return field.Invalid(field.NewPath("spec").Child("ndb"), r.Spec.NDB, "NDB field must not be null")
 	}
 
 	if r.Spec.Instance.CredentialSecret == "" {
-		return field.Invalid(field.NewPath("Instance"), r.Spec.NDB, "CredentialSecret field must not be null")
+		return field.Invalid(field.NewPath("spc").Child("instance"), r.Spec.NDB, "CredentialSecret field must not be null")
 	}
 	return nil
 
