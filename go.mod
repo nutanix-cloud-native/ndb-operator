@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.21.0

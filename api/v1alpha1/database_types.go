@@ -94,7 +94,6 @@ type Instance struct {
 	// +kubebuilder:validation:MinItems:=1
 	// Name of the database to be provisiond in the database instance
 	DatabaseNames []string `json:"databaseNames"`
-	// +kubebuilder:validation:Required
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
 	// +kubebuilder:validation:Minimum:=10
