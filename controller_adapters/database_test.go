@@ -25,6 +25,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Tests the GetTMSchedule() function against the following:
+// 1. All inputs are valid, no error is returned
+// 2. DailySnapshotTime has incorrect values for hour, returns an error
+// 3. DailySnapshotTime has incorrect values for minutes, returns an error
+// 4. DailySnapshotTime has incorrect values for seconds, returns an error
+// 5. DailySnapshotTime has incorrect values (all), returns an error
+// 6. DailySnapshotTime has incorrect format, returns an error
 func TestDatabase_GetTMSchedule(t *testing.T) {
 
 	tests := []struct {
@@ -34,7 +41,7 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name: "test1",
+			name: "All inputs are valid, no error is returned",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
@@ -55,12 +62,68 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "test2",
+			name: "DailySnapshotTime has incorrect values for hour, returns an error",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							TMInfo: v1alpha1.TimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "12-34-56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshots: "Jan"},
+							TMInfo: v1alpha1.TimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "xy-34-56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshots: "Jan"},
+						},
+					},
+				},
+			},
+			wantSchedule: ndb_api.Schedule{},
+			wantErr:      true,
+		},
+		{
+			name: "DailySnapshotTime has incorrect values for minutes, returns an error",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							TMInfo: v1alpha1.TimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "12:xy:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshots: "Jan"},
+						},
+					},
+				},
+			},
+			wantSchedule: ndb_api.Schedule{},
+			wantErr:      true,
+		},
+		{
+			name: "DailySnapshotTime has incorrect values for seconds, returns an error",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							TMInfo: v1alpha1.TimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "12:34:xy", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshots: "Jan"},
+						},
+					},
+				},
+			},
+			wantSchedule: ndb_api.Schedule{},
+			wantErr:      true,
+		},
+		{
+			name: "DailySnapshotTime has incorrect values (all), returns an error",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							TMInfo: v1alpha1.TimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "a:b:c", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshots: "Jan"},
+						},
+					},
+				},
+			},
+			wantSchedule: ndb_api.Schedule{},
+			wantErr:      true,
+		},
+		{
+			name: "DailySnapshotTime has incorrect format, returns an error",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							TMInfo: v1alpha1.TimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "1:2", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshots: "Jan"},
 						},
 					},
 				},
@@ -79,6 +142,102 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotSchedule, tt.wantSchedule) {
 				t.Errorf("Database.GetTMSchedule() = %v, want %v", gotSchedule, tt.wantSchedule)
+			}
+		})
+	}
+}
+
+// Tests the GetTMDetails() function against the following test cases:
+// 1. TM name, description and sla name are empty, returns default values
+// 2. TM name is non empty, returns default values for other empty fields
+// 3. TM description is non empty, returns default values for other empty fields
+// 4. SLA name is non empty, returns default values for other empty fields
+func TestDatabase_GetTMDetails(t *testing.T) {
+
+	tests := []struct {
+		name              string
+		database          Database
+		wantTmName        string
+		wantTmDescription string
+		wantSlaName       string
+	}{
+		{
+			name: "TM name, description and sla name are empty, returns default values",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							DatabaseInstanceName: "test-database",
+							TMInfo:               v1alpha1.TimeMachineInfo{Name: "", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshots: "Jan"},
+						},
+					},
+				},
+			},
+			wantTmName:        "test-database_TM",
+			wantTmDescription: "Time Machine for test-database",
+			wantSlaName:       "NONE",
+		},
+		{
+			name: "TM name is non empty, returns default values for other empty fields",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							DatabaseInstanceName: "test-database",
+							TMInfo:               v1alpha1.TimeMachineInfo{Name: "test-name", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshots: "Jan"},
+						},
+					},
+				},
+			},
+			wantTmName:        "test-name",
+			wantTmDescription: "Time Machine for test-database",
+			wantSlaName:       "NONE",
+		},
+		{
+			name: "TM description is non empty, returns default values for other empty fields",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							DatabaseInstanceName: "test-database",
+							TMInfo:               v1alpha1.TimeMachineInfo{Name: "", Description: "test-description", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshots: "Jan"},
+						},
+					},
+				},
+			},
+			wantTmName:        "test-database_TM",
+			wantTmDescription: "test-description",
+			wantSlaName:       "NONE",
+		},
+		{
+			name: "SLA name is non empty, returns default values for other empty fields",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							DatabaseInstanceName: "test-database",
+							TMInfo:               v1alpha1.TimeMachineInfo{Name: "", Description: "", SLAName: "test-sla", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshots: "Jan"},
+						},
+					},
+				},
+			},
+			wantTmName:        "test-database_TM",
+			wantTmDescription: "Time Machine for test-database",
+			wantSlaName:       "test-sla",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotTmName, gotTmDescription, gotSlaName := tt.database.GetTMDetails()
+			if gotTmName != tt.wantTmName {
+				t.Errorf("Database.GetTMDetails() gotTmName = %v, want %v", gotTmName, tt.wantTmName)
+			}
+			if gotTmDescription != tt.wantTmDescription {
+				t.Errorf("Database.GetTMDetails() gotTmDescription = %v, want %v", gotTmDescription, tt.wantTmDescription)
+			}
+			if gotSlaName != tt.wantSlaName {
+				t.Errorf("Database.GetTMDetails() gotSlaName = %v, want %v", gotSlaName, tt.wantSlaName)
 			}
 		})
 	}

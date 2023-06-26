@@ -108,6 +108,10 @@ func (d *Database) GetTMDetails() (tmName, tmDescription, slaName string) {
 func (d *Database) GetTMSchedule() (schedule ndb_api.Schedule, err error) {
 	tmInfo := d.Spec.Instance.TMInfo
 	hhmmssDaily := strings.Split(tmInfo.DailySnapshotTime, ":")
+	if len(hhmmssDaily) != 3 {
+		err = errors.New("invalid DailySnapshotTime, use the (24-hour) hh:mm:ss format")
+		return
+	}
 	hh, err := strconv.Atoi(hhmmssDaily[0])
 	if err != nil {
 		err = errors.Join(err, errors.New("error converting daily snapshot time (hh)"))
