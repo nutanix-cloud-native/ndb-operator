@@ -3,6 +3,13 @@ package ndb_api
 
 import "github.com/nutanix-cloud-native/ndb-operator/common"
 
+func getMockedResponseMap() map[string]interface{} {
+	return map[string]interface{}{
+		"GET /slas":     getMockSLAResponses(),
+		"GET /profiles": getMockProfileResponses(),
+	}
+}
+
 func getMockSLAResponses() []SLAResponse {
 	return []SLAResponse{
 		{

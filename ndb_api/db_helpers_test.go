@@ -410,20 +410,34 @@ func TestMySqlProvisionRequestAppender(t *testing.T) {
 
 }
 
+// Test the error scenarios in GenerateProvisioningRequest function with different TM details
+// 1. SLA is found, but error while getting/generating the TM schedule
+// 2. SLA not found, no error in getting the TM schedule
+// 3. SLA not found and error in getting the TM schedule
 func TestGenerateProvisioningRequest_WithoutValidTMDetails_ReturnsError(t *testing.T) {
 
+	// Set
 	tests := []struct {
 		slaName       string
 		tmSchedule    Schedule
 		tmScheduleErr error
 		expectedError error
 	}{
+		// SLA is found, but error while getting/generating the TM schedule
 		{
 			slaName:       "SLA 1",
 			tmSchedule:    Schedule{},
 			tmScheduleErr: errors.New("err_xyz"),
 			expectedError: errors.New("err_xyz"),
 		},
+		// SLA not found, no error in getting the TM schedule.
+		{
+			slaName:       "SLA-NOT-FOUND",
+			tmSchedule:    Schedule{},
+			tmScheduleErr: nil,
+			expectedError: errors.New("SLA SLA-NOT-FOUND not found"),
+		},
+		// SLA not found and error in getting the TM schedule
 		{
 			slaName:       "SLA-NOT-FOUND",
 			tmSchedule:    Schedule{},
@@ -447,15 +461,26 @@ func TestGenerateProvisioningRequest_WithoutValidTMDetails_ReturnsError(t *testi
 		mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", tc.slaName)
 		mockDatabase.On("GetTMSchedule").Return(tc.tmSchedule, tc.tmScheduleErr)
 
+		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, mockDatabase, reqData)
 
+		// Assert
 		if err != tc.expectedError && err.Error() != tc.expectedError.Error() {
 			t.Fatalf("expected: %v, got: %v", tc.expectedError, err)
 		}
 	}
 }
 
+// Test the error scenarios in GenerateProvisioningRequest function with different ProfileResolver errors
+// 1. Software Profile returns an error
+// 2. Compute Profile returns an error
+// 3. Network Profile returns an error
+// 4. DBParam Profile returns an error
+// 5. DBParamInstance Profile returns an error
+// Test cases are self explanatory.
 func TestGenerateProvisioningRequest_WithoutValidProfileResolvers_ReturnsError(t *testing.T) {
+
+	// Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
@@ -519,6 +544,9 @@ func TestGenerateProvisioningRequest_WithoutValidProfileResolvers_ReturnsError(t
 		dbParamInstance := getResolver(ProfileResponse{}, tc.dbParamInstanceError)
 
 		instanceType := tc.databaseType
+		// We're explicitly setting values on software profile (mock) because
+		// MSSQL (and other closed source engines) have a special check in
+		// ResolveProfiles function that looks for empty id and name in software profile.
 		if instanceType == common.DATABASE_TYPE_MSSQL {
 			software = &MockProfileResolverInterface{}
 			software.On("GetName").Return("test-mssql-software-profile-name")
@@ -550,15 +578,23 @@ func TestGenerateProvisioningRequest_WithoutValidProfileResolvers_ReturnsError(t
 		mockDatabase.On("GetTMSchedule").Return(Schedule{}, nil)
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
 
+		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, &mockDatabase, reqData)
 
+		// Assert
 		if err != tc.expectedError && err.Error() != tc.expectedError.Error() {
 			t.Fatalf("expected: %v, got: %v", tc.expectedError, err)
 		}
 	}
 }
 
+// Test the error scenarios in GenerateProvisioningRequest function with different reqData values
+// 1. Database with empty db password
+// 2. Non-MSSQL database with empty ssh key
+// 3. MSSQL database without ssh key
 func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
+
+	// Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
@@ -577,6 +613,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		expectedError error
 	}{
 		{
+			// Database with empty db password
 			databaseType: common.DATABASE_TYPE_POSTGRES,
 			reqData: map[string]interface{}{
 				common.NDB_PARAM_PASSWORD:       "",
@@ -585,6 +622,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 			expectedError: errors.New("invalid database password"),
 		},
 		{
+			//  Non-MSSQL database with empty ssh key
 			databaseType: common.DATABASE_TYPE_MYSQL,
 			reqData: map[string]interface{}{
 				common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
@@ -592,11 +630,11 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 			},
 			expectedError: errors.New("invalid ssh public key"),
 		},
-		{
+		{ // MSSQL database without ssh key
 			databaseType: common.DATABASE_TYPE_MSSQL,
 			reqData: map[string]interface{}{
 				common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
-				common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+				common.NDB_PARAM_SSH_PUBLIC_KEY: "",
 			},
 			expectedError: nil,
 		},
@@ -646,8 +684,10 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetDBInstanceSize").Return(TEST_INSTANCE_SIZE)
 		mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 
+		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, &mockDatabase, tc.reqData)
 
+		// Assert
 		if err != tc.expectedError && err.Error() != tc.expectedError.Error() {
 			t.Fatalf("expected: %v, got: %v", tc.expectedError, err)
 		}

@@ -25,17 +25,12 @@ import (
 	"testing"
 )
 
-const mock_username = "username"
-const mock_password = "password"
+const (
+	mock_username = "username"
+	mock_password = "password"
+	NONE_SLA_ID   = "NONE_SLA_ID"
+)
 
-const NONE_SLA_ID = "NONE_SLA_ID"
-
-func getMockedResponseMap() map[string]interface{} {
-	return map[string]interface{}{
-		"GET /slas":     getMockSLAResponses(),
-		"GET /profiles": getMockProfileResponses(),
-	}
-}
 func checkAuthTestHelper(r *http.Request) bool {
 	username, password, ok := r.BasicAuth()
 
@@ -57,22 +52,12 @@ func checkAuthTestHelper(r *http.Request) bool {
 
 func GetServerTestHelper(t *testing.T) *httptest.Server {
 	mockResponsesMap := getMockedResponseMap()
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !checkAuthTestHelper(r) {
-			t.Errorf("Invalid Authentication Credentials")
-		} else {
-			var response = mockResponsesMap[r.Method+" "+r.URL.Path]
-			resp, _ := json.Marshal(response)
-			w.WriteHeader(http.StatusOK)
-			w.Write(resp)
-		}
-	}))
+	return GetServerTestHelperWithResponseMap(t, mockResponsesMap)
 }
 
 // responseMap holds the responses that will be returned by this server.
 // The key is in the format [Method endpoint], ex - GET /slas, GET /profiles.
 func GetServerTestHelperWithResponseMap(t *testing.T, responseMap map[string]interface{}) *httptest.Server {
-
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !checkAuthTestHelper(r) {
 			t.Errorf("Invalid Authentication Credentials")

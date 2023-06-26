@@ -17,6 +17,7 @@ limitations under the License.
 package controller_adapters
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
@@ -109,17 +110,17 @@ func (d *Database) GetTMSchedule() (schedule ndb_api.Schedule, err error) {
 	hhmmssDaily := strings.Split(tmInfo.DailySnapshotTime, ":")
 	hh, err := strconv.Atoi(hhmmssDaily[0])
 	if err != nil {
-		// TODO: Handle error
+		err = errors.Join(err, errors.New("error converting daily snapshot time (hh)"))
 		return
 	}
 	mm, err := strconv.Atoi(hhmmssDaily[1])
 	if err != nil {
-		// TODO: Handle error
+		err = errors.Join(err, errors.New("error converting daily snapshot time (mm)"))
 		return
 	}
 	ss, err := strconv.Atoi(hhmmssDaily[2])
 	if err != nil {
-		// TODO: Handle error
+		err = errors.Join(err, errors.New("error converting daily snapshot time (ss)"))
 		return
 	}
 	schedule = ndb_api.Schedule{

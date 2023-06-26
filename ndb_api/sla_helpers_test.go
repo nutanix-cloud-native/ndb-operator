@@ -21,6 +21,7 @@ func TestGetSLAByName(t *testing.T) {
 		expectedSLAResponse SLAResponse
 		expectedError       error
 	}{
+		// SLA for a given name exists
 		{
 			slaName: "SLA 1",
 			responseMap: map[string]interface{}{
@@ -29,6 +30,7 @@ func TestGetSLAByName(t *testing.T) {
 			expectedSLAResponse: SLA_RESPONSES[0],
 			expectedError:       nil,
 		},
+		// SLA for a given name does not exist.
 		{
 			slaName: "SLA-NOT-PRESENT",
 			responseMap: map[string]interface{}{
@@ -37,6 +39,7 @@ func TestGetSLAByName(t *testing.T) {
 			expectedSLAResponse: SLAResponse{},
 			expectedError:       fmt.Errorf("SLA SLA-NOT-PRESENT not found"),
 		},
+		// Unable to fetch all SLAs to filter.
 		{
 			slaName: "SLA-X",
 			responseMap: map[string]interface{}{
