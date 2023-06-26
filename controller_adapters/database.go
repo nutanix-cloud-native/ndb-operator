@@ -127,6 +127,19 @@ func (d *Database) GetTMSchedule() (schedule ndb_api.Schedule, err error) {
 		err = errors.Join(err, errors.New("error converting daily snapshot time (ss)"))
 		return
 	}
+
+	var quarterlySnapshotStartMonth string
+	switch tmInfo.QuarterlySnapshots {
+	case "Jan":
+		quarterlySnapshotStartMonth = "JANUARY"
+	case "Feb":
+		quarterlySnapshotStartMonth = "FEBRUARY"
+	case "Mar":
+		quarterlySnapshotStartMonth = "MARCH"
+	default:
+		quarterlySnapshotStartMonth = ""
+	}
+
 	schedule = ndb_api.Schedule{
 		SnapshotTimeOfDay: ndb_api.SnapshotTimeOfDay{
 			Hours:   hh,
@@ -152,7 +165,7 @@ func (d *Database) GetTMSchedule() (schedule ndb_api.Schedule, err error) {
 
 		QuarterlySchedule: ndb_api.QuarterlySchedule{
 			Enabled:    true,
-			StartMonth: tmInfo.QuarterlySnapshots,
+			StartMonth: quarterlySnapshotStartMonth,
 			DayOfMonth: tmInfo.MonthlySnapshotDay,
 		},
 

@@ -56,7 +56,7 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 				ContinuousSchedule: ndb_api.ContinuousSchedule{Enabled: true, LogBackupInterval: 30, SnapshotsPerDay: 1},
 				WeeklySchedule:     ndb_api.WeeklySchedule{Enabled: true, DayOfWeek: "FRIDAY"},
 				MonthlySchedule:    ndb_api.MonthlySchedule{Enabled: true, DayOfMonth: 15},
-				QuarterlySchedule:  ndb_api.QuarterlySchedule{Enabled: true, StartMonth: "Jan", DayOfMonth: 15},
+				QuarterlySchedule:  ndb_api.QuarterlySchedule{Enabled: true, StartMonth: "JANUARY", DayOfMonth: 15},
 				YearlySchedule:     ndb_api.YearlySchedule{Enabled: false, DayOfMonth: 31, Month: "DECEMBER"},
 			},
 			wantErr: false,
