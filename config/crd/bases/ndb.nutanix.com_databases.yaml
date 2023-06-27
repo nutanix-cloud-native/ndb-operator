@@ -142,7 +142,7 @@ spec:
                         type: integer
                       name:
                         type: string
-                      quarterlySnapshots:
+                      quarterlySnapshotMonth:
                         default: Jan
                         description: Start month for the quarterly snapshot Jan =>
                           Jan, Apr, Jul, Oct. Feb => Feb, May, Aug, Nov. Mar => Mar,

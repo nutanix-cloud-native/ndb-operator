@@ -160,7 +160,7 @@ type TimeMachineInfo struct {
 	// Jan => Jan, Apr, Jul, Oct.
 	// Feb => Feb, May, Aug, Nov.
 	// Mar => Mar, Jun, Sep, Dec.
-	QuarterlySnapshots string `json:"quarterlySnapshots"`
+	QuarterlySnapshotMonth string `json:"quarterlySnapshotMonth"`
 }
 
 type Profiles struct {

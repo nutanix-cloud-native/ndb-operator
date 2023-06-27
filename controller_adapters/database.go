@@ -122,7 +122,7 @@ func (d *Database) GetTMSchedule() (schedule ndb_api.Schedule, err error) {
 	hh, mm, ss := hhmmss.Hour(), hhmmss.Minute(), hhmmss.Second()
 
 	var quarterlySnapshotStartMonth string
-	switch tmInfo.QuarterlySnapshots {
+	switch tmInfo.QuarterlySnapshotMonth {
 	case "Jan":
 		quarterlySnapshotStartMonth = "JANUARY"
 	case "Feb":
