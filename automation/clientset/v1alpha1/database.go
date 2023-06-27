@@ -21,14 +21,14 @@ type DatabaseInterface interface {
 
 type DatabaseClient struct {
 	restClient rest.Interface
-	ns         string
+	namespace  string
 }
 
 func (c *DatabaseClient) List(opts metav1.ListOptions) (*ndbv1alpha1.DatabaseList, error) {
 	result := ndbv1alpha1.DatabaseList{}
 	err := c.restClient.
 		Get().
-		Namespace(c.ns).
+		Namespace(c.namespace).
 		Resource("Databases").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(context.TODO()).
@@ -41,7 +41,7 @@ func (c *DatabaseClient) Get(name string, opts metav1.GetOptions) (*ndbv1alpha1.
 	result := ndbv1alpha1.Database{}
 	err := c.restClient.
 		Get().
-		Namespace(c.ns).
+		Namespace(c.namespace).
 		Resource("Databases").
 		Name(name).
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -55,7 +55,7 @@ func (c *DatabaseClient) Create(database *ndbv1alpha1.Database) (*ndbv1alpha1.Da
 	result := ndbv1alpha1.Database{}
 	err := c.restClient.
 		Post().
-		Namespace(c.ns).
+		Namespace(c.namespace).
 		Resource("Databases").
 		Body(database).
 		Do(context.TODO()).
@@ -68,7 +68,7 @@ func (c *DatabaseClient) Update(database *ndbv1alpha1.Database) (*ndbv1alpha1.Da
 	result := ndbv1alpha1.Database{}
 	err := c.restClient.
 		Put().
-		Namespace(c.ns).
+		Namespace(c.namespace).
 		Resource("Databases").
 		Name(database.Name).
 		Body(database).
@@ -81,7 +81,7 @@ func (c *DatabaseClient) Update(database *ndbv1alpha1.Database) (*ndbv1alpha1.Da
 func (c *DatabaseClient) Delete(name string, opts *metav1.DeleteOptions) error {
 	return c.restClient.
 		Delete().
-		Namespace(c.ns).
+		Namespace(c.namespace).
 		Resource("Databases").
 		Name(name).
 		VersionedParams(opts, scheme.ParameterCodec).
@@ -93,7 +93,7 @@ func (c *DatabaseClient) Watch(opts metav1.ListOptions) (watch.Interface, error)
 	opts.Watch = true
 	return c.restClient.
 		Get().
-		Namespace(c.ns).
+		Namespace(c.namespace).
 		Resource("Databases").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch(context.TODO())

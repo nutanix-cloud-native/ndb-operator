@@ -16,9 +16,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appSvc *corev1.Service, appPod *corev1.Pod, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+const namespace_default = "default"
 
-	ns := "default"
+func test_setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appSvc *corev1.Service, appPod *corev1.Pod, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+
+	ns := namespace_default
 	if database != nil && database.Namespace != "" {
 		ns = database.Namespace
 	}
@@ -120,9 +122,9 @@ func setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, a
 	return
 }
 
-func teardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appSvc *corev1.Service, appPod *corev1.Pod, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func test_teardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appSvc *corev1.Service, appPod *corev1.Pod, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 
-	ns := "default"
+	ns := namespace_default
 	if database != nil && database.Namespace != "" {
 		ns = database.Namespace
 	}

@@ -40,6 +40,6 @@ func (c *V1alpha1Client) Databases(namespace string) DatabaseInterface {
 	}
 	return &DatabaseClient{
 		restClient: c.restClient,
-		ns:         namespace,
+		namespace:  namespace,
 	}
 }

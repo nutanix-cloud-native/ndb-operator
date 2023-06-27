@@ -88,12 +88,32 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 		appPodPath:    "./files/pod-pg-si.yaml",
 		appSvcPath:    "./files/service-pg-si.yaml",
 	}
-	dbSecret := setupInfo.getDbSecret()
-	ndbSecret := setupInfo.getNdbSecret()
-	database := setupInfo.getDatabase()
-	appSvc := setupInfo.getAppService()
-	appPod := setupInfo.getAppPod()
-	err = setup(dbSecret, ndbSecret, database, appSvc, appPod, clientset, v1alpha1ClientSet, suite.T())
+	dbSecret, err := setupInfo.getDbSecret()
+	if err != nil {
+		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getDbSecret()", err)
+		suite.T().FailNow()
+	}
+	ndbSecret, err := setupInfo.getNdbSecret()
+	if err != nil {
+		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getNdbSecret()", err)
+		suite.T().FailNow()
+	}
+	database, err := setupInfo.getDatabase()
+	if err != nil {
+		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getDatabase()", err)
+		suite.T().FailNow()
+	}
+	appSvc, err := setupInfo.getAppService()
+	if err != nil {
+		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getAppService()", err)
+		suite.T().FailNow()
+	}
+	appPod, err := setupInfo.getAppPod()
+	if err != nil {
+		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getAppPod()", err)
+		suite.T().FailNow()
+	}
+	err = test_setup(dbSecret, ndbSecret, database, appSvc, appPod, clientset, v1alpha1ClientSet, suite.T())
 	if err != nil {
 		log.Printf("Error occurred: %s\n", err)
 		log.Println("Setup failed")
@@ -113,12 +133,32 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 
 func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 	setupInfo := suite.setupInfo
-	dbSecret := setupInfo.getDbSecret()
-	ndbSecret := setupInfo.getNdbSecret()
-	database := setupInfo.getDatabase()
-	appSvc := setupInfo.getAppService()
-	appPod := setupInfo.getAppPod()
-	err := teardown(dbSecret, ndbSecret, database, appSvc, appPod, suite.clientset, suite.v1alpha1ClientSet, suite.T())
+	dbSecret, err := setupInfo.getDbSecret()
+	if err != nil {
+		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getDbSecret()", err)
+		suite.T().FailNow()
+	}
+	ndbSecret, err := setupInfo.getNdbSecret()
+	if err != nil {
+		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getNdbSecret()", err)
+		suite.T().FailNow()
+	}
+	database, err := setupInfo.getDatabase()
+	if err != nil {
+		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getDatabase()", err)
+		suite.T().FailNow()
+	}
+	appSvc, err := setupInfo.getAppService()
+	if err != nil {
+		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getAppService()", err)
+		suite.T().FailNow()
+	}
+	appPod, err := setupInfo.getAppPod()
+	if err != nil {
+		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getAppPod()", err)
+		suite.T().FailNow()
+	}
+	err = test_teardown(dbSecret, ndbSecret, database, appSvc, appPod, suite.clientset, suite.v1alpha1ClientSet, suite.T())
 	if err != nil {
 		log.Printf("Error occurred: %s\n", err)
 		log.Println("teardown failed")
@@ -137,8 +177,12 @@ func (suite *PostgresqlSingleInstanceTestSuite) AfterTest(suiteName, testName st
 }
 
 func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
-	database := suite.setupInfo.getDatabase()
-	database, err := suite.v1alpha1ClientSet.Databases(database.Namespace).Get(database.Name, metav1.GetOptions{})
+	database, err := suite.setupInfo.getDatabase()
+	if err != nil {
+		log.Printf("Error occurred while executing %s, err: %v\n", "suite.setupInfo.getDatabase()", err)
+		suite.T().FailNow()
+	}
+	database, err = suite.v1alpha1ClientSet.Databases(database.Namespace).Get(database.Name, metav1.GetOptions{})
 	if err != nil {
 		log.Printf("error while fetching database CR: %s\n", err)
 		suite.T().FailNow()
