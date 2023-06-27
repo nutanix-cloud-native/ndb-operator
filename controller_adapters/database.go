@@ -18,8 +18,8 @@ package controller_adapters
 
 import (
 	"errors"
-	"strconv"
 	"strings"
+	"time"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -113,26 +113,13 @@ func (d *Database) GetTMDetails() (tmName, tmDescription, slaName string) {
 // Returns a schedule struct for the time machine.
 func (d *Database) GetTMSchedule() (schedule ndb_api.Schedule, err error) {
 	tmInfo := d.Spec.Instance.TMInfo
-	hhmmssDaily := strings.Split(tmInfo.DailySnapshotTime, ":")
-	if len(hhmmssDaily) != 3 {
-		err = errors.New("invalid DailySnapshotTime, use the (24-hour) hh:mm:ss format")
-		return
-	}
-	hh, err := strconv.Atoi(hhmmssDaily[0])
+
+	hhmmss, err := time.Parse(time.TimeOnly, tmInfo.DailySnapshotTime)
 	if err != nil {
-		err = errors.Join(err, errors.New("error converting daily snapshot time (hh)"))
+		err = errors.Join(err, errors.New("error converting daily snapshot time"))
 		return
 	}
-	mm, err := strconv.Atoi(hhmmssDaily[1])
-	if err != nil {
-		err = errors.Join(err, errors.New("error converting daily snapshot time (mm)"))
-		return
-	}
-	ss, err := strconv.Atoi(hhmmssDaily[2])
-	if err != nil {
-		err = errors.Join(err, errors.New("error converting daily snapshot time (ss)"))
-		return
-	}
+	hh, mm, ss := hhmmss.Hour(), hhmmss.Minute(), hhmmss.Second()
 
 	var quarterlySnapshotStartMonth string
 	switch tmInfo.QuarterlySnapshots {
