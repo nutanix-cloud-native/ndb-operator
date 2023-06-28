@@ -34,7 +34,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 
 	// Fetching the TM details
 	tmName, tmDescription, slaName := database.GetTMDetails()
-	// Fetching the NONE TM SLA
+	// Fetching the SLA for the TM by name
 	sla, err := GetSLAByName(ctx, ndb_client, slaName)
 	if err != nil {
 		log.Error(err, "Error occurred while getting TM SLA", "SLA Name", slaName)

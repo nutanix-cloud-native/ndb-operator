@@ -94,6 +94,12 @@ help: ## Display this help.
 
 ##@ Development
 
+## Explanation of the statement: sed -i.bak "s/'{emptytminfo}'/{}/g" config/crd/bases/*.yaml && rm config/crd/bases/*.bak
+## This is an open issue on operator-sdk: https://github.com/operator-framework/operator-sdk/issues/6346
+## TimeMachineInfo is an optional nested struct under spec section of the database CRD. However, it does not get an empty struct value '{}'
+## after running code-gen via `make manifests` in the database CRD yaml manifest. Hence we've added a marker -'{emptytminfo}' in the 
+## as the default value of an empty time machine info struct and we replace is with '{}' once manifests are made.
+## More info - https://github.com/operator-framework/operator-sdk/issues/6346#issuecomment-1482995285
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases

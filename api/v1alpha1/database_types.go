@@ -110,6 +110,10 @@ type Instance struct {
 	Type string `json:"type"`
 	// +optional
 	Profiles Profiles `json:"profiles"`
+	// TimeMachineInfo is an optional nested struct under spec section of the database CRD. However, it does not get an empty struct value '{}'
+	// if we set kubebuilder:default:={} and run `make manifests`. Hence we've added a marker -'{emptytminfo}' in the
+	// as the default value of an empty time machine info struct and we replace is with '{}' once manifests are made.
+	// For more info about how this is accomplished check the manifests target in Makefile.
 	// +optional
 	// +kubebuilder:default:="{emptytminfo}"
 	// Information related to time machine that is to be associated with this database
