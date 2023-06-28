@@ -18,6 +18,7 @@ package controller_adapters
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -129,8 +130,11 @@ func (d *Database) GetTMSchedule() (schedule ndb_api.Schedule, err error) {
 		quarterlySnapshotStartMonth = "FEBRUARY"
 	case "Mar":
 		quarterlySnapshotStartMonth = "MARCH"
+	case "":
+		quarterlySnapshotStartMonth = "JANUARY"
 	default:
-		quarterlySnapshotStartMonth = ""
+		err = fmt.Errorf("month %s not allowed for QuarterlySnapshotMonth", tmInfo.QuarterlySnapshotMonth)
+		return
 	}
 
 	schedule = ndb_api.Schedule{
