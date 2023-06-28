@@ -139,6 +139,14 @@ spec:
       dbParamInstance:
         name: ""
         id: ""
+    timeMachine:                        # Optional block, if removed the SLA defaults to NONE
+      sla : "NAME OF THE SLA"
+      dailySnapshotTime:   "Time for the daily snapshot (hh:mm:ss)"
+      snapshotsPerDay:     4            # Number of snapshots per day
+      logCatchUpFrequency: 90           # Frequency (in minutes)
+      weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
+      monthlySnapshotDay:  24           # Day of the month for monthly snapshot
+      quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
 
 ```
 
