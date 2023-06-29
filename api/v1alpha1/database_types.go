@@ -113,11 +113,11 @@ type Instance struct {
 	// +optional
 	// +kubebuilder:default:="{emptytminfo}"
 	// Information related to time machine that is to be associated with this database
-	TMInfo TimeMachineInfo `json:"timeMachine"`
+	TMInfo DBTimeMachineInfo `json:"timeMachine"`
 }
 
 // Time Machine details
-type TimeMachineInfo struct {
+type DBTimeMachineInfo struct {
 	// +optional
 	Name string `json:"name"`
 	// +optional
