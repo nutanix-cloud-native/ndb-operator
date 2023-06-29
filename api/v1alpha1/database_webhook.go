@@ -17,6 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"errors"
+	"strings"
+
+	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -51,18 +55,58 @@ func (r *Database) Default() {
 
 var _ webhook.Validator = &Database{}
 
+func validateDatabaseCreateNDBSpec(r *Database, allErrs field.ErrorList) field.ErrorList {
+	if r.Spec.NDB == (NDB{}) {
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec").Child("ndb"), r.Spec.NDB, "NDB field must not be null"))
+	}
+
+	err := util.IsValidUUID(r.Spec.NDB.ClusterId)
+
+	if err != nil {
+		databaselog.Error(err, "database validation error", "error", err)
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spec").Child("ndb").Child("clusterId"), r.Spec.NDB, "clusterId field must be a valid UUID"))
+	}
+
+	return allErrs
+}
+
+func CombineFieldErrors(fieldErrors field.ErrorList) error {
+
+	if len(fieldErrors) == 0 {
+		return nil
+	}
+
+	var errorStrings []string
+	for _, fe := range fieldErrors {
+		errorStrings = append(errorStrings, fe.Error())
+	}
+	return errors.New(strings.Join(errorStrings, "; "))
+}
+
+func validateDatabaseCreateNewDatabaseSpec(r *Database, allErrs field.ErrorList) field.ErrorList {
+	if err := util.IsValidUUID(r.Spec.NDB.ClusterId); err != nil {
+		databaselog.Error(err, "database validation error", "error", err)
+		allErrs = append(allErrs,
+			field.Invalid(field.NewPath("spc").Child("instance").Child("credentialSecret"), r.Spec.NDB, "CredentialSecret field must not be null"))
+	}
+
+	return allErrs
+}
+
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *Database) ValidateCreate() error {
-	databaselog.Info("validate create", "name", r.Name)
+	databaselog.Info("validate create database", "name", r.Name)
+	allErrs := field.ErrorList{}
 
-	if r.Spec.NDB == (NDB{}) {
-		return field.Invalid(field.NewPath("spec").Child("ndb"), r.Spec.NDB, "NDB field must not be null")
-	}
+	validateDatabaseCreateNDBSpec(r, allErrs)
 
-	if r.Spec.Instance.CredentialSecret == "" {
-		return field.Invalid(field.NewPath("spc").Child("instance"), r.Spec.NDB, "CredentialSecret field must not be null")
-	}
-	return nil
+	databaselog.Info("fix field errors from validateDatabaseCreateNDBSpec ", "allErrs", allErrs)
+	validateDatabaseCreateNewDatabaseSpec(r, allErrs)
+
+	databaselog.Info("fix field errors from validateDatabaseCreateNewDatabaseSpec", "allErrs", allErrs)
+	return CombineFieldErrors(allErrs)
 
 }
 
