@@ -17,9 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"errors"
-	"strings"
-
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -55,41 +52,38 @@ func (r *Database) Default() {
 
 var _ webhook.Validator = &Database{}
 
-func validateDatabaseCreateNDBSpec(r *Database, allErrs field.ErrorList) field.ErrorList {
+func validateDatabaseCreate_NDBSpec(r *Database, allErrs field.ErrorList) field.ErrorList {
+	databaselog.Info("validate validateDatabaseCreate_NDBSpec...")
 	if r.Spec.NDB == (NDB{}) {
-		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("spec").Child("ndb"), r.Spec.NDB, "NDB field must not be null"))
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("ndb"), r.Spec.NDB, "NDB field must not be null"))
 	}
 
-	err := util.IsValidUUID(r.Spec.NDB.ClusterId)
-
-	if err != nil {
-		databaselog.Error(err, "database validation error", "error", err)
-		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("spec").Child("ndb").Child("clusterId"), r.Spec.NDB, "clusterId field must be a valid UUID"))
+	if err := util.ValidateUUID(r.Spec.NDB.ClusterId); err != nil {
+		databaselog.Info("ClusterId Validation", "error", err)
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("ndb").Child("clusterId"), r.Spec.NDB.ClusterId, "ClusterId field must be a valid UUID"))
 	}
+
+	if r.Spec.NDB.CredentialSecret == "" {
+		databaselog.Info("CredentialSecret must not be empty", "Credential Secret", r.Spec.NDB.CredentialSecret)
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("ndb").Child("credentialSecret"), r.Spec.NDB.CredentialSecret, "CredentialSecret must not be empty"))
+	}
+
+	if err := util.ValidateURL(r.Spec.NDB.Server); err != nil {
+		databaselog.Info("server must be a valid URL", "Server URL", r.Spec.NDB.Server)
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("ndb").Child("server"), r.Spec.NDB.Server, "server must be a valid URL"))
+	}
+
+	databaselog.Info("allErrs", allErrs)
 
 	return allErrs
 }
 
-func CombineFieldErrors(fieldErrors field.ErrorList) error {
+func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList) field.ErrorList {
+	databaselog.Info("validate validateDatabaseCreate_NewDBSpec")
 
-	if len(fieldErrors) == 0 {
-		return nil
-	}
-
-	var errorStrings []string
-	for _, fe := range fieldErrors {
-		errorStrings = append(errorStrings, fe.Error())
-	}
-	return errors.New(strings.Join(errorStrings, "; "))
-}
-
-func validateDatabaseCreateNewDatabaseSpec(r *Database, allErrs field.ErrorList) field.ErrorList {
-	if err := util.IsValidUUID(r.Spec.NDB.ClusterId); err != nil {
-		databaselog.Error(err, "database validation error", "error", err)
-		allErrs = append(allErrs,
-			field.Invalid(field.NewPath("spc").Child("instance").Child("credentialSecret"), r.Spec.NDB, "CredentialSecret field must not be null"))
+	if r.Spec.NDB.CredentialSecret == "" {
+		databaselog.Info("credentialSecret must not be empty", "error", r.Spec.NDB.CredentialSecret)
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("instance").Child("credentialSecret"), r.Spec.NDB, "CredentialSecret must not be empty"))
 	}
 
 	return allErrs
@@ -98,16 +92,15 @@ func validateDatabaseCreateNewDatabaseSpec(r *Database, allErrs field.ErrorList)
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *Database) ValidateCreate() error {
 	databaselog.Info("validate create database", "name", r.Name)
-	allErrs := field.ErrorList{}
 
-	validateDatabaseCreateNDBSpec(r, allErrs)
+	ndbSpecErrors := validateDatabaseCreate_NDBSpec(r, field.ErrorList{})
+	dbSpecErrors := validateDatabaseCreate_NewDBSpec(r, field.ErrorList{})
 
-	databaselog.Info("fix field errors from validateDatabaseCreateNDBSpec ", "allErrs", allErrs)
-	validateDatabaseCreateNewDatabaseSpec(r, allErrs)
+	allErrs := append(ndbSpecErrors, dbSpecErrors...)
 
-	databaselog.Info("fix field errors from validateDatabaseCreateNewDatabaseSpec", "allErrs", allErrs)
-	return CombineFieldErrors(allErrs)
+	databaselog.Info("Errors returned from the webhook", "errors", allErrs)
 
+	return util.CombineFieldErrors(allErrs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type

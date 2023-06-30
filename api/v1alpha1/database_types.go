@@ -72,13 +72,10 @@ func init() {
 
 // Details of the NDB installation
 type NDB struct {
-	// +kubebuilder:validation:Required
 	ClusterId string `json:"clusterId"`
-	// +kubebuilder:validation:Required
 	// Name of the secret holding the credentials for NDB (username and password)
 	CredentialSecret string `json:"credentialSecret"`
-	// +kubebuilder:validation:Required
-	Server string `json:"server"`
+	Server           string `json:"server"`
 	// +kubebuilder:default:=false
 	// +optional
 	// Skip server's certificate and hostname verification
