@@ -141,7 +141,7 @@ spec:
         id: ""
     timeMachine:                        # Optional block, if removed the SLA defaults to NONE
       sla : "NAME OF THE SLA"
-      dailySnapshotTime:   "Time for the daily snapshot (hh:mm:ss)"
+      dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
       snapshotsPerDay:     4            # Number of snapshots per day
       logCatchUpFrequency: 90           # Frequency (in minutes)
       weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot

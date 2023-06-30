@@ -27,6 +27,15 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 )
 
+var (
+	MONTH_MAP = map[string]string{
+		"":    "JANUARY", // For default case when no input is provided
+		"Jan": "JANUARY",
+		"Feb": "FEBRUARY",
+		"Mar": "MARCH",
+	}
+)
+
 // Wrapper over api/v1alpha1.Database
 // required to provide implementation of the
 // DatabaseInterface defined in the package ndb_api
@@ -122,17 +131,8 @@ func (d *Database) GetTMSchedule() (schedule ndb_api.Schedule, err error) {
 	}
 	hh, mm, ss := hhmmss.Hour(), hhmmss.Minute(), hhmmss.Second()
 
-	var quarterlySnapshotStartMonth string
-	switch tmInfo.QuarterlySnapshotMonth {
-	case "Jan":
-		quarterlySnapshotStartMonth = "JANUARY"
-	case "Feb":
-		quarterlySnapshotStartMonth = "FEBRUARY"
-	case "Mar":
-		quarterlySnapshotStartMonth = "MARCH"
-	case "":
-		quarterlySnapshotStartMonth = "JANUARY"
-	default:
+	quarterlySnapshotStartMonth, ok := MONTH_MAP[tmInfo.QuarterlySnapshotMonth]
+	if !ok {
 		err = fmt.Errorf("month %s not allowed for QuarterlySnapshotMonth", tmInfo.QuarterlySnapshotMonth)
 		return
 	}
