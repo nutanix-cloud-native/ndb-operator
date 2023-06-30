@@ -16,6 +16,10 @@ limitations under the License.
 
 package common
 
+var DefaultDatabaseInstanceName = "database_instance_name"
+
+var DefaultDatabaseNames = []string{"database_one", "database_two", "database_three"}
+
 var AllowedDatabaseTypes = map[string]bool{
 	"mysql":    true,
 	"postgres": true,

@@ -56,19 +56,13 @@ spec:
                       database instance (password and ssh key)
                     type: string
                   databaseInstanceName:
-                    default: database_instance_name
-                    description: Name of the database instance
+                    description: 'Name of the database instance, default name: database_instance_name'
                     type: string
                   databaseNames:
-                    default:
-                    - database_one
-                    - database_two
-                    - database_three
                     description: Name of the database to be provisiond in the database
-                      instance
+                      instance default value {"database_one", "database_two", "database_three"}
                     items:
                       type: string
-                    minItems: 1
                     type: array
                   profiles:
                     properties:
@@ -109,20 +103,13 @@ spec:
                         type: object
                     type: object
                   size:
-                    default: 10
-                    description: Size of the database instance
-                    minimum: 10
+                    description: Size of the database instance, default 10
                     type: integer
                   timezone:
-                    default: UTC
+                    description: default UTC
                     type: string
                   type:
                     default: postgres
-                    enum:
-                    - mysql
-                    - postgres
-                    - mongodb
-                    - mssql
                     type: string
                 required:
                 - credentialSecret

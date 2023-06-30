@@ -84,21 +84,18 @@ type NDB struct {
 
 // Database instance specific details
 type Instance struct {
-	// +kubebuilder:default:=database_instance_name
-	// Name of the database instance
+	// Name of the database instance, default name: database_instance_name
 	DatabaseInstanceName string `json:"databaseInstanceName"`
-	// +kubebuilder:default:={"database_one", "database_two", "database_three"}
 	// Name of the database to be provisiond in the database instance
+	// default value {"database_one", "database_two", "database_three"}
 	DatabaseNames []string `json:"databaseNames"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
-	// +kubebuilder:validation:Minimum:=10
-	// +kubebuilder:default:=10
 	// +optional
-	// Size of the database instance
+	// Size of the database instance, default 10
 	Size int `json:"size"`
-	// +kubebuilder:default:=UTC
 	// +optional
+	// default UTC
 	TimeZone string `json:"timezone"`
 	// +kubebuilder:default:=postgres
 	Type string `json:"type"`

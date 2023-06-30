@@ -36,17 +36,46 @@ func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-
 //+kubebuilder:webhook:path=/mutate-ndb-nutanix-com-v1alpha1-database,mutating=true,failurePolicy=fail,sideEffects=None,groups=ndb.nutanix.com,resources=databases,verbs=create;update,versions=v1alpha1,name=mdatabase.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Defaulter = &Database{}
 
+func defaulterDatabaseCreate_NDBSpec(r *Database) {
+	if !r.Spec.NDB.SkipCertificateVerification {
+		r.Spec.NDB.SkipCertificateVerification = false
+	}
+}
+
+func defaulterDatabaseCreate_InstanceSpec(r *Database) {
+
+	if r.Spec.Instance.DatabaseInstanceName == "" {
+		r.Spec.Instance.DatabaseInstanceName = common.DefaultDatabaseInstanceName
+	}
+
+	if len(r.Spec.Instance.DatabaseNames) == 0 {
+		r.Spec.Instance.DatabaseNames = common.DefaultDatabaseNames
+	}
+
+	if r.Spec.Instance.Size == 0 {
+		r.Spec.Instance.Size = 10
+	}
+
+	if r.Spec.Instance.TimeZone == "" {
+		r.Spec.Instance.TimeZone = "UTC"
+	}
+
+}
+
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Database) Default() {
-	databaselog.Info("default", "name", r.Name)
 
-	// TODO(user): fill in your defaulting logic.
+	databaselog.Info("Entering Default...")
+
+	databaselog.Info("default", "name", r.Name)
+	defaulterDatabaseCreate_NDBSpec(r)
+	defaulterDatabaseCreate_InstanceSpec(r)
+
+	databaselog.Info("Entering Default...")
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
@@ -90,6 +119,10 @@ func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList, inst
 	if len(r.Spec.Instance.DatabaseNames) < 1 {
 		// databaselog.Info("databaseNames must not be empty", "error", r.Spec.Instance.databaseNames)
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseNames"), r.Spec.Instance.DatabaseNames, "At least one Database Name must specified"))
+	}
+
+	if r.Spec.Instance.Size == 0 || r.Spec.Instance.Size < 10 {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), r.Spec.Instance.Size, "Initial Database size must be 10 or more GBs"))
 	}
 
 	if r.Spec.Instance.CredentialSecret == "" {
