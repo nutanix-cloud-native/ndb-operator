@@ -81,9 +81,24 @@ func validateDatabaseCreate_NDBSpec(r *Database, allErrs field.ErrorList, ndbPat
 func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	databaselog.Info("Entering validateDatabaseCreate_NewDBSpec...")
 
-	if r.Spec.NDB.CredentialSecret == "" {
+	if r.Spec.Instance.DatabaseInstanceName == "" {
+		// databaselog.Info("databaseInstanceName must not be empty", "error", r.Spec.Instance.databaseInstanceName)
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), r.Spec.Instance.DatabaseInstanceName, "Database Instance Name must not be empty"))
+	}
+
+	if len(r.Spec.Instance.DatabaseNames) < 1 {
+		// databaselog.Info("databaseNames must not be empty", "error", r.Spec.Instance.databaseNames)
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseNames"), r.Spec.Instance.DatabaseNames, "At least one Database Name must specified"))
+	}
+
+	if r.Spec.Instance.CredentialSecret == "" {
 		// databaselog.Info("credentialSecret must not be empty", "error", r.Spec.NDB.CredentialSecret)
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.NDB, "CredentialSecret must not be empty"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.Instance.CredentialSecret, "CredentialSecret must not be empty"))
+	}
+
+	if r.Spec.Instance.Type == "" {
+		// databaselog.Info("type must not be empty", "error", r.Spec.NDB.Type)
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.CredentialSecret, "Type must not be empty"))
 	}
 
 	databaselog.Info("Exiting validateDatabaseCreate_NewDBSpec...")
