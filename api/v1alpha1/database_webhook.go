@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -52,60 +53,62 @@ func (r *Database) Default() {
 
 var _ webhook.Validator = &Database{}
 
-func validateDatabaseCreate_NDBSpec(r *Database, allErrs field.ErrorList) field.ErrorList {
-	databaselog.Info("validate validateDatabaseCreate_NDBSpec...")
+func validateDatabaseCreate_NDBSpec(r *Database, allErrs field.ErrorList, ndbPath *field.Path) field.ErrorList {
+	databaselog.Info("Entering validateDatabaseCreate_NDBSpec...")
 	if r.Spec.NDB == (NDB{}) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("ndb"), r.Spec.NDB, "NDB field must not be null"))
+		allErrs = append(allErrs, field.Invalid(ndbPath, r.Spec.NDB, "NDB spec must not be empty"))
 	}
 
 	if err := util.ValidateUUID(r.Spec.NDB.ClusterId); err != nil {
-		databaselog.Info("ClusterId Validation", "error", err)
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("ndb").Child("clusterId"), r.Spec.NDB.ClusterId, "ClusterId field must be a valid UUID"))
+		// databaselog.Info("ClusterId Validation", "error", err)
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("clusterId"), r.Spec.NDB.ClusterId, "ClusterId field must be a valid UUID"))
 	}
 
 	if r.Spec.NDB.CredentialSecret == "" {
-		databaselog.Info("CredentialSecret must not be empty", "Credential Secret", r.Spec.NDB.CredentialSecret)
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("ndb").Child("credentialSecret"), r.Spec.NDB.CredentialSecret, "CredentialSecret must not be empty"))
+		// databaselog.Info("CredentialSecret must not be empty", "Credential Secret", r.Spec.NDB.CredentialSecret)
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), r.Spec.NDB.CredentialSecret, "CredentialSecret must not be empty"))
 	}
 
 	if err := util.ValidateURL(r.Spec.NDB.Server); err != nil {
-		databaselog.Info("server must be a valid URL", "Server URL", r.Spec.NDB.Server)
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("ndb").Child("server"), r.Spec.NDB.Server, "server must be a valid URL"))
+		// databaselog.Info("server must be a valid URL", "Server URL", r.Spec.NDB.Server)
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("server"), r.Spec.NDB.Server, "123 Server must be a valid URL"))
 	}
 
-	databaselog.Info("allErrs", allErrs)
-
+	databaselog.Info("Exiting validateDatabaseCreate_NDBSpec...")
 	return allErrs
 }
 
-func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList) field.ErrorList {
-	databaselog.Info("validate validateDatabaseCreate_NewDBSpec")
+func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
+	databaselog.Info("Entering validateDatabaseCreate_NewDBSpec...")
 
 	if r.Spec.NDB.CredentialSecret == "" {
-		databaselog.Info("credentialSecret must not be empty", "error", r.Spec.NDB.CredentialSecret)
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("instance").Child("credentialSecret"), r.Spec.NDB, "CredentialSecret must not be empty"))
+		// databaselog.Info("credentialSecret must not be empty", "error", r.Spec.NDB.CredentialSecret)
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.NDB, "CredentialSecret must not be empty"))
 	}
 
+	databaselog.Info("Exiting validateDatabaseCreate_NewDBSpec...")
 	return allErrs
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *Database) ValidateCreate() error {
-	databaselog.Info("validate create database", "name", r.Name)
+	databaselog.Info("Entering ValidateCreate...")
 
-	ndbSpecErrors := validateDatabaseCreate_NDBSpec(r, field.ErrorList{})
-	dbSpecErrors := validateDatabaseCreate_NewDBSpec(r, field.ErrorList{})
+	ndbSpecErrors := validateDatabaseCreate_NDBSpec(r, field.ErrorList{}, field.NewPath("spec").Child("ndb"))
+	dbSpecErrors := validateDatabaseCreate_NewDBSpec(r, field.ErrorList{}, field.NewPath("spec").Child("instance"))
 
 	allErrs := append(ndbSpecErrors, dbSpecErrors...)
 
-	databaselog.Info("Errors returned from the webhook", "errors", allErrs)
+	combined_err := util.CombineFieldErrors(allErrs)
+	databaselog.Info("validate create database webhook response...", zap.String("combined_err", combined_err.Error()))
 
-	return util.CombineFieldErrors(allErrs)
+	databaselog.Info("Exiting ValidateCreate...")
+	return combined_err
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *Database) ValidateUpdate(old runtime.Object) error {
-	databaselog.Info("validate update", "name", r.Name)
+	databaselog.Info("validate update", zap.String("name", r.Name))
 
 	// TODO(user): fill in your validation logic upon object update.
 	return nil
@@ -113,7 +116,7 @@ func (r *Database) ValidateUpdate(old runtime.Object) error {
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
 func (r *Database) ValidateDelete() error {
-	databaselog.Info("validate delete", "name", r.Name)
+	databaselog.Info("validate delete", zap.String("name", r.Name))
 
 	// TODO(user): fill in your validation logic upon object deletion.
 	return nil
