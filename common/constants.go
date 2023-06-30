@@ -16,6 +16,13 @@ limitations under the License.
 
 package common
 
+var AllowedDatabaseTypes = map[string]bool{
+	"mysql":    true,
+	"postgres": true,
+	"mongodb":  true,
+	"mssql":    true,
+}
+
 // Constants are defined in lexographical order
 const (
 	DATABASE_CR_STATUS_DELETING     = "DELETING"

@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -96,7 +97,7 @@ func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList, inst
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.Instance.CredentialSecret, "CredentialSecret must not be empty"))
 	}
 
-	if r.Spec.Instance.Type == "" {
+	if _, isPresent := common.AllowedDatabaseTypes[r.Spec.Instance.Type]; !isPresent {
 		// databaselog.Info("type must not be empty", "error", r.Spec.NDB.Type)
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.CredentialSecret, "Type must not be empty"))
 	}
