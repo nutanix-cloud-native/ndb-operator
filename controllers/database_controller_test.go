@@ -93,6 +93,14 @@ var _ = Describe("Database controller", func() {
 						Size:                 10,
 						TimeZone:             "UTC",
 						Type:                 "postgres",
+						TMInfo: ndbv1alpha1.DBTimeMachineInfo{
+							QuarterlySnapshotMonth: "Jan",
+							SnapshotsPerDay:        4,
+							LogCatchUpFrequency:    90,
+							WeeklySnapshotDay:      "WEDNESDAY",
+							MonthlySnapshotDay:     24,
+							DailySnapshotTime:      "12:34:56",
+						},
 					},
 				},
 			}

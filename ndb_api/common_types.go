@@ -30,12 +30,55 @@ type DatabaseServer struct {
 }
 
 type TimeMachineInfo struct {
-	Name             string            `json:"name"`
-	Description      string            `json:"description"`
-	SlaId            string            `json:"slaId"`
-	Schedule         map[string]string `json:"schedule"`
-	Tags             []string          `json:"tags"`
-	AutoTuneLogDrive bool              `json:"autoTuneLogDrive"`
+	Name             string   `json:"name"`
+	Description      string   `json:"description"`
+	SlaId            string   `json:"slaId"`
+	Schedule         Schedule `json:"schedule"`
+	Tags             []string `json:"tags"`
+	AutoTuneLogDrive bool     `json:"autoTuneLogDrive"`
+}
+
+type Schedule struct {
+	SnapshotTimeOfDay  SnapshotTimeOfDay  `json:"snapshotTimeOfDay"`
+	ContinuousSchedule ContinuousSchedule `json:"continuousSchedule"`
+	WeeklySchedule     WeeklySchedule     `json:"weeklySchedule"`
+	MonthlySchedule    MonthlySchedule    `json:"monthlySchedule"`
+	QuarterlySchedule  QuarterlySchedule  `json:"quartelySchedule"`
+	YearlySchedule     YearlySchedule     `json:"yearlySchedule"`
+}
+
+type SnapshotTimeOfDay struct {
+	Hours   int `json:"hours"`
+	Minutes int `json:"minutes"`
+	Seconds int `json:"seconds"`
+}
+
+type ContinuousSchedule struct {
+	Enabled           bool `json:"enabled"`
+	LogBackupInterval int  `json:"logBackupInterval"`
+	SnapshotsPerDay   int  `json:"snapshotsPerDay"`
+}
+
+type WeeklySchedule struct {
+	Enabled   bool   `json:"enabled"`
+	DayOfWeek string `json:"dayOfWeek"`
+}
+
+type MonthlySchedule struct {
+	Enabled    bool `json:"enabled"`
+	DayOfMonth int  `json:"dayOfMonth"`
+}
+
+type QuarterlySchedule struct {
+	Enabled    bool   `json:"enabled"`
+	StartMonth string `json:"startMonth"`
+	DayOfMonth int    `json:"dayOfMonth"`
+}
+
+type YearlySchedule struct {
+	Enabled    bool   `json:"enabled"`
+	DayOfMonth int    `json:"dayOfMonth"`
+	Month      string `json:"month"`
 }
 
 type ActionArgument struct {

@@ -110,6 +110,57 @@ type Instance struct {
 	Type string `json:"type"`
 	// +optional
 	Profiles Profiles `json:"profiles"`
+	// +optional
+	// +kubebuilder:default:="{emptytminfo}"
+	// Information related to time machine that is to be associated with this database
+	TMInfo DBTimeMachineInfo `json:"timeMachine"`
+}
+
+// Time Machine details
+type DBTimeMachineInfo struct {
+	// +optional
+	Name string `json:"name"`
+	// +optional
+	Description string `json:"description"`
+	// +kubebuilder:default:=NONE
+	// +optional
+	// Name of the SLA to be used
+	SLAName string `json:"sla"`
+	// +kubebuilder:validation:Format=`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`
+	// +kubebuilder:validation:ErrorMessage="Invalid time format. Use the 24-hour format (HH:MM:SS)."
+	// +optional
+	// Daily snapshot time in HH:MM:SS (24 hour format)
+	DailySnapshotTime string `json:"dailySnapshotTime"`
+	// +kubebuilder:default:=1
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=6
+	// +optional
+	// Number of snapshots per day
+	SnapshotsPerDay int `json:"snapshotsPerDay"`
+	// +kubebuilder:default=30
+	// +kubebuilder:validation:Enum=15;30;60;90;120
+	// +optional
+	// Log catch up frequency in minutes
+	LogCatchUpFrequency int `json:"logCatchUpFrequency"`
+	// +kubebuilder:default=FRIDAY
+	// +kubebuilder:validation:Enum=MONDAY;TUESDAY;WEDNESDAY;THURSDAY;FRIDAY;SATURDAY;SUNDAY
+	// +optional
+	// Day of the week for weekly snapshot
+	WeeklySnapshotDay string `json:"weeklySnapshotDay"`
+	// +kubebuilder:default:=15
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=28
+	// +optional
+	// Day of the month for monthly snapshot
+	MonthlySnapshotDay int `json:"monthlySnapshotDay"`
+	// +kubebuilder:default=Jan
+	// +kubebuilder:validation:Enum=Jan;Feb;Mar
+	// +optional
+	// Start month for the quarterly snapshot
+	// Jan => Jan, Apr, Jul, Oct.
+	// Feb => Feb, May, Aug, Nov.
+	// Mar => Mar, Jun, Sep, Dec.
+	QuarterlySnapshotMonth string `json:"quarterlySnapshotMonth"`
 }
 
 type Profiles struct {
