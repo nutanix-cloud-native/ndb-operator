@@ -74,7 +74,7 @@ func (r *Database) Default() {
 	defaulterDatabaseCreate_NDBSpec(r)
 	defaulterDatabaseCreate_InstanceSpec(r)
 
-	databaselog.Info("Entering Default...")
+	databaselog.Info("Exiting Default...")
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
@@ -105,7 +105,7 @@ func validateDatabaseCreate_NDBSpec(r *Database, allErrs field.ErrorList, ndbPat
 }
 
 func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
-	databaselog.Info("173 Entering validateDatabaseCreate_NewDBSpec...")
+	databaselog.Info("Entering validateDatabaseCreate_NewDBSpec...")
 
 	if r.Spec.Instance.DatabaseInstanceName == "" {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), r.Spec.Instance.DatabaseInstanceName, "Database Instance Name must not be empty"))
@@ -127,7 +127,7 @@ func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList, inst
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.CredentialSecret, "Type must not be empty"))
 	}
 
-	databaselog.Info("012 Exiting validateDatabaseCreate_NewDBSpec...")
+	databaselog.Info("Exiting validateDatabaseCreate_NewDBSpec...")
 	return allErrs
 }
 
