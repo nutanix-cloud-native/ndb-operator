@@ -77,7 +77,7 @@ type NDB struct {
 	CredentialSecret string `json:"credentialSecret"`
 	Server           string `json:"server"`
 	// +optional
-	// Skip server's certificate and hostname verification, default true
+	// Skip server's certificate and hostname verification, default false
 	SkipCertificateVerification bool `json:"skipCertificateVerification"`
 }
 
@@ -90,12 +90,13 @@ type Instance struct {
 	DatabaseNames []string `json:"databaseNames"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
+	// Size of the database instance, default 10, minimum 10
 	// +optional
-	// Size of the database instance, default 10
 	Size int `json:"size"`
-	// +optional
 	// default UTC
+	// +optional
 	TimeZone string `json:"timezone"`
+	// TODO: Check if a default value makes sense for this input?
 	// +kubebuilder:default:=postgres
 	Type string `json:"type"`
 	// +optional

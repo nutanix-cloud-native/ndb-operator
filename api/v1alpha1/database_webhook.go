@@ -41,7 +41,7 @@ var _ webhook.Defaulter = &Database{}
 
 func defaulterDatabaseCreate_NDBSpec(r *Database) {
 	if !r.Spec.NDB.SkipCertificateVerification {
-		r.Spec.NDB.SkipCertificateVerification = true
+		r.Spec.NDB.SkipCertificateVerification = false
 	}
 }
 
