@@ -105,14 +105,13 @@ func validateDatabaseCreate_NDBSpec(r *Database, allErrs field.ErrorList, ndbPat
 }
 
 func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
-	databaselog.Info("789 Entering validateDatabaseCreate_NewDBSpec...")
+	databaselog.Info("173 Entering validateDatabaseCreate_NewDBSpec...")
 
 	if r.Spec.Instance.DatabaseInstanceName == "" {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), r.Spec.Instance.DatabaseInstanceName, "Database Instance Name must not be empty"))
 	}
 
 	if len(r.Spec.Instance.DatabaseNames) < 1 {
-
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseNames"), r.Spec.Instance.DatabaseNames, "At least one Database Name must specified"))
 	}
 
