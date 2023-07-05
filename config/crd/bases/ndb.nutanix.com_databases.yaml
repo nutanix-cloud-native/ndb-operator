@@ -129,8 +129,8 @@ spec:
                   server:
                     type: string
                   skipCertificateVerification:
-                    default: false
-                    description: Skip server's certificate and hostname verification
+                    description: Skip server's certificate and hostname verification,
+                      default true
                     type: boolean
                 required:
                 - clusterId

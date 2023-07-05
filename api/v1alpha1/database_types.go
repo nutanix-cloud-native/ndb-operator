@@ -77,7 +77,7 @@ type NDB struct {
 	CredentialSecret string `json:"credentialSecret"`
 	Server           string `json:"server"`
 	// +optional
-	// Skip server's certificate and hostname verification,  default false
+	// Skip server's certificate and hostname verification, default true
 	SkipCertificateVerification bool `json:"skipCertificateVerification"`
 }
 

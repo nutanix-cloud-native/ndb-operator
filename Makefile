@@ -157,8 +157,8 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: force-pull-deploy
-docker rmi ${IMG}
 force-pull-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	docker rmi ${IMG}
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
