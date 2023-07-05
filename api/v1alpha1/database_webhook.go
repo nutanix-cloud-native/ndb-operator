@@ -97,7 +97,7 @@ func validateDatabaseCreate_NDBSpec(r *Database, allErrs field.ErrorList, ndbPat
 	}
 
 	if err := util.ValidateURL(r.Spec.NDB.Server); err != nil {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("server"), r.Spec.NDB.Server, "123 Server must be a valid URL"))
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("server"), r.Spec.NDB.Server, "Server must be a valid URL"))
 	}
 
 	databaselog.Info("Exiting validateDatabaseCreate_NDBSpec...")
