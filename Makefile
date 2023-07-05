@@ -37,7 +37,7 @@ PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # nutanix.com/ndb-operator-bundle:$VERSION and nutanix.com/ndb-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?=089786/ndb-operator
+IMAGE_TAG_BASE ?= ghcr.io/nutanix-cloud-native/ndb-operator/controller
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
@@ -155,6 +155,12 @@ install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~
 .PHONY: uninstall
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+
+.PHONY: force-pull-deploy
+docker rmi ${IMG}
+force-pull-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
