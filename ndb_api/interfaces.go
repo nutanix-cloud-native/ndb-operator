@@ -36,4 +36,6 @@ type DatabaseInterface interface {
 	GetDBInstanceSize() int
 	GetNDBClusterId() string
 	GetProfileResolvers() ProfileResolvers
+	GetTMDetails() (string, string, string)
+	GetTMSchedule() (Schedule, error)
 }

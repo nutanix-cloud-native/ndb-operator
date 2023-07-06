@@ -23,205 +23,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/nutanix-cloud-native/ndb-operator/common"
 )
 
-const mock_username = "username"
-const mock_password = "password"
-
-const NONE_SLA_ID = "NONE_SLA_ID"
-
-var MockResponsesMap = map[string]interface{}{
-	"GET /slas": []SLAResponse{
-		{
-			Id:                 "sla-1-id",
-			Name:               "SLA 1",
-			UniqueName:         "SLA 1 Unique Name",
-			Description:        "SLA 1 Description",
-			DailyRetention:     1,
-			WeeklyRetention:    2,
-			MonthlyRetention:   3,
-			QuarterlyRetention: 4,
-			YearlyRetention:    5,
-		},
-		{
-			Id:                 "sla-2-id",
-			Name:               "SLA 2",
-			UniqueName:         "SLA 2 Unique Name",
-			Description:        "SLA 2 Description",
-			DailyRetention:     1,
-			WeeklyRetention:    2,
-			MonthlyRetention:   3,
-			QuarterlyRetention: 4,
-			YearlyRetention:    5,
-		},
-		{
-			Id:                 NONE_SLA_ID,
-			Name:               common.SLA_NAME_NONE,
-			UniqueName:         "SLA 3 Unique Name",
-			Description:        "SLA 3 Description",
-			DailyRetention:     1,
-			WeeklyRetention:    2,
-			MonthlyRetention:   3,
-			QuarterlyRetention: 4,
-			YearlyRetention:    5,
-		},
-	},
-
-	"GET /profiles": []ProfileResponse{
-		{
-			Id:              "1",
-			Name:            "a",
-			Type:            common.PROFILE_TYPE_COMPUTE,
-			EngineType:      common.DATABASE_ENGINE_TYPE_GENERIC,
-			LatestVersionId: "v-id-1",
-			Topology:        common.TOPOLOGY_ALL,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "1.1",
-			Name:            "DEFAULT_OOB_SMALL_COMPUTE",
-			Type:            common.PROFILE_TYPE_COMPUTE,
-			EngineType:      common.DATABASE_ENGINE_TYPE_GENERIC,
-			LatestVersionId: "v-id-1",
-			Topology:        common.TOPOLOGY_ALL,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "3",
-			Name:            "c",
-			Type:            common.PROFILE_TYPE_SOFTWARE,
-			EngineType:      common.DATABASE_ENGINE_TYPE_POSTGRES,
-			LatestVersionId: "v-id-3",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "3NotReady",
-			Name:            "Software_Profile_Not_Ready",
-			Type:            common.PROFILE_TYPE_SOFTWARE,
-			EngineType:      common.DATABASE_ENGINE_TYPE_POSTGRES,
-			LatestVersionId: "v-id-3",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "NOT_YET_CREATED",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "4",
-			Name:            "d",
-			Type:            common.PROFILE_TYPE_SOFTWARE,
-			EngineType:      common.DATABASE_ENGINE_TYPE_MYSQL,
-			LatestVersionId: "v-id-4",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "5",
-			Name:            "e",
-			Type:            common.PROFILE_TYPE_SOFTWARE,
-			EngineType:      common.DATABASE_ENGINE_TYPE_MONGODB,
-			LatestVersionId: "v-id-5",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "6",
-			Name:            "f",
-			Type:            common.PROFILE_TYPE_NETWORK,
-			EngineType:      common.DATABASE_ENGINE_TYPE_POSTGRES,
-			LatestVersionId: "v-id-6",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "7",
-			Name:            "g",
-			Type:            common.PROFILE_TYPE_NETWORK,
-			EngineType:      common.DATABASE_ENGINE_TYPE_MYSQL,
-			LatestVersionId: "v-id-7",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "8",
-			Name:            "h",
-			Type:            common.PROFILE_TYPE_NETWORK,
-			EngineType:      common.DATABASE_ENGINE_TYPE_MONGODB,
-			LatestVersionId: "v-id-8",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "9",
-			Name:            "i",
-			Type:            common.PROFILE_TYPE_DATABASE_PARAMETER,
-			EngineType:      common.DATABASE_ENGINE_TYPE_POSTGRES,
-			LatestVersionId: "v-id-9",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "10",
-			Name:            "j",
-			Type:            common.PROFILE_TYPE_DATABASE_PARAMETER,
-			EngineType:      common.DATABASE_ENGINE_TYPE_MYSQL,
-			LatestVersionId: "v-id-10",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "11",
-			Name:            "k",
-			Type:            common.PROFILE_TYPE_DATABASE_PARAMETER,
-			EngineType:      common.DATABASE_ENGINE_TYPE_MONGODB,
-			LatestVersionId: "v-id-11",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "id-pg-nw-1",
-			Name:            "DEFAULT_OOB_POSTGRESQL_NETWORK",
-			Type:            common.PROFILE_TYPE_NETWORK,
-			EngineType:      common.DATABASE_ENGINE_TYPE_POSTGRES,
-			LatestVersionId: "v-id-6",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "id-mongo-nw-1",
-			Name:            "DEFAULT_OOB_MONGODB_NETWORK",
-			Type:            common.PROFILE_TYPE_NETWORK,
-			EngineType:      common.DATABASE_ENGINE_TYPE_MONGODB,
-			LatestVersionId: "v-id-6",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-		{
-			Id:              "id-mysql-nw-1",
-			Name:            "DEFAULT_OOB_MYSQL_NETWORK",
-			Type:            common.PROFILE_TYPE_NETWORK,
-			EngineType:      common.DATABASE_ENGINE_TYPE_MYSQL,
-			LatestVersionId: "v-id-6",
-			Topology:        common.TOPOLOGY_SINGLE,
-			Status:          "READY",
-			SystemProfile:   true,
-		},
-	},
-}
+const (
+	mock_username = "username"
+	mock_password = "password"
+	NONE_SLA_ID   = "NONE_SLA_ID"
+)
 
 func checkAuthTestHelper(r *http.Request) bool {
 	username, password, ok := r.BasicAuth()
@@ -243,12 +51,18 @@ func checkAuthTestHelper(r *http.Request) bool {
 }
 
 func GetServerTestHelper(t *testing.T) *httptest.Server {
+	mockResponsesMap := getMockedResponseMap()
+	return GetServerTestHelperWithResponseMap(t, mockResponsesMap)
+}
 
+// responseMap holds the responses that will be returned by this server.
+// The key is in the format [Method endpoint], ex - GET /slas, GET /profiles.
+func GetServerTestHelperWithResponseMap(t *testing.T, responseMap map[string]interface{}) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !checkAuthTestHelper(r) {
 			t.Errorf("Invalid Authentication Credentials")
 		} else {
-			var response = MockResponsesMap[r.Method+" "+r.URL.Path]
+			var response = responseMap[r.Method+" "+r.URL.Path]
 			resp, _ := json.Marshal(response)
 			w.WriteHeader(http.StatusOK)
 			w.Write(resp)
