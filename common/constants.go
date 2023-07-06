@@ -16,17 +16,6 @@ limitations under the License.
 
 package common
 
-var DefaultDatabaseInstanceName = "database_instance_name"
-
-var DefaultDatabaseNames = []string{"database_one", "database_two", "database_three"}
-
-var AllowedDatabaseTypes = map[string]bool{
-	"mysql":    true,
-	"postgres": true,
-	"mongodb":  true,
-	"mssql":    true,
-}
-
 // Constants are defined in lexographical order
 const (
 	DATABASE_CR_STATUS_DELETING     = "DELETING"

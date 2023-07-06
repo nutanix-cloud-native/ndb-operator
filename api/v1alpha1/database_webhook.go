@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/nutanix-cloud-native/ndb-operator/api"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,16 +44,17 @@ func defaulterDatabaseCreate_NDBSpec(r *Database) {
 	if !r.Spec.NDB.SkipCertificateVerification {
 		r.Spec.NDB.SkipCertificateVerification = false
 	}
+
 }
 
 func defaulterDatabaseCreate_InstanceSpec(r *Database) {
 
 	if r.Spec.Instance.DatabaseInstanceName == "" {
-		r.Spec.Instance.DatabaseInstanceName = common.DefaultDatabaseInstanceName
+		r.Spec.Instance.DatabaseInstanceName = api.DefaultDatabaseInstanceName
 	}
 
 	if len(r.Spec.Instance.DatabaseNames) == 0 {
-		r.Spec.Instance.DatabaseNames = common.DefaultDatabaseNames
+		r.Spec.Instance.DatabaseNames = api.DefaultDatabaseNames
 	}
 
 	if r.Spec.Instance.Size == 0 {
@@ -63,18 +65,22 @@ func defaulterDatabaseCreate_InstanceSpec(r *Database) {
 		r.Spec.Instance.TimeZone = "UTC"
 	}
 
+	if r.Spec.Instance.Profiles.Compute.Id == "" && r.Spec.Instance.Profiles.Compute.Name == "" {
+		r.Spec.Instance.Profiles.Compute.Name = common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE
+	}
+
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Database) Default() {
 
-	databaselog.Info("Entering Default...")
+	databaselog.Info("Entering Defaulter logic...")
 
 	databaselog.Info("default", "name", r.Name)
 	defaulterDatabaseCreate_NDBSpec(r)
 	defaulterDatabaseCreate_InstanceSpec(r)
 
-	databaselog.Info("Exiting Default...")
+	databaselog.Info("Exiting Defaulter logic...")
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
@@ -85,7 +91,7 @@ var _ webhook.Validator = &Database{}
 func validateDatabaseCreate_NDBSpec(r *Database, allErrs field.ErrorList, ndbPath *field.Path) field.ErrorList {
 	databaselog.Info("Entering validateDatabaseCreate_NDBSpec...")
 	if r.Spec.NDB == (NDB{}) {
-		allErrs = append(allErrs, field.Invalid(ndbPath, r.Spec.NDB, "NDB spec must not be empty"))
+		allErrs = append(allErrs, field.Invalid(ndbPath, r.Spec.NDB, "NDB spec field must not be empty"))
 	}
 
 	if err := util.ValidateUUID(r.Spec.NDB.ClusterId); err != nil {
@@ -104,8 +110,11 @@ func validateDatabaseCreate_NDBSpec(r *Database, allErrs field.ErrorList, ndbPat
 	return allErrs
 }
 
-func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
+func validateDatabaseCreate_InstanceSpec(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	databaselog.Info("Entering validateDatabaseCreate_NewDBSpec...")
+
+	// Instance contains string[], so we cannot directly compare r.Spec.Instance with (Instanct{})
+	// may need to implement the comparision operation manually to check if Instance info is not present
 
 	if r.Spec.Instance.DatabaseInstanceName == "" {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), r.Spec.Instance.DatabaseInstanceName, "Database Instance Name must not be empty"))
@@ -115,7 +124,7 @@ func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList, inst
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseNames"), r.Spec.Instance.DatabaseNames, "At least one Database Name must specified"))
 	}
 
-	if r.Spec.Instance.Size == 0 || r.Spec.Instance.Size < 10 {
+	if r.Spec.Instance.Size < 10 {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), r.Spec.Instance.Size, "Initial Database size must be 10 or more GBs"))
 	}
 
@@ -123,8 +132,14 @@ func validateDatabaseCreate_NewDBSpec(r *Database, allErrs field.ErrorList, inst
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.Instance.CredentialSecret, "CredentialSecret must not be empty"))
 	}
 
-	if _, isPresent := common.AllowedDatabaseTypes[r.Spec.Instance.Type]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.CredentialSecret, "Type must not be empty"))
+	if _, isPresent := api.AllowedDatabaseTypes[r.Spec.Instance.Type]; !isPresent {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.CredentialSecret, "A valid database type must be specified"))
+	}
+
+	if _, isPresent := api.ClosedSourceDatabaseTypes[r.Spec.Instance.Type]; isPresent {
+		if r.Spec.Instance.Profiles == (Profiles{}) || r.Spec.Instance.Profiles.Software == (Profile{}) {
+			allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.CredentialSecret, "Software Profile must be provided for the closed-source database types"))
+		}
 	}
 
 	databaselog.Info("Exiting validateDatabaseCreate_NewDBSpec...")
@@ -136,7 +151,7 @@ func (r *Database) ValidateCreate() error {
 	databaselog.Info("Entering ValidateCreate...")
 
 	ndbSpecErrors := validateDatabaseCreate_NDBSpec(r, field.ErrorList{}, field.NewPath("spec").Child("ndb"))
-	dbSpecErrors := validateDatabaseCreate_NewDBSpec(r, field.ErrorList{}, field.NewPath("spec").Child("instance"))
+	dbSpecErrors := validateDatabaseCreate_InstanceSpec(r, field.ErrorList{}, field.NewPath("spec").Child("instance"))
 
 	allErrs := append(ndbSpecErrors, dbSpecErrors...)
 
@@ -151,7 +166,8 @@ func (r *Database) ValidateCreate() error {
 func (r *Database) ValidateUpdate(old runtime.Object) error {
 	databaselog.Info("validate update", "name", r.Name)
 
-	// TODO(user): fill in your validation logic upon object update.
+	// TODO: This method will be used to make fields immutable.
+	// Here you can reject the updates to any fields. I think we should mark everything immutable by default.
 	return nil
 }
 

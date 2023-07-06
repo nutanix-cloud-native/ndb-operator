@@ -56,11 +56,12 @@ spec:
                       database instance (password and ssh key)
                     type: string
                   databaseInstanceName:
-                    description: 'Name of the database instance, default name: database_instance_name'
+                    description: Name of the database instance, default "database_instance_name"
                     type: string
                   databaseNames:
-                    description: Name of the database to be provisiond in the database
-                      instance default value {"database_one", "database_two", "database_three"}
+                    description: Name(s) of the database(s) to be provisiond inside
+                      the database instance default [ "database_one", "database_two",
+                      "database_three" ]
                     items:
                       type: string
                     type: array
@@ -72,6 +73,9 @@ spec:
                             type: string
                           name:
                             type: string
+                        required:
+                        - id
+                        - name
                         type: object
                       dbParam:
                         properties:
@@ -79,6 +83,9 @@ spec:
                             type: string
                           name:
                             type: string
+                        required:
+                        - id
+                        - name
                         type: object
                       dbParamInstance:
                         properties:
@@ -86,6 +93,9 @@ spec:
                             type: string
                           name:
                             type: string
+                        required:
+                        - id
+                        - name
                         type: object
                       network:
                         properties:
@@ -93,6 +103,9 @@ spec:
                             type: string
                           name:
                             type: string
+                        required:
+                        - id
+                        - name
                         type: object
                       software:
                         properties:
@@ -100,21 +113,33 @@ spec:
                             type: string
                           name:
                             type: string
+                        required:
+                        - id
+                        - name
                         type: object
+                    required:
+                    - compute
+                    - dbParam
+                    - dbParamInstance
+                    - network
+                    - software
                     type: object
                   size:
-                    description: Size of the database instance, default 10
+                    description: Size of the database instance, default 10, minimum
+                      10
                     type: integer
                   timezone:
                     description: default UTC
                     type: string
                   type:
-                    default: postgres
                     type: string
                 required:
                 - credentialSecret
                 - databaseInstanceName
                 - databaseNames
+                - profiles
+                - size
+                - timezone
                 - type
                 type: object
               ndb:
@@ -130,12 +155,13 @@ spec:
                     type: string
                   skipCertificateVerification:
                     description: Skip server's certificate and hostname verification,
-                      default true
+                      default false
                     type: boolean
                 required:
                 - clusterId
                 - credentialSecret
                 - server
+                - skipCertificateVerification
                 type: object
             required:
             - databaseInstance

@@ -76,53 +76,36 @@ type NDB struct {
 	// Name of the secret holding the credentials for NDB (username and password)
 	CredentialSecret string `json:"credentialSecret"`
 	Server           string `json:"server"`
-	// +optional
 	// Skip server's certificate and hostname verification, default false
 	SkipCertificateVerification bool `json:"skipCertificateVerification"`
 }
 
 // Database instance specific details
 type Instance struct {
-	// Name of the database instance, default name: database_instance_name
+	// Name of the database instance, default "database_instance_name"
 	DatabaseInstanceName string `json:"databaseInstanceName"`
-	// Name of the database to be provisiond in the database instance
-	// default value {"database_one", "database_two", "database_three"}
+	// Name(s) of the database(s) to be provisiond inside the database instance
+	// default [ "database_one", "database_two", "database_three" ]
 	DatabaseNames []string `json:"databaseNames"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
 	// Size of the database instance, default 10, minimum 10
-	// +optional
 	Size int `json:"size"`
 	// default UTC
-	// +optional
-	TimeZone string `json:"timezone"`
-	// TODO: Check if a default value makes sense for this input?
-	// +kubebuilder:default:=postgres
-	Type string `json:"type"`
-	// +optional
+	TimeZone string   `json:"timezone"`
+	Type     string   `json:"type"`
 	Profiles Profiles `json:"profiles"`
 }
 
 type Profiles struct {
-	// +optional
-	Software Profile `json:"software"`
-
-	// +optional
-	Compute Profile `json:"compute"`
-
-	// +optional
-	Network Profile `json:"network"`
-
-	// +optional
-	DbParam Profile `json:"dbParam"`
-
-	// +optional
+	Software        Profile `json:"software"`
+	Compute         Profile `json:"compute"`
+	Network         Profile `json:"network"`
+	DbParam         Profile `json:"dbParam"`
 	DbParamInstance Profile `json:"dbParamInstance"`
 }
 
 type Profile struct {
-	// +optional
-	Id string `json:"id"`
-	// +optional
+	Id   string `json:"id"`
 	Name string `json:"name"`
 }
