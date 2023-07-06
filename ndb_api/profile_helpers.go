@@ -100,6 +100,11 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 			log.Error(err, "Db Param Instance Profile could not be resolved", "Input Profile", dbParamInstanceProfileResolver)
 			return
 		}
+		if dbParamInstance == (ProfileResponse{}) {
+			err = errors.New("db Param Instance Profile cannot be empty")
+			return
+		}
+
 	}
 
 	profilesMap = map[string]ProfileResponse{
