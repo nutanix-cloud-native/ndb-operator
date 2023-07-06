@@ -693,3 +693,62 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		}
 	}
 }
+
+// Test that correct error is returned when GetDbProvRequestAppender fails
+func TestGenerateProvisioningRequest_requestAppender_returnsError(t *testing.T) {
+
+	// Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	getResolver := func(p ProfileResponse, e error) *MockProfileResolverInterface {
+		profileResolver := MockProfileResolverInterface{}
+		profileResolver.On("GetId").Return(p.Id)
+		profileResolver.On("GetName").Return(p.Name)
+		profileResolver.On("Resolve").Return(p, e)
+		return &profileResolver
+	}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+	}
+
+	software := getResolver(ProfileResponse{}, nil)
+	compute := getResolver(ProfileResponse{}, nil)
+	network := getResolver(ProfileResponse{}, nil)
+	dbParam := getResolver(ProfileResponse{}, nil)
+	dbParamInstance := getResolver(ProfileResponse{}, nil)
+
+	// Invalid instance type
+	instanceType := "test"
+
+	profileResolvers := ProfileResolvers{
+		common.PROFILE_TYPE_SOFTWARE:                    software,
+		common.PROFILE_TYPE_COMPUTE:                     compute,
+		common.PROFILE_TYPE_NETWORK:                     network,
+		common.PROFILE_TYPE_DATABASE_PARAMETER:          dbParam,
+		common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE: dbParamInstance,
+	}
+
+	mockDatabase := MockDatabaseInterface{}
+	mockDatabase.On("GetDBInstanceName").Return("db_instance_name")
+	mockDatabase.On("GetDBInstanceType").Return(instanceType)
+	mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", "SLA 1")
+	mockDatabase.On("GetTMSchedule").Return(Schedule{}, nil)
+	mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
+	mockDatabase.On("GetDBInstanceTimeZone").Return(TEST_TIMEZONE)
+	mockDatabase.On("GetNDBClusterId").Return(TEST_CLUSTER_ID)
+	mockDatabase.On("GetDBInstanceSize").Return(TEST_INSTANCE_SIZE)
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+
+	// Test
+	_, err := GenerateProvisioningRequest(context.Background(), ndb_client, &mockDatabase, reqData)
+	expectedError := errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb")
+
+	// Assert
+	if err != expectedError && err.Error() != expectedError.Error() {
+		t.Fatalf("expected: %v, got: %v", expectedError, err)
+	}
+}
