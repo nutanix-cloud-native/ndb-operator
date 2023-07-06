@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/controllers"
 	//+kubebuilder:scaffold:imports
 )
@@ -103,10 +104,14 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Database")
 		os.Exit(1)
 	}
-	if err = (&ndbv1alpha1.Database{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "Database")
-		os.Exit(1)
+
+	if util.GetEnv("ENABLE_WEBHOOKS") == "true" {
+		if err = (&ndbv1alpha1.Database{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Database")
+			os.Exit(1)
+		}
 	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

@@ -2,7 +2,9 @@ package util
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/google/uuid"
@@ -34,4 +36,14 @@ func CombineFieldErrors(fieldErrors field.ErrorList) error {
 		errorStrings = append(errorStrings, fe.Error())
 	}
 	return errors.New(strings.Join(errorStrings, "; "))
+}
+
+func GetEnv(key string) (val string) {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		fmt.Printf("%s not set\n", key)
+	} else {
+		fmt.Printf("%s=%s\n", key, val)
+	}
+	return val
 }

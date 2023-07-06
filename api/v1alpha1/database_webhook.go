@@ -40,14 +40,14 @@ func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Defaulter = &Database{}
 
-func defaulterDatabaseCreate_NDBSpec(r *Database) {
+func ndbSpecDefaulterForCreate(r *Database) {
 	if !r.Spec.NDB.SkipCertificateVerification {
 		r.Spec.NDB.SkipCertificateVerification = false
 	}
 
 }
 
-func defaulterDatabaseCreate_InstanceSpec(r *Database) {
+func instanceSpecDefaulterForCreate(r *Database) {
 
 	if r.Spec.Instance.DatabaseInstanceName == "" {
 		r.Spec.Instance.DatabaseInstanceName = api.DefaultDatabaseInstanceName
@@ -77,8 +77,8 @@ func (r *Database) Default() {
 	databaselog.Info("Entering Defaulter logic...")
 
 	databaselog.Info("default", "name", r.Name)
-	defaulterDatabaseCreate_NDBSpec(r)
-	defaulterDatabaseCreate_InstanceSpec(r)
+	ndbSpecDefaulterForCreate(r)
+	instanceSpecDefaulterForCreate(r)
 
 	databaselog.Info("Exiting Defaulter logic...")
 }
@@ -88,7 +88,7 @@ func (r *Database) Default() {
 
 var _ webhook.Validator = &Database{}
 
-func validateDatabaseCreate_NDBSpec(r *Database, allErrs field.ErrorList, ndbPath *field.Path) field.ErrorList {
+func ndbSpecValidatorForCreate(r *Database, allErrs field.ErrorList, ndbPath *field.Path) field.ErrorList {
 	databaselog.Info("Entering validateDatabaseCreate_NDBSpec...")
 	if r.Spec.NDB == (NDB{}) {
 		allErrs = append(allErrs, field.Invalid(ndbPath, r.Spec.NDB, "NDB spec field must not be empty"))
@@ -110,7 +110,7 @@ func validateDatabaseCreate_NDBSpec(r *Database, allErrs field.ErrorList, ndbPat
 	return allErrs
 }
 
-func validateDatabaseCreate_InstanceSpec(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
+func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	databaselog.Info("Entering validateDatabaseCreate_NewDBSpec...")
 
 	// Instance contains string[], so we cannot directly compare r.Spec.Instance with (Instanct{})
@@ -150,8 +150,8 @@ func validateDatabaseCreate_InstanceSpec(r *Database, allErrs field.ErrorList, i
 func (r *Database) ValidateCreate() error {
 	databaselog.Info("Entering ValidateCreate...")
 
-	ndbSpecErrors := validateDatabaseCreate_NDBSpec(r, field.ErrorList{}, field.NewPath("spec").Child("ndb"))
-	dbSpecErrors := validateDatabaseCreate_InstanceSpec(r, field.ErrorList{}, field.NewPath("spec").Child("instance"))
+	ndbSpecErrors := ndbSpecValidatorForCreate(r, field.ErrorList{}, field.NewPath("spec").Child("ndb"))
+	dbSpecErrors := instanceSpecValidatorForCreate(r, field.ErrorList{}, field.NewPath("spec").Child("instance"))
 
 	allErrs := append(ndbSpecErrors, dbSpecErrors...)
 
