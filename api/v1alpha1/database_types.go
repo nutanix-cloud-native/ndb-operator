@@ -126,6 +126,7 @@ type DBTimeMachineInfo struct {
 	// +optional
 	// Name of the SLA to be used
 	SLAName string `json:"sla"`
+	// +kubebuilder:default:="12:34:56"
 	// +kubebuilder:validation:Format=`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`
 	// +kubebuilder:validation:ErrorMessage="Invalid time format. Use the 24-hour format (HH:MM:SS)."
 	// +optional
