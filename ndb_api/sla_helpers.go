@@ -20,22 +20,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nutanix-cloud-native/ndb-operator/common"
+	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 )
 
-// Fetches all the SLAs from the ndb and returns the NONE TM SLA.
+// Fetches all the SLAs from the ndb and returns the SLA matching the name
 // Returns an error if not found.
-func GetNoneTimeMachineSLA(ctx context.Context, ndb_client *ndb_client.NDBClient) (sla SLAResponse, err error) {
+func GetSLAByName(ctx context.Context, ndb_client *ndb_client.NDBClient, name string) (sla SLAResponse, err error) {
 	slas, err := GetAllSLAs(ctx, ndb_client)
 	if err != nil {
 		return
 	}
-	for _, s := range slas {
-		if s.Name == common.SLA_NAME_NONE {
-			sla = s
-			return
-		}
+	sla, err = util.FindFirst(slas, func(s SLAResponse) bool { return s.Name == name })
+	if err != nil {
+		err = fmt.Errorf("SLA %s not found", name)
 	}
-	return sla, fmt.Errorf("NONE TimeMachine not found")
+	return
 }
