@@ -37,7 +37,7 @@ PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # nutanix.com/ndb-operator-bundle:$VERSION and nutanix.com/ndb-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= ghcr.io/nutanix-cloud-native/ndb-operator/controller
+IMAGE_TAG_BASE ?= 089786/ndb-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
@@ -121,8 +121,8 @@ build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+ run: manifests generate fmt vet ## Run a controller from your host. 
+	 ENABLE_WEBHOOKS=false && go run ./main.go
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
@@ -155,6 +155,13 @@ install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~
 .PHONY: uninstall
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+
+.PHONY: install-cert-manager
+install-cert-manager:
+    @cmctl check api 2>&1 | grep -q 'The cert-manager API is ready' && echo "Cert Manager is already installed" || \
+        (echo "Cert Manager is not installed. Installing Cert Manager..." && \
+        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml)
+
 
 .PHONY: force-pull-deploy
 force-pull-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.

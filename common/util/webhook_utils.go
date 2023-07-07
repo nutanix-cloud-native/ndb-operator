@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -38,12 +39,22 @@ func CombineFieldErrors(fieldErrors field.ErrorList) error {
 	return errors.New(strings.Join(errorStrings, "; "))
 }
 
-func GetEnv(key string) (val string) {
+func IsWebhookEnabled(key string) bool {
 	val, ok := os.LookupEnv(key)
+
 	if !ok {
-		fmt.Printf("%s not set\n", key)
+		fmt.Printf("error reading %s env variable", key)
+		// safer to return "true" as default for "IsWebhookDisabled",
+		// since we want the webhooks to be ENABLED everywhere outside the local dev process
+		return true
 	} else {
-		fmt.Printf("%s=%s\n", key, val)
+
+		val, err := strconv.ParseBool(val)
+
+		if err != nil {
+			return true
+		}
+
+		return val
 	}
-	return val
 }

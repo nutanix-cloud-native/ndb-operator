@@ -105,7 +105,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if util.GetEnv("ENABLE_WEBHOOKS") == "true" {
+	if util.IsWebhookEnabled("ENABLE_WEBHOOKS") {
 		if err = (&ndbv1alpha1.Database{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Database")
 			os.Exit(1)
