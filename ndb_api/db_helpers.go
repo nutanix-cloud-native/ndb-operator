@@ -106,6 +106,10 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 	}
 	// Appending request body based on database type
 	appender, err := GetDbProvRequestAppender(database.GetDBInstanceType())
+	if err != nil {
+		log.Error(err, "Error while appending provisioning request")
+		return
+	}
 	requestBody = appender.appendRequest(requestBody, database, reqData)
 
 	log.Info("Database Provisioning", "requestBody", requestBody)
