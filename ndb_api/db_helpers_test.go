@@ -15,6 +15,7 @@ const (
 	TEST_PASSWORD      = "testPassword"
 	TEST_SSHKEY        = "testSSHKey"
 	TEST_DB_NAMES      = "testDB"
+	TEST_INSTANCE_TYPE = "testInstance"
 	TEST_TIMEZONE      = "test-timezone"
 	TEST_CLUSTER_ID    = "test-cluster-id"
 	TEST_INSTANCE_SIZE = 100
@@ -478,7 +479,7 @@ func TestGenerateProvisioningRequest_WithoutValidTMDetails_ReturnsError(t *testi
 // 4. DBParam Profile returns an error
 // 5. DBParamInstance Profile returns an error
 // Test cases are self explanatory.
-func TestGenerateProvisioningRequest_WithoutValidProfileResolvers_ReturnsError(t *testing.T) {
+func TestGenerateProvisioningRequest(t *testing.T) {
 
 	// Set
 	server := GetServerTestHelper(t)
@@ -588,10 +589,11 @@ func TestGenerateProvisioningRequest_WithoutValidProfileResolvers_ReturnsError(t
 	}
 }
 
-// Test the error scenarios in GenerateProvisioningRequest function with different reqData values
-// 1. Database with empty db password
-// 2. Non-MSSQL database with empty ssh key
-// 3. MSSQL database without ssh key
+// Test the error scenarios in GenerateProvisioningRequest function for different parameters:
+// 1. ReqData with empty db password for any database
+// 2. ReqData with with empty ssh key for Non-MSSQL database
+// 3. ReqData with with empty ssh key MSSQL database
+// 4. Invalid instance type
 func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 
 	// Set
@@ -630,13 +632,21 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 			},
 			expectedError: errors.New("invalid ssh public key"),
 		},
-		{ // MSSQL database without ssh key
+		{ // MSSQL database with empty ssh key
 			databaseType: common.DATABASE_TYPE_MSSQL,
 			reqData: map[string]interface{}{
 				common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
 				common.NDB_PARAM_SSH_PUBLIC_KEY: "",
 			},
 			expectedError: nil,
+		},
+		{ // Invalid database type
+			databaseType: TEST_INSTANCE_TYPE,
+			reqData: map[string]interface{}{
+				common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+				common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+			},
+			expectedError: errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb"),
 		},
 	}
 
