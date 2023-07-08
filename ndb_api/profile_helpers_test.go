@@ -18,6 +18,7 @@ package ndb_api
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -25,6 +26,11 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 )
 
+// Tests the ResolveProfiles function against the following test cases:
+// 1. Non MSSQL databases should have empty db param instance profile
+// 2. MSSQL databases when db param instance profile is resolved do not return an error
+// 3. MSSQL databases when db param instance profile is not resolved return an error
+// 4. MSSQL databases when software profile info is not provided return an error
 func TestResolveProfiles(t *testing.T) {
 	// Set
 	server := GetServerTestHelper(t)
@@ -58,7 +64,7 @@ func TestResolveProfiles(t *testing.T) {
 		wantErr              bool
 	}{
 		{
-			name:         "Non MSSQL databases have empty db param instance profile",
+			name:         "Non MSSQL databases should have empty db param instance profile",
 			ctx:          context.TODO(),
 			ndbClient:    client,
 			databaseType: common.DATABASE_TYPE_POSTGRES,
@@ -148,7 +154,7 @@ func TestResolveProfiles(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:         "MSSQL databases when db param instance profile is resolved",
+			name:         "MSSQL databases when db param instance profile is resolved do not return an error",
 			ctx:          context.TODO(),
 			ndbClient:    client,
 			databaseType: common.DATABASE_TYPE_MSSQL,
@@ -257,7 +263,7 @@ func TestResolveProfiles(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:         "MSSQL databases when db param instance profile is not resolved",
+			name:         "MSSQL databases when db param instance profile is not resolved return an error",
 			ctx:          context.TODO(),
 			ndbClient:    client,
 			databaseType: common.DATABASE_TYPE_MSSQL,
@@ -301,11 +307,12 @@ func TestResolveProfiles(t *testing.T) {
 				Status:          "READY",
 				SystemProfile:   true,
 			},
-			wantProfilesMap: nil,
-			wantErr:         true,
+			dbParamInstanceError: errors.New("error"),
+			wantProfilesMap:      nil,
+			wantErr:              true,
 		},
 		{
-			name:         "MSSQL databases when software profile info is not provided",
+			name:         "MSSQL databases when software profile info is not provided return an error",
 			ctx:          context.TODO(),
 			ndbClient:    client,
 			databaseType: common.DATABASE_TYPE_MSSQL,
