@@ -36,13 +36,13 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 	log.Info("Entered ndb_api.GetProfiles", "Input profiles", profileResolvers)
 
 	allProfiles, err := GetAllProfiles(ctx, ndb_client)
-
-	// profiles need to be in the ready state
-	activeProfiles := util.Filter(allProfiles, func(p ProfileResponse) bool { return p.Status == common.PROFILE_STATUS_READY })
 	if err != nil {
 		log.Error(err, "Profiles could not be fetched")
 		return
 	}
+
+	// profiles need to be in the ready state
+	activeProfiles := util.Filter(allProfiles, func(p ProfileResponse) bool { return p.Status == common.PROFILE_STATUS_READY })
 
 	dbEngineSpecific := util.Filter(activeProfiles, func(p ProfileResponse) bool {
 		return p.EngineType == GetDatabaseEngineName(databaseType)
@@ -58,7 +58,7 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 	compute, err := computeProfileResolver.Resolve(ctx, activeProfiles, ComputeOOBProfileResolver)
 	if err != nil {
 		log.Error(err, "Compute Profile could not be resolved", "Input Profile", computeProfileResolver)
-		return nil, err
+		return
 	}
 
 	// Software Profile
@@ -67,39 +67,38 @@ func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, data
 	if isClosedSourceEngine {
 		if softwareProfileResolver.GetId() == "" && softwareProfileResolver.GetName() == "" {
 			log.Error(errors.New("software profile not provided"), "Provide software profile info", "dbType", databaseType)
-			return nil, fmt.Errorf("software profile is a mandatory input for %s database", databaseType)
+			err = fmt.Errorf("software profile is a mandatory input for %s database", databaseType)
+			return
 		}
 	}
 
 	software, err := softwareProfileResolver.Resolve(ctx, dbEngineSpecific, SoftwareOOBProfileResolverForSingleInstance)
 	if err != nil {
 		log.Error(err, "Software Profile could not be resolved or is not in READY state", "Input Profile", softwareProfileResolver)
-		return nil, err
+		return
 	}
 
 	// Network Profile
 	network, err := networkProfileResolver.Resolve(ctx, dbEngineSpecific, NetworkOOBProfileResolver)
 	if err != nil {
 		log.Error(err, "Network Profile could not be resolved", "Input Profile", networkProfileResolver)
-		return nil, err
+		return
 	}
 
 	// DB Param Profile
 	dbParam, err := dbParamProfileResolver.Resolve(ctx, dbEngineSpecific, DbParamOOBProfileResolver)
 	if err != nil {
 		log.Error(err, "DbParam Profile could not be resolved", "Input Profile", dbParamProfileResolver)
-		return nil, err
+		return
 	}
 
-	// DB Param Instance Profile
-	dbParamInstance, err := dbParamInstanceProfileResolver.Resolve(ctx, dbEngineSpecific, DbParamInstanceOOBProfileResolver)
-	if err != nil {
-		// Database Parameter Instance profile is required only for sql server
-		if databaseType == common.DATABASE_TYPE_MSSQL {
+	var dbParamInstance ProfileResponse
+	// DB Param Instance Profile should only be resolved for mssql engine
+	if databaseType == common.DATABASE_TYPE_MSSQL {
+		dbParamInstance, err = dbParamInstanceProfileResolver.Resolve(ctx, dbEngineSpecific, DbParamInstanceOOBProfileResolver)
+		if err != nil {
 			log.Error(err, "Db Param Instance Profile could not be resolved", "Input Profile", dbParamInstanceProfileResolver)
-			return nil, err
-		} else {
-			err = nil
+			return
 		}
 	}
 

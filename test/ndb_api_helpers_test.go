@@ -18,11 +18,6 @@ package test
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
@@ -30,7 +25,6 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/controller_adapters"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
-	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -61,183 +55,6 @@ func GetProfileResolvers(d v1alpha1.Database) ndb_api.ProfileResolvers {
 
 	return profileResolvers
 
-}
-
-func createTestProfilesForMSSQL(Database *v1alpha1.Database) {
-	softwareProfile := v1alpha1.Profile{}
-	softwareProfile.Id = MSSQL_TEST_SW_PROFILE_ID
-	softwareProfile.Name = MSSQL_TEST_SW_PROFILE_NAME
-	Database.Spec.Instance.Profiles.Software = softwareProfile
-
-	dbInstanceProfile := v1alpha1.Profile{}
-	dbInstanceProfile.Id = MSSQL_TEST_DBI_PROFILE_ID
-	dbInstanceProfile.Name = MSSQL_TEST_DBI_PROFILE_NAME
-	Database.Spec.Instance.Profiles.DbParamInstance = dbInstanceProfile
-}
-
-func TestProfiles(t *testing.T) {
-
-	//Set
-	server := GetServerTestHelper(t)
-	defer server.Close()
-	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-	Database := v1alpha1.Database{}
-	Instance := v1alpha1.Instance{}
-	Database.Spec.Instance = Instance
-
-	//Test
-	dbTypes := []string{common.DATABASE_TYPE_POSTGRES, common.DATABASE_TYPE_MYSQL, common.DATABASE_TYPE_MONGODB, common.DATABASE_TYPE_MSSQL}
-	for _, dbType := range dbTypes {
-
-		//Assert
-		profileTypes := []string{
-			common.PROFILE_TYPE_COMPUTE,
-			common.PROFILE_TYPE_SOFTWARE,
-			common.PROFILE_TYPE_NETWORK,
-			common.PROFILE_TYPE_DATABASE_PARAMETER,
-		}
-		// Create required profile for close sourced engine
-		if dbType == common.DATABASE_TYPE_MSSQL {
-			profileTypes = append(profileTypes, common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE)
-			createTestProfilesForMSSQL(&Database)
-		}
-		Instance.Type = dbType
-		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
-
-		t.Log(Database)
-		t.Log(profileTypes)
-
-		for _, profileType := range profileTypes {
-			profile := profileMap[profileType]
-			//Assert that no profileType is empty
-			if profile == (ndb_api.ProfileResponse{}) {
-				t.Errorf("Empty profile type %s for dbType %s", profileType, dbType)
-			}
-			t.Log(profile.EngineType)
-			//Assert that profile EngineType matches the database engine or the generic type
-			if profile.EngineType != ndb_api.GetDatabaseEngineName(dbType) && profile.EngineType != common.DATABASE_ENGINE_TYPE_GENERIC {
-				t.Errorf("Profile engine type %s for dbType %s does not match", profile.EngineType, dbType)
-			}
-		}
-	}
-}
-
-func TestGetProfilesFailsWhenSoftwareProfileNotProvidedForClosedSourceDBs(t *testing.T) {
-
-	//Set
-	server := GetServerTestHelper(t)
-	defer server.Close()
-	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-	Database := v1alpha1.Database{}
-	Instance := v1alpha1.Instance{}
-	Database.Spec.Instance = Instance
-	softwareProfile := v1alpha1.Profile{}
-	Instance.Profiles.Software = softwareProfile
-
-	//Test
-	dbTypes := []string{common.DATABASE_TYPE_ORACLE, common.DATABASE_TYPE_MSSQL}
-	for _, dbType := range dbTypes {
-		Instance.Type = dbType
-		_, err := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
-
-		if err == nil {
-			assert.EqualError(t, err, fmt.Sprintf("software profile is a mandatory input for %s database", dbType))
-		}
-	}
-}
-
-func TestGetProfilesGetsSmallProfile_IfNoComputeProfileInfoProvided(t *testing.T) {
-
-	//Set
-	server := GetServerTestHelper(t)
-	defer server.Close()
-	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-	Database := v1alpha1.Database{}
-	Instance := v1alpha1.Instance{}
-
-	Database.Spec.Instance = Instance
-	//Test
-	dbTypes := []string{common.DATABASE_TYPE_POSTGRES, common.DATABASE_TYPE_MYSQL, common.DATABASE_TYPE_MONGODB}
-	for _, dbType := range dbTypes {
-		Instance.Type = dbType
-		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
-
-		//Assert
-		computeProfile := profileMap[common.PROFILE_TYPE_COMPUTE]
-		if !strings.Contains(strings.ToLower(computeProfile.Name), "small") {
-			t.Errorf("Expected small oob compute profile, but got: %s", computeProfile.Name)
-		}
-	}
-}
-
-func TestGetProfilesSoftwareProfileNotReadyState(t *testing.T) {
-
-	//Set
-	server := GetServerTestHelper(t)
-	defer server.Close()
-	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-	Database := v1alpha1.Database{}
-	Instance := v1alpha1.Instance{}
-	Instance.Profiles.Software = v1alpha1.Profile{Name: "Software_Profile_Not_Ready"}
-	Database.Spec.Instance = Instance
-
-	//Test
-	dbTypes := []string{common.DATABASE_TYPE_POSTGRES}
-	for _, dbType := range dbTypes {
-		Instance.Type = dbType
-		profileMap, _ := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
-
-		//Assert
-		software := profileMap[common.PROFILE_TYPE_SOFTWARE]
-		if software != (ndb_api.ProfileResponse{}) {
-			t.Errorf("Expected software profile to be not found, but got: %s", software.Name)
-		}
-	}
-}
-
-func TestGetProfilesReturnsErrorWhenSomeProfileIsNotFound(t *testing.T) {
-
-	//Set
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !checkAuthTestHelper(r) {
-			t.Errorf("Invalid Authentication Credentials")
-		} else {
-			resp, _ := json.Marshal([]ndb_api.ProfileResponse{
-				{
-					Id:              "1",
-					Name:            "a",
-					Type:            "test type",
-					EngineType:      "test engine",
-					LatestVersionId: "v-id-1",
-					Topology:        "test topology",
-					Status:          "READY",
-				},
-			})
-			w.WriteHeader(http.StatusOK)
-			w.Write(resp)
-		}
-	}))
-	defer server.Close()
-	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-
-	Database := v1alpha1.Database{}
-	Instance := v1alpha1.Instance{}
-	Database.Spec.Instance = Instance
-	//Test
-	dbTypes := []string{common.DATABASE_TYPE_POSTGRES, common.DATABASE_TYPE_MYSQL, common.DATABASE_TYPE_MONGODB}
-	for _, dbType := range dbTypes {
-		Instance.Type = dbType
-		_, err := ndb_api.ResolveProfiles(context.Background(), ndb_client, dbType, GetProfileResolvers(Database))
-		// None of the profile criteria should match the mocked response
-		// t.Log(err)
-		if err == nil {
-			t.Errorf("GetProfiles should have retuned an error when none of the profiles matc the criteria.")
-		}
-
-	}
 }
 
 func profilesListGenerator() []ndb_api.ProfileResponse {

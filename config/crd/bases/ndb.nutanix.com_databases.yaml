@@ -134,6 +134,7 @@ spec:
                       associated with this database
                     properties:
                       dailySnapshotTime:
+                        default: "04:05:06"
                         description: Daily snapshot time in HH:MM:SS (24 hour format)
                         type: string
                       description:
