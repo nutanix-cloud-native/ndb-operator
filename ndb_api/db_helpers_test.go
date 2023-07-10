@@ -673,6 +673,20 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 				Status:          "READY",
 				SystemProfile:   false,
 			}, nil)
+
+			dbParamInstance = &MockProfileResolverInterface{}
+			dbParamInstance.On("GetName").Return("test-mssql-dbParamInstance-profile-name")
+			dbParamInstance.On("GetId").Return("test-mssql-dbParamInstance-profile-id")
+			dbParamInstance.On("Resolve").Return(ProfileResponse{
+				Id:              "test-mssql-dbParamInstance-profile-id",
+				Name:            "test-mssql-dbParamInstance-profile-name",
+				Type:            common.PROFILE_TYPE_DATABASE_PARAMETER,
+				EngineType:      common.DATABASE_ENGINE_TYPE_MSSQL,
+				LatestVersionId: "v-id-mssql",
+				Topology:        common.TOPOLOGY_SINGLE,
+				Status:          "READY",
+				SystemProfile:   false,
+			}, nil)
 		}
 
 		profileResolvers := ProfileResolvers{
