@@ -66,6 +66,14 @@ You can optionally verify that they have been created:
 kubectl get secrets
 ```
 
+Also you need to install the cert-manager in the K8s cluster as a pre-requisite. You can follow the instructions [here](https://cert-manager.io/docs/installation/)
+
+A command to install cert-manager looks like this:
+
+```
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
+```
+
 2. To create a Database CR, update these fields in the "spec" section of [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml)
     <br /> a. "server"               : NDB Server IP
     <br /> b. "clusterId"            : Nutanix Cluster Id
