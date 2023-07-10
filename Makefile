@@ -171,7 +171,8 @@ install-cert-manager:
 
 
 .PHONY: force-pull-deploy
-force-pull-deploy: docker rmi -f ${IMG}
+ force-pull-deploy: 
+	docker rmi -f ${IMG}
 	make deploy
 
 .PHONY: deploy

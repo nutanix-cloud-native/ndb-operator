@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"regexp"
+
 	"github.com/nutanix-cloud-native/ndb-operator/api"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
@@ -67,6 +69,27 @@ func instanceSpecDefaulterForCreate(r *Database) {
 
 	if r.Spec.Instance.Profiles.Compute.Id == "" && r.Spec.Instance.Profiles.Compute.Name == "" {
 		r.Spec.Instance.Profiles.Compute.Name = common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE
+	}
+
+	// time machine defaulter logic
+	if r.Spec.Instance.TMInfo.SnapshotsPerDay == 0 {
+		r.Spec.Instance.TMInfo.SnapshotsPerDay = 1
+	}
+
+	if r.Spec.Instance.TMInfo.LogCatchUpFrequency == 0 {
+		r.Spec.Instance.TMInfo.LogCatchUpFrequency = 30
+	}
+
+	if r.Spec.Instance.TMInfo.WeeklySnapshotDay == "" {
+		r.Spec.Instance.TMInfo.WeeklySnapshotDay = "FRIDAY"
+	}
+
+	if r.Spec.Instance.TMInfo.MonthlySnapshotDay == 0 {
+		r.Spec.Instance.TMInfo.MonthlySnapshotDay = 15
+	}
+
+	if r.Spec.Instance.TMInfo.QuarterlySnapshotMonth == "" {
+		r.Spec.Instance.TMInfo.QuarterlySnapshotMonth = "Jan"
 	}
 
 }
@@ -140,6 +163,32 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 		if r.Spec.Instance.Profiles == (Profiles{}) || r.Spec.Instance.Profiles.Software == (Profile{}) {
 			allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.CredentialSecret, "Software Profile must be provided for the closed-source database types"))
 		}
+	}
+
+	// validating time machine info
+	dailySnapshotTimeRegex := regexp.MustCompile(`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`)
+	if isMatch := dailySnapshotTimeRegex.MatchString(r.Spec.Instance.TMInfo.DailySnapshotTime); !isMatch {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("dailySnapshotTime"), r.Spec.Instance.TMInfo.DailySnapshotTime, "Invalid time format. Use the 24-hour format (HH:MM:SS)."))
+	}
+
+	if r.Spec.Instance.TMInfo.SnapshotsPerDay < 1 || r.Spec.Instance.TMInfo.SnapshotsPerDay > 6 {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("snapshotsPerDay"), r.Spec.Instance.TMInfo.SnapshotsPerDay, "Number of snapshots per day should be within 1 to 6"))
+	}
+
+	if _, isPresent := api.AllowedLogCatchupIntervals[r.Spec.Instance.TMInfo.LogCatchUpFrequency]; !isPresent {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("logCatchUpFrequency"), r.Spec.Instance.TMInfo.LogCatchUpFrequency, "Log catchup frequency must have one of these values: {15, 30, 45, 60, 90, 120}"))
+	}
+
+	if _, isPresent := api.AllowedWeeklySnapshotDays[r.Spec.Instance.TMInfo.WeeklySnapshotDay]; !isPresent {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("weeklySnapshotDay"), r.Spec.Instance.TMInfo.WeeklySnapshotDay, "Weekly snapshot day must have a valid value eg MONDAY"))
+	}
+
+	if r.Spec.Instance.TMInfo.MonthlySnapshotDay < 1 || r.Spec.Instance.TMInfo.MonthlySnapshotDay > 28 {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("monthlySnapshotDay"), r.Spec.Instance.TMInfo.MonthlySnapshotDay, "Monthly snapshot day value must be between 1 and 28"))
+	}
+
+	if _, isPresent := api.AllowedQuarterlySnapshotMonths[r.Spec.Instance.TMInfo.QuarterlySnapshotMonth]; !isPresent {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("quarterlySnapshotMonth"), r.Spec.Instance.TMInfo.QuarterlySnapshotMonth, "Quarterly snapshot month must be one of {Jan, Feb, Mar }"))
 	}
 
 	databaselog.Info("Exiting validateDatabaseCreate_NewDBSpec...")
