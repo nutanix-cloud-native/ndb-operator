@@ -73,9 +73,6 @@ spec:
                             type: string
                           name:
                             type: string
-                        required:
-                        - id
-                        - name
                         type: object
                       dbParam:
                         properties:
@@ -83,9 +80,6 @@ spec:
                             type: string
                           name:
                             type: string
-                        required:
-                        - id
-                        - name
                         type: object
                       dbParamInstance:
                         properties:
@@ -93,9 +87,6 @@ spec:
                             type: string
                           name:
                             type: string
-                        required:
-                        - id
-                        - name
                         type: object
                       network:
                         properties:
@@ -103,9 +94,6 @@ spec:
                             type: string
                           name:
                             type: string
-                        required:
-                        - id
-                        - name
                         type: object
                       software:
                         properties:
@@ -113,16 +101,7 @@ spec:
                             type: string
                           name:
                             type: string
-                        required:
-                        - id
-                        - name
                         type: object
-                    required:
-                    - compute
-                    - dbParam
-                    - dbParamInstance
-                    - network
-                    - software
                     type: object
                   size:
                     description: Size of the database instance, default 10, minimum
@@ -134,7 +113,6 @@ spec:
                       associated with this database
                     properties:
                       dailySnapshotTime:
-                        default: "04:05:06"
                         description: Daily snapshot time in HH:MM:SS (24 hour format)
                         type: string
                       description:
@@ -172,9 +150,6 @@ spec:
                 - credentialSecret
                 - databaseInstanceName
                 - databaseNames
-                - profiles
-                - size
-                - timezone
                 - type
                 type: object
               ndb:
@@ -195,7 +170,6 @@ spec:
                 required:
                 - clusterId
                 - credentialSecret
-                - server
                 - skipCertificateVerification
                 type: object
             required:

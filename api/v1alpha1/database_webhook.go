@@ -42,13 +42,6 @@ func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Defaulter = &Database{}
 
-func ndbSpecDefaulterForCreate(r *Database) {
-	if !r.Spec.NDB.SkipCertificateVerification {
-		r.Spec.NDB.SkipCertificateVerification = false
-	}
-
-}
-
 func instanceSpecDefaulterForCreate(r *Database) {
 
 	if r.Spec.Instance.DatabaseInstanceName == "" {
@@ -100,7 +93,6 @@ func (r *Database) Default() {
 	databaselog.Info("Entering Defaulter logic...")
 
 	databaselog.Info("default", "name", r.Name)
-	ndbSpecDefaulterForCreate(r)
 	instanceSpecDefaulterForCreate(r)
 
 	databaselog.Info("Exiting Defaulter logic...")

@@ -75,7 +75,8 @@ type NDB struct {
 	ClusterId string `json:"clusterId"`
 	// Name of the secret holding the credentials for NDB (username and password)
 	CredentialSecret string `json:"credentialSecret"`
-	Server           string `json:"server"`
+	// +optional
+	Server string `json:"server"`
 	// Skip server's certificate and hostname verification, default false
 	SkipCertificateVerification bool `json:"skipCertificateVerification"`
 }
@@ -89,11 +90,14 @@ type Instance struct {
 	DatabaseNames []string `json:"databaseNames"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
+	// +optional
 	// Size of the database instance, default 10, minimum 10
 	Size int `json:"size"`
+	// +optional
 	// default UTC
-	TimeZone string   `json:"timezone"`
-	Type     string   `json:"type"`
+	TimeZone string `json:"timezone"`
+	Type     string `json:"type"`
+	// +optional
 	Profiles Profiles `json:"profiles"`
 	// +optional
 	// +kubebuilder:default:="{emptytminfo}"
@@ -135,14 +139,21 @@ type DBTimeMachineInfo struct {
 }
 
 type Profiles struct {
-	Software        Profile `json:"software"`
-	Compute         Profile `json:"compute"`
-	Network         Profile `json:"network"`
-	DbParam         Profile `json:"dbParam"`
+	// +optional
+	Software Profile `json:"software"`
+	// +optional
+	Compute Profile `json:"compute"`
+	// +optional
+	Network Profile `json:"network"`
+	// +optional
+	DbParam Profile `json:"dbParam"`
+	// +optional
 	DbParamInstance Profile `json:"dbParamInstance"`
 }
 
 type Profile struct {
-	Id   string `json:"id"`
+	// +optional
+	Id string `json:"id"`
+	// +optional
 	Name string `json:"name"`
 }
