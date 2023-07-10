@@ -4,8 +4,6 @@ var DefaultDatabaseInstanceName = "database_instance_name"
 
 var DefaultDatabaseNames = []string{"database_one", "database_two", "database_three"}
 
-var DatabaseInstanceTypes = []string{"database_one", "database_two", "database_three"}
-
 var AllowedDatabaseTypes = map[string]bool{
 	"mysql":    true,
 	"postgres": true,

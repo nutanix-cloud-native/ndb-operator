@@ -69,6 +69,10 @@ func instanceSpecDefaulterForCreate(r *Database) {
 		r.Spec.Instance.TMInfo.SnapshotsPerDay = 1
 	}
 
+	if r.Spec.Instance.TMInfo.SLAName == "" {
+		r.Spec.Instance.TMInfo.SLAName = "None"
+	}
+
 	if r.Spec.Instance.TMInfo.LogCatchUpFrequency == 0 {
 		r.Spec.Instance.TMInfo.LogCatchUpFrequency = 30
 	}
@@ -89,12 +93,8 @@ func instanceSpecDefaulterForCreate(r *Database) {
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Database) Default() {
-
 	databaselog.Info("Entering Defaulter logic...")
-
-	databaselog.Info("default", "name", r.Name)
 	instanceSpecDefaulterForCreate(r)
-
 	databaselog.Info("Exiting Defaulter logic...")
 }
 
@@ -105,6 +105,8 @@ var _ webhook.Validator = &Database{}
 
 func ndbSpecValidatorForCreate(r *Database, allErrs field.ErrorList, ndbPath *field.Path) field.ErrorList {
 	databaselog.Info("Entering validateDatabaseCreate_NDBSpec...")
+
+	// need to fix this and skipCertificateVerification after struct to pointer change
 	if r.Spec.NDB == (NDB{}) {
 		allErrs = append(allErrs, field.Invalid(ndbPath, r.Spec.NDB, "NDB spec field must not be empty"))
 	}
@@ -129,7 +131,7 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 	databaselog.Info("Entering validateDatabaseCreate_NewDBSpec...")
 
 	if r.Spec.Instance.Size < 10 {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), r.Spec.Instance.Size, "Initial Database size must be 10 or more GBs"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), r.Spec.Instance.Size, "Initial Database size must be 10 GBs or more"))
 	}
 
 	if r.Spec.Instance.CredentialSecret == "" {
@@ -142,14 +144,14 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 
 	if _, isPresent := api.ClosedSourceDatabaseTypes[r.Spec.Instance.Type]; isPresent {
 		if r.Spec.Instance.Profiles == (Profiles{}) || r.Spec.Instance.Profiles.Software == (Profile{}) {
-			allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.CredentialSecret, "Software Profile must be provided for the closed-source database types"))
+			allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.CredentialSecret, "Software Profile must be provided for the closed-source database engines"))
 		}
 	}
 
 	// validating time machine info
 	dailySnapshotTimeRegex := regexp.MustCompile(`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`)
 	if isMatch := dailySnapshotTimeRegex.MatchString(r.Spec.Instance.TMInfo.DailySnapshotTime); !isMatch {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("dailySnapshotTime"), r.Spec.Instance.TMInfo.DailySnapshotTime, "Invalid time format. Use the 24-hour format (HH:MM:SS)."))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("dailySnapshotTime"), r.Spec.Instance.TMInfo.DailySnapshotTime, "Invalid time format for the daily snapshot time. Use the 24-hour format (HH:MM:SS)."))
 	}
 
 	if r.Spec.Instance.TMInfo.SnapshotsPerDay < 1 || r.Spec.Instance.TMInfo.SnapshotsPerDay > 6 {
@@ -161,7 +163,7 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 	}
 
 	if _, isPresent := api.AllowedWeeklySnapshotDays[r.Spec.Instance.TMInfo.WeeklySnapshotDay]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("weeklySnapshotDay"), r.Spec.Instance.TMInfo.WeeklySnapshotDay, "Weekly snapshot day must have a valid value eg MONDAY"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("weeklySnapshotDay"), r.Spec.Instance.TMInfo.WeeklySnapshotDay, "Weekly snapshot day must have a valid value e.g. MONDAY"))
 	}
 
 	if r.Spec.Instance.TMInfo.MonthlySnapshotDay < 1 || r.Spec.Instance.TMInfo.MonthlySnapshotDay > 28 {
@@ -169,7 +171,7 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 	}
 
 	if _, isPresent := api.AllowedQuarterlySnapshotMonths[r.Spec.Instance.TMInfo.QuarterlySnapshotMonth]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("quarterlySnapshotMonth"), r.Spec.Instance.TMInfo.QuarterlySnapshotMonth, "Quarterly snapshot month must be one of {Jan, Feb, Mar }"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("timeMachine").Child("quarterlySnapshotMonth"), r.Spec.Instance.TMInfo.QuarterlySnapshotMonth, "Quarterly snapshot month must be one of {Jan, Feb, Mar}"))
 	}
 
 	databaselog.Info("Exiting validateDatabaseCreate_NewDBSpec...")
