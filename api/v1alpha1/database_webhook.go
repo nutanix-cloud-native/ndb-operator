@@ -128,17 +128,6 @@ func ndbSpecValidatorForCreate(r *Database, allErrs field.ErrorList, ndbPath *fi
 func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	databaselog.Info("Entering validateDatabaseCreate_NewDBSpec...")
 
-	// Instance contains string[], so we cannot directly compare r.Spec.Instance with (Instanct{})
-	// may need to implement the comparision operation manually to check if Instance info is not present
-
-	if r.Spec.Instance.DatabaseInstanceName == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), r.Spec.Instance.DatabaseInstanceName, "Database Instance Name must not be empty"))
-	}
-
-	if len(r.Spec.Instance.DatabaseNames) < 1 {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseNames"), r.Spec.Instance.DatabaseNames, "At least one Database Name must specified"))
-	}
-
 	if r.Spec.Instance.Size < 10 {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), r.Spec.Instance.Size, "Initial Database size must be 10 or more GBs"))
 	}
