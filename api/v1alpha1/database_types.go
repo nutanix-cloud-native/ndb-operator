@@ -100,7 +100,6 @@ type Instance struct {
 	// +optional
 	Profiles Profiles `json:"profiles"`
 	// +optional
-	// +kubebuilder:default:="{emptytminfo}"
 	// Information related to time machine that is to be associated with this database
 	TMInfo DBTimeMachineInfo `json:"timeMachine"`
 }
@@ -111,9 +110,8 @@ type DBTimeMachineInfo struct {
 	Name string `json:"name"`
 	// +optional
 	Description string `json:"description"`
-	// +kubebuilder:default:=NONE
 	// +optional
-	// Name of the SLA to be used
+	// Name of the SLA to be used, default None
 	SLAName string `json:"sla"`
 	// +optional
 	// Daily snapshot time in HH:MM:SS (24 hour format)
