@@ -39,7 +39,7 @@ func CombineFieldErrors(fieldErrors field.ErrorList) error {
 	return errors.New(strings.Join(errorStrings, "; "))
 }
 
-func IsWebhookEnabled(key string) bool {
+func IsFeatureEnabled(key string) bool {
 	val, ok := os.LookupEnv(key)
 
 	if !ok {

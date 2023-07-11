@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"regexp"
+	"time"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -45,15 +46,11 @@ var _ webhook.Defaulter = &Database{}
 func instanceSpecDefaulterForCreate(r *Database) {
 
 	if r.Spec.Instance.DatabaseInstanceName == "" {
-		r.Spec.Instance.DatabaseInstanceName = api.DefaultDatabaseInstanceName
+		r.Spec.Instance.DatabaseInstanceName = "database_" + time.Now().Format("2006-Jan-02_03-04-05PM")
 	}
 
 	if len(r.Spec.Instance.DatabaseNames) == 0 {
 		r.Spec.Instance.DatabaseNames = api.DefaultDatabaseNames
-	}
-
-	if r.Spec.Instance.Size == 0 {
-		r.Spec.Instance.Size = 10
 	}
 
 	if r.Spec.Instance.TimeZone == "" {

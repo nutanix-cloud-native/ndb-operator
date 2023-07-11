@@ -105,7 +105,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if util.IsWebhookEnabled("ENABLE_WEBHOOKS") {
+	// checks if the webhooks are enabled using the environment variable
+	// default is False, hence if the env variable is not set then the
+	// webhook will fail to be registered with the controller manager
+
+	if util.IsFeatureEnabled("ENABLE_WEBHOOKS") {
+		setupLog.Info("ENABLE_WEBHOOKS is set to True. Attempting to register the Webhook...")
 		if err = (&ndbv1alpha1.Database{}).SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Database")
 			os.Exit(1)

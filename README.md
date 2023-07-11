@@ -21,6 +21,8 @@ The NDB operator brings automated and simplified database administration, provis
 4. A clone of the source code ([this](https://github.com/nutanix-cloud-native/ndb-operator) repository).
 ### Installation and Running on the cluster
 Deploy the controller on the cluster:
+5. You also need to install the cert-manager in the K8s cluster as a pre-requisite. You can follow the instructions [here](https://cert-manager.io/docs/installation/)
+
 
 ```sh
 make deploy
@@ -64,14 +66,6 @@ You can optionally verify that they have been created:
 
 ```sh
 kubectl get secrets
-```
-
-Also you need to install the cert-manager in the K8s cluster as a pre-requisite. You can follow the instructions [here](https://cert-manager.io/docs/installation/)
-
-A command to install cert-manager looks like this:
-
-```
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
 ```
 
 2. To create a Database CR, update these fields in the "spec" section of [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml)
