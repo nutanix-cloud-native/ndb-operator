@@ -63,10 +63,6 @@ func instanceSpecDefaulterForCreate(r *Database) {
 
 	// time machine defaulter logic
 
-	if r.Spec.Instance.TMInfo == (DBTimeMachineInfo{}) {
-		r.Spec.Instance.TMInfo = DBTimeMachineInfo{}
-	}
-
 	if r.Spec.Instance.TMInfo.SnapshotsPerDay == 0 {
 		r.Spec.Instance.TMInfo.SnapshotsPerDay = 1
 	}
