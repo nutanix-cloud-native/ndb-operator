@@ -111,7 +111,6 @@ var _ webhook.Validator = &Database{}
 func ndbServerSpecValidatorForCreate(r *Database, allErrs field.ErrorList, ndbPath *field.Path) field.ErrorList {
 	databaselog.Info("Entering ndbServerSpecValidatorForCreate...")
 
-	// need to fix this and skipCertificateVerification after struct to pointer change
 	if r.Spec.NDB == (NDB{}) {
 		allErrs = append(allErrs, field.Invalid(ndbPath, r.Spec.NDB, "NDB spec field must not be empty"))
 	}
