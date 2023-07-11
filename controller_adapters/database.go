@@ -100,6 +100,8 @@ func (d *Database) GetProfileResolvers() ndb_api.ProfileResolvers {
 // TM Name: db_instance_name_TM
 // TM Description: Time Machine for db_instance_name
 // SLA Name: NONE
+
+// this logic has been migrated to Webhooks, this is now just a pass-through method
 func (d *Database) GetTMDetails() (tmName, tmDescription, slaName string) {
 	tmInfo := d.Spec.Instance.TMInfo
 

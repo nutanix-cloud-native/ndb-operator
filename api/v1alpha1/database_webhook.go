@@ -63,12 +63,20 @@ func instanceSpecDefaulterForCreate(r *Database) {
 
 	// time machine defaulter logic
 
+	if r.Spec.Instance.TMInfo.Name == "" {
+		r.Spec.Instance.TMInfo.Name = r.Spec.Instance.DatabaseInstanceName + "_TM"
+	}
+
+	if r.Spec.Instance.TMInfo.Description == "" {
+		r.Spec.Instance.TMInfo.Name = "Time Machine For " + r.Spec.Instance.DatabaseInstanceName
+	}
+
 	if r.Spec.Instance.TMInfo.SnapshotsPerDay == 0 {
 		r.Spec.Instance.TMInfo.SnapshotsPerDay = 1
 	}
 
 	if r.Spec.Instance.TMInfo.SLAName == "" {
-		r.Spec.Instance.TMInfo.SLAName = "NONE"
+		r.Spec.Instance.TMInfo.SLAName = common.SLA_NAME_NONE
 	}
 
 	if r.Spec.Instance.TMInfo.SLAName == "" {
@@ -137,7 +145,7 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 	}
 
 	if r.Spec.Instance.CredentialSecret == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.Instance.CredentialSecret, "CredentialSecret must not be empty"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.Instance.CredentialSecret, "CredentialSecret must be provided"))
 	}
 
 	if _, isPresent := api.AllowedDatabaseTypes[r.Spec.Instance.Type]; !isPresent {
