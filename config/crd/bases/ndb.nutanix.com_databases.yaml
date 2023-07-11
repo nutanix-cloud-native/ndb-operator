@@ -131,8 +131,7 @@ spec:
                           Jun, Sep, Dec.
                         type: string
                       sla:
-                        default: NONE
-                        description: Name of the SLA to be used
+                        description: Name of the SLA to be used, default None
                         type: string
                       snapshotsPerDay:
                         description: Number of snapshots per day

@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"regexp"
-	"time"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -45,10 +44,6 @@ var _ webhook.Defaulter = &Database{}
 
 func instanceSpecDefaulterForCreate(r *Database) {
 
-	if r.Spec.Instance.DatabaseInstanceName == "" {
-		r.Spec.Instance.DatabaseInstanceName = "database_" + time.Now().Format("2006-Jan-02_03-04-05PM")
-	}
-
 	if len(r.Spec.Instance.DatabaseNames) == 0 {
 		r.Spec.Instance.DatabaseNames = api.DefaultDatabaseNames
 	}
@@ -68,7 +63,7 @@ func instanceSpecDefaulterForCreate(r *Database) {
 	}
 
 	if r.Spec.Instance.TMInfo.Description == "" {
-		r.Spec.Instance.TMInfo.Name = "Time Machine For " + r.Spec.Instance.DatabaseInstanceName
+		r.Spec.Instance.TMInfo.Description = "Time Machine For " + r.Spec.Instance.DatabaseInstanceName
 	}
 
 	if r.Spec.Instance.TMInfo.SnapshotsPerDay == 0 {
@@ -79,7 +74,7 @@ func instanceSpecDefaulterForCreate(r *Database) {
 		r.Spec.Instance.TMInfo.SLAName = common.SLA_NAME_NONE
 	}
 
-	if r.Spec.Instance.TMInfo.SLAName == "" {
+	if r.Spec.Instance.TMInfo.DailySnapshotTime == "" {
 		r.Spec.Instance.TMInfo.DailySnapshotTime = "04:00:00"
 	}
 
@@ -126,7 +121,7 @@ func ndbServerSpecValidatorForCreate(r *Database, allErrs field.ErrorList, ndbPa
 	}
 
 	if r.Spec.NDB.CredentialSecret == "" {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), r.Spec.NDB.CredentialSecret, "CredentialSecret must not be empty"))
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), r.Spec.NDB.CredentialSecret, "CredentialSecret must be provided"))
 	}
 
 	if err := util.ValidateURL(r.Spec.NDB.Server); err != nil {
@@ -140,6 +135,10 @@ func ndbServerSpecValidatorForCreate(r *Database, allErrs field.ErrorList, ndbPa
 func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	databaselog.Info("Entering instanceSpecValidatorForCreate...")
 
+	if r.Spec.Instance.DatabaseInstanceName == "" {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), r.Spec.Instance.DatabaseInstanceName, "A unique Database Instance Name must be specified"))
+	}
+
 	if r.Spec.Instance.Size < 10 {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), r.Spec.Instance.Size, "Initial Database size must be 10 GBs or more"))
 	}
@@ -149,12 +148,12 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 	}
 
 	if _, isPresent := api.AllowedDatabaseTypes[r.Spec.Instance.Type]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.CredentialSecret, "A valid database type must be specified"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.Type, "A valid database type must be specified"))
 	}
 
 	if _, isPresent := api.ClosedSourceDatabaseTypes[r.Spec.Instance.Type]; isPresent {
 		if r.Spec.Instance.Profiles == (Profiles{}) || r.Spec.Instance.Profiles.Software == (Profile{}) {
-			allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.CredentialSecret, "Software Profile must be provided for the closed-source database engines"))
+			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles"), r.Spec.Instance.Profiles, "Software Profile must be provided for the closed-source database engines"))
 		}
 	}
 
@@ -174,6 +173,7 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 		allErrs = append(allErrs, field.Invalid(tmPath.Child("logCatchUpFrequency"), r.Spec.Instance.TMInfo.LogCatchUpFrequency, "Log catchup frequency must have one of these values: {15, 30, 45, 60, 90, 120}"))
 	}
 
+	// TODO: Does casing matter here?
 	if _, isPresent := api.AllowedWeeklySnapshotDays[r.Spec.Instance.TMInfo.WeeklySnapshotDay]; !isPresent {
 		allErrs = append(allErrs, field.Invalid(tmPath.Child("weeklySnapshotDay"), r.Spec.Instance.TMInfo.WeeklySnapshotDay, "Weekly snapshot day must have a valid value e.g. MONDAY"))
 	}
