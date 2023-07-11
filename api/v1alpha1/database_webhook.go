@@ -63,7 +63,7 @@ func instanceSpecDefaulterForCreate(r *Database) {
 	}
 
 	if r.Spec.Instance.TMInfo.Description == "" {
-		r.Spec.Instance.TMInfo.Description = "Time Machine For " + r.Spec.Instance.DatabaseInstanceName
+		r.Spec.Instance.TMInfo.Description = "Time Machine for " + r.Spec.Instance.DatabaseInstanceName
 	}
 
 	if r.Spec.Instance.TMInfo.SnapshotsPerDay == 0 {
