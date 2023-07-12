@@ -44,8 +44,8 @@ func IsFeatureEnabled(key string) bool {
 
 	if !ok {
 		fmt.Printf("error reading %s env variable", key)
-		// safer to return "true" as default for "IsWebhookDisabled",
-		// since we want the webhooks to be ENABLED everywhere outside the local dev process
+		// safer to return "true" as default, since we want the webhooks
+		// to be ENABLED everywhere outside the local development process
 		return true
 	} else {
 

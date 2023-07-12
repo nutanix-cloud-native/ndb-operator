@@ -77,13 +77,13 @@ type NDB struct {
 	CredentialSecret string `json:"credentialSecret"`
 	// +optional
 	Server string `json:"server"`
-	// Skip server's certificate and hostname verification, default false
+	// Skip server's certificate and hostname verification
 	SkipCertificateVerification bool `json:"skipCertificateVerification"`
 }
 
 // Database instance specific details
 type Instance struct {
-	// Name of the database instance, default "database_instance_name"
+	// Name of the database instance
 	DatabaseInstanceName string `json:"databaseInstanceName"`
 	// Name(s) of the database(s) to be provisiond inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
@@ -112,7 +112,7 @@ type DBTimeMachineInfo struct {
 	// +optional
 	Description string `json:"description"`
 	// +optional
-	// Name of the SLA to be used, default None
+	// Name of the SLA to be used, default NONE
 	SLAName string `json:"sla"`
 	// +optional
 	// Daily snapshot time in HH:MM:SS (24 hour format)

@@ -56,7 +56,7 @@ spec:
                       database instance (password and ssh key)
                     type: string
                   databaseInstanceName:
-                    description: Name of the database instance, default "database_instance_name"
+                    description: Name of the database instance
                     type: string
                   databaseNames:
                     description: Name(s) of the database(s) to be provisiond inside
@@ -130,7 +130,7 @@ spec:
                           Jun, Sep, Dec.
                         type: string
                       sla:
-                        description: Name of the SLA to be used, default None
+                        description: Name of the SLA to be used, default NONE
                         type: string
                       snapshotsPerDay:
                         description: Number of snapshots per day
@@ -162,8 +162,7 @@ spec:
                   server:
                     type: string
                   skipCertificateVerification:
-                    description: Skip server's certificate and hostname verification,
-                      default false
+                    description: Skip server's certificate and hostname verification
                     type: boolean
                 required:
                 - clusterId
