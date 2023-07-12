@@ -58,40 +58,41 @@ func instanceSpecDefaulterForCreate(r *Database) {
 
 	// time machine defaulter logic
 
-	if r.Spec.Instance.TMInfo.Name == "" {
-		r.Spec.Instance.TMInfo.Name = r.Spec.Instance.DatabaseInstanceName + "_TM"
+	tmInfo := r.Spec.Instance.TMInfo
+	if tmInfo.Name == "" {
+		tmInfo.Name = r.Spec.Instance.DatabaseInstanceName + "_TM"
 	}
 
-	if r.Spec.Instance.TMInfo.Description == "" {
-		r.Spec.Instance.TMInfo.Description = "Time Machine for " + r.Spec.Instance.DatabaseInstanceName
+	if tmInfo.Description == "" {
+		tmInfo.Description = "Time Machine for " + r.Spec.Instance.DatabaseInstanceName
 	}
 
-	if r.Spec.Instance.TMInfo.SnapshotsPerDay == 0 {
-		r.Spec.Instance.TMInfo.SnapshotsPerDay = 1
+	if tmInfo.SnapshotsPerDay == 0 {
+		tmInfo.SnapshotsPerDay = 1
 	}
 
-	if r.Spec.Instance.TMInfo.SLAName == "" {
-		r.Spec.Instance.TMInfo.SLAName = common.SLA_NAME_NONE
+	if tmInfo.SLAName == "" {
+		tmInfo.SLAName = common.SLA_NAME_NONE
 	}
 
-	if r.Spec.Instance.TMInfo.DailySnapshotTime == "" {
-		r.Spec.Instance.TMInfo.DailySnapshotTime = "04:00:00"
+	if tmInfo.DailySnapshotTime == "" {
+		tmInfo.DailySnapshotTime = "04:00:00"
 	}
 
-	if r.Spec.Instance.TMInfo.LogCatchUpFrequency == 0 {
-		r.Spec.Instance.TMInfo.LogCatchUpFrequency = 30
+	if tmInfo.LogCatchUpFrequency == 0 {
+		tmInfo.LogCatchUpFrequency = 30
 	}
 
-	if r.Spec.Instance.TMInfo.WeeklySnapshotDay == "" {
-		r.Spec.Instance.TMInfo.WeeklySnapshotDay = "FRIDAY"
+	if tmInfo.WeeklySnapshotDay == "" {
+		tmInfo.WeeklySnapshotDay = "FRIDAY"
 	}
 
-	if r.Spec.Instance.TMInfo.MonthlySnapshotDay == 0 {
-		r.Spec.Instance.TMInfo.MonthlySnapshotDay = 15
+	if tmInfo.MonthlySnapshotDay == 0 {
+		tmInfo.MonthlySnapshotDay = 15
 	}
 
-	if r.Spec.Instance.TMInfo.QuarterlySnapshotMonth == "" {
-		r.Spec.Instance.TMInfo.QuarterlySnapshotMonth = "Jan"
+	if tmInfo.QuarterlySnapshotMonth == "" {
+		tmInfo.QuarterlySnapshotMonth = "Jan"
 	}
 
 }
@@ -158,31 +159,32 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 
 	// validating time machine info
 	tmPath := instancePath.Child("timeMachine")
+	tmInfo := r.Spec.Instance.TMInfo
 
 	dailySnapshotTimeRegex := regexp.MustCompile(`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`)
-	if isMatch := dailySnapshotTimeRegex.MatchString(r.Spec.Instance.TMInfo.DailySnapshotTime); !isMatch {
+	if isMatch := dailySnapshotTimeRegex.MatchString(tmInfo.DailySnapshotTime); !isMatch {
 		allErrs = append(allErrs, field.Invalid(tmPath.Child("dailySnapshotTime"), r.Spec.Instance.TMInfo.DailySnapshotTime, "Invalid time format for the daily snapshot time. Use the 24-hour format (HH:MM:SS)."))
 	}
 
-	if r.Spec.Instance.TMInfo.SnapshotsPerDay < 1 || r.Spec.Instance.TMInfo.SnapshotsPerDay > 6 {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("snapshotsPerDay"), r.Spec.Instance.TMInfo.SnapshotsPerDay, "Number of snapshots per day should be within 1 to 6"))
+	if tmInfo.SnapshotsPerDay < 1 || tmInfo.SnapshotsPerDay > 6 {
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("snapshotsPerDay"), tmInfo.SnapshotsPerDay, "Number of snapshots per day should be within 1 to 6"))
 	}
 
-	if _, isPresent := api.AllowedLogCatchupIntervals[r.Spec.Instance.TMInfo.LogCatchUpFrequency]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("logCatchUpFrequency"), r.Spec.Instance.TMInfo.LogCatchUpFrequency, "Log catchup frequency must have one of these values: {15, 30, 45, 60, 90, 120}"))
+	if _, isPresent := api.AllowedLogCatchupIntervals[tmInfo.LogCatchUpFrequency]; !isPresent {
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("logCatchUpFrequency"), tmInfo.LogCatchUpFrequency, "Log catchup frequency must have one of these values: {15, 30, 45, 60, 90, 120}"))
 	}
 
 	// TODO: Does casing matter here?
-	if _, isPresent := api.AllowedWeeklySnapshotDays[r.Spec.Instance.TMInfo.WeeklySnapshotDay]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("weeklySnapshotDay"), r.Spec.Instance.TMInfo.WeeklySnapshotDay, "Weekly snapshot day must have a valid value e.g. MONDAY"))
+	if _, isPresent := api.AllowedWeeklySnapshotDays[tmInfo.WeeklySnapshotDay]; !isPresent {
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("weeklySnapshotDay"), tmInfo.WeeklySnapshotDay, "Weekly snapshot day must have a valid value e.g. MONDAY"))
 	}
 
-	if r.Spec.Instance.TMInfo.MonthlySnapshotDay < 1 || r.Spec.Instance.TMInfo.MonthlySnapshotDay > 28 {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("monthlySnapshotDay"), r.Spec.Instance.TMInfo.MonthlySnapshotDay, "Monthly snapshot day value must be between 1 and 28"))
+	if tmInfo.MonthlySnapshotDay < 1 || tmInfo.MonthlySnapshotDay > 28 {
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("monthlySnapshotDay"), tmInfo.MonthlySnapshotDay, "Monthly snapshot day value must be between 1 and 28"))
 	}
 
-	if _, isPresent := api.AllowedQuarterlySnapshotMonths[r.Spec.Instance.TMInfo.QuarterlySnapshotMonth]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("quarterlySnapshotMonth"), r.Spec.Instance.TMInfo.QuarterlySnapshotMonth, "Quarterly snapshot month must be one of {Jan, Feb, Mar}"))
+	if _, isPresent := api.AllowedQuarterlySnapshotMonths[tmInfo.QuarterlySnapshotMonth]; !isPresent {
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("quarterlySnapshotMonth"), tmInfo.QuarterlySnapshotMonth, "Quarterly snapshot month must be one of {Jan, Feb, Mar}"))
 	}
 
 	databaselog.Info("Exiting instanceSpecValidatorForCreate...")
