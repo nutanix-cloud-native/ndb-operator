@@ -106,8 +106,9 @@ func main() {
 	}
 
 	// checks if the webhooks are enabled using the environment variable
-	// default is False, hence if the env variable is not set then the
-	// webhook will fail to be registered with the controller manager
+	// default is "true". Hence if the env variable is not set, then the
+	// webhook will attempt to register with the controller manager while
+	// starting up, and it may fail if cert-manager is not installed etc.
 
 	if util.IsFeatureEnabled("ENABLE_WEBHOOKS") {
 		setupLog.Info("ENABLE_WEBHOOKS is set to True. Attempting to register the Webhook...")

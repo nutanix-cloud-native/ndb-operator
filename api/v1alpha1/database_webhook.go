@@ -199,6 +199,7 @@ func (r *Database) ValidateCreate() error {
 	allErrs := append(ndbSpecErrors, dbSpecErrors...)
 
 	combined_err := util.CombineFieldErrors(allErrs)
+
 	databaselog.Info("validate create database webhook response...", "combined_err", combined_err)
 
 	databaselog.Info("Exiting ValidateCreate...")
