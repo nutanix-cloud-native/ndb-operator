@@ -91,7 +91,7 @@ type Instance struct {
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
 	// +optional
-	// Size of the database instance, default 10, minimum 10
+	// Size of the database instance, minimum 10 (GBs)
 	Size int `json:"size"`
 	// +optional
 	// default UTC

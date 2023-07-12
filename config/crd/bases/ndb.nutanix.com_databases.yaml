@@ -104,8 +104,7 @@ spec:
                         type: object
                     type: object
                   size:
-                    description: Size of the database instance, default 10, minimum
-                      10
+                    description: Size of the database instance, minimum 10 (GBs)
                     type: integer
                   timeMachine:
                     default: {}
