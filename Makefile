@@ -128,8 +128,8 @@ build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+run: manifests generate fmt vet ## Run a controller from your host. 
+	ENABLE_WEBHOOKS=false && go run ./main.go
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.

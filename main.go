@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/controllers"
 	//+kubebuilder:scaffold:imports
 )
@@ -103,6 +104,20 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Database")
 		os.Exit(1)
 	}
+
+	// checks if the webhooks are enabled using the environment variable
+	// default is "true". Hence if the env variable is not set, then the
+	// webhook will attempt to register with the controller manager while
+	// starting up, and it may fail if cert-manager is not installed etc.
+
+	if util.IsFeatureEnabled("ENABLE_WEBHOOKS") {
+		setupLog.Info("ENABLE_WEBHOOKS is set to True. Attempting to register the Webhook...")
+		if err = (&ndbv1alpha1.Database{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Database")
+			os.Exit(1)
+		}
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

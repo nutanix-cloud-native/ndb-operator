@@ -19,6 +19,8 @@ The NDB operator brings automated and simplified database administration, provis
 **Note:** The operator will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
 3. The operator-sdk installed.
 4. A clone of the source code ([this](https://github.com/nutanix-cloud-native/ndb-operator) repository).
+5. Installing the cert-manager. Please follow the instructions [here](https://cert-manager.io/docs/installation/)
+
 ### Installation and Running on the cluster
 Deploy the controller on the cluster:
 

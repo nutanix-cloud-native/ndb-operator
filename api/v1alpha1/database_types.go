@@ -72,42 +72,31 @@ func init() {
 
 // Details of the NDB installation
 type NDB struct {
-	// +kubebuilder:validation:Required
 	ClusterId string `json:"clusterId"`
-	// +kubebuilder:validation:Required
 	// Name of the secret holding the credentials for NDB (username and password)
 	CredentialSecret string `json:"credentialSecret"`
-	// +kubebuilder:validation:Required
+	// NDB Server URL
 	Server string `json:"server"`
-	// +kubebuilder:default:=false
-	// +optional
 	// Skip server's certificate and hostname verification
 	SkipCertificateVerification bool `json:"skipCertificateVerification"`
 }
 
 // Database instance specific details
 type Instance struct {
-	// +kubebuilder:default:=database_instance_name
 	// Name of the database instance
 	DatabaseInstanceName string `json:"databaseInstanceName"`
-	// +kubebuilder:default:={"database_one", "database_two", "database_three"}
-	// +kubebuilder:validation:MinItems:=1
-	// Name of the database to be provisiond in the database instance
+	// Name(s) of the database(s) to be provisiond inside the database instance
+	// default [ "database_one", "database_two", "database_three" ]
+	// +optional
 	DatabaseNames []string `json:"databaseNames"`
-	// +kubebuilder:validation:Required
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
-	// +kubebuilder:validation:Minimum:=10
-	// +kubebuilder:default:=10
-	// +optional
-	// Size of the database instance
+	// Size of the database instance, minimum 10 (GBs)
 	Size int `json:"size"`
-	// +kubebuilder:default:=UTC
+	// default UTC
 	// +optional
 	TimeZone string `json:"timezone"`
-	// +kubebuilder:validation:Enum=mysql;postgres;mongodb;mssql
-	// +kubebuilder:default:=postgres
-	Type string `json:"type"`
+	Type     string `json:"type"`
 	// +optional
 	Profiles Profiles `json:"profiles"`
 	// +optional
@@ -122,40 +111,24 @@ type DBTimeMachineInfo struct {
 	Name string `json:"name"`
 	// +optional
 	Description string `json:"description"`
-	// +kubebuilder:default:=NONE
 	// +optional
-	// Name of the SLA to be used
+	// Name of the SLA to be used, default NONE
 	SLAName string `json:"sla"`
-	// +kubebuilder:default:="04:05:06"
-	// +kubebuilder:validation:Format=`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`
-	// +kubebuilder:validation:ErrorMessage="Invalid time format. Use the 24-hour format (HH:MM:SS)."
 	// +optional
 	// Daily snapshot time in HH:MM:SS (24 hour format)
 	DailySnapshotTime string `json:"dailySnapshotTime"`
-	// +kubebuilder:default:=1
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=6
 	// +optional
 	// Number of snapshots per day
 	SnapshotsPerDay int `json:"snapshotsPerDay"`
-	// +kubebuilder:default=30
-	// +kubebuilder:validation:Enum=15;30;60;90;120
 	// +optional
 	// Log catch up frequency in minutes
 	LogCatchUpFrequency int `json:"logCatchUpFrequency"`
-	// +kubebuilder:default=FRIDAY
-	// +kubebuilder:validation:Enum=MONDAY;TUESDAY;WEDNESDAY;THURSDAY;FRIDAY;SATURDAY;SUNDAY
 	// +optional
 	// Day of the week for weekly snapshot
 	WeeklySnapshotDay string `json:"weeklySnapshotDay"`
-	// +kubebuilder:default:=15
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=28
 	// +optional
 	// Day of the month for monthly snapshot
 	MonthlySnapshotDay int `json:"monthlySnapshotDay"`
-	// +kubebuilder:default=Jan
-	// +kubebuilder:validation:Enum=Jan;Feb;Mar
 	// +optional
 	// Start month for the quarterly snapshot
 	// Jan => Jan, Apr, Jul, Oct.
@@ -167,16 +140,12 @@ type DBTimeMachineInfo struct {
 type Profiles struct {
 	// +optional
 	Software Profile `json:"software"`
-
 	// +optional
 	Compute Profile `json:"compute"`
-
 	// +optional
 	Network Profile `json:"network"`
-
 	// +optional
 	DbParam Profile `json:"dbParam"`
-
 	// +optional
 	DbParamInstance Profile `json:"dbParamInstance"`
 }
