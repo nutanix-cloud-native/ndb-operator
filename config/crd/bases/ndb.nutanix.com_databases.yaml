@@ -147,7 +147,7 @@ spec:
                 required:
                 - credentialSecret
                 - databaseInstanceName
-                - databaseNames
+                - size
                 - type
                 type: object
               ndb:
@@ -160,6 +160,7 @@ spec:
                       (username and password)
                     type: string
                   server:
+                    description: NDB Server URL
                     type: string
                   skipCertificateVerification:
                     description: Skip server's certificate and hostname verification
@@ -167,6 +168,7 @@ spec:
                 required:
                 - clusterId
                 - credentialSecret
+                - server
                 - skipCertificateVerification
                 type: object
             required:

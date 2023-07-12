@@ -75,7 +75,7 @@ type NDB struct {
 	ClusterId string `json:"clusterId"`
 	// Name of the secret holding the credentials for NDB (username and password)
 	CredentialSecret string `json:"credentialSecret"`
-	// +optional
+	// NDB Server URL
 	Server string `json:"server"`
 	// Skip server's certificate and hostname verification
 	SkipCertificateVerification bool `json:"skipCertificateVerification"`
@@ -87,14 +87,14 @@ type Instance struct {
 	DatabaseInstanceName string `json:"databaseInstanceName"`
 	// Name(s) of the database(s) to be provisiond inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
+	// +optional
 	DatabaseNames []string `json:"databaseNames"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
-	// +optional
 	// Size of the database instance, minimum 10 (GBs)
 	Size int `json:"size"`
-	// +optional
 	// default UTC
+	// +optional
 	TimeZone string `json:"timezone"`
 	Type     string `json:"type"`
 	// +optional
