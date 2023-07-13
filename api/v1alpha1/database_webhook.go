@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+	"reflect"
 	"regexp"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api"
@@ -52,16 +54,25 @@ func instanceSpecDefaulterForCreate(r *Database) {
 		r.Spec.Instance.TimeZone = "UTC"
 	}
 
+	// initialize Profiles block if that has not been added by the user
+
+	if r.Spec.Instance.Profiles == nil {
+		databaselog.Info("profiles spec is not provided by the user...")
+		r.Spec.Instance.Profiles = &(Profiles{})
+		databaselog.Info("Initialzing to empty...", "profiles", r.Spec.Instance.Profiles)
+	}
+
 	if r.Spec.Instance.Profiles.Compute.Id == "" && r.Spec.Instance.Profiles.Compute.Name == "" {
 		r.Spec.Instance.Profiles.Compute.Name = common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE
 	}
 
 	// time machine defaulter logic
 
+	// initialize TM block if that has not been added by the user
 	if r.Spec.Instance.TMInfo == nil {
-		databaselog.Info("tmInfo is empty...")
+		databaselog.Info("tmInfo is not provided by the user...")
 		r.Spec.Instance.TMInfo = &(DBTimeMachineInfo{})
-		databaselog.Info("Initialzing", "tmInfo", r.Spec.Instance.TMInfo)
+		databaselog.Info("Initialzing to empty...", "tmInfo", r.Spec.Instance.TMInfo)
 	}
 
 	if r.Spec.Instance.TMInfo.Name == "" {
@@ -81,7 +92,7 @@ func instanceSpecDefaulterForCreate(r *Database) {
 	}
 
 	if r.Spec.Instance.TMInfo.DailySnapshotTime == "" {
-		r.Spec.Instance.TMInfo.DailySnapshotTime = "04:00:00"
+		r.Spec.Instance.TMInfo.DailySnapshotTime = "03:00:00"
 	}
 
 	if r.Spec.Instance.TMInfo.LogCatchUpFrequency == 0 {
@@ -153,12 +164,14 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 	}
 
 	if _, isPresent := api.AllowedDatabaseTypes[r.Spec.Instance.Type]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.Type, "A valid database type must be specified"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.Type,
+			fmt.Sprintf("A valid database type must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedDatabaseTypes).MapKeys()),
+		))
 	}
 
 	if _, isPresent := api.ClosedSourceDatabaseTypes[r.Spec.Instance.Type]; isPresent {
-		if r.Spec.Instance.Profiles == (Profiles{}) || r.Spec.Instance.Profiles.Software == (Profile{}) {
-			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles"), r.Spec.Instance.Profiles, "Software Profile must be provided for the closed-source database engines"))
+		if r.Spec.Instance.Profiles == &(Profiles{}) || r.Spec.Instance.Profiles.Software == (Profile{}) {
+			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles").Child("software"), r.Spec.Instance.Profiles.Software, "Software Profile must be provided for the closed-source database engines"))
 		}
 	}
 

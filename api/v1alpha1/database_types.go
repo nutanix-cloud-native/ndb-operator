@@ -98,7 +98,7 @@ type Instance struct {
 	TimeZone string `json:"timezone"`
 	Type     string `json:"type"`
 	// +optional
-	Profiles Profiles `json:"profiles"`
+	Profiles *Profiles `json:"profiles"`
 	// +optional
 	// Information related to time machine that is to be associated with this database
 	TMInfo *DBTimeMachineInfo `json:"timeMachine"`

@@ -139,7 +139,11 @@ func (in *Instance) DeepCopyInto(out *Instance) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	out.Profiles = in.Profiles
+	if in.Profiles != nil {
+		in, out := &in.Profiles, &out.Profiles
+		*out = new(Profiles)
+		**out = **in
+	}
 	if in.TMInfo != nil {
 		in, out := &in.TMInfo, &out.TMInfo
 		*out = new(DBTimeMachineInfo)

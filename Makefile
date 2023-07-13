@@ -37,7 +37,7 @@ PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # nutanix.com/ndb-operator-bundle:$VERSION and nutanix.com/ndb-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= ghcr.io/nutanix-cloud-native/ndb-operator/controller
+IMAGE_TAG_BASE ?= 089786/ndb-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
