@@ -100,9 +100,8 @@ type Instance struct {
 	// +optional
 	Profiles Profiles `json:"profiles"`
 	// +optional
-	// +kubebuilder:default:="{emptytminfo}"
 	// Information related to time machine that is to be associated with this database
-	TMInfo DBTimeMachineInfo `json:"timeMachine"`
+	TMInfo *DBTimeMachineInfo `json:"timeMachine"`
 }
 
 // Time Machine details

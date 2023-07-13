@@ -58,41 +58,46 @@ func instanceSpecDefaulterForCreate(r *Database) {
 
 	// time machine defaulter logic
 
-	tmInfo := r.Spec.Instance.TMInfo
-	if tmInfo.Name == "" {
-		tmInfo.Name = r.Spec.Instance.DatabaseInstanceName + "_TM"
+	if r.Spec.Instance.TMInfo == nil {
+		databaselog.Info("tmInfo is empty...")
+		r.Spec.Instance.TMInfo = &(DBTimeMachineInfo{})
+		databaselog.Info("Initialzing", "tmInfo", r.Spec.Instance.TMInfo)
 	}
 
-	if tmInfo.Description == "" {
-		tmInfo.Description = "Time Machine for " + r.Spec.Instance.DatabaseInstanceName
+	if r.Spec.Instance.TMInfo.Name == "" {
+		r.Spec.Instance.TMInfo.Name = r.Spec.Instance.DatabaseInstanceName + "_TM"
 	}
 
-	if tmInfo.SnapshotsPerDay == 0 {
-		tmInfo.SnapshotsPerDay = 1
+	if r.Spec.Instance.TMInfo.Description == "" {
+		r.Spec.Instance.TMInfo.Description = "Time Machine for " + r.Spec.Instance.DatabaseInstanceName
 	}
 
-	if tmInfo.SLAName == "" {
-		tmInfo.SLAName = common.SLA_NAME_NONE
+	if r.Spec.Instance.TMInfo.SnapshotsPerDay == 0 {
+		r.Spec.Instance.TMInfo.SnapshotsPerDay = 1
 	}
 
-	if tmInfo.DailySnapshotTime == "" {
-		tmInfo.DailySnapshotTime = "04:00:00"
+	if r.Spec.Instance.TMInfo.SLAName == "" {
+		r.Spec.Instance.TMInfo.SLAName = common.SLA_NAME_NONE
 	}
 
-	if tmInfo.LogCatchUpFrequency == 0 {
-		tmInfo.LogCatchUpFrequency = 30
+	if r.Spec.Instance.TMInfo.DailySnapshotTime == "" {
+		r.Spec.Instance.TMInfo.DailySnapshotTime = "04:00:00"
 	}
 
-	if tmInfo.WeeklySnapshotDay == "" {
-		tmInfo.WeeklySnapshotDay = "FRIDAY"
+	if r.Spec.Instance.TMInfo.LogCatchUpFrequency == 0 {
+		r.Spec.Instance.TMInfo.LogCatchUpFrequency = 30
 	}
 
-	if tmInfo.MonthlySnapshotDay == 0 {
-		tmInfo.MonthlySnapshotDay = 15
+	if r.Spec.Instance.TMInfo.WeeklySnapshotDay == "" {
+		r.Spec.Instance.TMInfo.WeeklySnapshotDay = "FRIDAY"
 	}
 
-	if tmInfo.QuarterlySnapshotMonth == "" {
-		tmInfo.QuarterlySnapshotMonth = "Jan"
+	if r.Spec.Instance.TMInfo.MonthlySnapshotDay == 0 {
+		r.Spec.Instance.TMInfo.MonthlySnapshotDay = 15
+	}
+
+	if r.Spec.Instance.TMInfo.QuarterlySnapshotMonth == "" {
+		r.Spec.Instance.TMInfo.QuarterlySnapshotMonth = "Jan"
 	}
 
 }
