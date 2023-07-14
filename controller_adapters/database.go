@@ -44,11 +44,11 @@ type Database struct {
 }
 
 func (d *Database) GetDBInstanceName() string {
-	return d.Spec.Instance.DatabaseInstanceName
+	return *d.Spec.Instance.DatabaseInstanceName
 }
 
 func (d *Database) GetDBInstanceType() string {
-	return d.Spec.Instance.Type
+	return *d.Spec.Instance.Type
 }
 
 func (d *Database) GetDBInstanceDatabaseNames() string {
@@ -56,7 +56,7 @@ func (d *Database) GetDBInstanceDatabaseNames() string {
 }
 
 func (d *Database) GetDBInstanceTimeZone() string {
-	return d.Spec.Instance.TimeZone
+	return *d.Spec.Instance.TimeZone
 }
 
 func (d *Database) GetDBInstanceSize() int {

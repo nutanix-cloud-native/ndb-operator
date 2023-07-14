@@ -84,19 +84,19 @@ type NDB struct {
 // Database instance specific details
 type Instance struct {
 	// Name of the database instance
-	DatabaseInstanceName string `json:"databaseInstanceName"`
+	DatabaseInstanceName *string `json:"databaseInstanceName"`
 	// Name(s) of the database(s) to be provisiond inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
 	// +optional
 	DatabaseNames []string `json:"databaseNames"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
-	CredentialSecret string `json:"credentialSecret"`
+	CredentialSecret *string `json:"credentialSecret"`
 	// Size of the database instance, minimum 10 (GBs)
 	Size int `json:"size"`
 	// default UTC
 	// +optional
-	TimeZone string `json:"timezone"`
-	Type     string `json:"type"`
+	TimeZone *string `json:"timezone"`
+	Type     *string `json:"type"`
 	// +optional
 	Profiles *Profiles `json:"profiles"`
 	// +optional

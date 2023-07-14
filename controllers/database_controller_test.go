@@ -41,7 +41,9 @@ import (
 var _ = Describe("Database controller", func() {
 	Context("Database controller test", func() {
 
-		const DatabaseName = "test-database-name"
+		DatabaseName := "test-database-name"
+		timezoneUTC := "UTC"
+		typePostgres := "postgres"
 		const namespaceName = "test-namespace"
 		const testNDBServer = "http://123.123.123.123:123"
 		const testDatabaseIP = "111.222.123.234"
@@ -49,7 +51,7 @@ var _ = Describe("Database controller", func() {
 		ctx := context.Background()
 
 		const ndbSecretName = "test-ndb-secret-name"
-		const instanceSecretName = "test-instance-secret-name"
+		instanceSecretName := "test-instance-secret-name"
 		const username = "test-username"
 		const password = "test-password"
 		const sshPublicKey = "test-ssh-key"
@@ -87,12 +89,12 @@ var _ = Describe("Database controller", func() {
 						Server:           testNDBServer,
 					},
 					Instance: ndbv1alpha1.Instance{
-						DatabaseInstanceName: DatabaseName,
+						DatabaseInstanceName: &DatabaseName,
 						DatabaseNames:        []string{"database_1"},
-						CredentialSecret:     instanceSecretName,
+						CredentialSecret:     &instanceSecretName,
 						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "postgres",
+						TimeZone:             &timezoneUTC,
+						Type:                 &typePostgres,
 						TMInfo: &ndbv1alpha1.DBTimeMachineInfo{
 							QuarterlySnapshotMonth: "Jan",
 							SnapshotsPerDay:        4,

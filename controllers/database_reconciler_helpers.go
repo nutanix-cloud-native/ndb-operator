@@ -202,7 +202,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		// DB Status.Status is empty => Provision a DB
 		log.Info("Provisioning a database instance with NDB.")
 
-		dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
+		dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, *database.Spec.Instance.CredentialSecret, req.Namespace)
 		if err != nil || dbPassword == "" || sshPublicKey == "" {
 			var errStatement string
 			if err == nil {
@@ -240,7 +240,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		database.Status.Id = taskResponse.EntityId
 
 		// Updating the type in the Database Status based on the input
-		database.Status.Type = database.Spec.Instance.Type
+		database.Status.Type = *database.Spec.Instance.Type
 
 		err = r.Status().Update(ctx, database)
 		if err != nil {
@@ -301,7 +301,7 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 		Name:      database.Name + "-svc",
 		Namespace: req.Namespace,
 	}
-	targetPort := ndb_api.GetDatabasePortByType(database.Spec.Instance.Type)
+	targetPort := ndb_api.GetDatabasePortByType(*database.Spec.Instance.Type)
 
 	err = r.setupService(ctx, database, commonNamespacedName, commonMetadata, targetPort)
 	if err != nil {

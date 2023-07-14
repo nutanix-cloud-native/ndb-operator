@@ -50,8 +50,9 @@ func instanceSpecDefaulterForCreate(r *Database) {
 		r.Spec.Instance.DatabaseNames = api.DefaultDatabaseNames
 	}
 
-	if r.Spec.Instance.TimeZone == "" {
-		r.Spec.Instance.TimeZone = "UTC"
+	if r.Spec.Instance.TimeZone == nil {
+		utc := common.TIMEZONE_UTC
+		r.Spec.Instance.TimeZone = &utc
 	}
 
 	// initialize Profiles block if that has not been added by the user
@@ -76,11 +77,11 @@ func instanceSpecDefaulterForCreate(r *Database) {
 	}
 
 	if r.Spec.Instance.TMInfo.Name == "" {
-		r.Spec.Instance.TMInfo.Name = r.Spec.Instance.DatabaseInstanceName + "_TM"
+		r.Spec.Instance.TMInfo.Name = *(r.Spec.Instance.DatabaseInstanceName) + "_TM"
 	}
 
 	if r.Spec.Instance.TMInfo.Description == "" {
-		r.Spec.Instance.TMInfo.Description = "Time Machine for " + r.Spec.Instance.DatabaseInstanceName
+		r.Spec.Instance.TMInfo.Description = "Time Machine for " + *(r.Spec.Instance.DatabaseInstanceName)
 	}
 
 	if r.Spec.Instance.TMInfo.SnapshotsPerDay == 0 {
@@ -151,7 +152,7 @@ func ndbServerSpecValidatorForCreate(r *Database, allErrs field.ErrorList, ndbPa
 func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	databaselog.Info("Entering instanceSpecValidatorForCreate...")
 
-	if r.Spec.Instance.DatabaseInstanceName == "" {
+	if r.Spec.Instance.DatabaseInstanceName == nil {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), r.Spec.Instance.DatabaseInstanceName, "A unique Database Instance Name must be specified"))
 	}
 
@@ -159,17 +160,17 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), r.Spec.Instance.Size, "Initial Database size must be 10 GBs or more"))
 	}
 
-	if r.Spec.Instance.CredentialSecret == "" {
+	if r.Spec.Instance.CredentialSecret == nil {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.Instance.CredentialSecret, "CredentialSecret must be provided"))
 	}
 
-	if _, isPresent := api.AllowedDatabaseTypes[r.Spec.Instance.Type]; !isPresent {
+	if _, isPresent := api.AllowedDatabaseTypes[*r.Spec.Instance.Type]; !isPresent {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.Type,
 			fmt.Sprintf("A valid database type must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedDatabaseTypes).MapKeys()),
 		))
 	}
 
-	if _, isPresent := api.ClosedSourceDatabaseTypes[r.Spec.Instance.Type]; isPresent {
+	if _, isPresent := api.ClosedSourceDatabaseTypes[*r.Spec.Instance.Type]; isPresent {
 		if r.Spec.Instance.Profiles == &(Profiles{}) || r.Spec.Instance.Profiles.Software == (Profile{}) {
 			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles").Child("software"), r.Spec.Instance.Profiles.Software, "Software Profile must be provided for the closed-source database engines"))
 		}

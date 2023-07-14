@@ -55,6 +55,8 @@ const (
 
 	PROFILE_STATUS_READY = "READY"
 
+	TIMEZONE_UTC = "UTC"
+
 	PROFILE_TYPE_COMPUTE                     = "Compute"
 	PROFILE_TYPE_DATABASE_PARAMETER          = "Database_Parameter"
 	PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE = "Database_Parameter_Instance"
