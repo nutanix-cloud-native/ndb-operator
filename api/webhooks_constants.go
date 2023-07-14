@@ -13,7 +13,7 @@ var ClosedSourceDatabaseTypes = map[string]bool{
 	"mssql": true,
 }
 
-var AllowedLogCatchupIntervals = map[int]bool{
+var AllowedLogCatchupFrequencyInMinutes = map[int]bool{
 	15:  true,
 	30:  true,
 	45:  true,

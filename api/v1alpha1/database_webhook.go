@@ -55,12 +55,11 @@ func instanceSpecDefaulterForCreate(r *Database) {
 		r.Spec.Instance.TimeZone = &utc
 	}
 
-	// initialize Profiles block if that has not been added by the user
+	// initialize Profiles block if it's not provided by the user
 
 	if r.Spec.Instance.Profiles == nil {
-		databaselog.Info("profiles spec is not provided by the user...")
-		r.Spec.Instance.Profiles = &(Profiles{})
 		databaselog.Info("Initialzing to empty...", "profiles", r.Spec.Instance.Profiles)
+		r.Spec.Instance.Profiles = &(Profiles{})
 	}
 
 	if r.Spec.Instance.Profiles.Compute.Id == "" && r.Spec.Instance.Profiles.Compute.Name == "" {
@@ -69,11 +68,10 @@ func instanceSpecDefaulterForCreate(r *Database) {
 
 	// time machine defaulter logic
 
-	// initialize TM block if that has not been added by the user
+	// initialize TM block if it's not provided by the user
 	if r.Spec.Instance.TMInfo == nil {
-		databaselog.Info("tmInfo is not provided by the user...")
-		r.Spec.Instance.TMInfo = &(DBTimeMachineInfo{})
 		databaselog.Info("Initialzing to empty...", "tmInfo", r.Spec.Instance.TMInfo)
+		r.Spec.Instance.TMInfo = &(DBTimeMachineInfo{})
 	}
 
 	if r.Spec.Instance.TMInfo.Name == "" {
@@ -93,7 +91,7 @@ func instanceSpecDefaulterForCreate(r *Database) {
 	}
 
 	if r.Spec.Instance.TMInfo.DailySnapshotTime == "" {
-		r.Spec.Instance.TMInfo.DailySnapshotTime = "03:00:00"
+		r.Spec.Instance.TMInfo.DailySnapshotTime = "04:00:00"
 	}
 
 	if r.Spec.Instance.TMInfo.LogCatchUpFrequency == 0 {
@@ -152,7 +150,8 @@ func ndbServerSpecValidatorForCreate(r *Database, allErrs field.ErrorList, ndbPa
 func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	databaselog.Info("Entering instanceSpecValidatorForCreate...")
 
-	if r.Spec.Instance.DatabaseInstanceName == nil {
+	// need to ass rert using a regex
+	if r.Spec.Instance.DatabaseInstanceName == nil || *r.Spec.Instance.DatabaseInstanceName == "" {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), r.Spec.Instance.DatabaseInstanceName, "A unique Database Instance Name must be specified"))
 	}
 
@@ -160,7 +159,7 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), r.Spec.Instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
 	}
 
-	if r.Spec.Instance.CredentialSecret == nil {
+	if r.Spec.Instance.CredentialSecret == nil || *r.Spec.Instance.CredentialSecret == "" {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.Instance.CredentialSecret, "CredentialSecret must be provided in the Instance Spec"))
 	}
 
@@ -189,9 +188,9 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 		allErrs = append(allErrs, field.Invalid(tmPath.Child("snapshotsPerDay"), tmInfo.SnapshotsPerDay, "Number of snapshots per day should be within 1 to 6"))
 	}
 
-	if _, isPresent := api.AllowedLogCatchupIntervals[tmInfo.LogCatchUpFrequency]; !isPresent {
+	if _, isPresent := api.AllowedLogCatchupFrequencyInMinutes[tmInfo.LogCatchUpFrequency]; !isPresent {
 		allErrs = append(allErrs, field.Invalid(tmPath.Child("logCatchUpFrequency"), tmInfo.LogCatchUpFrequency,
-			fmt.Sprintf("Log catchup frequency must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedLogCatchupIntervals).MapKeys()),
+			fmt.Sprintf("Log catchup frequency must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedLogCatchupFrequencyInMinutes).MapKeys()),
 		))
 	}
 
