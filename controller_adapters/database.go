@@ -60,7 +60,7 @@ func (d *Database) GetDBInstanceTimeZone() string {
 }
 
 func (d *Database) GetDBInstanceSize() int {
-	return d.Spec.Instance.Size
+	return *d.Spec.Instance.Size
 }
 
 func (d *Database) GetNDBClusterId() string {

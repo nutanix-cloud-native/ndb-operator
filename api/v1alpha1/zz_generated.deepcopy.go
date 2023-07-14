@@ -149,6 +149,11 @@ func (in *Instance) DeepCopyInto(out *Instance) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.Size != nil {
+		in, out := &in.Size, &out.Size
+		*out = new(int)
+		**out = **in
+	}
 	if in.TimeZone != nil {
 		in, out := &in.TimeZone, &out.TimeZone
 		*out = new(string)

@@ -138,7 +138,7 @@ func ndbServerSpecValidatorForCreate(r *Database, allErrs field.ErrorList, ndbPa
 	}
 
 	if r.Spec.NDB.CredentialSecret == "" {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), r.Spec.NDB.CredentialSecret, "CredentialSecret must be provided"))
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), r.Spec.NDB.CredentialSecret, "CredentialSecret must be provided in the NDB Server Spec"))
 	}
 
 	if err := util.ValidateURL(r.Spec.NDB.Server); err != nil {
@@ -156,12 +156,12 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), r.Spec.Instance.DatabaseInstanceName, "A unique Database Instance Name must be specified"))
 	}
 
-	if r.Spec.Instance.Size < 10 {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), r.Spec.Instance.Size, "Initial Database size must be 10 GBs or more"))
+	if r.Spec.Instance.Size == nil || *r.Spec.Instance.Size < 10 {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), r.Spec.Instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
 	}
 
 	if r.Spec.Instance.CredentialSecret == nil {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.Instance.CredentialSecret, "CredentialSecret must be provided"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.Instance.CredentialSecret, "CredentialSecret must be provided in the Instance Spec"))
 	}
 
 	if _, isPresent := api.AllowedDatabaseTypes[*r.Spec.Instance.Type]; !isPresent {
@@ -190,12 +190,15 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 	}
 
 	if _, isPresent := api.AllowedLogCatchupIntervals[tmInfo.LogCatchUpFrequency]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("logCatchUpFrequency"), tmInfo.LogCatchUpFrequency, "Log catchup frequency must have one of these values: {15, 30, 45, 60, 90, 120}"))
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("logCatchUpFrequency"), tmInfo.LogCatchUpFrequency,
+			fmt.Sprintf("Log catchup frequency must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedLogCatchupIntervals).MapKeys()),
+		))
 	}
 
-	// TODO: Does casing matter here?
 	if _, isPresent := api.AllowedWeeklySnapshotDays[tmInfo.WeeklySnapshotDay]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("weeklySnapshotDay"), tmInfo.WeeklySnapshotDay, "Weekly snapshot day must have a valid value e.g. MONDAY"))
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("weeklySnapshotDay"), tmInfo.WeeklySnapshotDay,
+			fmt.Sprintf("Weekly Snapshot day must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedWeeklySnapshotDays).MapKeys()),
+		))
 	}
 
 	if tmInfo.MonthlySnapshotDay < 1 || tmInfo.MonthlySnapshotDay > 28 {
@@ -203,7 +206,9 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 	}
 
 	if _, isPresent := api.AllowedQuarterlySnapshotMonths[tmInfo.QuarterlySnapshotMonth]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("quarterlySnapshotMonth"), tmInfo.QuarterlySnapshotMonth, "Quarterly snapshot month must be one of {Jan, Feb, Mar}"))
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("quarterlySnapshotMonth"), tmInfo.QuarterlySnapshotMonth,
+			fmt.Sprintf("Quarterly snapshot month must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedQuarterlySnapshotMonths).MapKeys()),
+		))
 	}
 
 	databaselog.Info("Exiting instanceSpecValidatorForCreate...")

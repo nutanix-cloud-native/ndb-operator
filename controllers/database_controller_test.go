@@ -44,6 +44,7 @@ var _ = Describe("Database controller", func() {
 		DatabaseName := "test-database-name"
 		timezoneUTC := "UTC"
 		typePostgres := "postgres"
+		databaseSize := 10
 		const namespaceName = "test-namespace"
 		const testNDBServer = "http://123.123.123.123:123"
 		const testDatabaseIP = "111.222.123.234"
@@ -92,7 +93,7 @@ var _ = Describe("Database controller", func() {
 						DatabaseInstanceName: &DatabaseName,
 						DatabaseNames:        []string{"database_1"},
 						CredentialSecret:     &instanceSecretName,
-						Size:                 10,
+						Size:                 &databaseSize,
 						TimeZone:             &timezoneUTC,
 						Type:                 &typePostgres,
 						TMInfo: &ndbv1alpha1.DBTimeMachineInfo{
