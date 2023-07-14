@@ -46,11 +46,11 @@ var _ webhook.Defaulter = &Database{}
 
 func instanceSpecDefaulterForCreate(r *Database) {
 
-	if len(*r.Spec.Instance.DatabaseNames) == 0 {
+	if r.Spec.Instance.DatabaseNames == nil || len(*r.Spec.Instance.DatabaseNames) == 0 {
 		r.Spec.Instance.DatabaseNames = &api.DefaultDatabaseNames
 	}
 
-	if r.Spec.Instance.TimeZone == nil {
+	if r.Spec.Instance.TimeZone == nil || *r.Spec.Instance.TimeZone == "" {
 		utc := common.TIMEZONE_UTC
 		r.Spec.Instance.TimeZone = &utc
 	}
