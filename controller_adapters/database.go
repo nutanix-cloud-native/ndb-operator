@@ -52,7 +52,7 @@ func (d *Database) GetDBInstanceType() string {
 }
 
 func (d *Database) GetDBInstanceDatabaseNames() string {
-	return strings.Join(d.Spec.Instance.DatabaseNames, ",")
+	return strings.Join(*d.Spec.Instance.DatabaseNames, ",")
 }
 
 func (d *Database) GetDBInstanceTimeZone() string {
