@@ -30,8 +30,8 @@ import (
 
 func GetProfileResolvers(d v1alpha1.Database) ndb_api.ProfileResolvers {
 
-	// Webhook defaults tje Profiles to empty struct, but while running the UTs,
-	// defaulter code will not come into picture - so manually initialzing in tests
+	// Webhook defaults the Profiles to an empty struct, but while running the UTs, the
+	// FDfaulter logic will not be run - so manually initialzing Profiles struct here
 	if d.Spec.Instance.Profiles == nil {
 		d.Spec.Instance.Profiles = &(v1alpha1.Profiles{})
 	}
