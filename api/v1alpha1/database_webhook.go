@@ -58,7 +58,7 @@ func instanceSpecDefaulterForCreate(r *Database) {
 	// initialize Profiles block if it's not provided by the user
 
 	if r.Spec.Instance.Profiles == nil {
-		databaselog.Info("Initialzing to empty...", "profiles", r.Spec.Instance.Profiles)
+		databaselog.Info("Initialzing empty Profiles ...")
 		r.Spec.Instance.Profiles = &(Profiles{})
 	}
 
@@ -68,46 +68,47 @@ func instanceSpecDefaulterForCreate(r *Database) {
 
 	// time machine defaulter logic
 
+	tmInfo := r.Spec.Instance.TMInfo
 	// initialize TM block if it's not provided by the user
-	if r.Spec.Instance.TMInfo == nil {
-		databaselog.Info("Initialzing to empty...", "tmInfo", r.Spec.Instance.TMInfo)
-		r.Spec.Instance.TMInfo = &(DBTimeMachineInfo{})
+	if tmInfo == nil {
+		databaselog.Info("Initialzing empty TMInfo...")
+		tmInfo = &(DBTimeMachineInfo{})
 	}
 
-	if r.Spec.Instance.TMInfo.Name == "" {
-		r.Spec.Instance.TMInfo.Name = *(r.Spec.Instance.DatabaseInstanceName) + "_TM"
+	if tmInfo.Name == "" {
+		tmInfo.Name = *(r.Spec.Instance.DatabaseInstanceName) + "_TM"
 	}
 
-	if r.Spec.Instance.TMInfo.Description == "" {
-		r.Spec.Instance.TMInfo.Description = "Time Machine for " + *(r.Spec.Instance.DatabaseInstanceName)
+	if tmInfo.Description == "" {
+		tmInfo.Description = "Time Machine for " + *(r.Spec.Instance.DatabaseInstanceName)
 	}
 
-	if r.Spec.Instance.TMInfo.SnapshotsPerDay == 0 {
-		r.Spec.Instance.TMInfo.SnapshotsPerDay = 1
+	if tmInfo.SnapshotsPerDay == 0 {
+		tmInfo.SnapshotsPerDay = 1
 	}
 
-	if r.Spec.Instance.TMInfo.SLAName == "" {
-		r.Spec.Instance.TMInfo.SLAName = common.SLA_NAME_NONE
+	if tmInfo.SLAName == "" {
+		tmInfo.SLAName = common.SLA_NAME_NONE
 	}
 
-	if r.Spec.Instance.TMInfo.DailySnapshotTime == "" {
-		r.Spec.Instance.TMInfo.DailySnapshotTime = "04:00:00"
+	if tmInfo.DailySnapshotTime == "" {
+		tmInfo.DailySnapshotTime = "04:00:00"
 	}
 
-	if r.Spec.Instance.TMInfo.LogCatchUpFrequency == 0 {
-		r.Spec.Instance.TMInfo.LogCatchUpFrequency = 30
+	if tmInfo.LogCatchUpFrequency == 0 {
+		tmInfo.LogCatchUpFrequency = 30
 	}
 
-	if r.Spec.Instance.TMInfo.WeeklySnapshotDay == "" {
-		r.Spec.Instance.TMInfo.WeeklySnapshotDay = "FRIDAY"
+	if tmInfo.WeeklySnapshotDay == "" {
+		tmInfo.WeeklySnapshotDay = "FRIDAY"
 	}
 
-	if r.Spec.Instance.TMInfo.MonthlySnapshotDay == 0 {
-		r.Spec.Instance.TMInfo.MonthlySnapshotDay = 15
+	if tmInfo.MonthlySnapshotDay == 0 {
+		tmInfo.MonthlySnapshotDay = 15
 	}
 
-	if r.Spec.Instance.TMInfo.QuarterlySnapshotMonth == "" {
-		r.Spec.Instance.TMInfo.QuarterlySnapshotMonth = "Jan"
+	if tmInfo.QuarterlySnapshotMonth == "" {
+		tmInfo.QuarterlySnapshotMonth = "Jan"
 	}
 
 }
@@ -150,7 +151,7 @@ func ndbServerSpecValidatorForCreate(r *Database, allErrs field.ErrorList, ndbPa
 func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	databaselog.Info("Entering instanceSpecValidatorForCreate...")
 
-	// need to ass rert using a regex
+	// need to assert using a regex
 	if r.Spec.Instance.DatabaseInstanceName == nil || *r.Spec.Instance.DatabaseInstanceName == "" {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), r.Spec.Instance.DatabaseInstanceName, "A unique Database Instance Name must be specified"))
 	}
