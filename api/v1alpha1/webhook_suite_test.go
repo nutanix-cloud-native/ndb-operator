@@ -31,6 +31,7 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	//+kubebuilder:scaffold:imports
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -134,9 +135,10 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-var _ = Describe("Testing webhook", func() {
+var _ = Describe("Webhook Test ID 1", func() {
 	It("Testing webhooks", func() {
 
+		dbInstanceName := ""
 		dbInstanceSecret := "db-instance-secret"
 		typePostgres := "postgres"
 		dbSize := 10
@@ -149,21 +151,25 @@ var _ = Describe("Testing webhook", func() {
 			},
 			Spec: DatabaseSpec{
 				NDB: NDB{
-					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
 					SkipCertificateVerification: true,
 					CredentialSecret:            "ndb-secret",
 					Server:                      "https://10.51.140.43:8443/era/v0.9",
 				},
 				Instance: Instance{
-					CredentialSecret: &dbInstanceSecret,
-					Type:             &typePostgres,
-					Size:             &dbSize,
-					TimeZone:         &timeZone,
+					CredentialSecret:     &dbInstanceSecret,
+					DatabaseInstanceName: &dbInstanceName,
+					Type:                 &typePostgres,
+					Size:                 &dbSize,
+					TimeZone:             &timeZone,
 				},
 			},
 		}
 		err := k8sClient.Create(context.Background(), database)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(HaveOccurred())
+
+		// Extract the error message from the error object
+		errMsg := err.(*errors.StatusError).ErrStatus.Message
+		Expect(errMsg).To(ContainSubstring("ClusterId field must be a valid UUID"))
 
 	})
 })

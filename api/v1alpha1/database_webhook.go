@@ -74,19 +74,6 @@ func instanceSpecDefaulterForCreate(instance *Instance) {
 		instance.TMInfo = &(DBTimeMachineInfo{})
 	}
 
-	if instance.DatabaseInstanceName == nil || *instance.DatabaseInstanceName == "" {
-		defaultInstanceName := common.DATABASE_DEFAULT_INSTANCE_NAME
-		instance.DatabaseInstanceName = &defaultInstanceName
-	}
-
-	if instance.TMInfo.Name == "" {
-		instance.TMInfo.Name = *instance.DatabaseInstanceName + "_TM"
-	}
-
-	if instance.TMInfo.Description == "" {
-		instance.TMInfo.Description = "Time Machine for " + *instance.DatabaseInstanceName
-	}
-
 	if instance.TMInfo.SnapshotsPerDay == 0 {
 		instance.TMInfo.SnapshotsPerDay = 1
 	}
