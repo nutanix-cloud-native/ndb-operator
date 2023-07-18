@@ -30,6 +30,8 @@ import (
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	//+kubebuilder:scaffold:imports
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -126,7 +128,42 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	cancel()
+
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
+})
+
+var _ = Describe("Testing webhook", func() {
+	It("Testing webhooks", func() {
+
+		dbInstanceSecret := "db-instance-secret"
+		typePostgres := "postgres"
+		dbSize := 10
+		timeZone := "UTC"
+
+		database := &Database{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "db",
+				Namespace: "default",
+			},
+			Spec: DatabaseSpec{
+				NDB: NDB{
+					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+					SkipCertificateVerification: true,
+					CredentialSecret:            "ndb-secret",
+					Server:                      "https://10.51.140.43:8443/era/v0.9",
+				},
+				Instance: Instance{
+					CredentialSecret: &dbInstanceSecret,
+					Type:             &typePostgres,
+					Size:             &dbSize,
+					TimeZone:         &timeZone,
+				},
+			},
+		}
+		err := k8sClient.Create(context.Background(), database)
+		Expect(err).ToNot(HaveOccurred())
+
+	})
 })
