@@ -44,7 +44,7 @@ type Database struct {
 }
 
 func (d *Database) GetDBInstanceName() string {
-	return *d.Spec.Instance.DatabaseInstanceName
+	return d.Spec.Instance.DatabaseInstanceName
 }
 
 func (d *Database) GetDBInstanceType() string {

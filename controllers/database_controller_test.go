@@ -41,7 +41,6 @@ import (
 var _ = Describe("Database controller", func() {
 	Context("Database controller test", func() {
 
-		DatabaseName := "test-database-name"
 		databaseSize := 10
 		const namespaceName = "test-namespace"
 		const testNDBServer = "http://123.123.123.123:123"
@@ -60,8 +59,8 @@ var _ = Describe("Database controller", func() {
 		var instanceSecret *corev1.Secret
 		database := &ndbv1alpha1.Database{}
 
-		typeNamespaceName := types.NamespacedName{Name: DatabaseName, Namespace: namespaceName}
-		typeNamespaceNameForService := types.NamespacedName{Name: DatabaseName + "-svc", Namespace: namespaceName}
+		typeNamespaceName := types.NamespacedName{Name: "test-database-name", Namespace: namespaceName}
+		typeNamespaceNameForService := types.NamespacedName{Name: "test-database-name" + "-svc", Namespace: namespaceName}
 		ndbSecretTypeNamespaceName := types.NamespacedName{Name: ndbSecretName, Namespace: namespaceName}
 		instanceSecretTypeNamespaceName := types.NamespacedName{Name: instanceSecretName, Namespace: namespaceName}
 
@@ -78,7 +77,7 @@ var _ = Describe("Database controller", func() {
 
 			database = &ndbv1alpha1.Database{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      DatabaseName,
+					Name:      "test-database-name",
 					Namespace: namespaceName,
 				},
 				Spec: ndbv1alpha1.DatabaseSpec{
@@ -88,7 +87,7 @@ var _ = Describe("Database controller", func() {
 						Server:           testNDBServer,
 					},
 					Instance: ndbv1alpha1.Instance{
-						DatabaseInstanceName: &DatabaseName,
+						DatabaseInstanceName: "test-database-name",
 						DatabaseNames:        &[]string{"database_1"},
 						CredentialSecret:     instanceSecretName,
 						Size:                 databaseSize,

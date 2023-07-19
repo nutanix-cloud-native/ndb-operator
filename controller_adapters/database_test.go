@@ -154,8 +154,6 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 // 4. SLA name is non empty, returns default values for other empty fields
 func TestDatabase_GetTMDetails(t *testing.T) {
 
-	testDatabaseName1 := "test-database"
-
 	tests := []struct {
 		name              string
 		database          Database
@@ -169,7 +167,7 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: &testDatabaseName1,
+							DatabaseInstanceName: "test-database",
 							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
@@ -185,7 +183,7 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: &testDatabaseName1,
+							DatabaseInstanceName: "test-database",
 							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "test-name", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
@@ -201,7 +199,7 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: &testDatabaseName1,
+							DatabaseInstanceName: "test-database",
 							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "", Description: "test-description", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
@@ -217,7 +215,7 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: &testDatabaseName1,
+							DatabaseInstanceName: "test-database",
 							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "test-sla", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},

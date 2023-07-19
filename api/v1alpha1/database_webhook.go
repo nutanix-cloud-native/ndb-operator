@@ -144,8 +144,8 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 	databaselog.Info("Logging the Instance details inside validator method", "databaseInstance", instance)
 
 	// need to assert using a regex
-	if instance.DatabaseInstanceName == nil || *instance.DatabaseInstanceName == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A unique Database Instance Name must be specified"))
+	if instance.DatabaseInstanceName == "" {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified"))
 	}
 
 	if instance.Size < 10 {

@@ -138,12 +138,11 @@ var _ = AfterSuite(func() {
 var _ = Describe("Webhooks: ClusterId missing", func() {
 	It("Testing webhooks", func() {
 
-		dbInstanceName := ""
 		dbInstanceSecret := "db-instance-secret"
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
+				Name:      "db1",
 				Namespace: "default",
 			},
 			Spec: DatabaseSpec{
@@ -155,7 +154,7 @@ var _ = Describe("Webhooks: ClusterId missing", func() {
 				},
 				Instance: Instance{
 					CredentialSecret:     dbInstanceSecret,
-					DatabaseInstanceName: &dbInstanceName,
+					DatabaseInstanceName: "db-instance-name1",
 					Type:                 "postgres",
 					Size:                 10,
 					TimeZone:             "UTC",
@@ -175,12 +174,11 @@ var _ = Describe("Webhooks: ClusterId missing", func() {
 var _ = Describe("Webhooks: CredentialSecret missing", func() {
 	It("Testing webhooks", func() {
 
-		dbInstanceName := ""
 		dbInstanceSecret := "db-instance-secret"
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
+				Name:      "db2",
 				Namespace: "default",
 			},
 			Spec: DatabaseSpec{
@@ -192,7 +190,7 @@ var _ = Describe("Webhooks: CredentialSecret missing", func() {
 				},
 				Instance: Instance{
 					CredentialSecret:     dbInstanceSecret,
-					DatabaseInstanceName: &dbInstanceName,
+					DatabaseInstanceName: "db-instance-name2",
 					Type:                 "postgres",
 					Size:                 10,
 					TimeZone:             "UTC",
@@ -212,12 +210,11 @@ var _ = Describe("Webhooks: CredentialSecret missing", func() {
 var _ = Describe("Webhooks: Server URL missing", func() {
 	It("Testing webhooks", func() {
 
-		dbInstanceName := ""
 		dbInstanceSecret := "db-instance-secret"
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
+				Name:      "db3",
 				Namespace: "default",
 			},
 			Spec: DatabaseSpec{
@@ -229,7 +226,7 @@ var _ = Describe("Webhooks: Server URL missing", func() {
 				},
 				Instance: Instance{
 					CredentialSecret:     dbInstanceSecret,
-					DatabaseInstanceName: &dbInstanceName,
+					DatabaseInstanceName: "db-instance-name3",
 					Type:                 "postgres",
 					Size:                 10,
 					TimeZone:             "UTC",
@@ -249,12 +246,11 @@ var _ = Describe("Webhooks: Server URL missing", func() {
 var _ = Describe("Webhooks: Database Instance Name missing", func() {
 	It("Testing webhooks", func() {
 
-		dbInstanceName := ""
 		dbInstanceSecret := "db-instance-secret"
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
+				Name:      "db3",
 				Namespace: "default",
 			},
 			Spec: DatabaseSpec{
@@ -266,7 +262,7 @@ var _ = Describe("Webhooks: Database Instance Name missing", func() {
 				},
 				Instance: Instance{
 					CredentialSecret:     dbInstanceSecret,
-					DatabaseInstanceName: &dbInstanceName,
+					DatabaseInstanceName: "",
 					Type:                 "postgres",
 					Size:                 10,
 					TimeZone:             "UTC",
@@ -278,7 +274,7 @@ var _ = Describe("Webhooks: Database Instance Name missing", func() {
 
 		// Extract the error message from the error object
 		errMsg := err.(*errors.StatusError).ErrStatus.Message
-		Expect(errMsg).To(ContainSubstring("A unique Database Instance Name must be specified"))
+		Expect(errMsg).To(ContainSubstring("A valid Database Instance Name must be specified"))
 
 	})
 })
@@ -286,12 +282,11 @@ var _ = Describe("Webhooks: Database Instance Name missing", func() {
 var _ = Describe("Webhooks: Database Size < 10 GB", func() {
 	It("Testing webhooks", func() {
 
-		dbInstanceName := "MyDB"
 		dbInstanceSecret := "db-instance-secret"
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
+				Name:      "db5",
 				Namespace: "default",
 			},
 			Spec: DatabaseSpec{
@@ -303,7 +298,7 @@ var _ = Describe("Webhooks: Database Size < 10 GB", func() {
 				},
 				Instance: Instance{
 					CredentialSecret:     dbInstanceSecret,
-					DatabaseInstanceName: &dbInstanceName,
+					DatabaseInstanceName: "db-instance-name5",
 					Type:                 "postgres",
 					Size:                 8,
 					TimeZone:             "UTC",
@@ -323,11 +318,9 @@ var _ = Describe("Webhooks: Database Size < 10 GB", func() {
 var _ = Describe("Webhooks: CredentialSecret missing", func() {
 	It("Testing webhooks", func() {
 
-		dbInstanceName := "MyDB"
-
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
+				Name:      "db6",
 				Namespace: "default",
 			},
 			Spec: DatabaseSpec{
@@ -339,7 +332,7 @@ var _ = Describe("Webhooks: CredentialSecret missing", func() {
 				},
 				Instance: Instance{
 					// CredentialSecret:     &dbInstanceSecret,
-					DatabaseInstanceName: &dbInstanceName,
+					DatabaseInstanceName: "db-instance-name6",
 					Type:                 "postgres",
 					Size:                 10,
 					TimeZone:             "UTC",
@@ -359,12 +352,11 @@ var _ = Describe("Webhooks: CredentialSecret missing", func() {
 var _ = Describe("Webhooks: Type missing", func() {
 	It("Testing webhooks", func() {
 
-		dbInstanceName := "MyDB"
 		dbInstanceSecret := "db-instance-secret"
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
+				Name:      "db7",
 				Namespace: "default",
 			},
 			Spec: DatabaseSpec{
@@ -376,7 +368,7 @@ var _ = Describe("Webhooks: Type missing", func() {
 				},
 				Instance: Instance{
 					CredentialSecret:     dbInstanceSecret,
-					DatabaseInstanceName: &dbInstanceName,
+					DatabaseInstanceName: "db-instance-name7",
 					Size:                 10,
 					TimeZone:             "UTC",
 				},
@@ -396,12 +388,11 @@ var _ = Describe("Webhooks: Type missing", func() {
 var _ = Describe("Webhooks: Profiles, TMN missing (Open-source)", func() {
 	It("Testing webhooks", func() {
 
-		dbInstanceName := "MyDB"
 		dbInstanceSecret := "db-instance-secret"
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
+				Name:      "db8",
 				Namespace: "default",
 			},
 			Spec: DatabaseSpec{
@@ -413,7 +404,7 @@ var _ = Describe("Webhooks: Profiles, TMN missing (Open-source)", func() {
 				},
 				Instance: Instance{
 					CredentialSecret:     dbInstanceSecret,
-					DatabaseInstanceName: &dbInstanceName,
+					DatabaseInstanceName: "db-instance-name8",
 					Size:                 10,
 					TimeZone:             "UTC",
 					Type:                 "postgres",
@@ -429,12 +420,11 @@ var _ = Describe("Webhooks: Profiles, TMN missing (Open-source)", func() {
 var _ = Describe("Webhooks: Profiles missing (Closed-source)", func() {
 	It("Testing webhooks", func() {
 
-		dbInstanceName := "MyDB"
 		dbInstanceSecret := "db-instance-secret"
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
+				Name:      "db8",
 				Namespace: "default",
 			},
 			Spec: DatabaseSpec{
@@ -446,7 +436,7 @@ var _ = Describe("Webhooks: Profiles missing (Closed-source)", func() {
 				},
 				Instance: Instance{
 					CredentialSecret:     dbInstanceSecret,
-					DatabaseInstanceName: &dbInstanceName,
+					DatabaseInstanceName: "db-instance-name9",
 					Size:                 10,
 					TimeZone:             "UTC",
 					Type:                 "mssql",
