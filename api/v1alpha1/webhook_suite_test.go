@@ -135,8 +135,8 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-var _ = Describe("Webhooks: ClusterId missing", func() {
-	It("Testing webhooks", func() {
+var _ = Describe("Webhooks", func() {
+	It("ClusterId missing", func() {
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
@@ -168,8 +168,8 @@ var _ = Describe("Webhooks: ClusterId missing", func() {
 	})
 })
 
-var _ = Describe("Webhooks: NDB CredentialSecret missing", func() {
-	It("Testing webhooks", func() {
+var _ = Describe("Webhooks", func() {
+	It("NDB CredentialSecret missing", func() {
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
@@ -201,8 +201,8 @@ var _ = Describe("Webhooks: NDB CredentialSecret missing", func() {
 	})
 })
 
-var _ = Describe("Webhooks: Server URL missing", func() {
-	It("Testing webhooks", func() {
+var _ = Describe("Webhooks", func() {
+	It("Server URL missing", func() {
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
@@ -234,8 +234,8 @@ var _ = Describe("Webhooks: Server URL missing", func() {
 	})
 })
 
-var _ = Describe("Webhooks: Database Instance Name missing", func() {
-	It("Testing webhooks", func() {
+var _ = Describe("Webhooks", func() {
+	It("Database Instance Name missing", func() {
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
@@ -268,8 +268,8 @@ var _ = Describe("Webhooks: Database Instance Name missing", func() {
 	})
 })
 
-var _ = Describe("Webhooks: CredentialSecret missing", func() {
-	It("Testing webhooks", func() {
+var _ = Describe("Webhooks", func() {
+	It("Instance CredentialSecret missing", func() {
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
@@ -301,8 +301,8 @@ var _ = Describe("Webhooks: CredentialSecret missing", func() {
 	})
 })
 
-var _ = Describe("Webhooks: Type missing", func() {
-	It("Testing webhooks", func() {
+var _ = Describe("Webhooks", func() {
+	It("Type missing", func() {
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
@@ -335,8 +335,8 @@ var _ = Describe("Webhooks: Type missing", func() {
 	})
 })
 
-var _ = Describe("Webhooks: Database Size < 10 GB", func() {
-	It("Testing webhooks", func() {
+var _ = Describe("Webhooks", func() {
+	It("Database Size < 10 GB", func() {
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
@@ -369,8 +369,8 @@ var _ = Describe("Webhooks: Database Size < 10 GB", func() {
 	})
 })
 
-var _ = Describe("Webhooks: Profiles missing (Open-source)", func() {
-	It("Testing webhooks", func() {
+var _ = Describe("Webhooks", func() {
+	It("Profiles missing: Open-source engines", func() {
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
@@ -397,10 +397,8 @@ var _ = Describe("Webhooks: Profiles missing (Open-source)", func() {
 		fmt.Print(err)
 		Expect(err).ToNot(HaveOccurred())
 	})
-})
 
-var _ = Describe("Webhooks: Profiles missing (Closed-source)", func() {
-	It("Testing webhooks", func() {
+	It("Profiles missing: Closed-source engines", func() {
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
@@ -431,10 +429,11 @@ var _ = Describe("Webhooks: Profiles missing (Closed-source)", func() {
 		errMsg := err.(*errors.StatusError).ErrStatus.Message
 		Expect(errMsg).To(ContainSubstring("Software Profile must be provided for the closed-source database engines"))
 	})
+
 })
 
-var _ = Describe("Webhooks: Time Machine missing (Open-source)", func() {
-	It("Testing webhooks", func() {
+var _ = Describe("Webhooks", func() {
+	It("Time Machine missing", func() {
 
 		database := &Database{
 			ObjectMeta: metav1.ObjectMeta{
