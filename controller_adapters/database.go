@@ -48,7 +48,7 @@ func (d *Database) GetDBInstanceName() string {
 }
 
 func (d *Database) GetDBInstanceType() string {
-	return *d.Spec.Instance.Type
+	return d.Spec.Instance.Type
 }
 
 func (d *Database) GetDBInstanceDatabaseNames() string {
@@ -56,11 +56,11 @@ func (d *Database) GetDBInstanceDatabaseNames() string {
 }
 
 func (d *Database) GetDBInstanceTimeZone() string {
-	return *d.Spec.Instance.TimeZone
+	return d.Spec.Instance.TimeZone
 }
 
 func (d *Database) GetDBInstanceSize() int {
-	return *d.Spec.Instance.Size
+	return d.Spec.Instance.Size
 }
 
 func (d *Database) GetNDBClusterId() string {

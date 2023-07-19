@@ -90,13 +90,13 @@ type Instance struct {
 	// +optional
 	DatabaseNames *[]string `json:"databaseNames"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
-	CredentialSecret *string `json:"credentialSecret"`
+	CredentialSecret string `json:"credentialSecret"`
 	// Size of the database instance, minimum 10 (GBs)
-	Size *int `json:"size"`
+	Size int `json:"size"`
 	// default UTC
 	// +optional
-	TimeZone *string `json:"timezone"`
-	Type     *string `json:"type"`
+	TimeZone string `json:"timezone"`
+	Type     string `json:"type"`
 	// +optional
 	Profiles *Profiles `json:"profiles"`
 	// +optional

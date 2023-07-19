@@ -42,8 +42,6 @@ var _ = Describe("Database controller", func() {
 	Context("Database controller test", func() {
 
 		DatabaseName := "test-database-name"
-		timezoneUTC := "UTC"
-		typePostgres := "postgres"
 		databaseSize := 10
 		const namespaceName = "test-namespace"
 		const testNDBServer = "http://123.123.123.123:123"
@@ -92,10 +90,10 @@ var _ = Describe("Database controller", func() {
 					Instance: ndbv1alpha1.Instance{
 						DatabaseInstanceName: &DatabaseName,
 						DatabaseNames:        &[]string{"database_1"},
-						CredentialSecret:     &instanceSecretName,
-						Size:                 &databaseSize,
-						TimeZone:             &timezoneUTC,
-						Type:                 &typePostgres,
+						CredentialSecret:     instanceSecretName,
+						Size:                 databaseSize,
+						TimeZone:             "UTC",
+						Type:                 "postgres",
 						TMInfo: &ndbv1alpha1.DBTimeMachineInfo{
 							QuarterlySnapshotMonth: "Jan",
 							SnapshotsPerDay:        4,

@@ -50,9 +50,8 @@ func instanceSpecDefaulterForCreate(instance *Instance) {
 		instance.DatabaseNames = &api.DefaultDatabaseNames
 	}
 
-	if instance.TimeZone == nil || *instance.TimeZone == "" {
-		utc := common.TIMEZONE_UTC
-		instance.TimeZone = &utc
+	if instance.TimeZone == "" {
+		instance.TimeZone = common.TIMEZONE_UTC
 	}
 
 	// initialize Profiles block if it's not provided by the user
@@ -142,28 +141,30 @@ func ndbServerSpecValidatorForCreate(ndb *NDB, allErrs field.ErrorList, ndbPath 
 func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	databaselog.Info("Entering instanceSpecValidatorForCreate...")
 
-	databaselog.Info("Logging the Instance details inside validator method", "instance", instance)
+	databaselog.Info("Logging the Instance details inside validator method", "databaseInstance", instance)
 
 	// need to assert using a regex
 	if instance.DatabaseInstanceName == nil || *instance.DatabaseInstanceName == "" {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A unique Database Instance Name must be specified"))
 	}
 
-	if instance.Size == nil || *instance.Size < 10 {
+	if instance.Size < 10 {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
 	}
 
-	if instance.CredentialSecret == nil || *instance.CredentialSecret == "" {
+	databaselog.Info("CredentialSecret", "CredentialSecret", instance.CredentialSecret)
+
+	if instance.CredentialSecret == "" {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), instance.CredentialSecret, "CredentialSecret must be provided in the Instance Spec"))
 	}
 
-	if _, isPresent := api.AllowedDatabaseTypes[*instance.Type]; !isPresent {
+	if _, isPresent := api.AllowedDatabaseTypes[instance.Type]; !isPresent {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), instance.Type,
 			fmt.Sprintf("A valid database type must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedDatabaseTypes).MapKeys()),
 		))
 	}
 
-	if _, isPresent := api.ClosedSourceDatabaseTypes[*instance.Type]; isPresent {
+	if _, isPresent := api.ClosedSourceDatabaseTypes[instance.Type]; isPresent {
 		if instance.Profiles == &(Profiles{}) || instance.Profiles.Software == (Profile{}) {
 			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles").Child("software"), instance.Profiles.Software, "Software Profile must be provided for the closed-source database engines"))
 		}
@@ -212,7 +213,7 @@ func (r *Database) ValidateCreate() error {
 	databaselog.Info("Entering ValidateCreate...")
 
 	ndbSpecErrors := ndbServerSpecValidatorForCreate(&r.Spec.NDB, field.ErrorList{}, field.NewPath("spec").Child("ndb"))
-	dbSpecErrors := instanceSpecValidatorForCreate(&r.Spec.Instance, field.ErrorList{}, field.NewPath("spec").Child("instance"))
+	dbSpecErrors := instanceSpecValidatorForCreate(&r.Spec.Instance, field.ErrorList{}, field.NewPath("spec").Child("databaseInstance"))
 
 	allErrs := append(ndbSpecErrors, dbSpecErrors...)
 

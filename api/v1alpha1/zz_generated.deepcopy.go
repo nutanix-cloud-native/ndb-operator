@@ -148,26 +148,6 @@ func (in *Instance) DeepCopyInto(out *Instance) {
 			copy(*out, *in)
 		}
 	}
-	if in.CredentialSecret != nil {
-		in, out := &in.CredentialSecret, &out.CredentialSecret
-		*out = new(string)
-		**out = **in
-	}
-	if in.Size != nil {
-		in, out := &in.Size, &out.Size
-		*out = new(int)
-		**out = **in
-	}
-	if in.TimeZone != nil {
-		in, out := &in.TimeZone, &out.TimeZone
-		*out = new(string)
-		**out = **in
-	}
-	if in.Type != nil {
-		in, out := &in.Type, &out.Type
-		*out = new(string)
-		**out = **in
-	}
 	if in.Profiles != nil {
 		in, out := &in.Profiles, &out.Profiles
 		*out = new(Profiles)
