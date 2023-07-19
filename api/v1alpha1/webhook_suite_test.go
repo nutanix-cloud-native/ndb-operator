@@ -392,3 +392,73 @@ var _ = Describe("Webhooks: Type missing", func() {
 
 	})
 })
+
+var _ = Describe("Webhooks: Profiles, TMN missing (Open-source)", func() {
+	It("Testing webhooks", func() {
+
+		dbInstanceName := "MyDB"
+		dbInstanceSecret := "db-instance-secret"
+
+		database := &Database{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "db",
+				Namespace: "default",
+			},
+			Spec: DatabaseSpec{
+				NDB: NDB{
+					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+					SkipCertificateVerification: true,
+					CredentialSecret:            "ndb-secret",
+					Server:                      "https://10.51.140.43:8443/era/v0.9",
+				},
+				Instance: Instance{
+					CredentialSecret:     dbInstanceSecret,
+					DatabaseInstanceName: &dbInstanceName,
+					Size:                 10,
+					TimeZone:             "UTC",
+					Type:                 "postgres",
+				},
+			},
+		}
+		err := k8sClient.Create(context.Background(), database)
+		fmt.Print(err)
+		Expect(err).ToNot(HaveOccurred())
+	})
+})
+
+var _ = Describe("Webhooks: Profiles missing (Closed-source)", func() {
+	It("Testing webhooks", func() {
+
+		dbInstanceName := "MyDB"
+		dbInstanceSecret := "db-instance-secret"
+
+		database := &Database{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "db",
+				Namespace: "default",
+			},
+			Spec: DatabaseSpec{
+				NDB: NDB{
+					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+					SkipCertificateVerification: true,
+					CredentialSecret:            "ndb-secret",
+					Server:                      "https://10.51.140.43:8443/era/v0.9",
+				},
+				Instance: Instance{
+					CredentialSecret:     dbInstanceSecret,
+					DatabaseInstanceName: &dbInstanceName,
+					Size:                 10,
+					TimeZone:             "UTC",
+					Type:                 "mssql",
+				},
+			},
+		}
+		err := k8sClient.Create(context.Background(), database)
+		fmt.Print(err)
+		Expect(err).To(HaveOccurred())
+
+		// Extract the error message from the error object
+		errMsg := err.(*errors.StatusError).ErrStatus.Message
+		Expect(errMsg).To(ContainSubstring("Software Profile must be provided for the closed-source database engines"))
+	})
+})
