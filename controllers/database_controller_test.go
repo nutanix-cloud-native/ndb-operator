@@ -88,7 +88,7 @@ var _ = Describe("Database controller", func() {
 					},
 					Instance: ndbv1alpha1.Instance{
 						DatabaseInstanceName: "test-database-name",
-						DatabaseNames:        &[]string{"database_1"},
+						DatabaseNames:        []string{"database_1"},
 						CredentialSecret:     instanceSecretName,
 						Size:                 databaseSize,
 						TimeZone:             "UTC",

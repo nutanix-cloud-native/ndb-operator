@@ -88,7 +88,7 @@ type Instance struct {
 	// Name(s) of the database(s) to be provisiond inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
 	// +optional
-	DatabaseNames *[]string `json:"databaseNames"`
+	DatabaseNames []string `json:"databaseNames"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
 	// Size of the database instance, minimum 10 (GBs)

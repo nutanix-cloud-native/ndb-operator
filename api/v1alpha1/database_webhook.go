@@ -46,8 +46,8 @@ var _ webhook.Defaulter = &Database{}
 
 func instanceSpecDefaulterForCreate(instance *Instance) {
 
-	if instance.DatabaseNames == nil || len(*instance.DatabaseNames) == 0 {
-		instance.DatabaseNames = &api.DefaultDatabaseNames
+	if len(instance.DatabaseNames) == 0 {
+		instance.DatabaseNames = api.DefaultDatabaseNames
 	}
 
 	if instance.TimeZone == "" {
@@ -118,7 +118,7 @@ var _ webhook.Validator = &Database{}
 func ndbServerSpecValidatorForCreate(ndb *NDB, allErrs field.ErrorList, ndbPath *field.Path) field.ErrorList {
 	databaselog.Info("Entering ndbServerSpecValidatorForCreate...")
 
-	if ndb == &(NDB{}) {
+	if *ndb == (NDB{}) {
 		allErrs = append(allErrs, field.Invalid(ndbPath, ndb, "NDB spec field must not be empty"))
 	}
 
@@ -151,8 +151,6 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 	if instance.Size < 10 {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
 	}
-
-	databaselog.Info("CredentialSecret", "CredentialSecret", instance.CredentialSecret)
 
 	if instance.CredentialSecret == "" {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), instance.CredentialSecret, "CredentialSecret must be provided in the Instance Spec"))

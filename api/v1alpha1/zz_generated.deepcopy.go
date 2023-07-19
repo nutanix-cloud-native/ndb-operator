@@ -136,12 +136,8 @@ func (in *Instance) DeepCopyInto(out *Instance) {
 	*out = *in
 	if in.DatabaseNames != nil {
 		in, out := &in.DatabaseNames, &out.DatabaseNames
-		*out = new([]string)
-		if **in != nil {
-			in, out := *in, *out
-			*out = make([]string, len(*in))
-			copy(*out, *in)
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.Profiles != nil {
 		in, out := &in.Profiles, &out.Profiles
