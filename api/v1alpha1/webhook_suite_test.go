@@ -57,7 +57,7 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Webhook Suite")
 }
 
-var _ = BeforeSuite(func() {
+var _ = BeforeEach(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	ctx, cancel = context.WithCancel(context.TODO())
@@ -127,7 +127,7 @@ var _ = BeforeSuite(func() {
 
 })
 
-var _ = AfterSuite(func() {
+var _ = AfterEach(func() {
 	cancel()
 
 	By("tearing down the test environment")
@@ -135,331 +135,338 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-var _ = Describe("Webhooks", func() {
-	It("ClusterId missing", func() {
+var _ = Describe("Webhook Tests", func() {
+	Context("Functional Tests", func() {
 
-		database := &Database{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
-				Namespace: "default",
-			},
-			Spec: DatabaseSpec{
-				NDB: NDB{
-					SkipCertificateVerification: true,
-					CredentialSecret:            "ndb-secret",
-					Server:                      "https://10.51.140.43:8443/era/v0.9",
-				},
-				Instance: Instance{
-					CredentialSecret:     "db-instance-secret",
-					DatabaseInstanceName: "db-instance-name",
-					Type:                 "postgres",
-					Size:                 10,
-					TimeZone:             "UTC",
-				},
-			},
-		}
-		err := k8sClient.Create(context.Background(), database)
-		Expect(err).To(HaveOccurred())
+		var _ = Describe("Webhooks", func() {
+			It("ClusterId missing", func() {
 
-		// Extract the error message from the error object
-		errMsg := err.(*errors.StatusError).ErrStatus.Message
-		Expect(errMsg).To(ContainSubstring("ClusterId field must be a valid UUID"))
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							CredentialSecret:     "db-instance-secret",
+							DatabaseInstanceName: "db-instance-name",
+							Type:                 "postgres",
+							Size:                 10,
+							TimeZone:             "UTC",
+						},
+					},
+				}
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+
+				// Extract the error message from the error object
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("ClusterId field must be a valid UUID"))
+
+			})
+		})
+
+		var _ = Describe("Webhooks", func() {
+			It("NDB CredentialSecret missing", func() {
+
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							CredentialSecret:     "db-instance-secret",
+							DatabaseInstanceName: "db-instance-name",
+							Type:                 "postgres",
+							Size:                 10,
+							TimeZone:             "UTC",
+						},
+					},
+				}
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+
+				// Extract the error message from the error object
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("CredentialSecret must be provided in the NDB Server Spec"))
+
+			})
+		})
+
+		var _ = Describe("Webhooks", func() {
+			It("Server URL missing", func() {
+
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+						},
+						Instance: Instance{
+							CredentialSecret:     "db-instance-secret",
+							DatabaseInstanceName: "db-instance-name",
+							Type:                 "postgres",
+							Size:                 10,
+							TimeZone:             "UTC",
+						},
+					},
+				}
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+
+				// Extract the error message from the error object
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("Server must be a valid URL"))
+
+			})
+		})
+
+		var _ = Describe("Webhooks", func() {
+			It("Database Instance Name missing", func() {
+
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							CredentialSecret:     "db-instance-secret",
+							DatabaseInstanceName: "",
+							Type:                 "postgres",
+							Size:                 10,
+							TimeZone:             "UTC",
+						},
+					},
+				}
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+
+				// Extract the error message from the error object
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("A valid Database Instance Name must be specified"))
+
+			})
+		})
+
+		var _ = Describe("Webhooks", func() {
+			It("Instance CredentialSecret missing", func() {
+
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							DatabaseInstanceName: "db-instance-name",
+							Type:                 "postgres",
+							Size:                 10,
+							TimeZone:             "UTC",
+						},
+					},
+				}
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+
+				// Extract the error message from the error object
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("CredentialSecret must be provided in the Instance Spec"))
+
+			})
+		})
+
+		var _ = Describe("Webhooks", func() {
+			It("Type missing", func() {
+
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							CredentialSecret:     "db-instance-secret",
+							DatabaseInstanceName: "db-instance-name",
+							Size:                 10,
+							TimeZone:             "UTC",
+						},
+					},
+				}
+				err := k8sClient.Create(context.Background(), database)
+				fmt.Print(err)
+				Expect(err).To(HaveOccurred())
+
+				// Extract the error message from the error object
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("A valid database type must be specified"))
+
+			})
+		})
+
+		var _ = Describe("Webhooks", func() {
+			It("Database Size < 10 GB", func() {
+
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							CredentialSecret:     "db-instance-secret",
+							DatabaseInstanceName: "db-instance-name",
+							Type:                 "postgres",
+							Size:                 8,
+							TimeZone:             "UTC",
+						},
+					},
+				}
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+
+				// Extract the error message from the error object
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("Initial Database size must be specified with a value 10 GBs or more"))
+
+			})
+		})
+
+		var _ = Describe("Webhooks", func() {
+			It("Profiles missing: Open-source engines", func() {
+
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							CredentialSecret:     "db-instance-secret",
+							DatabaseInstanceName: "db-instance-name",
+							Size:                 10,
+							TimeZone:             "UTC",
+							Type:                 "postgres",
+						},
+					},
+				}
+				err := k8sClient.Create(context.Background(), database)
+				fmt.Print(err)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("Profiles missing: Closed-source engines", func() {
+
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							CredentialSecret:     "db-instance-secret",
+							DatabaseInstanceName: "db-instance-name",
+							Size:                 10,
+							TimeZone:             "UTC",
+							Type:                 "mssql",
+						},
+					},
+				}
+				err := k8sClient.Create(context.Background(), database)
+				fmt.Print(err)
+				Expect(err).To(HaveOccurred())
+
+				// Extract the error message from the error object
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("Software Profile must be provided for the closed-source database engines"))
+			})
+
+		})
+
+		var _ = Describe("Webhooks", func() {
+			It("Time Machine missing", func() {
+
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						// need to provide a unique name to avoid getting " "db" already exists"
+						// this is because the previous test was a happy case and a db CR was successfully created
+						Name:      "db1",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							CredentialSecret:     "db-instance-secret",
+							DatabaseInstanceName: "db-instance-name",
+							Size:                 10,
+							TimeZone:             "UTC",
+							Type:                 "postgres",
+						},
+					},
+				}
+				err := k8sClient.Create(context.Background(), database)
+				fmt.Print(err)
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
 
 	})
-})
 
-var _ = Describe("Webhooks", func() {
-	It("NDB CredentialSecret missing", func() {
-
-		database := &Database{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
-				Namespace: "default",
-			},
-			Spec: DatabaseSpec{
-				NDB: NDB{
-					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-					SkipCertificateVerification: true,
-					Server:                      "https://10.51.140.43:8443/era/v0.9",
-				},
-				Instance: Instance{
-					CredentialSecret:     "db-instance-secret",
-					DatabaseInstanceName: "db-instance-name",
-					Type:                 "postgres",
-					Size:                 10,
-					TimeZone:             "UTC",
-				},
-			},
-		}
-		err := k8sClient.Create(context.Background(), database)
-		Expect(err).To(HaveOccurred())
-
-		// Extract the error message from the error object
-		errMsg := err.(*errors.StatusError).ErrStatus.Message
-		Expect(errMsg).To(ContainSubstring("CredentialSecret must be provided in the NDB Server Spec"))
-
-	})
-})
-
-var _ = Describe("Webhooks", func() {
-	It("Server URL missing", func() {
-
-		database := &Database{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
-				Namespace: "default",
-			},
-			Spec: DatabaseSpec{
-				NDB: NDB{
-					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-					SkipCertificateVerification: true,
-					CredentialSecret:            "ndb-secret",
-				},
-				Instance: Instance{
-					CredentialSecret:     "db-instance-secret",
-					DatabaseInstanceName: "db-instance-name",
-					Type:                 "postgres",
-					Size:                 10,
-					TimeZone:             "UTC",
-				},
-			},
-		}
-		err := k8sClient.Create(context.Background(), database)
-		Expect(err).To(HaveOccurred())
-
-		// Extract the error message from the error object
-		errMsg := err.(*errors.StatusError).ErrStatus.Message
-		Expect(errMsg).To(ContainSubstring("Server must be a valid URL"))
-
-	})
-})
-
-var _ = Describe("Webhooks", func() {
-	It("Database Instance Name missing", func() {
-
-		database := &Database{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
-				Namespace: "default",
-			},
-			Spec: DatabaseSpec{
-				NDB: NDB{
-					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-					SkipCertificateVerification: true,
-					CredentialSecret:            "ndb-secret",
-					Server:                      "https://10.51.140.43:8443/era/v0.9",
-				},
-				Instance: Instance{
-					CredentialSecret:     "db-instance-secret",
-					DatabaseInstanceName: "",
-					Type:                 "postgres",
-					Size:                 10,
-					TimeZone:             "UTC",
-				},
-			},
-		}
-		err := k8sClient.Create(context.Background(), database)
-		Expect(err).To(HaveOccurred())
-
-		// Extract the error message from the error object
-		errMsg := err.(*errors.StatusError).ErrStatus.Message
-		Expect(errMsg).To(ContainSubstring("A valid Database Instance Name must be specified"))
-
-	})
-})
-
-var _ = Describe("Webhooks", func() {
-	It("Instance CredentialSecret missing", func() {
-
-		database := &Database{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
-				Namespace: "default",
-			},
-			Spec: DatabaseSpec{
-				NDB: NDB{
-					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-					SkipCertificateVerification: true,
-					CredentialSecret:            "ndb-secret",
-					Server:                      "https://10.51.140.43:8443/era/v0.9",
-				},
-				Instance: Instance{
-					DatabaseInstanceName: "db-instance-name",
-					Type:                 "postgres",
-					Size:                 10,
-					TimeZone:             "UTC",
-				},
-			},
-		}
-		err := k8sClient.Create(context.Background(), database)
-		Expect(err).To(HaveOccurred())
-
-		// Extract the error message from the error object
-		errMsg := err.(*errors.StatusError).ErrStatus.Message
-		Expect(errMsg).To(ContainSubstring("CredentialSecret must be provided in the Instance Spec"))
-
-	})
-})
-
-var _ = Describe("Webhooks", func() {
-	It("Type missing", func() {
-
-		database := &Database{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
-				Namespace: "default",
-			},
-			Spec: DatabaseSpec{
-				NDB: NDB{
-					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-					SkipCertificateVerification: true,
-					CredentialSecret:            "ndb-secret",
-					Server:                      "https://10.51.140.43:8443/era/v0.9",
-				},
-				Instance: Instance{
-					CredentialSecret:     "db-instance-secret",
-					DatabaseInstanceName: "db-instance-name",
-					Size:                 10,
-					TimeZone:             "UTC",
-				},
-			},
-		}
-		err := k8sClient.Create(context.Background(), database)
-		fmt.Print(err)
-		Expect(err).To(HaveOccurred())
-
-		// Extract the error message from the error object
-		errMsg := err.(*errors.StatusError).ErrStatus.Message
-		Expect(errMsg).To(ContainSubstring("A valid database type must be specified"))
-
-	})
-})
-
-var _ = Describe("Webhooks", func() {
-	It("Database Size < 10 GB", func() {
-
-		database := &Database{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
-				Namespace: "default",
-			},
-			Spec: DatabaseSpec{
-				NDB: NDB{
-					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-					SkipCertificateVerification: true,
-					CredentialSecret:            "ndb-secret",
-					Server:                      "https://10.51.140.43:8443/era/v0.9",
-				},
-				Instance: Instance{
-					CredentialSecret:     "db-instance-secret",
-					DatabaseInstanceName: "db-instance-name",
-					Type:                 "postgres",
-					Size:                 8,
-					TimeZone:             "UTC",
-				},
-			},
-		}
-		err := k8sClient.Create(context.Background(), database)
-		Expect(err).To(HaveOccurred())
-
-		// Extract the error message from the error object
-		errMsg := err.(*errors.StatusError).ErrStatus.Message
-		Expect(errMsg).To(ContainSubstring("Initial Database size must be specified with a value 10 GBs or more"))
-
-	})
-})
-
-var _ = Describe("Webhooks", func() {
-	It("Profiles missing: Open-source engines", func() {
-
-		database := &Database{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
-				Namespace: "default",
-			},
-			Spec: DatabaseSpec{
-				NDB: NDB{
-					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-					SkipCertificateVerification: true,
-					CredentialSecret:            "ndb-secret",
-					Server:                      "https://10.51.140.43:8443/era/v0.9",
-				},
-				Instance: Instance{
-					CredentialSecret:     "db-instance-secret",
-					DatabaseInstanceName: "db-instance-name",
-					Size:                 10,
-					TimeZone:             "UTC",
-					Type:                 "postgres",
-				},
-			},
-		}
-		err := k8sClient.Create(context.Background(), database)
-		fmt.Print(err)
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	It("Profiles missing: Closed-source engines", func() {
-
-		database := &Database{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "db",
-				Namespace: "default",
-			},
-			Spec: DatabaseSpec{
-				NDB: NDB{
-					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-					SkipCertificateVerification: true,
-					CredentialSecret:            "ndb-secret",
-					Server:                      "https://10.51.140.43:8443/era/v0.9",
-				},
-				Instance: Instance{
-					CredentialSecret:     "db-instance-secret",
-					DatabaseInstanceName: "db-instance-name",
-					Size:                 10,
-					TimeZone:             "UTC",
-					Type:                 "mssql",
-				},
-			},
-		}
-		err := k8sClient.Create(context.Background(), database)
-		fmt.Print(err)
-		Expect(err).To(HaveOccurred())
-
-		// Extract the error message from the error object
-		errMsg := err.(*errors.StatusError).ErrStatus.Message
-		Expect(errMsg).To(ContainSubstring("Software Profile must be provided for the closed-source database engines"))
-	})
-
-})
-
-var _ = Describe("Webhooks", func() {
-	It("Time Machine missing", func() {
-
-		database := &Database{
-			ObjectMeta: metav1.ObjectMeta{
-				// need to provide a unique name to avoid getting " "db" already exists"
-				// this is because the previous test was a happy case and a db CR was successfully created
-				Name:      "db1",
-				Namespace: "default",
-			},
-			Spec: DatabaseSpec{
-				NDB: NDB{
-					ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-					SkipCertificateVerification: true,
-					CredentialSecret:            "ndb-secret",
-					Server:                      "https://10.51.140.43:8443/era/v0.9",
-				},
-				Instance: Instance{
-					CredentialSecret:     "db-instance-secret",
-					DatabaseInstanceName: "db-instance-name",
-					Size:                 10,
-					TimeZone:             "UTC",
-					Type:                 "postgres",
-				},
-			},
-		}
-		err := k8sClient.Create(context.Background(), database)
-		fmt.Print(err)
-		Expect(err).ToNot(HaveOccurred())
-	})
 })
