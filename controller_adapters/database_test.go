@@ -176,6 +176,40 @@ func TestDatabase_GetDBInstanceDatabaseNames(t *testing.T) {
 	}
 }
 
+// Test the Get DBInstanceTimeZone() function against the following:
+// 1. TimeZone is NOT empty (VALID)
+func TestDatabase_GetDBInstanceTimeZone(t *testing.T) {
+
+	tests := []struct {
+		name         string
+		database     Database
+		wantTimeZone string
+	}{
+		{
+			name: "TimeZone is NOT empty (VALID)",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							TimeZone: "UTC",
+						},
+					},
+				},
+			},
+			wantTimeZone: "UTC",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotTimeZone := tt.database.GetDBInstanceTimeZone()
+			if gotTimeZone != tt.wantTimeZone {
+				t.Errorf("Database.GetTimeZone() gotTimeZone = %v, want %v", gotTimeZone, tt.wantTimeZone)
+			}
+		})
+	}
+}
+
 // Tests the GetTMSchedule() function against the following:
 // 1. All inputs are valid, no error is returned
 // 2. DailySnapshotTime has incorrect values for hour, returns an error
