@@ -60,6 +60,55 @@ func TestDatabase_GetDBInstanceName(t *testing.T) {
 	}
 }
 
+// Tests the GetDBInstanceDescription() function against the following:
+// 1. Description is NOT empty
+// 2. Description IS empty, in this case, a description is created for the user based on instance name
+func TestDatabase_GetDBInstanceDescription(t *testing.T) {
+
+	tests := []struct {
+		name            string
+		database        Database
+		wantDescription string
+	}{
+		{
+			name: "Description is NOT empty",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							Description: "test-description",
+						},
+					},
+				},
+			},
+			wantDescription: "test-description",
+		},
+		{
+			name: "Description IS empty",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							DatabaseInstanceName: "test-instance-name",
+							Description:          "",
+						},
+					},
+				},
+			},
+			wantDescription: "Description of test-instance-name",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotDescription := tt.database.GetDBInstanceDescription()
+			if gotDescription != tt.wantDescription {
+				t.Errorf("Database.GetDBInstanceDescription() gotInstanceDescription = %v, want %v", gotDescription, tt.wantDescription)
+			}
+		})
+	}
+}
+
 // Tests the GetTMSchedule() function against the following:
 // 1. All inputs are valid, no error is returned
 // 2. DailySnapshotTime has incorrect values for hour, returns an error
