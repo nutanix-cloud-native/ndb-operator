@@ -101,7 +101,6 @@ func (d *Database) GetProfileResolvers() ndb_api.ProfileResolvers {
 	}
 
 	return profileResolvers
-
 }
 
 // Returns basic details about the Time Machine if provided in the
