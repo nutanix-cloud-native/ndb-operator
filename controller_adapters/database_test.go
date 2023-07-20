@@ -25,6 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Note: GetDBInstanceName, GetDBInstanceType, GetDBInstanceDatabaseNames, GetDBInstanceTimeZone, GetDBInstanceSize, Get NDBClusterId doesn't have error checking
+
 // Tests the GetDBInstanceName() function against the following:
 // 1. Instance Name is NOT empty (VALID)
 func TestDatabase_GetDBInstanceName(t *testing.T) {
@@ -239,6 +241,40 @@ func TestDatabase_GetDBInstanceSize(t *testing.T) {
 			gotSize := tt.database.GetDBInstanceSize()
 			if gotSize != tt.wantSize {
 				t.Errorf("Database.GetDBInstanceSize() gotSize= %v, want %v", gotSize, tt.wantSize)
+			}
+		})
+	}
+}
+
+// Test the GetNDBClusterId() function against the following:
+// 1. ClusterId is NOT empty (VALID)
+func TestDatabase_GetNDBClusterId(t *testing.T) {
+
+	tests := []struct {
+		name          string
+		database      Database
+		wantClusterId string
+	}{
+		{
+			name: "ClusterId is NOT empty (VALID)",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						NDB: v1alpha1.NDB{
+							ClusterId: "test-cluster-id",
+						},
+					},
+				},
+			},
+			wantClusterId: "test-cluster-id",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotClusterId := tt.database.GetNDBClusterId()
+			if gotClusterId != tt.wantClusterId {
+				t.Errorf("Database.GetNDBClusterId() gotClusterId= %v, want %v", gotClusterId, tt.wantClusterId)
 			}
 		})
 	}
