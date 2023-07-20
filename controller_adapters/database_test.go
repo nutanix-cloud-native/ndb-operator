@@ -26,7 +26,7 @@ import (
 )
 
 // Tests the GetDBInstanceName() function against the following:
-// 1. Valid Input (not empty)
+// 1. Instance Name is NOT empty (VALID)
 func TestDatabase_GetDBInstanceName(t *testing.T) {
 
 	tests := []struct {
@@ -35,13 +35,12 @@ func TestDatabase_GetDBInstanceName(t *testing.T) {
 		wantInstanceName string
 	}{
 		{
-			name: "Valid input (not empty)",
+			name: "Instance Name is NOT empty (VALID)",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
 							DatabaseInstanceName: "test-instance-name",
-							TMInfo:               v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
 				},
@@ -61,8 +60,8 @@ func TestDatabase_GetDBInstanceName(t *testing.T) {
 }
 
 // Tests the GetDBInstanceDescription() function against the following:
-// 1. Description is NOT empty
-// 2. Description IS empty, in this case, a description is created for the user based on instance name
+// 1. Description is NOT empty (VALID)
+// 2. Description IS empty (VALID), in this case, a description is created for the user based on instance name
 func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 
 	tests := []struct {
@@ -71,7 +70,7 @@ func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 		wantDescription string
 	}{
 		{
-			name: "Description is NOT empty",
+			name: "Description is NOT empty (VALID)",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
@@ -84,7 +83,7 @@ func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 			wantDescription: "test-description",
 		},
 		{
-			name: "Description IS empty",
+			name: "Description IS empty (VALID)",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
