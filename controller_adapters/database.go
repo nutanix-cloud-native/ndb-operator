@@ -47,6 +47,15 @@ func (d *Database) GetDBInstanceName() string {
 	return d.Spec.Instance.DatabaseInstanceName
 }
 
+// Returns database description. If description is empty, creates a description
+func (d *Database) GetDBInstanceDescription() string {
+	description := d.Spec.Instance.Description
+	if description == "" {
+		return "Description of " + d.GetDBInstanceName()
+	}
+	return description
+}
+
 func (d *Database) GetDBInstanceType() string {
 	return d.Spec.Instance.Type
 }

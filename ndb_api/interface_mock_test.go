@@ -22,6 +22,12 @@ func (m *MockDatabaseInterface) GetDBInstanceName() string {
 	return args.String(0)
 }
 
+// GetDBInstanceDescription is a mock implementation of the GetDBInstanceDescription method in the Database interface
+func (m *MockDatabaseInterface) GetDBInstanceDescription() string {
+	args := m.Called()
+	return args.String(0)
+}
+
 // GetDBInstanceType is a mock implementation of the GetDBInstanceType method in the Database interface
 func (m *MockDatabaseInterface) GetDBInstanceType() string {
 	args := m.Called()

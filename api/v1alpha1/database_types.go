@@ -85,6 +85,8 @@ type NDB struct {
 type Instance struct {
 	// Name of the database instance
 	DatabaseInstanceName string `json:"databaseInstanceName"`
+	// Description of the database instance
+	Description string `json:"description"`
 	// Name(s) of the database(s) to be provisiond inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
 	// +optional
