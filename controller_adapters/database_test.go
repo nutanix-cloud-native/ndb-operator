@@ -25,10 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Note: GetDBInstanceName, GetDBInstanceType, GetDBInstanceDatabaseNames, GetDBInstanceTimeZone, GetDBInstanceSize, Get NDBClusterId doesn't have error checking
-
-// Tests the GetDBInstanceName() function against the following:
-// 1. Instance Name is NOT empty (VALID)
+// Tests that GetDBInstanceName() retrieves DatabaseInstanceName correctly
 func TestDatabase_GetDBInstanceName(t *testing.T) {
 
 	tests := []struct {
@@ -37,7 +34,7 @@ func TestDatabase_GetDBInstanceName(t *testing.T) {
 		wantInstanceName string
 	}{
 		{
-			name: "Instance Name is NOT empty (VALID)",
+			name: "Contains Instance Name",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
@@ -62,8 +59,8 @@ func TestDatabase_GetDBInstanceName(t *testing.T) {
 }
 
 // Tests the GetDBInstanceDescription() function against the following:
-// 1. Description is NOT empty (VALID)
-// 2. Description IS empty (VALID), in this case, a description is created for the user based on instance name
+// 1. Description is NOT empty
+// 2. Description IS empty, in this case, a description is created for the user based on instance name
 func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 
 	tests := []struct {
@@ -72,7 +69,7 @@ func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 		wantDescription string
 	}{
 		{
-			name: "Description is NOT empty (VALID)",
+			name: "Description is NOT empty",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
@@ -85,7 +82,7 @@ func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 			wantDescription: "test-description",
 		},
 		{
-			name: "Description IS empty (VALID)",
+			name: "Description IS empty",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
@@ -110,8 +107,7 @@ func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 	}
 }
 
-// Tests the GetDBInstanceType() function against the following:
-// 1. Type is NOT empty (VALID)
+// Tests the GetDBInstanceType() retrieves Type correctly:
 func TestDatabase_GetDBInstanceType(t *testing.T) {
 
 	tests := []struct {
@@ -120,7 +116,7 @@ func TestDatabase_GetDBInstanceType(t *testing.T) {
 		wantType string
 	}{
 		{
-			name: "Type is NOT empty (VALID)",
+			name: "Contains Type",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
@@ -144,8 +140,7 @@ func TestDatabase_GetDBInstanceType(t *testing.T) {
 	}
 }
 
-// Tests the GetDBInstanceDatabaseNames() function against the following:
-// 1. DatabaseNames is NOT empty (VALID)
+// Tests the GetDBInstanceDatabaseNames() retrieves DatabaseNames correctly:
 func TestDatabase_GetDBInstanceDatabaseNames(t *testing.T) {
 
 	tests := []struct {
@@ -154,7 +149,7 @@ func TestDatabase_GetDBInstanceDatabaseNames(t *testing.T) {
 		wantDatabaseNames string
 	}{
 		{
-			name: "DatabaseNames is NOT empty (VALID)",
+			name: "Contains DatabaseNames",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
@@ -178,8 +173,7 @@ func TestDatabase_GetDBInstanceDatabaseNames(t *testing.T) {
 	}
 }
 
-// Test the Get DBInstanceTimeZone() function against the following:
-// 1. TimeZone is NOT empty (VALID)
+// Tests the GetDBInstanceTimeZone() function retrieves TimeZone correctly:
 func TestDatabase_GetDBInstanceTimeZone(t *testing.T) {
 
 	tests := []struct {
@@ -188,7 +182,7 @@ func TestDatabase_GetDBInstanceTimeZone(t *testing.T) {
 		wantTimeZone string
 	}{
 		{
-			name: "TimeZone is NOT empty (VALID)",
+			name: "Contains TimeZone",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
@@ -212,8 +206,7 @@ func TestDatabase_GetDBInstanceTimeZone(t *testing.T) {
 	}
 }
 
-// Test the Get DBInstanceSize() function against the following:
-// 1. Size is NOT empty (VALID)
+// Tests the GetDBInstanceSize() function retrieves Size correctly:
 func TestDatabase_GetDBInstanceSize(t *testing.T) {
 
 	tests := []struct {
@@ -222,7 +215,7 @@ func TestDatabase_GetDBInstanceSize(t *testing.T) {
 		wantSize int
 	}{
 		{
-			name: "InstanceSize is NOT empty (VALID)",
+			name: "Contains Size",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
@@ -246,8 +239,7 @@ func TestDatabase_GetDBInstanceSize(t *testing.T) {
 	}
 }
 
-// Test the GetNDBClusterId() function against the following:
-// 1. ClusterId is NOT empty (VALID)
+// Tests the GetNDBClusterId() function retrieves ClusterId correctly:
 func TestDatabase_GetNDBClusterId(t *testing.T) {
 
 	tests := []struct {
@@ -256,7 +248,7 @@ func TestDatabase_GetNDBClusterId(t *testing.T) {
 		wantClusterId string
 	}{
 		{
-			name: "ClusterId is NOT empty (VALID)",
+			name: "Contains ClusterId",
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
