@@ -210,6 +210,40 @@ func TestDatabase_GetDBInstanceTimeZone(t *testing.T) {
 	}
 }
 
+// Test the Get DBInstanceSize() function against the following:
+// 1. Size is NOT empty (VALID)
+func TestDatabase_GetDBInstanceSize(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		database Database
+		wantSize int
+	}{
+		{
+			name: "InstanceSize is NOT empty (VALID)",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							Size: 10,
+						},
+					},
+				},
+			},
+			wantSize: 10,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotSize := tt.database.GetDBInstanceSize()
+			if gotSize != tt.wantSize {
+				t.Errorf("Database.GetDBInstanceSize() gotSize= %v, want %v", gotSize, tt.wantSize)
+			}
+		})
+	}
+}
+
 // Tests the GetTMSchedule() function against the following:
 // 1. All inputs are valid, no error is returned
 // 2. DailySnapshotTime has incorrect values for hour, returns an error
