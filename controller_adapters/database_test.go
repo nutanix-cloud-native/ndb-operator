@@ -170,7 +170,7 @@ func TestDatabase_GetDBInstanceDatabaseNames(t *testing.T) {
 
 			gotDatabaseNames := tt.database.GetDBInstanceDatabaseNames()
 			if gotDatabaseNames != tt.wantDatabaseNames {
-				t.Errorf("Database.GetDBDatabaseNames() gotDatabaseNames = %v, want %v", gotDatabaseNames, tt.wantDatabaseNames)
+				t.Errorf("Database.GetDBInstanceDatabaseNames() gotDatabaseNames = %v, want %v", gotDatabaseNames, tt.wantDatabaseNames)
 			}
 		})
 	}
@@ -204,7 +204,7 @@ func TestDatabase_GetDBInstanceTimeZone(t *testing.T) {
 
 			gotTimeZone := tt.database.GetDBInstanceTimeZone()
 			if gotTimeZone != tt.wantTimeZone {
-				t.Errorf("Database.GetTimeZone() gotTimeZone = %v, want %v", gotTimeZone, tt.wantTimeZone)
+				t.Errorf("Database.GetInstanceTimeZone() gotTimeZone = %v, want %v", gotTimeZone, tt.wantTimeZone)
 			}
 		})
 	}
