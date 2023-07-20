@@ -142,6 +142,40 @@ func TestDatabase_GetDBInstanceType(t *testing.T) {
 	}
 }
 
+// Tests the GetDBInstanceDatabaseNames() function against the following:
+// 1. DatabaseNames is NOT empty (VALID)
+func TestDatabase_GetDBInstanceDatabaseNames(t *testing.T) {
+
+	tests := []struct {
+		name              string
+		database          Database
+		wantDatabaseNames string
+	}{
+		{
+			name: "DatabaseNames is NOT empty (VALID)",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							DatabaseNames: []string{"database_one", "database_two", "database_three"},
+						},
+					},
+				},
+			},
+			wantDatabaseNames: "database_one,database_two,database_three",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotDatabaseNames := tt.database.GetDBInstanceDatabaseNames()
+			if gotDatabaseNames != tt.wantDatabaseNames {
+				t.Errorf("Database.GetDBDatabaseNames() gotDatabaseNames = %v, want %v", gotDatabaseNames, tt.wantDatabaseNames)
+			}
+		})
+	}
+}
+
 // Tests the GetTMSchedule() function against the following:
 // 1. All inputs are valid, no error is returned
 // 2. DailySnapshotTime has incorrect values for hour, returns an error
