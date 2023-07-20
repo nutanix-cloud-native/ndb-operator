@@ -71,6 +71,11 @@ var _ = BeforeEach(func() {
 		},
 	}
 
+	// CleanUpAfterUse will cause the CRDs listed for installation to be
+	// uninstalled when terminating the test environment.
+	// Defaults to false.
+	testEnv.CRDInstallOptions.CleanUpAfterUse = true
+
 	var err error
 	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
