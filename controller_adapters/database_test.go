@@ -102,7 +102,7 @@ func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 
 			gotDescription := tt.database.GetDBInstanceDescription()
 			if gotDescription != tt.wantDescription {
-				t.Errorf("Database.GetDBInstanceDescription() gotInstanceDescription = %v, want %v", gotDescription, tt.wantDescription)
+				t.Errorf("Database.GetDBInstanceDescription() gotDescription = %v, want %v", gotDescription, tt.wantDescription)
 			}
 		})
 	}
