@@ -54,25 +54,25 @@ func instanceSpecDefaulterForCreate(instance *Instance) {
 		instance.TimeZone = common.TIMEZONE_UTC
 	}
 
-	// initialize Profiles block if it's not provided by the user
+	// initialize Profiles field, if it's nil
 
 	if instance.Profiles == nil {
 		databaselog.Info("Initialzing empty Profiles ...")
 		instance.Profiles = &(Profiles{})
 	}
 
+	// Profiles defaulting logic
 	if instance.Profiles.Compute.Id == "" && instance.Profiles.Compute.Name == "" {
 		instance.Profiles.Compute.Name = common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE
 	}
 
-	// time machine defaulter logic
-
-	// initialize TM block if it's not provided by the user
+	// initialize TM field, if it's nil
 	if instance.TMInfo == nil {
 		databaselog.Info("Initialzing empty TMInfo...")
 		instance.TMInfo = &(DBTimeMachineInfo{})
 	}
 
+	// TM defaulting logic
 	if instance.TMInfo.SnapshotsPerDay == 0 {
 		instance.TMInfo.SnapshotsPerDay = 1
 	}
