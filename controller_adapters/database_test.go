@@ -25,6 +25,41 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Tests the GetDBInstanceName() function against the following:
+// 1. Valid Input (not empty)
+func TestDatabase_GetDBInstanceName(t *testing.T) {
+
+	tests := []struct {
+		name             string
+		database         Database
+		wantInstanceName string
+	}{
+		{
+			name: "Valid input (not empty)",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							DatabaseInstanceName: "test-instance-name",
+							TMInfo:               v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
+						},
+					},
+				},
+			},
+			wantInstanceName: "test-instance-name",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotInstanceName := tt.database.GetDBInstanceName()
+			if gotInstanceName != tt.wantInstanceName {
+				t.Errorf("Database.GetDBInstanceName() gotInstanceName = %v, want %v", gotInstanceName, tt.wantInstanceName)
+			}
+		})
+	}
+}
+
 // Tests the GetTMSchedule() function against the following:
 // 1. All inputs are valid, no error is returned
 // 2. DailySnapshotTime has incorrect values for hour, returns an error
