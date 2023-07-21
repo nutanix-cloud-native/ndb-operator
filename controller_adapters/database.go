@@ -51,7 +51,7 @@ func (d *Database) GetDBInstanceName() string {
 func (d *Database) GetDBInstanceDescription() string {
 	description := d.Spec.Instance.Description
 	if description == "" {
-		return "Description of " + d.GetDBInstanceName()
+		return "Database provisioned by ndb-operator: " + d.GetDBInstanceName()
 	}
 	return description
 }

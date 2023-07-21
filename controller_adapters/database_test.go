@@ -93,7 +93,7 @@ func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 					},
 				},
 			},
-			wantDescription: "Description of test-instance-name",
+			wantDescription: "Database provisioned by ndb-operator: test-instance-name",
 		},
 	}
 	for _, tt := range tests {
