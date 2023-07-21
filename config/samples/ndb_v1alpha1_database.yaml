@@ -1,15 +1,16 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db
+  name: db1
 spec:
   ndb:
-    clusterId: "Nutanix Cluster Id"
+    clusterId: "600d54a1-af63-4af3-b252-51b4d5cba64f"
     credentialSecret: ndb-secret-name
-    server: https://[NDB IP]:8443/era/v0.9
+    server: https://10.51.140.71:8443/era/v0.9
     skipCertificateVerification: true
   databaseInstance:
-    databaseInstanceName: "Database Instance Name"
+    databaseInstanceName: "mazin-operatordb3"
+    description: ""
     databaseNames:
       - database_one
       - database_two
@@ -36,7 +37,7 @@ spec:
         name: ""
         id: ""
     timeMachine:
-      sla : "NAME OF THE SLA"
+      sla : "NONE"
       dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
       snapshotsPerDay:     4            # Number of snapshots per day
       logCatchUpFrequency: 90           # Frequency (in minutes)
