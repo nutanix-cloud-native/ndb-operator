@@ -150,7 +150,6 @@ spec:
                 required:
                 - credentialSecret
                 - databaseInstanceName
-                - description
                 - size
                 - type
                 type: object
