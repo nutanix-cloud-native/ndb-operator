@@ -107,6 +107,8 @@ spec:
   databaseInstance:
     # The database instance name on NDB
     databaseInstanceName: "Database-Instance-Name"
+    # The description of the database instance
+    description: Database Description
     # Names of the databases on that instance
     databaseNames:
       - database_one
