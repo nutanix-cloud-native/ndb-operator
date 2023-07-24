@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+	"reflect"
 	"regexp"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api"
@@ -42,57 +44,61 @@ func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Defaulter = &Database{}
 
-func instanceSpecDefaulterForCreate(r *Database) {
+func instanceSpecDefaulterForCreate(instance *Instance) {
 
-	if len(r.Spec.Instance.DatabaseNames) == 0 {
-		r.Spec.Instance.DatabaseNames = api.DefaultDatabaseNames
+	if len(instance.DatabaseNames) == 0 {
+		instance.DatabaseNames = api.DefaultDatabaseNames
 	}
 
-	if r.Spec.Instance.TimeZone == "" {
-		r.Spec.Instance.TimeZone = "UTC"
+	if instance.TimeZone == "" {
+		instance.TimeZone = common.TIMEZONE_UTC
 	}
 
-	if r.Spec.Instance.Profiles.Compute.Id == "" && r.Spec.Instance.Profiles.Compute.Name == "" {
-		r.Spec.Instance.Profiles.Compute.Name = common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE
+	// initialize Profiles field, if it's nil
+
+	if instance.Profiles == nil {
+		databaselog.Info("Initialzing empty Profiles ...")
+		instance.Profiles = &(Profiles{})
 	}
 
-	// time machine defaulter logic
-
-	tmInfo := r.Spec.Instance.TMInfo
-	if tmInfo.Name == "" {
-		tmInfo.Name = r.Spec.Instance.DatabaseInstanceName + "_TM"
+	// Profiles defaulting logic
+	if instance.Profiles.Compute.Id == "" && instance.Profiles.Compute.Name == "" {
+		instance.Profiles.Compute.Name = common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE
 	}
 
-	if tmInfo.Description == "" {
-		tmInfo.Description = "Time Machine for " + r.Spec.Instance.DatabaseInstanceName
+	// initialize TM field, if it's nil
+	if instance.TMInfo == nil {
+		databaselog.Info("Initialzing empty TMInfo...")
+		instance.TMInfo = &(DBTimeMachineInfo{})
 	}
 
-	if tmInfo.SnapshotsPerDay == 0 {
-		tmInfo.SnapshotsPerDay = 1
+	// TM defaulting logic
+	if instance.TMInfo.SnapshotsPerDay == 0 {
+		instance.TMInfo.SnapshotsPerDay = 1
 	}
 
-	if tmInfo.SLAName == "" {
-		tmInfo.SLAName = common.SLA_NAME_NONE
+	if instance.TMInfo.SLAName == "" {
+		instance.TMInfo.SLAName = common.SLA_NAME_NONE
 	}
 
-	if tmInfo.DailySnapshotTime == "" {
-		tmInfo.DailySnapshotTime = "04:00:00"
+	if instance.TMInfo.DailySnapshotTime == "" {
+		instance.TMInfo.DailySnapshotTime = "04:00:00"
 	}
 
-	if tmInfo.LogCatchUpFrequency == 0 {
-		tmInfo.LogCatchUpFrequency = 30
+	if instance.TMInfo.LogCatchUpFrequency == 0 {
+		instance.TMInfo.LogCatchUpFrequency = 30
 	}
 
-	if tmInfo.WeeklySnapshotDay == "" {
-		tmInfo.WeeklySnapshotDay = "FRIDAY"
+	if instance.TMInfo.WeeklySnapshotDay == "" {
+		instance.TMInfo.WeeklySnapshotDay = "FRIDAY"
 	}
 
-	if tmInfo.MonthlySnapshotDay == 0 {
-		tmInfo.MonthlySnapshotDay = 15
+	if instance.TMInfo.MonthlySnapshotDay == 0 {
+		instance.TMInfo.MonthlySnapshotDay = 15
 	}
 
-	if tmInfo.QuarterlySnapshotMonth == "" {
-		tmInfo.QuarterlySnapshotMonth = "Jan"
+	if instance.TMInfo.QuarterlySnapshotMonth == "" {
+		instance.TMInfo.QuarterlySnapshotMonth = "Jan"
 	}
 
 }
@@ -100,7 +106,7 @@ func instanceSpecDefaulterForCreate(r *Database) {
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Database) Default() {
 	databaselog.Info("Entering Defaulter logic...")
-	instanceSpecDefaulterForCreate(r)
+	instanceSpecDefaulterForCreate(&r.Spec.Instance)
 	databaselog.Info("Exiting Defaulter logic...")
 }
 
@@ -109,82 +115,91 @@ func (r *Database) Default() {
 
 var _ webhook.Validator = &Database{}
 
-func ndbServerSpecValidatorForCreate(r *Database, allErrs field.ErrorList, ndbPath *field.Path) field.ErrorList {
+func ndbServerSpecValidatorForCreate(ndb *NDB, allErrs field.ErrorList, ndbPath *field.Path) field.ErrorList {
 	databaselog.Info("Entering ndbServerSpecValidatorForCreate...")
 
-	if r.Spec.NDB == (NDB{}) {
-		allErrs = append(allErrs, field.Invalid(ndbPath, r.Spec.NDB, "NDB spec field must not be empty"))
+	if *ndb == (NDB{}) {
+		allErrs = append(allErrs, field.Invalid(ndbPath, ndb, "NDB spec field must not be empty"))
 	}
 
-	if err := util.ValidateUUID(r.Spec.NDB.ClusterId); err != nil {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("clusterId"), r.Spec.NDB.ClusterId, "ClusterId field must be a valid UUID"))
+	if err := util.ValidateUUID(ndb.ClusterId); err != nil {
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("clusterId"), ndb.ClusterId, "ClusterId field must be a valid UUID"))
 	}
 
-	if r.Spec.NDB.CredentialSecret == "" {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), r.Spec.NDB.CredentialSecret, "CredentialSecret must be provided"))
+	if ndb.CredentialSecret == "" {
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), ndb.CredentialSecret, "CredentialSecret must be provided in the NDB Server Spec"))
 	}
 
-	if err := util.ValidateURL(r.Spec.NDB.Server); err != nil {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("server"), r.Spec.NDB.Server, "Server must be a valid URL"))
+	if err := util.ValidateURL(ndb.Server); err != nil {
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("server"), ndb.Server, "Server must be a valid URL"))
 	}
 
 	databaselog.Info("Exiting ndbServerSpecValidatorForCreate...")
 	return allErrs
 }
 
-func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
+func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	databaselog.Info("Entering instanceSpecValidatorForCreate...")
 
-	if r.Spec.Instance.DatabaseInstanceName == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), r.Spec.Instance.DatabaseInstanceName, "A unique Database Instance Name must be specified"))
+	databaselog.Info("Logging the Instance details inside validator method", "databaseInstance", instance)
+
+	// need to assert using a regex
+	if instance.DatabaseInstanceName == "" {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified"))
 	}
 
-	if r.Spec.Instance.Size < 10 {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), r.Spec.Instance.Size, "Initial Database size must be 10 GBs or more"))
+	if instance.Size < 10 {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
 	}
 
-	if r.Spec.Instance.CredentialSecret == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), r.Spec.Instance.CredentialSecret, "CredentialSecret must be provided"))
+	if instance.CredentialSecret == "" {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), instance.CredentialSecret, "CredentialSecret must be provided in the Instance Spec"))
 	}
 
-	if _, isPresent := api.AllowedDatabaseTypes[r.Spec.Instance.Type]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), r.Spec.Instance.Type, "A valid database type must be specified"))
+	if _, isPresent := api.AllowedDatabaseTypes[instance.Type]; !isPresent {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), instance.Type,
+			fmt.Sprintf("A valid database type must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedDatabaseTypes).MapKeys()),
+		))
 	}
 
-	if _, isPresent := api.ClosedSourceDatabaseTypes[r.Spec.Instance.Type]; isPresent {
-		if r.Spec.Instance.Profiles == (Profiles{}) || r.Spec.Instance.Profiles.Software == (Profile{}) {
-			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles"), r.Spec.Instance.Profiles, "Software Profile must be provided for the closed-source database engines"))
+	if _, isPresent := api.ClosedSourceDatabaseTypes[instance.Type]; isPresent {
+		if instance.Profiles == &(Profiles{}) || instance.Profiles.Software == (Profile{}) {
+			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles").Child("software"), instance.Profiles.Software, "Software Profile must be provided for the closed-source database engines"))
 		}
 	}
 
 	// validating time machine info
 	tmPath := instancePath.Child("timeMachine")
-	tmInfo := r.Spec.Instance.TMInfo
 
 	dailySnapshotTimeRegex := regexp.MustCompile(`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`)
-	if isMatch := dailySnapshotTimeRegex.MatchString(tmInfo.DailySnapshotTime); !isMatch {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("dailySnapshotTime"), tmInfo.DailySnapshotTime, "Invalid time format for the daily snapshot time. Use the 24-hour format (HH:MM:SS)."))
+	if isMatch := dailySnapshotTimeRegex.MatchString(instance.TMInfo.DailySnapshotTime); !isMatch {
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("dailySnapshotTime"), instance.TMInfo.DailySnapshotTime, "Invalid time format for the daily snapshot time. Use the 24-hour format (HH:MM:SS)."))
 	}
 
-	if tmInfo.SnapshotsPerDay < 1 || tmInfo.SnapshotsPerDay > 6 {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("snapshotsPerDay"), tmInfo.SnapshotsPerDay, "Number of snapshots per day should be within 1 to 6"))
+	if instance.TMInfo.SnapshotsPerDay < 1 || instance.TMInfo.SnapshotsPerDay > 6 {
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("snapshotsPerDay"), instance.TMInfo.SnapshotsPerDay, "Number of snapshots per day should be within 1 to 6"))
 	}
 
-	if _, isPresent := api.AllowedLogCatchupIntervals[tmInfo.LogCatchUpFrequency]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("logCatchUpFrequency"), tmInfo.LogCatchUpFrequency, "Log catchup frequency must have one of these values: {15, 30, 45, 60, 90, 120}"))
+	if _, isPresent := api.AllowedLogCatchupFrequencyInMinutes[instance.TMInfo.LogCatchUpFrequency]; !isPresent {
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("logCatchUpFrequency"), instance.TMInfo.LogCatchUpFrequency,
+			fmt.Sprintf("Log catchup frequency must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedLogCatchupFrequencyInMinutes).MapKeys()),
+		))
 	}
 
-	// TODO: Does casing matter here?
-	if _, isPresent := api.AllowedWeeklySnapshotDays[tmInfo.WeeklySnapshotDay]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("weeklySnapshotDay"), tmInfo.WeeklySnapshotDay, "Weekly snapshot day must have a valid value e.g. MONDAY"))
+	if _, isPresent := api.AllowedWeeklySnapshotDays[instance.TMInfo.WeeklySnapshotDay]; !isPresent {
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("weeklySnapshotDay"), instance.TMInfo.WeeklySnapshotDay,
+			fmt.Sprintf("Weekly Snapshot day must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedWeeklySnapshotDays).MapKeys()),
+		))
 	}
 
-	if tmInfo.MonthlySnapshotDay < 1 || tmInfo.MonthlySnapshotDay > 28 {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("monthlySnapshotDay"), tmInfo.MonthlySnapshotDay, "Monthly snapshot day value must be between 1 and 28"))
+	if instance.TMInfo.MonthlySnapshotDay < 1 || instance.TMInfo.MonthlySnapshotDay > 28 {
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("monthlySnapshotDay"), instance.TMInfo.MonthlySnapshotDay, "Monthly snapshot day value must be between 1 and 28"))
 	}
 
-	if _, isPresent := api.AllowedQuarterlySnapshotMonths[tmInfo.QuarterlySnapshotMonth]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("quarterlySnapshotMonth"), tmInfo.QuarterlySnapshotMonth, "Quarterly snapshot month must be one of {Jan, Feb, Mar}"))
+	if _, isPresent := api.AllowedQuarterlySnapshotMonths[instance.TMInfo.QuarterlySnapshotMonth]; !isPresent {
+		allErrs = append(allErrs, field.Invalid(tmPath.Child("quarterlySnapshotMonth"), instance.TMInfo.QuarterlySnapshotMonth,
+			fmt.Sprintf("Quarterly snapshot month must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedQuarterlySnapshotMonths).MapKeys()),
+		))
 	}
 
 	databaselog.Info("Exiting instanceSpecValidatorForCreate...")
@@ -195,8 +210,8 @@ func instanceSpecValidatorForCreate(r *Database, allErrs field.ErrorList, instan
 func (r *Database) ValidateCreate() error {
 	databaselog.Info("Entering ValidateCreate...")
 
-	ndbSpecErrors := ndbServerSpecValidatorForCreate(r, field.ErrorList{}, field.NewPath("spec").Child("ndb"))
-	dbSpecErrors := instanceSpecValidatorForCreate(r, field.ErrorList{}, field.NewPath("spec").Child("instance"))
+	ndbSpecErrors := ndbServerSpecValidatorForCreate(&r.Spec.NDB, field.ErrorList{}, field.NewPath("spec").Child("ndb"))
+	dbSpecErrors := instanceSpecValidatorForCreate(&r.Spec.Instance, field.ErrorList{}, field.NewPath("spec").Child("databaseInstance"))
 
 	allErrs := append(ndbSpecErrors, dbSpecErrors...)
 

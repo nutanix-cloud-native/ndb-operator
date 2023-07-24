@@ -29,6 +29,13 @@ import (
 )
 
 func GetProfileResolvers(d v1alpha1.Database) ndb_api.ProfileResolvers {
+
+	// Webhook defaults the Profiles to an empty struct, but while running the UTs, the
+	// Webhook Server is not setup - so need to manually initialze Profiles struct here
+	if d.Spec.Instance.Profiles == nil {
+		d.Spec.Instance.Profiles = &(v1alpha1.Profiles{})
+	}
+
 	profileResolvers := make(ndb_api.ProfileResolvers)
 
 	profileResolvers[common.PROFILE_TYPE_COMPUTE] = &controller_adapters.Profile{
@@ -204,7 +211,7 @@ func TestResolveSoftwareProfileByName_ByName_ResolvesOk(t *testing.T) {
 	inputProfile := GetProfileResolvers(v1alpha1.Database{
 		Spec: v1alpha1.DatabaseSpec{
 			Instance: v1alpha1.Instance{
-				Profiles: v1alpha1.Profiles{
+				Profiles: &v1alpha1.Profiles{
 					Software: v1alpha1.Profile{
 						Name: "Software_Profile_1",
 					},
@@ -231,7 +238,7 @@ func TestResolveSoftwareProfile_ByNameMismatch_throwsError(t *testing.T) {
 	inputProfile := GetProfileResolvers(v1alpha1.Database{
 		Spec: v1alpha1.DatabaseSpec{
 			Instance: v1alpha1.Instance{
-				Profiles: v1alpha1.Profiles{
+				Profiles: &v1alpha1.Profiles{
 					Software: v1alpha1.Profile{
 						Name: "Software_Profile_#1", // profile with this name does not exist
 					},
@@ -257,7 +264,7 @@ func TestResolveComputeProfileByName_resolvesOk(t *testing.T) {
 	inputProfile := GetProfileResolvers(v1alpha1.Database{
 		Spec: v1alpha1.DatabaseSpec{
 			Instance: v1alpha1.Instance{
-				Profiles: v1alpha1.Profiles{
+				Profiles: &v1alpha1.Profiles{
 					Compute: v1alpha1.Profile{
 						Name: "Compute_Profile_1",
 					},
@@ -282,7 +289,7 @@ func TestResolveComputeProfileByNameCaseMismatch_throwsError(t *testing.T) {
 	inputProfile := GetProfileResolvers(v1alpha1.Database{
 		Spec: v1alpha1.DatabaseSpec{
 			Instance: v1alpha1.Instance{
-				Profiles: v1alpha1.Profiles{
+				Profiles: &v1alpha1.Profiles{
 					Compute: v1alpha1.Profile{
 						Name: "compute_Profile_1",
 					},
@@ -306,7 +313,7 @@ func TestResolveComputeProfileById_resolvesOk(t *testing.T) {
 	inputProfile := GetProfileResolvers(v1alpha1.Database{
 		Spec: v1alpha1.DatabaseSpec{
 			Instance: v1alpha1.Instance{
-				Profiles: v1alpha1.Profiles{
+				Profiles: &v1alpha1.Profiles{
 					Compute: v1alpha1.Profile{
 						Id: "cp-id-2",
 					},

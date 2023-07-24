@@ -1,9 +1,9 @@
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
-# - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.5)
-# - use environment variables to overwrite this value (e.g export VERSION=0.0.5)
-VERSION ?= 0.0.5
+# - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.6)
+# - use environment variables to overwrite this value (e.g export VERSION=0.0.6)
+VERSION ?= 0.0.6
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -94,16 +94,9 @@ help: ## Display this help.
 
 ##@ Development
 
-## Explanation of the statement: sed -i.bak "s/'{emptytminfo}'/{}/g" config/crd/bases/*.yaml && rm config/crd/bases/*.bak
-## This is an open issue on operator-sdk: https://github.com/operator-framework/operator-sdk/issues/6346
-## DBTimeMachineInfo is an optional nested struct under spec section of the database CRD. However, it does not get an empty struct value '{}'
-## after running code-gen via `make manifests` in the database CRD yaml manifest. Hence we've added a marker -'{emptytminfo}' in the kubebuilder 
-## default anotation as the default value of an empty time machine info struct and we replace is with '{}' using sed once the manifests are generated.
-## More info - https://github.com/operator-framework/operator-sdk/issues/6346#issuecomment-1482995285
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
-	sed -i.bak "s/'{emptytminfo}'/{}/g" config/crd/bases/*.yaml && rm config/crd/bases/*.bak
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.

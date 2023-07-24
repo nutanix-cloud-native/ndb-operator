@@ -110,7 +110,6 @@ spec:
                     description: Size of the database instance, minimum 10 (GBs)
                     type: integer
                   timeMachine:
-                    default: {}
                     description: Information related to time machine that is to be
                       associated with this database
                     properties:
