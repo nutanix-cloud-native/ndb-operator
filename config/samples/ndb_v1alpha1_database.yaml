@@ -1,7 +1,7 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db1
+  name: db
 spec:
   ndb:
     clusterId: "Nutanix Cluster Id"
@@ -36,7 +36,7 @@ spec:
         name: ""
         id: ""
     timeMachine:
-      sla : "NONE"
+      sla : "NAME OF THE SLA"
       dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
       snapshotsPerDay:     4            # Number of snapshots per day
       logCatchUpFrequency: 90           # Frequency (in minutes)
