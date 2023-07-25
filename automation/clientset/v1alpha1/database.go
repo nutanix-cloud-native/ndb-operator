@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// Common Functionality used to interact with Database CR using Kubernetes Client
 type DatabaseInterface interface {
 	List(opts metav1.ListOptions) (*ndbv1alpha1.DatabaseList, error)
 	Get(name string, options metav1.GetOptions) (*ndbv1alpha1.Database, error)
