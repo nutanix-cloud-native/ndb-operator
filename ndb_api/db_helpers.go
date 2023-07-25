@@ -66,7 +66,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 	requestBody = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(database.GetDBInstanceType()),
 		Name:                     database.GetDBInstanceName(),
-		DatabaseDescription:      "Database provisioned by ndb-operator: " + database.GetDBInstanceName(),
+		DatabaseDescription:      database.GetDBInstanceDescription(),
 		SoftwareProfileId:        profilesMap[common.PROFILE_TYPE_SOFTWARE].Id,
 		SoftwareProfileVersionId: profilesMap[common.PROFILE_TYPE_SOFTWARE].LatestVersionId,
 		ComputeProfileId:         profilesMap[common.PROFILE_TYPE_COMPUTE].Id,

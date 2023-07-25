@@ -65,6 +65,9 @@ spec:
                     items:
                       type: string
                     type: array
+                  description:
+                    description: Description of the database instance
+                    type: string
                   profiles:
                     properties:
                       compute:

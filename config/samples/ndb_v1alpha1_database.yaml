@@ -10,6 +10,7 @@ spec:
     skipCertificateVerification: true
   databaseInstance:
     databaseInstanceName: "Database Instance Name"
+    description: "Database Description"
     databaseNames:
       - database_one
       - database_two
