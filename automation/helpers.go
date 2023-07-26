@@ -13,7 +13,7 @@ import (
 )
 
 // Reads and stores bytes of yaml file
-func readYAMLFile(filename string) ([]byte, error) {
+func ReadYAMLFile(filename string) ([]byte, error) {
 	yamlFile, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read YAML file: %v", err)
@@ -23,7 +23,7 @@ func readYAMLFile(filename string) ([]byte, error) {
 }
 
 // Converts bytes to Databaase, secret, pod, or service type
-func convertBytesToType(data []byte, t string) (typ interface{}, err error) {
+func ConvertBytesToType(data []byte, t string) (typ interface{}, err error) {
 	jsonData, err := yaml.YAMLToJSON(data)
 	if err != nil {
 		log.Println(err)
@@ -49,8 +49,8 @@ func convertBytesToType(data []byte, t string) (typ interface{}, err error) {
 	return
 }
 
-func ConvertToSecret(data []byte) (secret *corev1.Secret, err error) {
-	typ, err := convertBytesToType(data, "secret")
+func ConvertBytesToSecret(data []byte) (secret *corev1.Secret, err error) {
+	typ, err := ConvertBytesToType(data, "secret")
 	if err != nil {
 		log.Println(err)
 		return
@@ -59,8 +59,8 @@ func ConvertToSecret(data []byte) (secret *corev1.Secret, err error) {
 	return
 }
 
-func ConvertToDatabase(data []byte) (database *ndbv1alpha1.Database, err error) {
-	typ, err := convertBytesToType(data, "database")
+func ConvertBytesToDatabase(data []byte) (database *ndbv1alpha1.Database, err error) {
+	typ, err := ConvertBytesToType(data, "database")
 	if err != nil {
 		log.Println(err)
 		return
@@ -69,8 +69,8 @@ func ConvertToDatabase(data []byte) (database *ndbv1alpha1.Database, err error) 
 	return
 }
 
-func ConvertToPod(data []byte) (pod *corev1.Pod, err error) {
-	typ, err := convertBytesToType(data, "pod")
+func ConvertBytesToPod(data []byte) (pod *corev1.Pod, err error) {
+	typ, err := ConvertBytesToType(data, "pod")
 	if err != nil {
 		log.Println(err)
 		return
@@ -79,8 +79,8 @@ func ConvertToPod(data []byte) (pod *corev1.Pod, err error) {
 	return
 }
 
-func ConvertToService(data []byte) (service *corev1.Service, err error) {
-	typ, err := convertBytesToType(data, "service")
+func ConvertBytesToService(data []byte) (service *corev1.Service, err error) {
+	typ, err := ConvertBytesToType(data, "service")
 	if err != nil {
 		log.Println(err)
 		return
@@ -89,7 +89,7 @@ func ConvertToService(data []byte) (service *corev1.Service, err error) {
 	return
 }
 
-func waitAndRetryFunction(interval time.Duration, retries int, operation func() error) (err error) {
+func WaitAndRetryOperation(interval time.Duration, retries int, operation func() error) (err error) {
 
 	for i := 0; i < retries; i++ {
 		if i != 0 {

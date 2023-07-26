@@ -16,12 +16,12 @@ type SetupInfo struct {
 }
 
 func (i *SetupInfo) getDbSecret() (*corev1.Secret, error) {
-	dbSecretbytes, err := readYAMLFile(i.dbSecretPath)
+	dbSecretbytes, err := ReadYAMLFile(i.dbSecretPath)
 	if err != nil {
 		log.Printf("Error occurred while reading bytes from %s", i.dbSecretPath)
 		return nil, err
 	}
-	dbSecret, err := ConvertToSecret(dbSecretbytes)
+	dbSecret, err := ConvertBytesToSecret(dbSecretbytes)
 	if err != nil {
 		log.Printf("Error occurred while converting bytes to secret")
 		return nil, err
@@ -30,12 +30,12 @@ func (i *SetupInfo) getDbSecret() (*corev1.Secret, error) {
 }
 
 func (i *SetupInfo) getNdbSecret() (*corev1.Secret, error) {
-	ndbSecretbytes, err := readYAMLFile(i.ndbSecretPath)
+	ndbSecretbytes, err := ReadYAMLFile(i.ndbSecretPath)
 	if err != nil {
 		log.Printf("Error occurred while reading bytes from %s", i.ndbSecretPath)
 		return nil, err
 	}
-	ndbSecret, err := ConvertToSecret(ndbSecretbytes)
+	ndbSecret, err := ConvertBytesToSecret(ndbSecretbytes)
 	if err != nil {
 		log.Printf("Error occurred while converting bytes to NdbSecret")
 		return nil, err
@@ -44,12 +44,12 @@ func (i *SetupInfo) getNdbSecret() (*corev1.Secret, error) {
 }
 
 func (i *SetupInfo) getDatabase() (*ndbv1alpha1.Database, error) {
-	databaseBytes, err := readYAMLFile(i.dbPath)
+	databaseBytes, err := ReadYAMLFile(i.dbPath)
 	if err != nil {
 		log.Printf("Error occurred while reading bytes from %s", i.dbPath)
 		return nil, err
 	}
-	database, err := ConvertToDatabase(databaseBytes)
+	database, err := ConvertBytesToDatabase(databaseBytes)
 	if err != nil {
 		log.Printf("Error occurred while converting bytes to Database")
 		return nil, err
@@ -58,12 +58,12 @@ func (i *SetupInfo) getDatabase() (*ndbv1alpha1.Database, error) {
 }
 
 func (i *SetupInfo) getAppPod() (*corev1.Pod, error) {
-	appPodBytes, err := readYAMLFile(i.appPodPath)
+	appPodBytes, err := ReadYAMLFile(i.appPodPath)
 	if err != nil {
 		log.Printf("Error occurred while reading bytes from %s", i.appPodPath)
 		return nil, err
 	}
-	appPod, err := ConvertToPod(appPodBytes)
+	appPod, err := ConvertBytesToPod(appPodBytes)
 	if err != nil {
 		log.Printf("Error occurred while converting bytes to AppPod")
 		return nil, err
@@ -72,12 +72,12 @@ func (i *SetupInfo) getAppPod() (*corev1.Pod, error) {
 }
 
 func (i *SetupInfo) getAppService() (*corev1.Service, error) {
-	appSvcBytes, err := readYAMLFile(i.appSvcPath)
+	appSvcBytes, err := ReadYAMLFile(i.appSvcPath)
 	if err != nil {
 		log.Printf("Error occurred while reading bytes from %s", i.appSvcPath)
 		return nil, err
 	}
-	appSvc, err := ConvertToService(appSvcBytes)
+	appSvc, err := ConvertBytesToService(appSvcBytes)
 	if err != nil {
 		log.Printf("Error occurred while converting bytes to AppService")
 		return nil, err
