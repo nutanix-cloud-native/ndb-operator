@@ -16,6 +16,21 @@ type SetupConfig struct {
 	ndbClusterId      string
 }
 
+func createSetupConfig() (*SetupConfig, error) {
+	setupConfigPath := "./files/setup-config.yaml"
+	setupConfigBytes, err := ReadYAMLFile(setupConfigPath)
+	if err != nil {
+		log.Printf("Error occurred while reading bytes from %s", setupConfigPath)
+		return nil, err
+	}
+	setupConfig, err := ConvertBytesToSetupConfig(setupConfigBytes)
+	if err != nil {
+		log.Printf("Error occurred while converting bytes to secret")
+		return nil, err
+	}
+	return setupConfig, nil
+}
+
 func (sc *SetupConfig) getKubeConfig() string {
 	return sc.kubeConfig
 }

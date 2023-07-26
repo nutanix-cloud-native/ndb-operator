@@ -30,6 +30,8 @@ func ConvertBytesToType(data []byte, t string) (typ interface{}, err error) {
 		return
 	}
 	switch t {
+	case "setupConfig":
+		typ = &SetupConfig{}
 	case "database":
 		typ = &ndbv1alpha1.Database{}
 	case "secret":
@@ -46,6 +48,12 @@ func ConvertBytesToType(data []byte, t string) (typ interface{}, err error) {
 	if err != nil {
 		log.Println(err)
 	}
+	return
+}
+
+func ConvertBytesToSetupConfig(data []byte) (setupConfig *SetupConfig, err error) {
+	typ, err := ConvertBytesToType(data, "secret")
+	setupConfig = typ.(*SetupConfig)
 	return
 }
 
