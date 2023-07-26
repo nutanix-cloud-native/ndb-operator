@@ -23,8 +23,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// Define the suite, and absorb the built-in basic suite
-// functionality from testify - including assertion methods.
+// A test suite is a collection of related test cases that are grouped together for testing a specific package or functionality.
+// The testify package builds on top of Go's built-in testing package and enhances it with additional features like assertions and test suite management.
+// PostgresqlSingleInstanceTestSuite is a test suite struct that embeds testify's suite.Suite
 type PostgresqlSingleInstanceTestSuite struct {
 	suite.Suite
 	config            *rest.Config
