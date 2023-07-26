@@ -12,7 +12,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// Reads and stores bytes of yaml file
 func ReadYAMLFile(filename string) ([]byte, error) {
 	yamlFile, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -22,7 +21,6 @@ func ReadYAMLFile(filename string) ([]byte, error) {
 	return yamlFile, nil
 }
 
-// Converts bytes to Databaase, secret, pod, or service type
 func ConvertBytesToType(data []byte, t string) (typ interface{}, err error) {
 	jsonData, err := yaml.YAMLToJSON(data)
 	if err != nil {
