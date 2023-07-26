@@ -78,7 +78,7 @@ func test_setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Databa
 
 	// Wait for DB to get Ready
 	if database != nil {
-		err = WaitAndRetryOperation(time.Minute, 60, func() (err error) {
+		err = waitAndRetryOperation(time.Minute, 60, func() (err error) {
 			database, err = v1alpha1ClientSet.Databases(database.Namespace).Get(database.Name, metav1.GetOptions{})
 			if err != nil {
 				return
@@ -99,7 +99,7 @@ func test_setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Databa
 	}
 	// Wait for Application Pod to start
 	if appPod != nil {
-		err = WaitAndRetryOperation(time.Second, 300, func() (err error) {
+		err = waitAndRetryOperation(time.Second, 300, func() (err error) {
 			appPod, err = clientset.CoreV1().Pods(ns).Get(context.TODO(), appPod.Name, metav1.GetOptions{})
 			if err != nil {
 				return
@@ -139,7 +139,7 @@ func test_teardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Dat
 		} else {
 			log.Printf("Database %s deleted\n", database.Name)
 		}
-		WaitAndRetryOperation(time.Minute, 10, func() (err error) {
+		waitAndRetryOperation(time.Minute, 10, func() (err error) {
 			database, err = v1alpha1ClientSet.Databases(database.Namespace).Get(database.Name, metav1.GetOptions{})
 			if err != nil {
 				return nil

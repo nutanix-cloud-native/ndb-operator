@@ -7,6 +7,39 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+type SetupConfig struct {
+	kubeConfig        string
+	dbSecretPassword  string
+	ndbSecretUsername string
+	ndbSecretPassword string
+	ndbServer         string
+	ndbClusterId      string
+}
+
+func (sc *SetupConfig) getKubeConfig() string {
+	return sc.kubeConfig
+}
+
+func (sc *SetupConfig) getdbSecretPassword() string {
+	return sc.dbSecretPassword
+}
+
+func (sc *SetupConfig) getNdbSecretUsername() string {
+	return sc.ndbSecretUsername
+}
+
+func (sc *SetupConfig) getNdbSecretPassword() string {
+	return sc.ndbSecretPassword
+}
+
+func (sc *SetupConfig) getNdbServer() string {
+	return sc.ndbServer
+}
+
+func (sc *SetupConfig) getNdbClusterId() string {
+	return sc.ndbClusterId
+}
+
 type SetupPath struct {
 	dbSecretPath  string
 	ndbSecretPath string
@@ -83,7 +116,4 @@ func (sp *SetupPath) getAppService() (*corev1.Service, error) {
 		return nil, err
 	}
 	return appSvc, nil
-}
-
-type SetUpConfig struct {
 }

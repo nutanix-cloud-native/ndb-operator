@@ -73,7 +73,7 @@ func ConvertBytesToService(data []byte) (service *corev1.Service, err error) {
 	return
 }
 
-func WaitAndRetryOperation(interval time.Duration, retries int, operation func() error) (err error) {
+func waitAndRetryOperation(interval time.Duration, retries int, operation func() error) (err error) {
 	for i := 0; i < retries; i++ {
 		if i != 0 {
 			log.Printf("Retrying, attempt # %d\n", i)
