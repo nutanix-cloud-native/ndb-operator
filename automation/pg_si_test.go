@@ -32,7 +32,7 @@ type PostgresqlSingleInstanceTestSuite struct {
 	clientset         *kubernetes.Clientset
 	kubeconfig        string
 	logFile           string
-	setupInfo         SetupInfo
+	setupPath         SetupPath
 }
 
 // before the suite
@@ -127,12 +127,12 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	suite.logFile = logFile
 	suite.v1alpha1ClientSet = v1alpha1ClientSet
 	suite.clientset = clientset
-	suite.setupInfo = setupInfo
+	suite.setupPath = setupInfo
 	suite.config = config
 }
 
 func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
-	setupInfo := suite.setupInfo
+	setupInfo := suite.setupPath
 	dbSecret, err := setupInfo.getDbSecret()
 	if err != nil {
 		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getDbSecret()", err)
@@ -177,7 +177,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) AfterTest(suiteName, testName st
 }
 
 func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
-	database, err := suite.setupInfo.getDatabase()
+	database, err := suite.setupPath.getDatabase()
 	if err != nil {
 		log.Printf("Error occurred while executing %s, err: %v\n", "suite.setupInfo.getDatabase()", err)
 		suite.T().FailNow()

@@ -7,7 +7,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-type SetupInfo struct {
+type SetupPath struct {
 	dbSecretPath  string
 	ndbSecretPath string
 	dbPath        string
@@ -15,10 +15,10 @@ type SetupInfo struct {
 	appSvcPath    string
 }
 
-func (i *SetupInfo) getDbSecret() (*corev1.Secret, error) {
-	dbSecretbytes, err := ReadYAMLFile(i.dbSecretPath)
+func (sp *SetupPath) getDbSecret() (*corev1.Secret, error) {
+	dbSecretbytes, err := ReadYAMLFile(sp.dbSecretPath)
 	if err != nil {
-		log.Printf("Error occurred while reading bytes from %s", i.dbSecretPath)
+		log.Printf("Error occurred while reading bytes from %s", sp.dbSecretPath)
 		return nil, err
 	}
 	dbSecret, err := ConvertBytesToSecret(dbSecretbytes)
@@ -29,10 +29,10 @@ func (i *SetupInfo) getDbSecret() (*corev1.Secret, error) {
 	return dbSecret, nil
 }
 
-func (i *SetupInfo) getNdbSecret() (*corev1.Secret, error) {
-	ndbSecretbytes, err := ReadYAMLFile(i.ndbSecretPath)
+func (sp *SetupPath) getNdbSecret() (*corev1.Secret, error) {
+	ndbSecretbytes, err := ReadYAMLFile(sp.ndbSecretPath)
 	if err != nil {
-		log.Printf("Error occurred while reading bytes from %s", i.ndbSecretPath)
+		log.Printf("Error occurred while reading bytes from %s", sp.ndbSecretPath)
 		return nil, err
 	}
 	ndbSecret, err := ConvertBytesToSecret(ndbSecretbytes)
@@ -43,10 +43,10 @@ func (i *SetupInfo) getNdbSecret() (*corev1.Secret, error) {
 	return ndbSecret, nil
 }
 
-func (i *SetupInfo) getDatabase() (*ndbv1alpha1.Database, error) {
-	databaseBytes, err := ReadYAMLFile(i.dbPath)
+func (sp *SetupPath) getDatabase() (*ndbv1alpha1.Database, error) {
+	databaseBytes, err := ReadYAMLFile(sp.dbPath)
 	if err != nil {
-		log.Printf("Error occurred while reading bytes from %s", i.dbPath)
+		log.Printf("Error occurred while reading bytes from %s", sp.dbPath)
 		return nil, err
 	}
 	database, err := ConvertBytesToDatabase(databaseBytes)
@@ -57,10 +57,10 @@ func (i *SetupInfo) getDatabase() (*ndbv1alpha1.Database, error) {
 	return database, nil
 }
 
-func (i *SetupInfo) getAppPod() (*corev1.Pod, error) {
-	appPodBytes, err := ReadYAMLFile(i.appPodPath)
+func (sp *SetupPath) getAppPod() (*corev1.Pod, error) {
+	appPodBytes, err := ReadYAMLFile(sp.appPodPath)
 	if err != nil {
-		log.Printf("Error occurred while reading bytes from %s", i.appPodPath)
+		log.Printf("Error occurred while reading bytes from %s", sp.appPodPath)
 		return nil, err
 	}
 	appPod, err := ConvertBytesToPod(appPodBytes)
@@ -71,10 +71,10 @@ func (i *SetupInfo) getAppPod() (*corev1.Pod, error) {
 	return appPod, nil
 }
 
-func (i *SetupInfo) getAppService() (*corev1.Service, error) {
-	appSvcBytes, err := ReadYAMLFile(i.appSvcPath)
+func (sp *SetupPath) getAppService() (*corev1.Service, error) {
+	appSvcBytes, err := ReadYAMLFile(sp.appSvcPath)
 	if err != nil {
-		log.Printf("Error occurred while reading bytes from %s", i.appSvcPath)
+		log.Printf("Error occurred while reading bytes from %s", sp.appSvcPath)
 		return nil, err
 	}
 	appSvc, err := ConvertBytesToService(appSvcBytes)
