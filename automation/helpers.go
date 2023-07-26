@@ -12,15 +12,17 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// Reads and stores bytes of yaml file
 func readYAMLFile(filename string) ([]byte, error) {
 	yamlFile, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read YAML file: %v", err)
+		return nil, fmt.Errorf("Failed to read YAML file: %v", err)
 	}
 
 	return yamlFile, nil
 }
 
+// Converts bytes to Databaase, secret, pod, or service type
 func convertBytesToType(data []byte, t string) (typ interface{}, err error) {
 	jsonData, err := yaml.YAMLToJSON(data)
 	if err != nil {
@@ -37,89 +39,52 @@ func convertBytesToType(data []byte, t string) (typ interface{}, err error) {
 	case "service":
 		typ = &corev1.Service{}
 	default:
-		err = fmt.Errorf("unrecognized type: %s", t)
+		err = fmt.Errorf("Unrecognized type: %s", t)
 		return
 	}
 	err = json.Unmarshal(jsonData, typ)
 	if err != nil {
 		log.Println(err)
-		return
 	}
 	return
 }
 
-// func ConvertToSecret(data []byte) (secret *corev1.Secret, err error) {
-// 	secret = &corev1.Secret{}
-// 	jsonData, err := yaml.YAMLToJSON(data)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	err = json.Unmarshal(jsonData, secret)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	return
-// }
-
-// func ConvertToDatabase(data []byte) (database *ndbv1alpha1.Database, err error) {
-// 	database = &ndbv1alpha1.Database{}
-// 	jsonData, err := yaml.YAMLToJSON(data)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	err = json.Unmarshal(jsonData, database)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	return
-// }
-
-// func ConvertToPod(data []byte) (pod *corev1.Pod, err error) {
-// 	pod = &corev1.Pod{}
-// 	jsonData, err := yaml.YAMLToJSON(data)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	err = json.Unmarshal(jsonData, pod)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	return
-// }
-
-// func ConvertToService(data []byte) (svc *corev1.Service, err error) {
-// 	svc = &corev1.Service{}
-// 	jsonData, err := yaml.YAMLToJSON(data)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	err = json.Unmarshal(jsonData, svc)
-// 	if err != nil {
-// 		log.Println(err)
-// 	}
-// 	return
-// }
-
 func ConvertToSecret(data []byte) (secret *corev1.Secret, err error) {
 	typ, err := convertBytesToType(data, "secret")
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	secret = typ.(*corev1.Secret)
 	return
 }
 
 func ConvertToDatabase(data []byte) (database *ndbv1alpha1.Database, err error) {
 	typ, err := convertBytesToType(data, "database")
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	database = typ.(*ndbv1alpha1.Database)
 	return
 }
 
 func ConvertToPod(data []byte) (pod *corev1.Pod, err error) {
 	typ, err := convertBytesToType(data, "pod")
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	pod = typ.(*corev1.Pod)
 	return
 }
 
 func ConvertToService(data []byte) (service *corev1.Service, err error) {
 	typ, err := convertBytesToType(data, "service")
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	service = typ.(*corev1.Service)
 	return
 }
