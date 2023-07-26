@@ -51,46 +51,29 @@ func ConvertBytesToType(data []byte, t string) (typ interface{}, err error) {
 
 func ConvertBytesToSecret(data []byte) (secret *corev1.Secret, err error) {
 	typ, err := ConvertBytesToType(data, "secret")
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	secret = typ.(*corev1.Secret)
 	return
 }
 
 func ConvertBytesToDatabase(data []byte) (database *ndbv1alpha1.Database, err error) {
 	typ, err := ConvertBytesToType(data, "database")
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	database = typ.(*ndbv1alpha1.Database)
 	return
 }
 
 func ConvertBytesToPod(data []byte) (pod *corev1.Pod, err error) {
 	typ, err := ConvertBytesToType(data, "pod")
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	pod = typ.(*corev1.Pod)
 	return
 }
 
 func ConvertBytesToService(data []byte) (service *corev1.Service, err error) {
 	typ, err := ConvertBytesToType(data, "service")
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	service = typ.(*corev1.Service)
 	return
 }
 
 func WaitAndRetryOperation(interval time.Duration, retries int, operation func() error) (err error) {
-
 	for i := 0; i < retries; i++ {
 		if i != 0 {
 			log.Printf("Retrying, attempt # %d\n", i)
