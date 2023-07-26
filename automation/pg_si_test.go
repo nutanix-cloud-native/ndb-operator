@@ -81,34 +81,34 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	}
 
 	// Create base setup for all tests in this suite
-	setupInfo := SetupInfo{
+	setupPath := SetupPath{
 		dbSecretPath:  "./files/db-secret-pg-si.yaml",
 		ndbSecretPath: "./files/ndb-secret-pg-si.yaml",
 		dbPath:        "./files/database-pg-si.yaml",
 		appPodPath:    "./files/pod-pg-si.yaml",
 		appSvcPath:    "./files/service-pg-si.yaml",
 	}
-	dbSecret, err := setupInfo.getDbSecret()
+	dbSecret, err := setupPath.getDbSecret()
 	if err != nil {
 		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getDbSecret()", err)
 		suite.T().FailNow()
 	}
-	ndbSecret, err := setupInfo.getNdbSecret()
+	ndbSecret, err := setupPath.getNdbSecret()
 	if err != nil {
 		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getNdbSecret()", err)
 		suite.T().FailNow()
 	}
-	database, err := setupInfo.getDatabase()
+	database, err := setupPath.getDatabase()
 	if err != nil {
 		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getDatabase()", err)
 		suite.T().FailNow()
 	}
-	appSvc, err := setupInfo.getAppService()
+	appSvc, err := setupPath.getAppService()
 	if err != nil {
 		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getAppService()", err)
 		suite.T().FailNow()
 	}
-	appPod, err := setupInfo.getAppPod()
+	appPod, err := setupPath.getAppPod()
 	if err != nil {
 		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getAppPod()", err)
 		suite.T().FailNow()
@@ -127,7 +127,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	suite.logFile = logFile
 	suite.v1alpha1ClientSet = v1alpha1ClientSet
 	suite.clientset = clientset
-	suite.setupPath = setupInfo
+	suite.setupPath = setupPath
 	suite.config = config
 }
 

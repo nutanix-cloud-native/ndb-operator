@@ -84,3 +84,6 @@ func (sp *SetupPath) getAppService() (*corev1.Service, error) {
 	}
 	return appSvc, nil
 }
+
+type SetUpConfig struct {
+}
