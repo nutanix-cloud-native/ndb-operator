@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func ReadYAMLFile(filename string) ([]byte, error) {
+func readYAMLFile(filename string) ([]byte, error) {
 	yamlFile, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read YAML file: %v", err)

@@ -18,7 +18,7 @@ type SetupConfig struct {
 
 func createSetupConfig() (*SetupConfig, error) {
 	setupConfigPath := "./files/setup-config.yaml"
-	setupConfigBytes, err := ReadYAMLFile(setupConfigPath)
+	setupConfigBytes, err := readYAMLFile(setupConfigPath)
 	if err != nil {
 		log.Printf("Error occurred while reading bytes from %s", setupConfigPath)
 		return nil, err
@@ -64,7 +64,7 @@ type SetupPath struct {
 }
 
 func (sp *SetupPath) getDbSecret() (*corev1.Secret, error) {
-	dbSecretbytes, err := ReadYAMLFile(sp.dbSecretPath)
+	dbSecretbytes, err := readYAMLFile(sp.dbSecretPath)
 	if err != nil {
 		log.Printf("Error occurred while reading bytes from %s", sp.dbSecretPath)
 		return nil, err
@@ -78,7 +78,7 @@ func (sp *SetupPath) getDbSecret() (*corev1.Secret, error) {
 }
 
 func (sp *SetupPath) getNdbSecret() (*corev1.Secret, error) {
-	ndbSecretbytes, err := ReadYAMLFile(sp.ndbSecretPath)
+	ndbSecretbytes, err := readYAMLFile(sp.ndbSecretPath)
 	if err != nil {
 		log.Printf("Error occurred while reading bytes from %s", sp.ndbSecretPath)
 		return nil, err
@@ -92,7 +92,7 @@ func (sp *SetupPath) getNdbSecret() (*corev1.Secret, error) {
 }
 
 func (sp *SetupPath) getDatabase() (*ndbv1alpha1.Database, error) {
-	databaseBytes, err := ReadYAMLFile(sp.dbPath)
+	databaseBytes, err := readYAMLFile(sp.dbPath)
 	if err != nil {
 		log.Printf("Error occurred while reading bytes from %s", sp.dbPath)
 		return nil, err
@@ -106,7 +106,7 @@ func (sp *SetupPath) getDatabase() (*ndbv1alpha1.Database, error) {
 }
 
 func (sp *SetupPath) getAppPod() (*corev1.Pod, error) {
-	appPodBytes, err := ReadYAMLFile(sp.appPodPath)
+	appPodBytes, err := readYAMLFile(sp.appPodPath)
 	if err != nil {
 		log.Printf("Error occurred while reading bytes from %s", sp.appPodPath)
 		return nil, err
@@ -120,7 +120,7 @@ func (sp *SetupPath) getAppPod() (*corev1.Pod, error) {
 }
 
 func (sp *SetupPath) getAppService() (*corev1.Service, error) {
-	appSvcBytes, err := ReadYAMLFile(sp.appSvcPath)
+	appSvcBytes, err := readYAMLFile(sp.appSvcPath)
 	if err != nil {
 		log.Printf("Error occurred while reading bytes from %s", sp.appSvcPath)
 		return nil, err
