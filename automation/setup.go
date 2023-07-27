@@ -52,6 +52,8 @@ func test_setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Databa
 		database.Spec.NDB.ClusterId = os.Getenv("NDB_CLUSTER_ID")
 		database, err = v1alpha1ClientSet.Databases(database.Namespace).Create(database)
 		if err != nil {
+			log.Printf("create database failed")
+			log.Printf("database name: " + database.Name)
 			log.Printf("Error while creating Database %s: %s\n", database.Name, err)
 		} else {
 			log.Printf("Database %s created\n", database.Name)

@@ -36,7 +36,7 @@ type PostgresqlSingleInstanceTestSuite struct {
 	setupPath         SetupPath
 }
 
-// before the suite
+// SetupSuite is called once before running the tests in the suite
 func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	var err error
 	var config *rest.Config
@@ -83,11 +83,11 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 
 	// Create base setup for all tests in this suite
 	setupPath := SetupPath{
-		dbSecretPath:  "./files/db-secret-pg-si.yaml",
-		ndbSecretPath: "./files/ndb-secret-pg-si.yaml",
-		dbPath:        "./files/database-pg-si.yaml",
-		appPodPath:    "./files/pod-pg-si.yaml",
-		appSvcPath:    "./files/service-pg-si.yaml",
+		dbSecretPath:  "./sandbox/db-secret-pg-si.yaml",
+		ndbSecretPath: "./sandbox/ndb-secret-pg-si.yaml",
+		dbPath:        "./sandbox/database-pg-si.yaml",
+		appPodPath:    "./sandbox/pod-pg-si.yaml",
+		appSvcPath:    "./sandbox/service-pg-si.yaml",
 	}
 	dbSecret, err := setupPath.getDbSecret()
 	if err != nil {
@@ -132,6 +132,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	suite.config = config
 }
 
+// TearDownSuite is called once after running the tests in the suite
 func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 	setupInfo := suite.setupPath
 	dbSecret, err := setupInfo.getDbSecret()
@@ -169,10 +170,13 @@ func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 
 	suite.v1alpha1ClientSet.Databases(database.Namespace)
 }
+
+// This will run right before the test starts and receives the suite and test names as input
 func (suite *PostgresqlSingleInstanceTestSuite) BeforeTest(suiteName, testName string) {
 	log.Printf("******************** RUNNING TEST %s %s ********************\n", suiteName, testName)
 }
 
+// This will run after test finishes and receives the suite and test names as input
 func (suite *PostgresqlSingleInstanceTestSuite) AfterTest(suiteName, testName string) {
 	log.Printf("******************** END TEST %s %s ********************\n", suiteName, testName)
 }

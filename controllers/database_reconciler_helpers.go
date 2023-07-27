@@ -222,6 +222,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 
 		databaseAdapter := &controller_adapters.Database{Database: *database}
 		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
+		log.Info("Generated Request: %v", generatedReq)
 		// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
 		if err != nil {
 			log.Error(err, "Could not generate provisioning request, requeuing.")
