@@ -24,4 +24,13 @@ resources:
     defaulting: true
     validation: true
     webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: nutanix.com
+  group: ndb
+  kind: NDBServer
+  path: github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"
