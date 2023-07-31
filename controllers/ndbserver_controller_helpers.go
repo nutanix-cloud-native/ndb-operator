@@ -15,9 +15,11 @@ import (
 // NDBServerDatabaseInfo type object (to be consumed by the NDBServer CR)
 func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBClient) (databases []ndbv1alpha1.NDBServerDatabaseInfo, err error) {
 	log := log.FromContext(ctx)
+	log.Info("Entered ndbserver_controller_helpers.getNDBServerDatabasesInfo")
+
 	dbs, err := ndb_api.GetAllDatabases(ctx, ndbClient)
 	if err != nil {
-		log.Error(err, "An error occurred while fetching databases")
+		log.Error(err, "NDB API error while fetching databases")
 		return
 	}
 	databases = make([]ndbv1alpha1.NDBServerDatabaseInfo, len(dbs))
@@ -35,6 +37,7 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 		}
 		databases[i] = databaseInfo
 	}
+	log.Info("Returning from ndbserver_controller_helpers.getNDBServerDatabasesInfo")
 	return
 }
 
@@ -43,27 +46,32 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 // 2. TODO: Filter and set the required list of databases (we only want to store the databases managed by the operator).
 // 3. Update the counter value.
 func getNDBServerStatus(ctx context.Context, status *ndbv1alpha1.NDBServerStatus, ndbClient *ndb_client.NDBClient) *ndbv1alpha1.NDBServerStatus {
-	// log := log.FromContext(ctx)
-	dbCounter := status.Counter.Database
+	log := log.FromContext(ctx)
+	log.Info("Entered ndbserver_controller_helpers.getNDBServerStatus")
 
+	dbCounter := status.Counter.Database
 	// 1. Fetch dbs only if dbcounter is 0
 	if dbCounter == 0 {
+		log.Info("DbCounter 0, fetching databases (NDBServerDatabaseInfo)")
 		databases, err := getNDBServerDatabasesInfo(ctx, ndbClient)
 		if err != nil {
+			log.Error(err, "Error occurred while fetching databases (NDBServerDatabaseInfo)")
 			status.Status = common.NDB_CR_STATUS_ERROR
-		}
-		/* 2. TODO: Perform filtration on the databases associated with this NDB CR
-		databaseList := &ndbv1alpha1.DatabaseList{}
-		err = r.List(ctx, databaseList) // Also, we'll need to filter the dbs which are solely managed by THIS NDB CR. => Manual filter OR List Opts
-		if err != nil {
-			status.Status = common.NDB_CR_STATUS_ERROR
-		}
-		log.Info(util.ToString(databaseList))
-		filteredDBs := util.Filter(databaseList.Items, FILTER_FUNC )
-		*/
-		status.Databases, err = util.CreateMapForKey(databases, "id")
-		if err != nil {
-			status.Status = common.NDB_CR_STATUS_ERROR
+		} else {
+			/* 2. TODO: Perform filtration on the databases associated with this NDB CR
+			databaseList := &ndbv1alpha1.DatabaseList{}
+			err = r.List(ctx, databaseList) // Also, we'll need to filter the dbs which are solely managed by THIS NDB CR. => Manual filter OR List Opts
+			if err != nil {
+				status.Status = common.NDB_CR_STATUS_ERROR
+			}
+			log.Info(util.ToString(databaseList))
+			filteredDBs := util.Filter(databaseList.Items, FILTER_FUNC )
+			*/
+			status.Databases, err = util.CreateMapForKey(databases, "Id")
+			if err != nil {
+				log.Error(err, "Error occurred while creating dbId-db map")
+				status.Status = common.NDB_CR_STATUS_ERROR
+			}
 		}
 	}
 
@@ -71,6 +79,6 @@ func getNDBServerStatus(ctx context.Context, status *ndbv1alpha1.NDBServerStatus
 	status.Counter = ndbv1alpha1.Counter{
 		Database: (dbCounter + 1) % common.NDB_RECONCILE_DATABASE_COUNTER,
 	}
-
+	log.Info("Returning from ndbserver_controller_helpers.getNDBServerStatus")
 	return status
 }

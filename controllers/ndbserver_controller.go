@@ -54,7 +54,7 @@ Reconciles the NDBServer custom resources by
 */
 func (r *NDBServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
-
+	log.Info("NDBServer reconcile started")
 	// 1. Checks for deletion
 	// Fetch the NDBServer resource from the namespace
 	ndbServer := &ndbv1alpha1.NDBServer{}
@@ -78,19 +78,19 @@ func (r *NDBServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		status.Databases = make(map[string]ndbv1alpha1.NDBServerDatabaseInfo)
 	}
 
-	log.Info("NDBServer CR Status: " + util.ToString(status))
+	// log.Info("NDBServer CR Status: " + util.ToString(status))
 
 	// 2. Verify credentials and connectivity
 	// Fetch credentials and check Authentication
 	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, ndbServer.Spec.CredentialSecret, req.Namespace)
 	ndbClient := ndb_client.NewNDBClient(username, password, ndbServer.Spec.Server, caCert, ndbServer.Spec.SkipCertificateVerification)
 	if err != nil {
+		log.Error(err, "Credential Error: error while fetching credentials from CredentialSecret", "secret name", ndbServer.Spec.CredentialSecret)
 		status.Status = common.NDB_CR_STATUS_CREDENTIAL_ERROR
-		// return requeueOnErr(err)
 	} else {
 		authResponse, err := ndb_api.AuthValidate(ctx, ndbClient)
 		if err != nil || authResponse.Status != "success" {
-			log.Info("Could not verify connectivity / auth credentials for NDB")
+			log.Error(err, "Authentication Error: Could not verify connectivity / auth credentials for NDB")
 			status.Status = common.NDB_CR_STATUS_AUTHENTICATION_ERROR
 		} else {
 			status.Status = common.NDB_CR_STATUS_OK
@@ -106,11 +106,12 @@ func (r *NDBServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		status = getNDBServerStatus(ctx, status, ndbClient)
 	default:
 		// no-op
+		return doNotRequeue()
 	}
 
 	// 4. Update the status if any changes are observed (excluding counter)
 	if !util.DeepEqualWithException(ndbServer.Status, *status, "Counter") {
-		log.Info("Status Changed")
+		log.Info("Status Changed, updating lastUpdated time")
 		status.LastUpdated = time.Now().Format(time.DateTime)
 	}
 	ndbServer.Status = *status
