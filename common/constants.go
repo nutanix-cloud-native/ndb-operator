@@ -47,9 +47,17 @@ const (
 	FINALIZER_DATABASE_INSTANCE = "ndb.nutanix.com/finalizerdatabaseinstance"
 	FINALIZER_DATABASE_SERVER   = "ndb.nutanix.com/finalizerdatabaseserver"
 
-	NDB_PARAM_USERNAME       = "username"
+	NDB_CR_STATUS_AUTHENTICATION_ERROR = "Authentication Error"
+	NDB_CR_STATUS_CREDENTIAL_ERROR     = "Credential Error"
+	NDB_CR_STATUS_ERROR                = "Error"
+	NDB_CR_STATUS_OK                   = "Ok"
+
 	NDB_PARAM_PASSWORD       = "password"
 	NDB_PARAM_SSH_PUBLIC_KEY = "ssh_public_key"
+	NDB_PARAM_USERNAME       = "username"
+
+	NDB_RECONCILE_DATABASE_COUNTER = 4
+	NDB_RECONCILE_INTERVAL_SECONDS = 15
 
 	PROFILE_DEFAULT_OOB_SMALL_COMPUTE = "DEFAULT_OOB_SMALL_COMPUTE"
 

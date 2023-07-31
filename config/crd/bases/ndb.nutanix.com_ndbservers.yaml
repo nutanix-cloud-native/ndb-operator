@@ -12,10 +12,20 @@ spec:
     kind: NDBServer
     listKind: NDBServerList
     plural: ndbservers
+    shortNames:
+    - ndb
+    - ndbs
     singular: ndbserver
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.status
+      name: Status
+      type: string
+    - jsonPath: .status.lastUpdated
+      name: Updated At
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: NDBServer is the Schema for the ndbservers API
@@ -35,13 +45,63 @@ spec:
           spec:
             description: NDBServerSpec defines the desired state of NDBServer
             properties:
-              foo:
-                description: Foo is an example field of NDBServer. Edit ndbserver_types.go
-                  to remove/update
+              credentialSecret:
                 type: string
+              server:
+                type: string
+              skipCertificateVerification:
+                default: false
+                description: Skip server's certificate and hostname verification
+                type: boolean
+            required:
+            - credentialSecret
+            - server
             type: object
           status:
             description: NDBServerStatus defines the observed state of NDBServer
+            properties:
+              counter:
+                properties:
+                  database:
+                    type: integer
+                required:
+                - database
+                type: object
+              databases:
+                additionalProperties:
+                  description: Database related info to be stored in the status field
+                    of the NDB CR
+                  properties:
+                    dbServerId:
+                      type: string
+                    id:
+                      type: string
+                    ipAddress:
+                      type: string
+                    name:
+                      type: string
+                    status:
+                      type: string
+                    timeMachineId:
+                      type: string
+                  required:
+                  - dbServerId
+                  - id
+                  - ipAddress
+                  - name
+                  - status
+                  - timeMachineId
+                  type: object
+                type: object
+              lastUpdated:
+                type: string
+              status:
+                type: string
+            required:
+            - counter
+            - databases
+            - lastUpdated
+            - status
             type: object
         type: object
     served: true
