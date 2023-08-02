@@ -53,10 +53,10 @@ func requeueWithTimeout(t int) (ctrl.Result, error) {
 // Returns an error if reading the secret containing credentials fails
 func getNDBCredentialsFromSecret(ctx context.Context, k8sClient client.Client, name, namespace string) (username, password, caCert string, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered common.getNDBCredentialsFromSecret")
+	log.Info("Reading secret", "Secret Name", name)
 	secretDataMap, err := util.GetAllDataFromSecret(ctx, k8sClient, name, namespace)
 	if err != nil {
-		log.Error(err, "Error occured in util.GetAllDataFromSecret while fetching NDB secret", "Secret Name", name, "Namespace", namespace)
+		log.Error(err, "Error occured while fetching NDB secret", "Secret Name", name, "Namespace", namespace)
 		return
 	}
 	username = string(secretDataMap[common.SECRET_DATA_KEY_USERNAME])
@@ -73,6 +73,5 @@ func getNDBCredentialsFromSecret(ctx context.Context, k8sClient client.Client, n
 		log.Error(err, errStatement, "username empty", username == "", "password empty", password == "")
 		return
 	}
-	log.Info("Returning from common.getNDBCredentialsFromSecret")
 	return
 }

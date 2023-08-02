@@ -34,13 +34,13 @@ type NDBServerSpec struct {
 
 // NDBServerStatus defines the observed state of NDBServer
 type NDBServerStatus struct {
-	Status      string                           `json:"status"`
-	LastUpdated string                           `json:"lastUpdated"`
-	Databases   map[string]NDBServerDatabaseInfo `json:"databases"`
-	Counter     Counter                          `json:"counter"`
+	Status           string                           `json:"status"`
+	LastUpdated      string                           `json:"lastUpdated"`
+	Databases        map[string]NDBServerDatabaseInfo `json:"databases"`
+	ReconcileCounter ReconcileCounter                 `json:"reconcileCounter"`
 }
 
-type Counter struct {
+type ReconcileCounter struct {
 	Database int `json:"database"`
 }
 

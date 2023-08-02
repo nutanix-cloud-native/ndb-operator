@@ -60,13 +60,6 @@ spec:
           status:
             description: NDBServerStatus defines the observed state of NDBServer
             properties:
-              counter:
-                properties:
-                  database:
-                    type: integer
-                required:
-                - database
-                type: object
               databases:
                 additionalProperties:
                   description: Database related info to be stored in the status field
@@ -95,12 +88,19 @@ spec:
                 type: object
               lastUpdated:
                 type: string
+              reconcileCounter:
+                properties:
+                  database:
+                    type: integer
+                required:
+                - database
+                type: object
               status:
                 type: string
             required:
-            - counter
             - databases
             - lastUpdated
+            - reconcileCounter
             - status
             type: object
         type: object

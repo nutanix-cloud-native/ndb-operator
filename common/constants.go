@@ -18,6 +18,8 @@ package common
 
 // Constants are defined in lexographical order
 const (
+	AUTH_RESPONSE_STATUS_SUCCESS = "success"
+
 	DATABASE_CR_STATUS_DELETING     = "DELETING"
 	DATABASE_CR_STATUS_EMPTY        = ""
 	DATABASE_CR_STATUS_READY        = "READY"

@@ -82,14 +82,15 @@ func (r *NDBServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// 2. Verify credentials and connectivity
 	// Fetch credentials and check Authentication
+	var ndbClient *ndb_client.NDBClient
 	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, ndbServer.Spec.CredentialSecret, req.Namespace)
-	ndbClient := ndb_client.NewNDBClient(username, password, ndbServer.Spec.Server, caCert, ndbServer.Spec.SkipCertificateVerification)
 	if err != nil {
 		log.Error(err, "Credential Error: error while fetching credentials from CredentialSecret", "secret name", ndbServer.Spec.CredentialSecret)
 		status.Status = common.NDB_CR_STATUS_CREDENTIAL_ERROR
 	} else {
+		ndbClient = ndb_client.NewNDBClient(username, password, ndbServer.Spec.Server, caCert, ndbServer.Spec.SkipCertificateVerification)
 		authResponse, err := ndb_api.AuthValidate(ctx, ndbClient)
-		if err != nil || authResponse.Status != "success" {
+		if err != nil || authResponse.Status != common.AUTH_RESPONSE_STATUS_SUCCESS {
 			log.Error(err, "Authentication Error: Could not verify connectivity / auth credentials for NDB")
 			status.Status = common.NDB_CR_STATUS_AUTHENTICATION_ERROR
 		} else {

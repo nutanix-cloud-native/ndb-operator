@@ -15,7 +15,7 @@ import (
 // NDBServerDatabaseInfo type object (to be consumed by the NDBServer CR)
 func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBClient) (databases []ndbv1alpha1.NDBServerDatabaseInfo, err error) {
 	log := log.FromContext(ctx)
-	log.Info("Entered ndbserver_controller_helpers.getNDBServerDatabasesInfo")
+	log.Info("Fetching and converting databases from NDB")
 
 	dbs, err := ndb_api.GetAllDatabases(ctx, ndbClient)
 	if err != nil {
@@ -49,7 +49,7 @@ func getNDBServerStatus(ctx context.Context, status *ndbv1alpha1.NDBServerStatus
 	log := log.FromContext(ctx)
 	log.Info("Entered ndbserver_controller_helpers.getNDBServerStatus")
 
-	dbCounter := status.Counter.Database
+	dbCounter := status.ReconcileCounter.Database
 	// 1. Fetch dbs only if dbcounter is 0
 	if dbCounter == 0 {
 		log.Info("DbCounter 0, fetching databases (NDBServerDatabaseInfo)")
@@ -76,7 +76,7 @@ func getNDBServerStatus(ctx context.Context, status *ndbv1alpha1.NDBServerStatus
 	}
 
 	// 3. Update counters
-	status.Counter = ndbv1alpha1.Counter{
+	status.ReconcileCounter = ndbv1alpha1.ReconcileCounter{
 		Database: (dbCounter + 1) % common.NDB_RECONCILE_DATABASE_COUNTER,
 	}
 	log.Info("Returning from ndbserver_controller_helpers.getNDBServerStatus")

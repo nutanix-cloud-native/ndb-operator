@@ -28,6 +28,8 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// Validates the auth credentials against the 'auth/validate' endpoint
+// Returns the response along with an error (if any)
 func AuthValidate(ctx context.Context, ndbClient *ndb_client.NDBClient) (authValidateResponse AuthValidateResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.AuthValidate")
