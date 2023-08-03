@@ -18,7 +18,8 @@ import (
 
 const namespace_default = "default"
 
-func test_setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appSvc *corev1.Service, appPod *corev1.Pod, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func test_setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+	log.Println("Running test_setup()...")
 
 	ns := namespace_default
 	if database != nil && database.Namespace != "" {
@@ -48,12 +49,11 @@ func test_setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Databa
 
 	// Create Database
 	if database != nil {
+		// log.Printf(database.Spec.Instance.DatabaseInstanceName + ", " + database.Spec.NDB.ClusterId)
 		database.Spec.NDB.Server = os.Getenv("NDB_SERVER")
 		database.Spec.NDB.ClusterId = os.Getenv("NDB_CLUSTER_ID")
 		database, err = v1alpha1ClientSet.Databases(database.Namespace).Create(database)
 		if err != nil {
-			log.Printf("create database failed")
-			log.Printf("database name: " + database.Name)
 			log.Printf("Error while creating Database %s: %s\n", database.Name, err)
 		} else {
 			log.Printf("Database %s created\n", database.Name)
@@ -101,6 +101,7 @@ func test_setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Databa
 	}
 	// Wait for Application Pod to start
 	if appPod != nil {
+		// log.Println(appPod.
 		err = waitAndRetryOperation(time.Second, 300, func() (err error) {
 			appPod, err = clientset.CoreV1().Pods(ns).Get(context.TODO(), appPod.Name, metav1.GetOptions{})
 			if err != nil {
@@ -121,10 +122,14 @@ func test_setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Databa
 			return
 		}
 	}
+
+	log.Println("Ending test_setup()!")
+
 	return
 }
 
-func test_teardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appSvc *corev1.Service, appPod *corev1.Pod, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func test_teardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+	log.Println("Running test_teardown()...")
 
 	ns := namespace_default
 	if database != nil && database.Namespace != "" {
@@ -196,5 +201,8 @@ func test_teardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Dat
 			log.Printf("Svc %s deleted\n", appSvc.Name)
 		}
 	}
+
+	log.Println("End test_teardown()!")
+
 	return
 }
