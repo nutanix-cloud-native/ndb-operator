@@ -41,7 +41,7 @@ type PostgresqlSingleInstanceTestSuite struct {
 
 // SetupSuite is called once before running the tests in the suite
 func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
-	log.Printf("******************** RUNNING SETUPSUITE() ********************\n")
+	log.Printf("******************** RUNNING PostgresqlSingleInstanceTestSuite SETUPSUITE() ********************\n")
 
 	var err error
 	var config *rest.Config
@@ -62,7 +62,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 
 	// Setup kubeconfig
 	if kubeconfig == "" {
-		log.Println("using in-cluster configuration")
+		log.Println("Using in-cluster configuration")
 		config, err = rest.InClusterConfig()
 	} else {
 		log.Printf("Using configuration from '%s'\n", kubeconfig)
@@ -145,12 +145,12 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	suite.setupPath = setupPaths
 	suite.config = config
 
-	log.Printf("******************** END SETUPSUITE() ********************\n")
+	log.Printf("******************** END PostgresqlSingleInstanceTestSuite SETUPSUITE() ********************\n")
 }
 
 // TearDownSuite is called once after running the tests in the suite
 func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
-	log.Printf("******************** RUNNING TEARDOWNSUITE() ********************\n")
+	log.Printf("******************** RUNNING PostgresqlSingleInstanceTestSuite TEARDOWNSUITE() ********************\n")
 
 	var err error
 	setupPaths := suite.setupPath
@@ -199,7 +199,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 
 	suite.v1alpha1ClientSet.Databases(database.Namespace)
 
-	log.Printf("******************** END TEARDOWNSUITE() ********************\n")
+	log.Printf("******************** END PostgresqlSingleInstanceTestSuite() ********************\n")
 }
 
 // This will run right before the test starts and receives the suite and test names as input
