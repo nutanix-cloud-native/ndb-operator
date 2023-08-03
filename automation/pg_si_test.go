@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -16,6 +17,7 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -33,11 +35,13 @@ type PostgresqlSingleInstanceTestSuite struct {
 	clientset         *kubernetes.Clientset
 	kubeconfig        string
 	logFile           string
-	setupPath         SetupPath
+	setupPath         SetupPaths
 }
 
 // SetupSuite is called once before running the tests in the suite
 func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
+	log.Printf("******************** RUNNING SETUPSUITE() ********************\n")
+
 	var err error
 	var config *rest.Config
 	var v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
@@ -60,7 +64,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 		log.Println("using in-cluster configuration")
 		config, err = rest.InClusterConfig()
 	} else {
-		log.Printf("using configuration from '%s'\n", kubeconfig)
+		log.Printf("Using configuration from '%s'\n", kubeconfig)
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	}
 	if err != nil {
@@ -82,45 +86,54 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	}
 
 	// Create base setup for all tests in this suite
-	setupPath := SetupPath{
-		dbSecretPath:  "./sandbox/db-secret-pg-si.yaml",
-		ndbSecretPath: "./sandbox/ndb-secret-pg-si.yaml",
-		dbPath:        "./sandbox/database-pg-si.yaml",
-		appPodPath:    "./sandbox/pod-pg-si.yaml",
-		appSvcPath:    "./sandbox/service-pg-si.yaml",
+	setupPaths := SetupPaths{
+		dbSecretPath:  "./files/db-secret-pg-si.yaml",
+		ndbSecretPath: "./files/ndb-secret-pg-si.yaml",
+		dbPath:        "./files/database-pg-si.yaml",
+		appPodPath:    "./files/pod-pg-si.yaml",
+		appSvcPath:    "./files/service-pg-si.yaml",
 	}
-	dbSecret, err := setupPath.getDbSecret()
+
+	dbSecret := &v1.Secret{}
+	err = createGeneric(dbSecret, setupPaths.dbSecretPath)
 	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getDbSecret()", err)
+		log.Printf("Error occurred while executing Helpers.createGeneric() for dbSecret with path %s, error: %v\n", setupPaths.dbSecretPath, err)
 		suite.T().FailNow()
 	}
-	ndbSecret, err := setupPath.getNdbSecret()
+
+	ndbSecret := &v1.Secret{}
+	err = createGeneric(ndbSecret, setupPaths.ndbSecretPath)
 	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getNdbSecret()", err)
+		log.Printf("Error occurred while executing Helpers.createGeneric() for ndbSecret with path %s, error: %v\n", setupPaths.ndbSecretPath, err)
 		suite.T().FailNow()
 	}
-	database, err := setupPath.getDatabase()
+
+	database := &ndbv1alpha1.Database{}
+	err = createGeneric(database, setupPaths.dbPath)
 	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getDatabase()", err)
+		log.Printf("Error occurred while executing Helpers.createGeneric() for database with path %s, error: %v\n", setupPaths.dbPath, err)
 		suite.T().FailNow()
 	}
-	appSvc, err := setupPath.getAppService()
+
+	appPod := &v1.Pod{}
+	err = createGeneric(appPod, setupPaths.appPodPath)
 	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getAppService()", err)
+		log.Printf("Error occurred while executing Helpers.createGeneric() for database with path %s, error: %v\n", setupPaths.appPodPath, err)
 		suite.T().FailNow()
 	}
-	appPod, err := setupPath.getAppPod()
+
+	appSvc := &v1.Service{}
+	err = createGeneric(appSvc, setupPaths.appSvcPath)
 	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getAppPod()", err)
+		log.Printf("Error occurred while executing Helpers.createService() for pod with path %s, error: %v\n", setupPaths.appSvcPath, err)
 		suite.T().FailNow()
 	}
-	err = test_setup(dbSecret, ndbSecret, database, appSvc, appPod, clientset, v1alpha1ClientSet, suite.T())
+
+	err = test_setup(dbSecret, ndbSecret, database, appPod, appSvc, clientset, v1alpha1ClientSet, suite.T())
 	if err != nil {
 		log.Printf("Error occurred: %s\n", err)
 		log.Println("Setup failed")
 		suite.T().FailNow()
-	} else {
-		log.Println("Setup completed")
 	}
 
 	// Set variables for the entire suite
@@ -128,39 +141,54 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	suite.logFile = logFile
 	suite.v1alpha1ClientSet = v1alpha1ClientSet
 	suite.clientset = clientset
-	suite.setupPath = setupPath
+	suite.setupPath = setupPaths
 	suite.config = config
+
+	log.Printf("******************** END SETUPSUITE() ********************\n")
 }
 
 // TearDownSuite is called once after running the tests in the suite
 func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
-	setupInfo := suite.setupPath
-	dbSecret, err := setupInfo.getDbSecret()
+	log.Printf("******************** RUNNING TEARDOWNSUITE() ********************\n")
+
+	var err error
+	setupPaths := suite.setupPath
+
+	dbSecret := &v1.Secret{}
+	err = createGeneric(dbSecret, setupPaths.dbSecretPath)
 	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getDbSecret()", err)
+		log.Printf("Error occurred while executing Helpers.createSecret() for dbSecret with path %s, error: %v\n", setupPaths.dbSecretPath, err)
+	}
+
+	ndbSecret := &v1.Secret{}
+	err = createGeneric(ndbSecret, setupPaths.ndbSecretPath)
+	if err != nil {
+		log.Printf("Error occurred while executing Helpers.createSecret() for ndbSecret with path %s, error: %v\n", setupPaths.ndbSecretPath, err)
 		suite.T().FailNow()
 	}
-	ndbSecret, err := setupInfo.getNdbSecret()
+
+	database := &ndbv1alpha1.Database{}
+	err = createGeneric(database, setupPaths.dbPath)
 	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getNdbSecret()", err)
+		log.Printf("Error occurred while executing Helpers.createSecret() for database with path %s, error: %v\n", setupPaths.dbPath, err)
 		suite.T().FailNow()
 	}
-	database, err := setupInfo.getDatabase()
+
+	appPod := &v1.Pod{}
+	err = createGeneric(appPod, setupPaths.appPodPath)
 	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getDatabase()", err)
+		log.Printf("Error occurred while executing Helpers.createPod() for pod with path %s, error: %v\n", setupPaths.appPodPath, err)
 		suite.T().FailNow()
 	}
-	appSvc, err := setupInfo.getAppService()
+
+	appSvc := &v1.Service{}
+	err = createGeneric(appSvc, setupPaths.appSvcPath)
 	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getAppService()", err)
+		log.Printf("Error occurred while executing Helpers.createService() for pod with path %s, error: %v\n", setupPaths.appSvcPath, err)
 		suite.T().FailNow()
 	}
-	appPod, err := setupInfo.getAppPod()
-	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "setupInfo.getAppPod()", err)
-		suite.T().FailNow()
-	}
-	err = test_teardown(dbSecret, ndbSecret, database, appSvc, appPod, suite.clientset, suite.v1alpha1ClientSet, suite.T())
+
+	err = test_teardown(dbSecret, ndbSecret, database, appPod, appSvc, suite.clientset, suite.v1alpha1ClientSet, suite.T())
 	if err != nil {
 		log.Printf("Error occurred: %s\n", err)
 		log.Println("teardown failed")
@@ -169,6 +197,8 @@ func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 	}
 
 	suite.v1alpha1ClientSet.Databases(database.Namespace)
+
+	log.Printf("******************** END TEARDOWNSUITE() ********************\n")
 }
 
 // This will run right before the test starts and receives the suite and test names as input
@@ -182,7 +212,12 @@ func (suite *PostgresqlSingleInstanceTestSuite) AfterTest(suiteName, testName st
 }
 
 func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
-	database, err := suite.setupPath.getDatabase()
+	log.Printf("** TestProvisioningSuccess() started. **\n")
+	var err error
+	var db v1alpha1.Database
+	err = createGeneric(&db, suite.setupPath.dbPath)
+
+	var database *ndbv1alpha1.Database = &db
 	if err != nil {
 		log.Printf("Error occurred while executing %s, err: %v\n", "suite.setupInfo.getDatabase()", err)
 		suite.T().FailNow()
@@ -208,9 +243,13 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 	log.Printf("Database response.status: %s\n", databaseResponse.Status)
 	assert := assert.New(suite.T())
 	assert.Equal(common.DATABASE_CR_STATUS_READY, databaseResponse.Status, "The database status should be ready.")
+
+	log.Printf("** TestProvisioningSuccess() ended. **\n")
 }
 
 func (suite *PostgresqlSingleInstanceTestSuite) TestAppConnectivity() {
+	log.Printf("** TestAppConnectivity() started. **\n")
+
 	client := http.Client{}
 	// Send GET request
 	resp, err := client.Get("http://localhost:30000")
@@ -230,6 +269,8 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestAppConnectivity() {
 	log.Println("Response:", string(body))
 	assert := assert.New(suite.T())
 	assert.Equal(200, resp.StatusCode, "The response status should be 200.")
+
+	log.Printf("** TestAppConnectivity() ended. **\n")
 }
 
 // In order for 'go test' to run this suite, we need to create
