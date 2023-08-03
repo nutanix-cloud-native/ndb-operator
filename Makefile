@@ -276,4 +276,4 @@ endif
 # NDB_CLUSTER_ID='...'
 .PHONY: run-automation
 run-automation: install
-	go test ./automation/pg_si_test -v -timeout 60m
+	go test ./automation/mssql_si_test -v -timeout 60m
