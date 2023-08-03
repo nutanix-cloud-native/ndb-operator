@@ -1,0 +1,72 @@
+2023/08/03 15:22:49 Using configuration from '/Users/mazin.shaaeldin/.kube/config'
+2023/08/03 15:22:49 Running test_setup()...
+2023/08/03 15:22:49 Secret db-secret-pg-si created
+2023/08/03 15:22:49 Secret ndb-secret-pg-si created
+2023/08/03 15:22:49 Database db-pgtest created
+2023/08/03 15:22:49 Pod best-app created
+2023/08/03 15:22:49 Svc best-app-service created
+2023/08/03 15:22:49 Error: DB db-pgtest is in '' status.
+2023/08/03 15:23:49 Retrying, attempt # 1
+2023/08/03 15:23:49 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:24:49 Retrying, attempt # 2
+2023/08/03 15:24:49 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:25:49 Retrying, attempt # 3
+2023/08/03 15:25:49 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:26:49 Retrying, attempt # 4
+2023/08/03 15:26:49 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:27:49 Retrying, attempt # 5
+2023/08/03 15:27:49 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:28:49 Retrying, attempt # 6
+2023/08/03 15:28:49 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:29:49 Retrying, attempt # 7
+2023/08/03 15:29:49 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:30:49 Retrying, attempt # 8
+2023/08/03 15:30:49 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:31:49 Retrying, attempt # 9
+2023/08/03 15:31:49 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:32:49 Retrying, attempt # 10
+2023/08/03 15:32:49 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:35:28 Retrying, attempt # 11
+2023/08/03 15:35:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:36:28 Retrying, attempt # 12
+2023/08/03 15:36:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:37:28 Retrying, attempt # 13
+2023/08/03 15:37:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:38:28 Retrying, attempt # 14
+2023/08/03 15:38:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:39:28 Retrying, attempt # 15
+2023/08/03 15:39:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:40:28 Retrying, attempt # 16
+2023/08/03 15:40:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:41:28 Retrying, attempt # 17
+2023/08/03 15:41:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:42:28 Retrying, attempt # 18
+2023/08/03 15:42:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:43:28 Retrying, attempt # 19
+2023/08/03 15:43:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:44:28 Retrying, attempt # 20
+2023/08/03 15:44:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:45:28 Retrying, attempt # 21
+2023/08/03 15:45:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:46:28 Retrying, attempt # 22
+2023/08/03 15:46:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:47:28 Retrying, attempt # 23
+2023/08/03 15:47:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:48:28 Retrying, attempt # 24
+2023/08/03 15:48:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:49:28 Retrying, attempt # 25
+2023/08/03 15:49:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:50:28 Retrying, attempt # 26
+2023/08/03 15:50:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:51:28 Retrying, attempt # 27
+2023/08/03 15:51:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:52:28 Retrying, attempt # 28
+2023/08/03 15:52:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:53:28 Retrying, attempt # 29
+2023/08/03 15:53:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:54:28 Retrying, attempt # 30
+2023/08/03 15:54:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:55:28 Retrying, attempt # 31
+2023/08/03 15:55:28 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 15:56:28 Retrying, attempt # 32
+2023/08/03 15:56:28 Error: DB db-pgtest is in 'PROVISIONING' status.

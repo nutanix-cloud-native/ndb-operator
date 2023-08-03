@@ -1,0 +1,29 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: db-pgtest
+spec:
+  ndb:
+    clusterId: <cluster-id>
+    credentialSecret: ndb-secret-pg-si
+    server: https://<ip-for-ndb>:8443/era/v0.9
+    skipCertificateVerification: true
+  databaseInstance:
+    databaseInstanceName: "db-mssqltest"
+    databaseNames:
+      - database_one
+      - database_two
+      - database_three
+    credentialSecret: db-secret-pg-si
+    size: 100
+    timezone: "UTC"
+    type: mssql
+    profiles:
+      # A Software profile is a mandatory input for closed-source engines: SQL Server & Oracle
+      software:
+        name: "MSSQL-MAZIN (1.0)"
+        # id: "7281c9a9-1639-4cbd-a9cc-f0b0422ba90a"
+      # Only applicable for MSSQL databases
+      dbParamInstance:
+        name: ""
+        id: ""
