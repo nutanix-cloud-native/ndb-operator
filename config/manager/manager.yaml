@@ -24,6 +24,12 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      initContainers:
+      - name: cert-manager-wait
+        image: busybox:1.28
+        securityContext:
+          runAsNonRoot: false
+        command: ['sh', '-c', "sleep 60"]
       securityContext:
         runAsNonRoot: true
         # TODO(user): For common cases that do not require escalating privileges
