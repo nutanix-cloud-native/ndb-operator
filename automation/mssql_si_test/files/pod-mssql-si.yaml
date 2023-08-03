@@ -14,7 +14,7 @@ spec:
         cpu: "1"
     env:
     - name: DBHOST
-      value: db-mssqltest-svc
+      value: mazin-db-mssqltest-svc
     - name: DBPORT
       value: '80'
     - name: PASSWORD
@@ -27,4 +27,4 @@ spec:
   initContainers:
   - name: init-db
     image: busybox:1.28
-    command: ['sh', '-c', "until nslookup db-mssqltest-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for database service; sleep 2; done"]
+    command: ['sh', '-c', "until nslookup mazin-db-mssqltest-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for database service; sleep 2; done"]
