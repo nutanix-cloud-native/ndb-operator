@@ -18,7 +18,7 @@ import (
 
 const namespace_default = "default"
 
-func test_setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func TestSetup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	log.Println("Running test_setup()...")
 
 	ns := namespace_default
@@ -128,7 +128,7 @@ func test_setup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Databa
 	return
 }
 
-func test_teardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func TestTeardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	log.Println("Running test_teardown()...")
 
 	ns := namespace_default
