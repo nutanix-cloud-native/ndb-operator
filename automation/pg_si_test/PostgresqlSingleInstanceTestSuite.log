@@ -1,0 +1,56 @@
+2023/08/03 14:05:10 Using configuration from '/Users/mazin.shaaeldin/.kube/config'
+2023/08/03 14:05:10 Running test_setup()...
+2023/08/03 14:05:10 Secret db-secret-pg-si created
+2023/08/03 14:05:10 Secret ndb-secret-pg-si created
+2023/08/03 14:05:10 Database db-pgtest created
+2023/08/03 14:05:10 Pod best-app created
+2023/08/03 14:05:10 Svc best-app-service created
+2023/08/03 14:05:10 Error: DB db-pgtest is in '' status.
+2023/08/03 14:07:43 Retrying, attempt # 1
+2023/08/03 14:07:43 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 14:17:29 Retrying, attempt # 2
+2023/08/03 14:17:29 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 14:33:06 Retrying, attempt # 3
+2023/08/03 14:33:06 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 14:38:07 Retrying, attempt # 4
+2023/08/03 14:38:07 Error: DB db-pgtest is in 'PROVISIONING' status.
+2023/08/03 14:39:07 Retrying, attempt # 5
+2023/08/03 14:39:07 DB db-pgtest is in 'READY' status.
+2023/08/03 14:39:07 Database is ready
+2023/08/03 14:39:07 Pod best-app is in 'Running' status.
+2023/08/03 14:39:07 Pod is ready
+2023/08/03 14:39:07 Ending test_setup()!
+2023/08/03 14:39:07 ******************** END SETUPSUITE() ********************
+2023/08/03 14:39:07 ******************** RUNNING TEST PostgresqlSingleInstanceTestSuite TestAppConnectivity ********************
+2023/08/03 14:39:07 Start TestAppConnectivity() started. **
+2023/08/03 14:39:07 Response status: 200 OK
+2023/08/03 14:39:07 Response: [{"datname":"postgres"},{"datname":"database_one"},{"datname":"template1"},{"datname":"template0"},{"datname":"database_two"},{"datname":"database_three"}]
+2023/08/03 14:39:07 End TestAppConnectivity()!
+2023/08/03 14:39:07 ******************** END TEST PostgresqlSingleInstanceTestSuite TestAppConnectivity ********************
+2023/08/03 14:39:07 ******************** RUNNING TEST PostgresqlSingleInstanceTestSuite TestProvisioningSuccess ********************
+2023/08/03 14:39:07 Start TestProvisioningSuccess()...
+2023/08/03 14:39:07 Database response.status: READY
+2023/08/03 14:39:07 End TestProvisioningSuccess()!**
+2023/08/03 14:39:07 ******************** END TEST PostgresqlSingleInstanceTestSuite TestProvisioningSuccess ********************
+2023/08/03 14:39:07 ******************** RUNNING TEARDOWNSUITE() ********************
+2023/08/03 14:39:07 Running test_teardown()...
+2023/08/03 14:39:07 Database db-pgtest deleted
+2023/08/03 14:39:07 DB db-pgtest is not yet deleted
+2023/08/03 14:39:07 Error: DB db-pgtest is not yet deleted
+2023/08/03 14:40:07 Retrying, attempt # 1
+2023/08/03 14:40:07 DB db-pgtest is not yet deleted
+2023/08/03 14:40:07 Error: DB db-pgtest is not yet deleted
+2023/08/03 14:41:07 Retrying, attempt # 2
+2023/08/03 14:41:07 DB db-pgtest is not yet deleted
+2023/08/03 14:41:07 Error: DB db-pgtest is not yet deleted
+2023/08/03 14:42:07 Retrying, attempt # 3
+2023/08/03 14:42:07 DB db-pgtest is not yet deleted
+2023/08/03 14:42:07 Error: DB db-pgtest is not yet deleted
+2023/08/03 14:43:07 Retrying, attempt # 4
+2023/08/03 14:43:07 Secret db-secret-pg-si deleted
+2023/08/03 14:43:07 Secret ndb-secret-pg-si deleted
+2023/08/03 14:43:08 Pod best-app deleted
+2023/08/03 14:43:08 Svc best-app-service deleted
+2023/08/03 14:43:08 End test_teardown()!
+2023/08/03 14:43:08 teardown completed
+2023/08/03 14:43:08 ******************** END TEARDOWNSUITE() ********************

@@ -10,6 +10,14 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+type SetupPaths struct {
+	DbSecretPath  string
+	NdbSecretPath string
+	DbPath        string
+	AppPodPath    string
+	AppSvcPath    string
+}
+
 func readYAMLFile(filename string) ([]byte, error) {
 	yamlFile, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -20,7 +28,7 @@ func readYAMLFile(filename string) ([]byte, error) {
 }
 
 // Reads a file path, converts to json, unmarshals to generic
-func createGeneric(generic interface{}, path string) (err error) {
+func CreateGeneric(generic interface{}, path string) (err error) {
 	if generic == nil {
 		return err
 	}

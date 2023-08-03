@@ -1,4 +1,4 @@
-package automation
+package automation_pg_si_test
 
 // Basic imports
 import (
@@ -11,6 +11,7 @@ import (
 
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/automation"
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
@@ -35,7 +36,7 @@ type PostgresqlSingleInstanceTestSuite struct {
 	clientset         *kubernetes.Clientset
 	kubeconfig        string
 	logFile           string
-	setupPath         SetupPaths
+	setupPath         automation.SetupPaths
 }
 
 // SetupSuite is called once before running the tests in the suite
@@ -86,50 +87,50 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	}
 
 	// Create base setup for all tests in this suite
-	setupPaths := SetupPaths{
-		dbSecretPath:  "./files/db-secret-pg-si.yaml",
-		ndbSecretPath: "./files/ndb-secret-pg-si.yaml",
-		dbPath:        "./files/database-pg-si.yaml",
-		appPodPath:    "./files/pod-pg-si.yaml",
-		appSvcPath:    "./files/service-pg-si.yaml",
+	setupPaths := automation.SetupPaths{
+		DbSecretPath:  "../files/db-secret.yaml",
+		NdbSecretPath: "../files/ndb-secret.yaml",
+		DbPath:        "./files/database-pg-si.yaml",
+		AppPodPath:    "./files/pod-pg-si.yaml",
+		AppSvcPath:    "./files/service-pg-si.yaml",
 	}
 
 	dbSecret := &v1.Secret{}
-	err = createGeneric(dbSecret, setupPaths.dbSecretPath)
+	err = automation.CreateGeneric(dbSecret, setupPaths.DbSecretPath)
 	if err != nil {
-		log.Printf("Error occurred while executing Helpers.createGeneric() for dbSecret with path %s, error: %v\n", setupPaths.dbSecretPath, err)
+		log.Printf("Error occurred while executing Helpers.createGeneric() for dbSecret with path %s, error: %v\n", setupPaths.DbSecretPath, err)
 		suite.T().FailNow()
 	}
 
 	ndbSecret := &v1.Secret{}
-	err = createGeneric(ndbSecret, setupPaths.ndbSecretPath)
+	err = automation.CreateGeneric(ndbSecret, setupPaths.NdbSecretPath)
 	if err != nil {
-		log.Printf("Error occurred while executing Helpers.createGeneric() for ndbSecret with path %s, error: %v\n", setupPaths.ndbSecretPath, err)
+		log.Printf("Error occurred while executing Helpers.createGeneric() for ndbSecret with path %s, error: %v\n", setupPaths.NdbSecretPath, err)
 		suite.T().FailNow()
 	}
 
 	database := &ndbv1alpha1.Database{}
-	err = createGeneric(database, setupPaths.dbPath)
+	err = automation.CreateGeneric(database, setupPaths.DbPath)
 	if err != nil {
-		log.Printf("Error occurred while executing Helpers.createGeneric() for database with path %s, error: %v\n", setupPaths.dbPath, err)
+		log.Printf("Error occurred while executing Helpers.createGeneric() for database with path %s, error: %v\n", setupPaths.DbPath, err)
 		suite.T().FailNow()
 	}
 
 	appPod := &v1.Pod{}
-	err = createGeneric(appPod, setupPaths.appPodPath)
+	err = automation.CreateGeneric(appPod, setupPaths.AppPodPath)
 	if err != nil {
-		log.Printf("Error occurred while executing Helpers.createGeneric() for database with path %s, error: %v\n", setupPaths.appPodPath, err)
+		log.Printf("Error occurred while executing Helpers.createGeneric() for database with path %s, error: %v\n", setupPaths.AppPodPath, err)
 		suite.T().FailNow()
 	}
 
 	appSvc := &v1.Service{}
-	err = createGeneric(appSvc, setupPaths.appSvcPath)
+	err = automation.CreateGeneric(appSvc, setupPaths.AppSvcPath)
 	if err != nil {
-		log.Printf("Error occurred while executing Helpers.createService() for pod with path %s, error: %v\n", setupPaths.appSvcPath, err)
+		log.Printf("Error occurred while executing Helpers.createService() for pod with path %s, error: %v\n", setupPaths.AppSvcPath, err)
 		suite.T().FailNow()
 	}
 
-	err = test_setup(dbSecret, ndbSecret, database, appPod, appSvc, clientset, v1alpha1ClientSet, suite.T())
+	err = automation.TestSetup(dbSecret, ndbSecret, database, appPod, appSvc, clientset, v1alpha1ClientSet, suite.T())
 	if err != nil {
 		log.Printf("Error occurred: %s\n", err)
 		log.Println("Setup failed")
@@ -155,40 +156,40 @@ func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 	setupPaths := suite.setupPath
 
 	dbSecret := &v1.Secret{}
-	err = createGeneric(dbSecret, setupPaths.dbSecretPath)
+	err = automation.CreateGeneric(dbSecret, setupPaths.DbSecretPath)
 	if err != nil {
-		log.Printf("Error occurred while executing Helpers.createSecret() for dbSecret with path %s, error: %v\n", setupPaths.dbSecretPath, err)
+		log.Printf("Error occurred while executing Helpers.createSecret() for dbSecret with path %s, error: %v\n", setupPaths.DbSecretPath, err)
 	}
 
 	ndbSecret := &v1.Secret{}
-	err = createGeneric(ndbSecret, setupPaths.ndbSecretPath)
+	err = automation.CreateGeneric(ndbSecret, setupPaths.NdbSecretPath)
 	if err != nil {
-		log.Printf("Error occurred while executing Helpers.createSecret() for ndbSecret with path %s, error: %v\n", setupPaths.ndbSecretPath, err)
+		log.Printf("Error occurred while executing Helpers.createSecret() for ndbSecret with path %s, error: %v\n", setupPaths.NdbSecretPath, err)
 		suite.T().FailNow()
 	}
 
 	database := &ndbv1alpha1.Database{}
-	err = createGeneric(database, setupPaths.dbPath)
+	err = automation.CreateGeneric(database, setupPaths.DbPath)
 	if err != nil {
-		log.Printf("Error occurred while executing Helpers.createSecret() for database with path %s, error: %v\n", setupPaths.dbPath, err)
+		log.Printf("Error occurred while executing Helpers.createSecret() for database with path %s, error: %v\n", setupPaths.DbPath, err)
 		suite.T().FailNow()
 	}
 
 	appPod := &v1.Pod{}
-	err = createGeneric(appPod, setupPaths.appPodPath)
+	err = automation.CreateGeneric(appPod, setupPaths.AppPodPath)
 	if err != nil {
-		log.Printf("Error occurred while executing Helpers.createPod() for pod with path %s, error: %v\n", setupPaths.appPodPath, err)
+		log.Printf("Error occurred while executing Helpers.createPod() for pod with path %s, error: %v\n", setupPaths.AppPodPath, err)
 		suite.T().FailNow()
 	}
 
 	appSvc := &v1.Service{}
-	err = createGeneric(appSvc, setupPaths.appSvcPath)
+	err = automation.CreateGeneric(appSvc, setupPaths.AppSvcPath)
 	if err != nil {
-		log.Printf("Error occurred while executing Helpers.createService() for pod with path %s, error: %v\n", setupPaths.appSvcPath, err)
+		log.Printf("Error occurred while executing Helpers.createService() for pod with path %s, error: %v\n", setupPaths.AppSvcPath, err)
 		suite.T().FailNow()
 	}
 
-	err = test_teardown(dbSecret, ndbSecret, database, appPod, appSvc, suite.clientset, suite.v1alpha1ClientSet, suite.T())
+	err = automation.TestTeardown(dbSecret, ndbSecret, database, appPod, appSvc, suite.clientset, suite.v1alpha1ClientSet, suite.T())
 	if err != nil {
 		log.Printf("Error occurred: %s\n", err)
 		log.Println("teardown failed")
@@ -212,12 +213,11 @@ func (suite *PostgresqlSingleInstanceTestSuite) AfterTest(suiteName, testName st
 }
 
 func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
-	log.Printf("** TestProvisioningSuccess() started. **\n")
-	var err error
-	var db v1alpha1.Database
-	err = createGeneric(&db, suite.setupPath.dbPath)
+	log.Printf("Start TestProvisioningSuccess()...\n")
 
-	var database *ndbv1alpha1.Database = &db
+	database := &v1alpha1.Database{}
+	err := automation.CreateGeneric(database, suite.setupPath.DbPath)
+
 	if err != nil {
 		log.Printf("Error occurred while executing %s, err: %v\n", "suite.setupInfo.getDatabase()", err)
 		suite.T().FailNow()
@@ -244,11 +244,11 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 	assert := assert.New(suite.T())
 	assert.Equal(common.DATABASE_CR_STATUS_READY, databaseResponse.Status, "The database status should be ready.")
 
-	log.Printf("** TestProvisioningSuccess() ended. **\n")
+	log.Printf("End TestProvisioningSuccess()!**\n")
 }
 
 func (suite *PostgresqlSingleInstanceTestSuite) TestAppConnectivity() {
-	log.Printf("** TestAppConnectivity() started. **\n")
+	log.Printf("Start TestAppConnectivity() started. **\n")
 
 	client := http.Client{}
 	// Send GET request
@@ -270,7 +270,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestAppConnectivity() {
 	assert := assert.New(suite.T())
 	assert.Equal(200, resp.StatusCode, "The response status should be 200.")
 
-	log.Printf("** TestAppConnectivity() ended. **\n")
+	log.Printf("End TestAppConnectivity()!\n")
 }
 
 // In order for 'go test' to run this suite, we need to create
