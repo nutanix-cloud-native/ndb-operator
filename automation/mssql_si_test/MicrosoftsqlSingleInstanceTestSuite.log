@@ -1,8 +1,0 @@
-2023/08/03 16:24:19 Using configuration from '/Users/mazin.shaaeldin/.kube/config'
-2023/08/03 16:24:19 Running test_setup()...
-2023/08/03 16:24:19 Error while creating secret db-secret-pg-si: secrets "db-secret-pg-si" already exists
-2023/08/03 16:24:19 Error while creating secret ndb-secret-pg-si: secrets "ndb-secret-pg-si" already exists
-2023/08/03 16:24:19 Error while creating Database : the server reported a conflict (post Databases.ndb.nutanix.com)
-2023/08/03 16:24:19 Error while creating Pod : pods "best-app" already exists
-2023/08/03 16:24:19 Error while creating Svc : Service "best-app-service" is invalid: spec.ports[0].nodePort: Invalid value: 30000: provided port is already allocated
-2023/08/03 16:24:19 Error: resource name may not be empty

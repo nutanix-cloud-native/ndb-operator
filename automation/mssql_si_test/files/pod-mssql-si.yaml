@@ -20,7 +20,7 @@ spec:
     - name: PASSWORD
       valueFrom:
         secretKeyRef:
-          name: db-secret-pg-si
+          name: db-secret
           key: password
     ports:
     - containerPort: 3000
