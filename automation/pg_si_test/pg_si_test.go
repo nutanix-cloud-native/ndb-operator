@@ -41,8 +41,6 @@ type PostgresqlSingleInstanceTestSuite struct {
 
 // SetupSuite is called once before running the tests in the suite
 func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
-	log.Printf("******************** RUNNING PostgresqlSingleInstanceTestSuite SETUPSUITE() ********************\n")
-
 	var err error
 	var config *rest.Config
 	var v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
@@ -59,6 +57,8 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 		log.Fatal(err)
 	}
 	log.SetOutput(file)
+
+	log.Printf("******************** RUNNING PostgresqlSingleInstanceTestSuite SETUPSUITE() ********************\n")
 
 	// Setup kubeconfig
 	if kubeconfig == "" {
@@ -88,11 +88,11 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 
 	// Create base setup for all tests in this suite
 	setupPaths := automation.SetupPaths{
-		DbSecretPath:  "../files/db-secret.yaml",
-		NdbSecretPath: "../files/ndb-secret.yaml",
-		DbPath:        "./files/database-pg-si.yaml",
-		AppPodPath:    "./files/pod-pg-si.yaml",
-		AppSvcPath:    "./files/service-pg-si.yaml",
+		DbSecretPath:  automation.DbSecretPath,
+		NdbSecretPath: automation.NdbSecretPath,
+		DbPath:        automation.DbPath,
+		AppPodPath:    automation.AppPodPath,
+		AppSvcPath:    automation.AppSvcPath,
 	}
 
 	dbSecret := &v1.Secret{}

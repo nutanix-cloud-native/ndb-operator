@@ -14,17 +14,17 @@ spec:
         cpu: "1"
     env:
     - name: DBHOST
-      value: db-pgtest-svc
+      value: db-test-svc
     - name: DBPORT
       value: '80'
     - name: PASSWORD
       valueFrom:
         secretKeyRef:
-          name: db-secret-pg-si
+          name: db-secret
           key: password
     ports:
     - containerPort: 3000
   initContainers:
   - name: init-db
     image: busybox:1.28
-    command: ['sh', '-c', "until nslookup db-pgtest-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for database service; sleep 2; done"]
+    command: ['sh', '-c', "until nslookup db-test-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for database service; sleep 2; done"]
