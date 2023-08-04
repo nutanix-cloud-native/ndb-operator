@@ -72,59 +72,82 @@ func init() {
 
 // Details of the NDB installation
 type NDB struct {
-	// +kubebuilder:validation:Required
 	ClusterId string `json:"clusterId"`
-	// +kubebuilder:validation:Required
 	// Name of the secret holding the credentials for NDB (username and password)
 	CredentialSecret string `json:"credentialSecret"`
-	// +kubebuilder:validation:Required
+	// NDB Server URL
 	Server string `json:"server"`
-	// +kubebuilder:default:=false
-	// +optional
 	// Skip server's certificate and hostname verification
 	SkipCertificateVerification bool `json:"skipCertificateVerification"`
 }
 
 // Database instance specific details
 type Instance struct {
-	// +kubebuilder:default:=database_instance_name
 	// Name of the database instance
 	DatabaseInstanceName string `json:"databaseInstanceName"`
-	// +kubebuilder:default:={"database_one", "database_two", "database_three"}
-	// +kubebuilder:validation:MinItems:=1
-	// Name of the database to be provisiond in the database instance
+	// Description of the database instance
+	// +optional
+	Description string `json:"description"`
+	// Name(s) of the database(s) to be provisiond inside the database instance
+	// default [ "database_one", "database_two", "database_three" ]
+	// +optional
 	DatabaseNames []string `json:"databaseNames"`
-	// +kubebuilder:validation:Required
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
-	// +kubebuilder:validation:Minimum:=10
-	// +kubebuilder:default:=10
-	// +optional
-	// Size of the database instance
+	// Size of the database instance, minimum 10 (GBs)
 	Size int `json:"size"`
-	// +kubebuilder:default:=UTC
+	// default UTC
 	// +optional
 	TimeZone string `json:"timezone"`
-	// +kubebuilder:validation:Enum=mysql;postgres;mongodb;mssql
-	// +kubebuilder:default:=postgres
-	Type string `json:"type"`
+	Type     string `json:"type"`
 	// +optional
-	Profiles Profiles `json:"profiles"`
+	Profiles *Profiles `json:"profiles"`
+	// +optional
+	// Information related to time machine that is to be associated with this database
+	TMInfo *DBTimeMachineInfo `json:"timeMachine"`
+}
+
+// Time Machine details
+type DBTimeMachineInfo struct {
+	// +optional
+	Name string `json:"name"`
+	// +optional
+	Description string `json:"description"`
+	// +optional
+	// Name of the SLA to be used, default NONE
+	SLAName string `json:"sla"`
+	// +optional
+	// Daily snapshot time in HH:MM:SS (24 hour format)
+	DailySnapshotTime string `json:"dailySnapshotTime"`
+	// +optional
+	// Number of snapshots per day
+	SnapshotsPerDay int `json:"snapshotsPerDay"`
+	// +optional
+	// Log catch up frequency in minutes
+	LogCatchUpFrequency int `json:"logCatchUpFrequency"`
+	// +optional
+	// Day of the week for weekly snapshot
+	WeeklySnapshotDay string `json:"weeklySnapshotDay"`
+	// +optional
+	// Day of the month for monthly snapshot
+	MonthlySnapshotDay int `json:"monthlySnapshotDay"`
+	// +optional
+	// Start month for the quarterly snapshot
+	// Jan => Jan, Apr, Jul, Oct.
+	// Feb => Feb, May, Aug, Nov.
+	// Mar => Mar, Jun, Sep, Dec.
+	QuarterlySnapshotMonth string `json:"quarterlySnapshotMonth"`
 }
 
 type Profiles struct {
 	// +optional
 	Software Profile `json:"software"`
-
 	// +optional
 	Compute Profile `json:"compute"`
-
 	// +optional
 	Network Profile `json:"network"`
-
 	// +optional
 	DbParam Profile `json:"dbParam"`
-
 	// +optional
 	DbParamInstance Profile `json:"dbParamInstance"`
 }

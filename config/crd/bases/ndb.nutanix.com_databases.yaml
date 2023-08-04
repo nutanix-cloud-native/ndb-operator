@@ -56,20 +56,18 @@ spec:
                       database instance (password and ssh key)
                     type: string
                   databaseInstanceName:
-                    default: database_instance_name
                     description: Name of the database instance
                     type: string
                   databaseNames:
-                    default:
-                    - database_one
-                    - database_two
-                    - database_three
-                    description: Name of the database to be provisiond in the database
-                      instance
+                    description: Name(s) of the database(s) to be provisiond inside
+                      the database instance default [ "database_one", "database_two",
+                      "database_three" ]
                     items:
                       type: string
-                    minItems: 1
                     type: array
+                  description:
+                    description: Description of the database instance
+                    type: string
                   profiles:
                     properties:
                       compute:
@@ -109,25 +107,49 @@ spec:
                         type: object
                     type: object
                   size:
-                    default: 10
-                    description: Size of the database instance
-                    minimum: 10
+                    description: Size of the database instance, minimum 10 (GBs)
                     type: integer
+                  timeMachine:
+                    description: Information related to time machine that is to be
+                      associated with this database
+                    properties:
+                      dailySnapshotTime:
+                        description: Daily snapshot time in HH:MM:SS (24 hour format)
+                        type: string
+                      description:
+                        type: string
+                      logCatchUpFrequency:
+                        description: Log catch up frequency in minutes
+                        type: integer
+                      monthlySnapshotDay:
+                        description: Day of the month for monthly snapshot
+                        type: integer
+                      name:
+                        type: string
+                      quarterlySnapshotMonth:
+                        description: Start month for the quarterly snapshot Jan =>
+                          Jan, Apr, Jul, Oct. Feb => Feb, May, Aug, Nov. Mar => Mar,
+                          Jun, Sep, Dec.
+                        type: string
+                      sla:
+                        description: Name of the SLA to be used, default NONE
+                        type: string
+                      snapshotsPerDay:
+                        description: Number of snapshots per day
+                        type: integer
+                      weeklySnapshotDay:
+                        description: Day of the week for weekly snapshot
+                        type: string
+                    type: object
                   timezone:
-                    default: UTC
+                    description: default UTC
                     type: string
                   type:
-                    default: postgres
-                    enum:
-                    - mysql
-                    - postgres
-                    - mongodb
-                    - mssql
                     type: string
                 required:
                 - credentialSecret
                 - databaseInstanceName
-                - databaseNames
+                - size
                 - type
                 type: object
               ndb:
@@ -140,15 +162,16 @@ spec:
                       (username and password)
                     type: string
                   server:
+                    description: NDB Server URL
                     type: string
                   skipCertificateVerification:
-                    default: false
                     description: Skip server's certificate and hostname verification
                     type: boolean
                 required:
                 - clusterId
                 - credentialSecret
                 - server
+                - skipCertificateVerification
                 type: object
             required:
             - databaseInstance

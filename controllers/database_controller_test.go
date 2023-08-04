@@ -41,7 +41,7 @@ import (
 var _ = Describe("Database controller", func() {
 	Context("Database controller test", func() {
 
-		const DatabaseName = "test-database-name"
+		databaseSize := 10
 		const namespaceName = "test-namespace"
 		const testNDBServer = "http://123.123.123.123:123"
 		const testDatabaseIP = "111.222.123.234"
@@ -49,7 +49,7 @@ var _ = Describe("Database controller", func() {
 		ctx := context.Background()
 
 		const ndbSecretName = "test-ndb-secret-name"
-		const instanceSecretName = "test-instance-secret-name"
+		instanceSecretName := "test-instance-secret-name"
 		const username = "test-username"
 		const password = "test-password"
 		const sshPublicKey = "test-ssh-key"
@@ -59,8 +59,8 @@ var _ = Describe("Database controller", func() {
 		var instanceSecret *corev1.Secret
 		database := &ndbv1alpha1.Database{}
 
-		typeNamespaceName := types.NamespacedName{Name: DatabaseName, Namespace: namespaceName}
-		typeNamespaceNameForService := types.NamespacedName{Name: DatabaseName + "-svc", Namespace: namespaceName}
+		typeNamespaceName := types.NamespacedName{Name: "test-database-name", Namespace: namespaceName}
+		typeNamespaceNameForService := types.NamespacedName{Name: "test-database-name" + "-svc", Namespace: namespaceName}
 		ndbSecretTypeNamespaceName := types.NamespacedName{Name: ndbSecretName, Namespace: namespaceName}
 		instanceSecretTypeNamespaceName := types.NamespacedName{Name: instanceSecretName, Namespace: namespaceName}
 
@@ -77,7 +77,7 @@ var _ = Describe("Database controller", func() {
 
 			database = &ndbv1alpha1.Database{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      DatabaseName,
+					Name:      "test-database-name",
 					Namespace: namespaceName,
 				},
 				Spec: ndbv1alpha1.DatabaseSpec{
@@ -87,12 +87,20 @@ var _ = Describe("Database controller", func() {
 						Server:           testNDBServer,
 					},
 					Instance: ndbv1alpha1.Instance{
-						DatabaseInstanceName: DatabaseName,
+						DatabaseInstanceName: "test-database-name",
 						DatabaseNames:        []string{"database_1"},
 						CredentialSecret:     instanceSecretName,
-						Size:                 10,
+						Size:                 databaseSize,
 						TimeZone:             "UTC",
 						Type:                 "postgres",
+						TMInfo: &ndbv1alpha1.DBTimeMachineInfo{
+							QuarterlySnapshotMonth: "Jan",
+							SnapshotsPerDay:        4,
+							LogCatchUpFrequency:    90,
+							WeeklySnapshotDay:      "WEDNESDAY",
+							MonthlySnapshotDay:     24,
+							DailySnapshotTime:      "12:34:56",
+						},
 					},
 				},
 			}

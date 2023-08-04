@@ -1,9 +1,9 @@
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
-# - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.5)
-# - use environment variables to overwrite this value (e.g export VERSION=0.0.5)
-VERSION ?= 0.0.5
+# - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.6)
+# - use environment variables to overwrite this value (e.g export VERSION=0.0.6)
+VERSION ?= 0.0.6
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -121,8 +121,8 @@ build: generate fmt vet ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+run: manifests generate fmt vet ## Run a controller from your host. 
+	ENABLE_WEBHOOKS=false go run ./main.go
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.

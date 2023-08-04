@@ -45,11 +45,13 @@ type DatabaseReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// The Reconcile method is where the controller logic resides.
-
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/finalizers,verbs=update
+// +kubebuilder:rbac:groups=core,resources=services;endpoints,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch
+
+// The Reconcile method is where the controller logic resides.
 func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("<==============================Reconcile Started=============================>")

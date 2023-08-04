@@ -18,7 +18,6 @@ package util
 
 import (
 	"errors"
-	"reflect"
 )
 
 // A utility function to filter the items based on the conditions
@@ -43,6 +42,6 @@ func FindFirst[T any](items []T, filter func(item T) bool) (T, error) {
 	}
 
 	// returning an empty instance of T in the case of no match
-	empty := reflect.New(reflect.TypeOf(items[0])).Elem().Interface().(T)
+	var empty T
 	return empty, errors.New("no element found matching the provided criteria")
 }

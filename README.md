@@ -19,6 +19,8 @@ The NDB operator brings automated and simplified database administration, provis
 **Note:** The operator will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
 3. The operator-sdk installed.
 4. A clone of the source code ([this](https://github.com/nutanix-cloud-native/ndb-operator) repository).
+5. Installing the cert-manager. Please follow the instructions [here](https://cert-manager.io/docs/installation/)
+
 ### Installation and Running on the cluster
 Deploy the controller on the cluster:
 
@@ -105,6 +107,8 @@ spec:
   databaseInstance:
     # The database instance name on NDB
     databaseInstanceName: "Database-Instance-Name"
+    # The description of the database instance
+    description: Database Description
     # Names of the databases on that instance
     databaseNames:
       - database_one
@@ -139,6 +143,14 @@ spec:
       dbParamInstance:
         name: ""
         id: ""
+    timeMachine:                        # Optional block, if removed the SLA defaults to NONE
+      sla : "NAME OF THE SLA"
+      dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
+      snapshotsPerDay:     4            # Number of snapshots per day
+      logCatchUpFrequency: 90           # Frequency (in minutes)
+      weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
+      monthlySnapshotDay:  24           # Day of the month for monthly snapshot
+      quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
 
 ```
 

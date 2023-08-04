@@ -17,11 +17,23 @@ limitations under the License.
 package controller_adapters
 
 import (
+	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
+)
+
+var (
+	MONTH_MAP = map[string]string{
+		"":    "JANUARY", // For default case when no input is provided
+		"Jan": "JANUARY",
+		"Feb": "FEBRUARY",
+		"Mar": "MARCH",
+	}
 )
 
 // Wrapper over api/v1alpha1.Database
@@ -33,6 +45,15 @@ type Database struct {
 
 func (d *Database) GetDBInstanceName() string {
 	return d.Spec.Instance.DatabaseInstanceName
+}
+
+// Returns database description. If description is empty, creates a description
+func (d *Database) GetDBInstanceDescription() string {
+	description := d.Spec.Instance.Description
+	if description == "" {
+		return "Database provisioned by ndb-operator: " + d.GetDBInstanceName()
+	}
+	return description
 }
 
 func (d *Database) GetDBInstanceType() string {
@@ -80,5 +101,85 @@ func (d *Database) GetProfileResolvers() ndb_api.ProfileResolvers {
 	}
 
 	return profileResolvers
+}
 
+// Returns basic details about the Time Machine if provided in the
+// underlying database, else returns defaults like:
+// TM Name: <db_instance_name>_TM
+// TM Description: Time Machine for <db_instance_name>
+// SLA Name: NONE
+
+func (d *Database) GetTMDetails() (tmName, tmDescription, slaName string) {
+	tmInfo := d.Spec.Instance.TMInfo
+
+	tmName = tmInfo.Name
+	tmDescription = tmInfo.Description
+	slaName = tmInfo.SLAName
+
+	if tmName == "" {
+		tmName = d.GetDBInstanceName() + "_TM"
+	}
+	if tmDescription == "" {
+		tmDescription = "Time Machine for " + d.GetDBInstanceName()
+	}
+	if slaName == "" {
+		slaName = common.SLA_NAME_NONE
+	}
+
+	return
+}
+
+// Returns a schedule struct for the time machine.
+func (d *Database) GetTMSchedule() (schedule ndb_api.Schedule, err error) {
+	tmInfo := d.Spec.Instance.TMInfo
+
+	hhmmss, err := time.Parse(time.TimeOnly, tmInfo.DailySnapshotTime)
+	if err != nil {
+		err = errors.Join(err, errors.New("error converting daily snapshot time"))
+		return
+	}
+	hh, mm, ss := hhmmss.Hour(), hhmmss.Minute(), hhmmss.Second()
+
+	quarterlySnapshotStartMonth, ok := MONTH_MAP[tmInfo.QuarterlySnapshotMonth]
+	if !ok {
+		err = fmt.Errorf("month %s not allowed for QuarterlySnapshotMonth", tmInfo.QuarterlySnapshotMonth)
+		return
+	}
+
+	schedule = ndb_api.Schedule{
+		SnapshotTimeOfDay: ndb_api.SnapshotTimeOfDay{
+			Hours:   hh,
+			Minutes: mm,
+			Seconds: ss,
+		},
+
+		ContinuousSchedule: ndb_api.ContinuousSchedule{
+			Enabled:           true,
+			LogBackupInterval: tmInfo.LogCatchUpFrequency,
+			SnapshotsPerDay:   tmInfo.SnapshotsPerDay,
+		},
+
+		WeeklySchedule: ndb_api.WeeklySchedule{
+			Enabled:   true,
+			DayOfWeek: tmInfo.WeeklySnapshotDay,
+		},
+
+		MonthlySchedule: ndb_api.MonthlySchedule{
+			Enabled:    true,
+			DayOfMonth: tmInfo.MonthlySnapshotDay,
+		},
+
+		QuarterlySchedule: ndb_api.QuarterlySchedule{
+			Enabled:    true,
+			StartMonth: quarterlySnapshotStartMonth,
+			DayOfMonth: tmInfo.MonthlySnapshotDay,
+		},
+
+		YearlySchedule: ndb_api.YearlySchedule{
+			Enabled:    false,
+			DayOfMonth: 31,
+			Month:      "DECEMBER",
+		},
+	}
+	return
 }
