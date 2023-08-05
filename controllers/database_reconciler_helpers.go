@@ -19,8 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"math"
-	"time"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -38,26 +36,6 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// doNotRequeue Finished processing. No need to put back on the reconcile queue.
-func (r *DatabaseReconciler) doNotRequeue() (ctrl.Result, error) {
-	return ctrl.Result{}, nil
-}
-
-// requeue Not finished processing. Put back on reconcile queue and continue.
-func (r *DatabaseReconciler) requeue() (ctrl.Result, error) {
-	return ctrl.Result{Requeue: true}, nil
-}
-
-// requeueOnErr Failed while processing. Put back on reconcile queue and try again.
-func (r *DatabaseReconciler) requeueOnErr(err error) (ctrl.Result, error) {
-	return ctrl.Result{}, err
-}
-
-// requeue after a timeout. Put back on reconcile queue after a timeout and continue.
-func (r *DatabaseReconciler) requeueWithTimeout(t int) (ctrl.Result, error) {
-	return ctrl.Result{RequeueAfter: time.Second * time.Duration(math.Abs(float64(t)))}, nil
-}
-
 func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request, finalizer string, database *ndbv1alpha1.Database) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Fetching the most recent version of the database CR")
@@ -68,21 +46,21 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
 			log.Info("Database resource not found. Ignoring since object must be deleted")
-			return r.doNotRequeue()
+			return doNotRequeue()
 		}
 		// Error reading the object - requeue the request.
 		log.Error(err, "Failed to get Database")
-		return r.requeueOnErr(err)
+		return requeueOnErr(err)
 	}
 	log.Info("Database CR fetched. Adding finalizer " + finalizer)
 	controllerutil.AddFinalizer(database, finalizer)
 	if err := r.Update(ctx, database); err != nil {
-		return r.requeueOnErr(err)
+		return requeueOnErr(err)
 	} else {
 		log.Info("Added finalizer " + finalizer)
 	}
 	//Not requeuing as a successful update automatically triggers a reconcile.
-	return r.doNotRequeue()
+	return doNotRequeue()
 }
 
 // handleDelete function handles the deletion of
@@ -101,13 +79,13 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 			_, err := ndb_api.DeprovisionDatabase(ctx, ndbClient, database.Status.Id, *ndb_api.GenerateDeprovisionDatabaseRequest())
 			if err != nil {
 				log.Error(err, "Deprovisioning database instance request failed.")
-				return r.requeueOnErr(err)
+				return requeueOnErr(err)
 			}
 		}
 		log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
 		controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_INSTANCE)
 		if err := r.Update(ctx, database); err != nil {
-			return r.requeueOnErr(err)
+			return requeueOnErr(err)
 		}
 		log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
 
@@ -118,7 +96,7 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 		allDatabases, err := ndb_api.GetAllDatabases(ctx, ndbClient)
 		if err != nil {
 			log.Error(err, "An error occurred while trying to get all databases")
-			return r.requeueOnErr(err)
+			return requeueOnErr(err)
 		}
 		if len(util.Filter(allDatabases, func(d ndb_api.DatabaseResponse) bool { return d.Id == database.Status.Id })) == 0 {
 			// Could not find the database with the given database id => database instance has been deleted
@@ -129,7 +107,7 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 				_, err := ndb_api.DeprovisionDatabaseServer(ctx, ndbClient, databaseServerId, *ndb_api.GenerateDeprovisionDatabaseServerRequest())
 				if err != nil {
 					log.Error(err, "Deprovisioning database server request failed.", "database server id", databaseServerId)
-					return r.requeueOnErr(err)
+					return requeueOnErr(err)
 				}
 			} else {
 				log.Info("Database server id was not found on the database CR, removing finalizers and deleting the CR.")
@@ -138,18 +116,18 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 			log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_SERVER)
 			controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_SERVER)
 			if err := r.Update(ctx, database); err != nil {
-				return r.requeueOnErr(err)
+				return requeueOnErr(err)
 			}
 			log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_SERVER)
-			return r.requeue()
+			return requeue()
 		}
 	} else {
 		// Both database instance and database server finalizers have been removed, no need to requeue
 		// CR will be deleted.
-		return r.doNotRequeue()
+		return doNotRequeue()
 	}
 	// Requeue the request while waiting for the database instance to be deleted from NDB.
-	return r.requeueWithTimeout(15)
+	return requeueWithTimeout(15)
 }
 
 // When a database is provisioned, an id is assigned to the database CR.
@@ -212,7 +190,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 				errStatement = "An error occured while fetching the DB Instance Secrets"
 			}
 			log.Error(err, errStatement)
-			return r.requeueOnErr(err)
+			return requeueOnErr(err)
 		}
 
 		reqData := map[string]interface{}{
@@ -226,14 +204,14 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
 		if err != nil {
 			log.Error(err, "Could not generate provisioning request, requeuing.")
-			return r.requeueOnErr(err)
+			return requeueOnErr(err)
 		}
 
 		taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
 		log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
 		if err != nil {
 			log.Error(err, "An error occurred while trying to provision the database")
-			return r.requeueOnErr(err)
+			return requeueOnErr(err)
 		}
 		// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
 
@@ -247,7 +225,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		err = r.Status().Update(ctx, database)
 		if err != nil {
 			log.Error(err, "Failed to update database status")
-			return r.requeueOnErr(err)
+			return requeueOnErr(err)
 		}
 
 	case common.DATABASE_CR_STATUS_PROVISIONING:
@@ -255,7 +233,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		databaseResponse, err := ndb_api.GetDatabaseById(ctx, ndbClient, database.Status.Id)
 		if err != nil {
 			log.Error(err, "An error occurred while trying to get the database with id: "+database.Status.Id)
-			r.requeueOnErr(err)
+			requeueOnErr(err)
 		}
 
 		// if READY => Change status
@@ -269,22 +247,22 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 				err = r.Status().Update(ctx, database)
 				if err != nil {
 					log.Error(err, "Failed to update database status")
-					return r.requeueOnErr(err)
+					return requeueOnErr(err)
 				}
 			}
 		}
 		// If database instance is not yet ready, requeue with wait
-		return r.requeueWithTimeout(15)
+		return requeueWithTimeout(15)
 
 	case common.DATABASE_CR_STATUS_READY:
 		r.setupConnectivity(ctx, database, req)
-		return r.requeueWithTimeout(15)
+		return requeueWithTimeout(15)
 
 	default:
 		// Do Nothing
 	}
 
-	return r.doNotRequeue()
+	return doNotRequeue()
 }
 
 // Sets up a kubernetes networking service (Without selectors)
@@ -405,23 +383,6 @@ func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1
 		}
 	}
 	log.Info("Returning from database_reconciler_helpers.setupEndpoints")
-	return
-}
-
-// Returns the credentials(username, password and caCertificate) for NDB
-// Returns an error if reading the secret containing credentials fails
-func (r *DatabaseReconciler) getNDBCredentials(ctx context.Context, name, namespace string) (username, password, caCert string, err error) {
-	log := ctrllog.FromContext(ctx)
-	log.Info("Entered database_reconciler_helpers.getNDBCredentials")
-	secretDataMap, err := util.GetAllDataFromSecret(ctx, r.Client, name, namespace)
-	if err != nil {
-		log.Error(err, "Error occured in util.GetAllDataFromSecret while fetching all NDB secrets", "Secret Name", name, "Namespace", namespace)
-		return
-	}
-	username = string(secretDataMap[common.SECRET_DATA_KEY_USERNAME])
-	password = string(secretDataMap[common.SECRET_DATA_KEY_PASSWORD])
-	caCert = string(secretDataMap[common.SECRET_DATA_KEY_CA_CERTIFICATE])
-	log.Info("Returning from database_reconciler_helpers.getNDBCredentials")
 	return
 }
 

@@ -63,17 +63,17 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			// Request object not found, could have been deleted after reconcile request.
 			// Return and don't requeue
 			log.Info("Database resource not found. Ignoring since object must be deleted")
-			return r.doNotRequeue()
+			return doNotRequeue()
 		}
 		// Error reading the object - requeue the request.
 		log.Error(err, "Failed to get Database")
-		return r.requeueOnErr(err)
+		return requeueOnErr(err)
 	}
 
 	log.Info("Database CR Status: " + util.ToString(database.Status))
 
 	NDBInfo := database.Spec.NDB
-	username, password, caCert, err := r.getNDBCredentials(ctx, NDBInfo.CredentialSecret, req.Namespace)
+	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, NDBInfo.CredentialSecret, req.Namespace)
 	if err != nil || username == "" || password == "" {
 		var errStatement string
 		if err == nil {
@@ -83,7 +83,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			errStatement = "An error occured while fetching the NDB Secrets"
 		}
 		log.Error(err, errStatement)
-		return r.requeueOnErr(err)
+		return requeueOnErr(err)
 	}
 	if caCert == "" {
 		log.Info("Ca-cert not found, falling back to host's HTTPs certs.")
@@ -109,7 +109,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	err = r.handleExternalDelete(ctx, database, ndbClient)
 	if err != nil {
 		log.Error(err, "Error occurred while external delete check")
-		return r.requeueOnErr(err)
+		return requeueOnErr(err)
 	}
 	// Synchronize the database CR with the database instance on NDB.
 	return r.handleSync(ctx, database, ndbClient, req)
