@@ -9,4 +9,9 @@ metadata:
     app.kubernetes.io/created-by: ndb-operator
   name: ndbserver-sample
 spec:
-  # TODO(user): Add fields here
+    # Name of the secret that holds the credentials for NDB: username, password and ca_certificate 
+    credentialSecret: ndb-secret-name
+    # NDB Server's API URL
+    server: https://[NDB IP]:8443/era/v0.9
+    # Set to true to skip SSL certificate validation, should be false if ca_certificate is provided in the credential secret.
+    skipCertificateVerification: true
