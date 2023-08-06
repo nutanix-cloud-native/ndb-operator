@@ -24,12 +24,13 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      automountServiceAccountToken: true
       initContainers:
       - name: cert-manager-wait
         image: busybox:1.28
         securityContext:
           runAsNonRoot: false
-        command: ["sh", "-c", "until kubectl get pods -n cert-manager -l app=cert-manager | grep -q Running; do echo 'Waiting for Cert Manager...'; sleep 5; done"]
+        command: ["bash", "-c", "sleep 60 && echo "I AM HERE" && until kubectl get pods -n cert-manager -l app=cert-manager | grep -q Running; do echo 'Waiting for Cert Manager...'; sleep 5; done"]
       securityContext:
         runAsNonRoot: true
         # TODO(user): For common cases that do not require escalating privileges
