@@ -2,6 +2,7 @@ package automation
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -30,7 +31,7 @@ func readYAMLFile(filename string) ([]byte, error) {
 // Reads a file path, converts to json, unmarshals to generic
 func CreateGeneric(generic interface{}, path string) (err error) {
 	if generic == nil {
-		return err
+		return errors.New("Generic is nil!")
 	}
 
 	data, err := readYAMLFile(path)
