@@ -219,7 +219,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 	err := automation.CreateTypeFromPath(database, suite.setupPath.DbPath)
 
 	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "suite.setupInfo.getDatabase()", err)
+		log.Printf("Error occurred while executing %s, err: %v\n", "utils.CreateTypeFromPath()", err)
 		suite.T().FailNow()
 	}
 	database, err = suite.v1alpha1ClientSet.Databases(database.Namespace).Get(database.Name, metav1.GetOptions{})
