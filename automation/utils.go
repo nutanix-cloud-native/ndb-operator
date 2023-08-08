@@ -28,10 +28,10 @@ func readYAMLFile(filename string) ([]byte, error) {
 	return yamlFile, nil
 }
 
-// Reads a file path, converts to json, unmarshals to generic
-func CreateTypeFromPath(generic interface{}, path string) (err error) {
-	if generic == nil {
-		return errors.New("Generic is nil!")
+// Reads a file path, converts to json, unmarshals to theType
+func CreateTypeFromPath(theType interface{}, path string) (err error) {
+	if theType == nil {
+		return errors.New("theType is nil!")
 	}
 
 	data, err := readYAMLFile(path)
@@ -44,7 +44,7 @@ func CreateTypeFromPath(generic interface{}, path string) (err error) {
 		return err
 	}
 
-	err = json.Unmarshal(jsonData, &generic)
+	err = json.Unmarshal(jsonData, &theType)
 	if err != nil {
 		return err
 	}
