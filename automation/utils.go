@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// Used in TestSuites to create resource objects
 type SetupPaths struct {
 	DbSecretPath  string
 	NdbSecretPath string

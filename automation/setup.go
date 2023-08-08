@@ -101,7 +101,6 @@ func TestSetup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Databas
 	}
 	// Wait for Application Pod to start
 	if appPod != nil {
-		// log.Println(appPod.
 		err = waitAndRetryOperation(time.Second, 300, func() (err error) {
 			appPod, err = clientset.CoreV1().Pods(ns).Get(context.TODO(), appPod.Name, metav1.GetOptions{})
 			if err != nil {
