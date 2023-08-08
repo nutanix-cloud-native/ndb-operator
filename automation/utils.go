@@ -13,9 +13,9 @@ import (
 
 // Used in TestSuites to create resource objects
 type SetupPaths struct {
+	DbPath        string
 	DbSecretPath  string
 	NdbSecretPath string
-	DbPath        string
 	AppPodPath    string
 	AppSvcPath    string
 }

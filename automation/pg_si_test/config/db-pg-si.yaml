@@ -1,7 +1,7 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db-name-pg-si
+  name: db-pg-si
 spec:
   ndb:
     clusterId: <cluster-id>
@@ -9,7 +9,7 @@ spec:
     server: <https://<ip-for-ndb>:8443/era/v0.9>
     skipCertificateVerification: true
   databaseInstance:
-    databaseInstanceName: "db-name-pg-si"
+    databaseInstanceName: db-pg-si
     databaseNames:
       - database_one
       - database_two

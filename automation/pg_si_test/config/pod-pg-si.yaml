@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: app
+  name: app-pg-si
   labels:
-    app: app
+    app: app-pg-si
 spec:
   containers:
   - name: best-app
@@ -14,7 +14,7 @@ spec:
         cpu: "1"
     env:
     - name: DBHOST
-      value: db-name-pg-si-svc
+      value: db-pg-si-svc
     - name: DBPORT
       value: '80'
     - name: PASSWORD
@@ -27,4 +27,4 @@ spec:
   initContainers:
   - name: init-db
     image: busybox:1.28
-    command: ['sh', '-c', "until nslookup db-test-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for database service; sleep 2; done"]
+    command: ['sh', '-c', "until nslookup db-pg-si-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for database service; sleep 2; done"]

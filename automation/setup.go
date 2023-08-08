@@ -19,7 +19,7 @@ import (
 const namespace_default = "default"
 
 func TestSetup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
-	log.Println("Running test_setup()...")
+	log.Println("test_setup() starting...")
 
 	ns := namespace_default
 	if database != nil && database.Namespace != "" {
@@ -122,13 +122,13 @@ func TestSetup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Databas
 		}
 	}
 
-	log.Println("Ending test_setup()!")
+	log.Println("test_setup() ended.")
 
 	return
 }
 
 func TestTeardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
-	log.Println("Running test_teardown()...")
+	log.Println("test_teardown() starting...")
 
 	ns := namespace_default
 	if database != nil && database.Namespace != "" {
@@ -201,7 +201,7 @@ func TestTeardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Data
 		}
 	}
 
-	log.Println("End test_teardown()!")
+	log.Println("test_teardown() ended.")
 
 	return
 }
