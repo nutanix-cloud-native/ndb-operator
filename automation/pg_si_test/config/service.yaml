@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: best-app-service
+  name: app-svc
 spec:
   type: NodePort
   ports:
@@ -10,4 +10,4 @@ spec:
       targetPort: 3000
       nodePort: 30000
   selector:
-    app: best-app
+    app: app

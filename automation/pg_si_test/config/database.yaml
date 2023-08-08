@@ -1,20 +1,20 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db-test
+  name: db-name-pg-si
 spec:
   ndb:
     clusterId: <cluster-id>
-    credentialSecret: ndb-secret
-    server: https://<ip-for-ndb>:8443/era/v0.9
+    credentialSecret: ndb-secret-pg-si
+    server: <https://<ip-for-ndb>:8443/era/v0.9>
     skipCertificateVerification: true
   databaseInstance:
-    databaseInstanceName: "db-test"
+    databaseInstanceName: "db-name-pg-si"
     databaseNames:
       - database_one
       - database_two
       - database_three
-    credentialSecret: db-secret
+    credentialSecret: db-secret-pg-si
     size: 100
     timezone: "UTC"
     type: postgres

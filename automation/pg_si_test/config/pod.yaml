@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: best-app
+  name: app
   labels:
-    app: best-app
+    app: app
 spec:
   containers:
   - name: best-app
@@ -14,13 +14,13 @@ spec:
         cpu: "1"
     env:
     - name: DBHOST
-      value: db-test-svc
+      value: db-name-pg-si-svc
     - name: DBPORT
       value: '80'
     - name: PASSWORD
       valueFrom:
         secretKeyRef:
-          name: db-secret
+          name: db-secret-pg-si
           key: password
     ports:
     - containerPort: 3000
