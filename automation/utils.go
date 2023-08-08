@@ -19,8 +19,9 @@ type SetupPaths struct {
 	AppSvcPath    string
 }
 
-func readYAMLFile(filename string) ([]byte, error) {
-	yamlFile, err := ioutil.ReadFile(filename)
+// Reads a file path and stores in bytes representation
+func readYAMLFile(path string) ([]byte, error) {
+	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read YAML file: %v", err)
 	}
@@ -34,16 +35,19 @@ func CreateTypeFromPath(theType interface{}, path string) (err error) {
 		return errors.New("theType is nil!")
 	}
 
+	// Reads file path
 	data, err := readYAMLFile(path)
 	if err != nil {
 		return err
 	}
 
+	// Converts byte data to json
 	jsonData, err := yaml.YAMLToJSON(data)
 	if err != nil {
 		return err
 	}
 
+	// Creates 'type' object by unmarshalling data
 	err = json.Unmarshal(jsonData, &theType)
 	if err != nil {
 		return err
@@ -52,6 +56,7 @@ func CreateTypeFromPath(theType interface{}, path string) (err error) {
 	return nil
 }
 
+// Performs an operation a certain number of times with a given interval
 func waitAndRetryOperation(interval time.Duration, retries int, operation func() error) (err error) {
 	for i := 0; i < retries; i++ {
 		if i != 0 {
