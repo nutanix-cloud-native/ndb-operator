@@ -32,4 +32,4 @@ config/samples/ndb.yaml
 
 test/__debug_bin
 automation/sandbox
-automation/pg_si_test/*.log
+automation/*/*.log
