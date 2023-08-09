@@ -214,65 +214,76 @@ func (suite *PostgresqlSingleInstanceTestSuite) AfterTest(suiteName, testName st
 
 // Tests if provisioning is succesful by checking if database stauts is 'READY'
 func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
-	log.Printf("Start TestProvisioningSuccess()...\n")
+	log.Println("TestProvisioningSuccess() starting...")
 
 	database := &v1alpha1.Database{}
-	err := automation.CreateTypeFromPath(database, suite.setupPath.DbPath)
 
+	// Get db template from yaml to acquire database name
+	err := automation.CreateTypeFromPath(database, suite.setupPath.DbPath)
 	if err != nil {
-		log.Printf("Error occurred while executing %s, err: %v\n", "utils.CreateTypeFromPath()", err)
+		log.Printf("Error: utils.CreateTypeFromPath() for dbPath with path %s failed! %s\n", suite.setupPath.DbPath, err)
 		suite.T().FailNow()
 	}
+
+	// Get database CR from above database name
 	database, err = suite.v1alpha1ClientSet.Databases(database.Namespace).Get(database.Name, metav1.GetOptions{})
 	if err != nil {
-		log.Printf("error while fetching database CR: %s\n", err)
+		log.Printf("Error: Could not fetch database '%s' CR! %s\n", database.Name, err)
 		suite.T().FailNow()
 	}
+
+	// Get NDB username and password from NDB CredentialSecret
 	ndb_secret_name := database.Spec.NDB.CredentialSecret
 	secret, err := suite.clientset.CoreV1().Secrets(database.Namespace).Get(context.TODO(), ndb_secret_name, metav1.GetOptions{})
 	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
 	if err != nil || username == "" || password == "" {
-		log.Printf("error while fetching data from secret: %s\n", err)
+		log.Printf("Error: Could not fetch data from secret! %s\n", err)
 		suite.T().FailNow()
 	}
+
+	// Create ndbClient and getting databaseResponse
 	ndbClient := ndb_client.NewNDBClient(username, password, database.Spec.NDB.Server, "", true)
 	databaseResponse, err := ndb_api.GetDatabaseById(context.TODO(), ndbClient, database.Status.Id)
 	if err != nil {
-		log.Printf("error while getting database response from ndb_api: %s\n", err)
+		log.Printf("Error: Database response from ndb_api failed! %s\n", err)
 		suite.T().FailNow()
 	}
-	log.Printf("Database response.status: %s\n", databaseResponse.Status)
+
+	log.Printf("Database response.status: %s.\n", databaseResponse.Status)
+
 	assert := assert.New(suite.T())
 	assert.Equal(common.DATABASE_CR_STATUS_READY, databaseResponse.Status, "The database status should be ready.")
 
-	log.Printf("End TestProvisioningSuccess()!**\n")
+	log.Println("TestProvisioningSuccess() ended!")
 }
 
 // Tests if 'manavrajvanshinx/best-app:latest' is able to connect to database
 func (suite *PostgresqlSingleInstanceTestSuite) TestAppConnectivity() {
-	log.Printf("Start TestAppConnectivity() started. **\n")
+	log.Println("TestAppConnectivity() starting...")
 
-	client := http.Client{}
 	// Send GET request
+	client := http.Client{}
 	resp, err := client.Get("http://localhost:30000")
 	if err != nil {
 		log.Println("Error while performing GET:", err)
 		suite.T().FailNow()
 	}
 	defer resp.Body.Close()
+
 	log.Println("Response status:", string(resp.Status))
-	// Read the response body
+
+	// Read and print the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("Error while reading response:", err)
 		suite.T().FailNow()
 	}
-	// Print the response body
 	log.Println("Response:", string(body))
+
 	assert := assert.New(suite.T())
 	assert.Equal(200, resp.StatusCode, "The response status should be 200.")
 
-	log.Printf("End TestAppConnectivity()!\n")
+	log.Println("TestAppConnectivity() ended!")
 }
 
 // In order for 'go test' to run this suite, we need to create
