@@ -212,6 +212,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) AfterTest(suiteName, testName st
 	log.Printf("******************** END TEST %s %s ********************\n", suiteName, testName)
 }
 
+// Tests if provisioning is succesful by checking if database stauts is 'READY'
 func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 	log.Printf("Start TestProvisioningSuccess()...\n")
 
@@ -247,6 +248,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 	log.Printf("End TestProvisioningSuccess()!**\n")
 }
 
+// Tests if 'manavrajvanshinx/best-app:latest' is able to connect to database
 func (suite *PostgresqlSingleInstanceTestSuite) TestAppConnectivity() {
 	log.Printf("Start TestAppConnectivity() started. **\n")
 
