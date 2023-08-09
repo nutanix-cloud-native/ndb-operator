@@ -18,6 +18,8 @@ import (
 
 const namespace_default = "default"
 
+// This function is called from the SetupSuite() function of all testsuites.
+// It loads environment variables, instantiate resources, waits for db to be ready, and pod to start.
 func TestSetup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	log.Println("test_setup() starting...")
 
@@ -127,6 +129,8 @@ func TestSetup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Databas
 	return
 }
 
+// This function is called from the TeardownSuite() function of all testsuites.
+// Delete resources and de-provision database.
 func TestTeardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	log.Println("test_teardown() starting...")
 
