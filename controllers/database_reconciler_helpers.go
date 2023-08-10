@@ -69,8 +69,9 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 //	b. Database server
 func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Database CR is being deleted.")
-	r.recorder.Event(database, "Normal", "DatabaseCRDeletionStarted", "Database CR is being deleted.")
+	infoStatement := "Database CR is being deleted"
+	log.Info(infoStatement)
+	r.recorder.Event(database, "Normal", "DatabaseCRDeletionStarted", infoStatement)
 	if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
 		// Check if the database instance id (database.Status.Id) is present in the status
 		// If present, then make a deprovisionDatabase API call to NDB
@@ -78,14 +79,16 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 		if database.Status.Id != "" {
 			log.Info("Deprovisioning database instance from NDB.")
 			r.recorder.Event(database, "Normal", "DatabaseDeprovisioningStarted", "Deprovisioning database instance from NDB.")
+
 			_, err := ndb_api.DeprovisionDatabase(ctx, ndbClient, database.Status.Id, *ndb_api.GenerateDeprovisionDatabaseRequest())
 			if err != nil {
 				errStatement := "Deprovisioning database instance request failed."
 				log.Error(err, errStatement)
-				r.recorder.Event(database, "Warning", "DatabaseDeprovisioningError", errStatement)
+				r.recorder.Eventf(database, "Warning", "DatabaseDeprovisioningError", "Error: %s", errStatement)
 				return requeueOnErr(err)
 			}
 		}
+
 		log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
 		controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_INSTANCE)
 		if err := r.Update(ctx, database); err != nil {
@@ -101,7 +104,7 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 		if err != nil {
 			errStatement := "An error occurred while trying to get all databases"
 			log.Error(err, errStatement)
-			r.recorder.Event(database, "Warning", "DatabaseLookupError", errStatement+". "+err.Error())
+			r.recorder.Eventf(database, "Warning", "DatabaseLookupError", "Error: %s. %s", errStatement, err.Error())
 			return requeueOnErr(err)
 		}
 		if len(util.Filter(allDatabases, func(d ndb_api.DatabaseResponse) bool { return d.Id == database.Status.Id })) == 0 {
@@ -115,7 +118,7 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 				_, err := ndb_api.DeprovisionDatabaseServer(ctx, ndbClient, databaseServerId, *ndb_api.GenerateDeprovisionDatabaseServerRequest())
 				if err != nil {
 					log.Error(err, "Deprovisioning database server request failed.", "database server id", databaseServerId)
-					r.recorder.Event(database, "Normal", "DatabaseServerDeprovisioningFailed", err.Error())
+					r.recorder.Eventf(database, "Warning", "DatabaseServerDeprovisioningFailed", "Error: %s", err.Error())
 					return requeueOnErr(err)
 				}
 			} else {
@@ -155,7 +158,7 @@ func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database 
 		if err != nil {
 			errStatement := "An error occurred while trying to get all databases"
 			log.Error(err, errStatement)
-			r.recorder.Event(database, "Warning", "DatabaseLookupError", errStatement)
+			r.recorder.Eventf(database, "Warning", "DatabaseLookupError", "Error: %s", errStatement)
 
 			return err
 		} else {
@@ -176,7 +179,7 @@ func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database 
 			if err != nil {
 				errStatement := "Failed to update database status"
 				log.Error(err, errStatement)
-				r.recorder.Event(database, "Warning", "DatabaseCRStatusUpdateFailed", err.Error())
+				r.recorder.Eventf(database, "Warning", "DatabaseCRStatusUpdateFailed", "Error: %s", err.Error())
 				return err
 			}
 		}
@@ -206,7 +209,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 				errStatement = "An error occured while fetching the DB Instance Secrets"
 			}
 			log.Error(err, errStatement)
-			r.recorder.Event(database, "Warning", "InvalidDBCredentials", errStatement)
+			r.recorder.Eventf(database, "Warning", "InvalidDBCredentials", "Error: %s", errStatement)
 			return requeueOnErr(err)
 		}
 
@@ -219,18 +222,18 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
 		// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
 		if err != nil {
-			errStatement := fmt.Sprintf("Could not generate provisioning request. Error: %s. Retrying", err.Error())
+			errStatement := "Could not generate provisioning request"
 			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", "ProvisioningRequestGenerationFailed", errStatement)
+			r.recorder.Eventf(database, "Warning", "ProvisioningRequestGenerationFailed", "Error: %s. %s", errStatement, err.Error())
 			return requeueOnErr(err)
 		}
 		r.recorder.Event(database, "Warning", "ProvisioningRequestGenerated", "Generated database provisiong request")
 
 		taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
 		if err != nil {
-			errStatement := "Failed to make provisioning request to NDB. Retrying"
+			errStatement := "Failed to make provisioning request to NDB. "
 			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", "DatabaseProvisioningRequestFailed", errStatement+". Error: %s", err.Error())
+			r.recorder.Eventf(database, "Warning", "DatabaseProvisioningRequestFailed", "Error: %s. %s", errStatement, err.Error())
 			return requeueOnErr(err)
 		}
 		// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
@@ -247,7 +250,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		err = r.Status().Update(ctx, database)
 		if err != nil {
 			log.Error(err, "Failed to update database CR status")
-			r.recorder.Event(database, "Warning", "DatabaseCRStatusUpdateFailed", err.Error())
+			r.recorder.Eventf(database, "Warning", "DatabaseCRStatusUpdateFailed", "Error: %s", err.Error())
 			return requeueOnErr(err)
 		}
 
@@ -258,7 +261,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		if err != nil {
 			errStatement := fmt.Sprintf("An error occurred while trying to get the database with id: %s", database.Status.Id)
 			log.Error(err, errStatement)
-			r.recorder.Event(database, "Warning", "DatabaseLookupError", errStatement)
+			r.recorder.Eventf(database, "Warning", "DatabaseLookupError", "Error: %s", errStatement)
 			return requeueOnErr(err)
 		}
 
@@ -317,14 +320,14 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 	if err != nil {
 		errStatement := "Error occurred while setting up the k8s service"
 		log.Error(err, errStatement)
-		r.recorder.Eventf(database, "Error", "ServiceSetupFailed", errStatement+". Error: %s", err.Error())
+		r.recorder.Eventf(database, "Error", "ServiceSetupFailed", "Error: %s. %s", errStatement, err.Error())
 		return
 	}
 	err = r.setupEndpoints(ctx, database, commonNamespacedName, commonMetadata, targetPort)
 	if err != nil {
 		errStatement := "Error occurred while setting up the k8s endpoints"
 		log.Error(err, errStatement)
-		r.recorder.Eventf(database, "Error", "EndpointSetupFailed", errStatement+". Error: %s", err.Error())
+		r.recorder.Eventf(database, "Error", "EndpointSetupFailed", "Error: %s. %s", errStatement, err.Error())
 		return
 	}
 	log.Info("Returning from database_reconciler_helpers.setupConnectivity")

@@ -85,7 +85,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	NDBInfo := database.Spec.NDB
 	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, NDBInfo.CredentialSecret, req.Namespace)
 	if err != nil {
-		r.recorder.Event(database, "Warning", "InvalidNDBCredentials", err.Error())
+		r.recorder.Eventf(database, "Warning", "InvalidNDBCredentials", "Error: %s", err.Error())
 		return requeueOnErr(err)
 	}
 	if caCert == "" {
@@ -113,7 +113,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if err != nil {
 		errStatement := "Error occurred while external delete check"
 		log.Error(err, errStatement)
-		r.recorder.Eventf(database, "Warning", "InternalError", errStatement+"Error: %s.", err.Error())
+		r.recorder.Eventf(database, "Warning", "InternalError", "Error: % s. %s.", errStatement, err.Error())
 		return requeueOnErr(err)
 	}
 	// Synchronize the database CR with the database instance on NDB.
@@ -122,7 +122,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *DatabaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.recorder = mgr.GetEventRecorderFor("containerset-controller")
+	r.recorder = mgr.GetEventRecorderFor("database-controller")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ndbv1alpha1.Database{}).
 		Owns(&corev1.Service{}).
