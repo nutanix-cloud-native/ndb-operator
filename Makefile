@@ -276,4 +276,4 @@ endif
 # NDB_CLUSTER_ID='...'
 .PHONY: run-automation
 run-automation: install
-	go test ./automation/... -v -timeout 60m
+	go test ./automation/tests/... -v -timeout 60m
