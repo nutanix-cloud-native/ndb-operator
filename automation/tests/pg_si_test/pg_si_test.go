@@ -36,7 +36,6 @@ type PostgresqlSingleInstanceTestSuite struct {
 	clientset         *kubernetes.Clientset
 	kubeconfig        string
 	logFile           string
-	setupPath         automation.SetupPaths
 }
 
 // SetupSuite is called once before running the tests in the suite
@@ -86,47 +85,38 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 		suite.T().FailNow()
 	}
 
-	// Create base setup for all tests in this suite
-	setupPaths := automation.SetupPaths{
-		DbPath:        "./config/db-pg-si.yaml",
-		DbSecretPath:  "./config/db-secret-pg-si.yaml",
-		NdbSecretPath: "./config/ndb-secret-pg-si.yaml",
-		AppPodPath:    "./config/pod-pg-si.yaml",
-		AppSvcPath:    "./config/svc-pg-si.yaml",
-	}
-
-	// Create dbSecret template from setupPaths.dbSecretPath
+	// Create dbSecret template from automation.DB_SECRET_PATH
 	dbSecret := &v1.Secret{}
-	if err := automation.CreateTypeFromPath(dbSecret, setupPaths.DbSecretPath); err != nil {
-		log.Printf("Error: utils.CreateTypeFromPath() for dbSecret with path %s failed! %v\n", setupPaths.DbSecretPath, err)
+	if err := automation.CreateTypeFromPath(dbSecret, automation.DB_SECRET_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for dbSecret with path %s failed! %v\n", automation.DB_SECRET_PATH, err)
 		suite.T().FailNow()
 	}
 
-	// Create ndbSecret template from setupPaths.ndbSecretPath
+	// Create ndbSecret template automation.NDB_SECRET_PATH
 	ndbSecret := &v1.Secret{}
-	if err := automation.CreateTypeFromPath(ndbSecret, setupPaths.NdbSecretPath); err != nil {
-		log.Printf("Error: utils.CreateTypeFromPath() for ndbSecret with path %s failed! %v\n", setupPaths.NdbSecretPath, err)
+	if err := automation.CreateTypeFromPath(ndbSecret, automation.NDB_SECRET_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for ndbSecret with path %s failed! %v\n", automation.NDB_SECRET_PATH, err)
 		suite.T().FailNow()
 	}
 
-	// Create database template from setupPaths.dbPath
+	// Create database template from automation.DATABASE_PATH
 	database := &ndbv1alpha1.Database{}
-	if err := automation.CreateTypeFromPath(database, setupPaths.DbPath); err != nil {
-		log.Printf("Error: utils.CreateTypeFromPath() for database with path %s failed! %v\n", setupPaths.DbPath, err)
+	if err := automation.CreateTypeFromPath(database, automation.DATABASE_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for database with path %s failed! %v\n", automation.DATABASE_PATH, err)
 		suite.T().FailNow()
 	}
 
-	// Create appPod template from setupPaths.appPodPath
+	// Create appPod template from automation.APP_POD_PATH
 	appPod := &v1.Pod{}
-	if err := automation.CreateTypeFromPath(appPod, setupPaths.AppPodPath); err != nil {
-		log.Printf("Error: utils.CreateTypeFromPath() for pod with path %s failed! %v\n", setupPaths.AppPodPath, err)
+	if err := automation.CreateTypeFromPath(appPod, automation.APP_POD_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for pod with path %s failed! %v\n", automation.APP_POD_PATH, err)
 		suite.T().FailNow()
 	}
 
-	// Create appSvc template from setupPaths.appSvcPath
+	// Create appSvc template from automation.APP_SVC_PATH
 	appSvc := &v1.Service{}
-	if err := automation.CreateTypeFromPath(appSvc, setupPaths.AppSvcPath); err != nil {
-		log.Printf("Error: utils.CreateTypeFromPath() for service with path %s failed! %v\n", setupPaths.AppSvcPath, err)
+	if err := automation.CreateTypeFromPath(appSvc, automation.APP_SVC_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for service with path %s failed! %v\n", automation.APP_SVC_PATH, err)
 		suite.T().FailNow()
 	}
 
@@ -143,7 +133,6 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	suite.v1alpha1ClientSet = v1alpha1ClientSet
 	suite.clientset = clientset
 	suite.config = config
-	suite.setupPath = setupPaths
 
 	log.Printf("******************** END PostgresqlSingleInstanceTestSuite SETUPSUITE() ********************\n")
 }
@@ -153,40 +142,39 @@ func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 	log.Printf("******************** RUNNING PostgresqlSingleInstanceTestSuite TEARDOWNSUITE() ********************\n")
 
 	var err error
-	setupPaths := suite.setupPath
 
-	// Create dbSecret template from dbSecretPath
+	// Create dbSecret template from automation.DB_SECRET_PATH
 	dbSecret := &v1.Secret{}
-	if err = automation.CreateTypeFromPath(dbSecret, setupPaths.DbSecretPath); err != nil {
-		log.Printf("Error: utils.CreateTypeFromPath() for dbSecret with path %s failed! %v\n", setupPaths.DbSecretPath, err)
+	if err = automation.CreateTypeFromPath(dbSecret, automation.DB_SECRET_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for dbSecret with path %s failed! %v\n", automation.DB_SECRET_PATH, err)
 		suite.T().FailNow()
 	}
 
-	// Create ndbSecret template from setupPaths.NdbSecretPath
+	// Create ndbSecret template from automation.NDB_SECRET_PATH
 	ndbSecret := &v1.Secret{}
-	if err = automation.CreateTypeFromPath(ndbSecret, setupPaths.NdbSecretPath); err != nil {
-		log.Printf("Error: utils.CreateTypeFromPath() for ndbSecret with path %s failed! %v\n", setupPaths.NdbSecretPath, err)
+	if err = automation.CreateTypeFromPath(ndbSecret, automation.NDB_SECRET_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for ndbSecret with path %s failed! %v\n", automation.NDB_SECRET_PATH, err)
 		suite.T().FailNow()
 	}
 
-	// Create database template from setupPaths.DbPath
+	// Create database template from automation.DATABASE_PATH
 	database := &ndbv1alpha1.Database{}
-	if err = automation.CreateTypeFromPath(database, setupPaths.DbPath); err != nil {
-		log.Printf("Error: utils.CreateTypeFromPath() for database with path %s failed! %v\n", setupPaths.DbPath, err)
+	if err = automation.CreateTypeFromPath(database, automation.DATABASE_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for database with path %s failed! %v\n", automation.DATABASE_PATH, err)
 		suite.T().FailNow()
 	}
 
-	// Create appPod template from setupPaths.appPodPath
+	// Create appPod template from automation.APP_POD_PATH
 	appPod := &v1.Pod{}
-	if err = automation.CreateTypeFromPath(appPod, setupPaths.AppPodPath); err != nil {
-		log.Printf("Error: utils.CreateTypeFromPath() for pod with path %s failed! %v\n", setupPaths.AppPodPath, err)
+	if err = automation.CreateTypeFromPath(appPod, automation.APP_POD_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for pod with path %s failed! %v\n", automation.APP_POD_PATH, err)
 		suite.T().FailNow()
 	}
 
-	// Create appSvc template from setupPaths.appSvc
+	// Create appSvc template from automation.APP_SVC_PATH
 	appSvc := &v1.Service{}
-	if err = automation.CreateTypeFromPath(appSvc, setupPaths.AppSvcPath); err != nil {
-		log.Printf("Error: utils.CreateTypeFromPath() for service with path %s failed! %v\n", setupPaths.AppSvcPath, err)
+	if err = automation.CreateTypeFromPath(appSvc, automation.APP_SVC_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for service with path %s failed! %v\n", automation.APP_SVC_PATH, err)
 		suite.T().FailNow()
 	}
 
@@ -219,9 +207,9 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 	database := &v1alpha1.Database{}
 
 	// Get db template from yaml to acquire database name
-	err := automation.CreateTypeFromPath(database, suite.setupPath.DbPath)
+	err := automation.CreateTypeFromPath(database, automation.DATABASE_PATH)
 	if err != nil {
-		log.Printf("Error: utils.CreateTypeFromPath() for dbPath with path %s failed! %s\n", suite.setupPath.DbPath, err)
+		log.Printf("Error: utils.CreateTypeFromPath() for dbPath with path %s failed! %s\n", automation.DATABASE_PATH, err)
 		suite.T().FailNow()
 	}
 
