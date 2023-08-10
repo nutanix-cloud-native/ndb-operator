@@ -8,6 +8,13 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
   - endpoints
   - services
   verbs:
@@ -54,6 +61,7 @@ rules:
   - update
 - apiGroups:
   - ndb.nutanix.com
+  - “core”
   resources:
   - ndbservers
   verbs:
@@ -78,3 +86,35 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - “core”
+  resources:
+  - endpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - “core”
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - “core”
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
