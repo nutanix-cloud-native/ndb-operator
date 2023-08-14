@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"reflect"
 	"time"
 
 	"sigs.k8s.io/yaml"
@@ -30,10 +31,16 @@ func readYAMLFile(path string) ([]byte, error) {
 	return yamlFile, nil
 }
 
-// Reads a file path, converts to json, unmarshals to theType
-func CreateTypeFromPath(theType interface{}, path string) (err error) {
+// CreateTypeFromPath reads a file path, converts it to json, and unmarshals json to a pointer.
+// Ensure that theType is a pointer.
+func CreateTypeFromPath(theType any, path string) (err error) {
 	if theType == nil {
 		return errors.New("theType is nil!")
+	}
+
+	// Check if theType is not a pointer
+	if reflect.ValueOf(theType).Kind() != reflect.Ptr {
+		return errors.New("theType is not a pointer!")
 	}
 
 	// Reads file path
@@ -49,7 +56,7 @@ func CreateTypeFromPath(theType interface{}, path string) (err error) {
 	}
 
 	// Creates 'type' object by unmarshalling data
-	err = json.Unmarshal(jsonData, &theType)
+	err = json.Unmarshal(jsonData, theType)
 	if err != nil {
 		return err
 	}
