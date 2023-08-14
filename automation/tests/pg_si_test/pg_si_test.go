@@ -185,8 +185,6 @@ func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 		suite.T().FailNow()
 	}
 
-	suite.v1alpha1ClientSet.Databases(database.Namespace)
-
 	log.Printf("******************** END PostgresqlSingleInstanceTestSuite() ********************\n")
 }
 
