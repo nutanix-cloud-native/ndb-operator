@@ -3,9 +3,8 @@ package automation
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"reflect"
 	"time"
 
@@ -21,16 +20,6 @@ type SetupPaths struct {
 	AppSvcPath    string
 }
 
-// Reads a file path and stores in bytes representation
-func readYAMLFile(path string) ([]byte, error) {
-	yamlFile, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read YAML file: %v", err)
-	}
-
-	return yamlFile, nil
-}
-
 // CreateTypeFromPath reads a file path, converts it to json, and unmarshals json to a pointer.
 // Ensure that theType is a pointer.
 func CreateTypeFromPath(theType any, path string) (err error) {
@@ -44,7 +33,7 @@ func CreateTypeFromPath(theType any, path string) (err error) {
 	}
 
 	// Reads file path
-	data, err := readYAMLFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
