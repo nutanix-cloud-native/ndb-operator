@@ -41,9 +41,9 @@ import (
 
 // Annotation for generating RBAC role for writing Events
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
-// +kubebuilder:rbac:groups=“core”,resources=services,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=“core”,resources=endpoints,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=“core”,resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="core",resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="core",resources=endpoints,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="core",resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/finalizers,verbs=update
@@ -85,7 +85,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	NDBInfo := database.Spec.NDB
 	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, NDBInfo.CredentialSecret, req.Namespace)
 	if err != nil {
-		r.recorder.Eventf(database, "Warning", "InvalidNDBCredentials", "Error: %s", err.Error())
+		r.recorder.Eventf(database, "Warning", INVALID_CREDENTIALS_EVENT, "Error: %s", err.Error())
 		return requeueOnErr(err)
 	}
 	if caCert == "" {
@@ -113,7 +113,6 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if err != nil {
 		errStatement := "Error occurred while external delete check"
 		log.Error(err, errStatement)
-		r.recorder.Eventf(database, "Warning", "InternalError", "Error: % s. %s.", errStatement, err.Error())
 		return requeueOnErr(err)
 	}
 	// Synchronize the database CR with the database instance on NDB.

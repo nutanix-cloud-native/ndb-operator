@@ -29,6 +29,33 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+const (
+	INVALID_CREDENTIALS_EVENT = "InvalidCredentials"
+
+	REQUEST_GENERATION_EVENT         = "RequestGenerated"
+	REQUEST_GENERATION_FAILURE_EVENT = "RequestGenerationFailed"
+	NDB_REQUEST_FAILED               = "NDBRequestFailed"
+
+	PROVISIONING_STARTED_EVENT   = "ProvisioningStarted"
+	PROVISIONING_FAILED_EVENT    = "ProvisioningFailed"
+	PROVISIONING_COMPLETED_EVENT = "ProvisioningCompleted"
+
+	DEPROVISIONING_STARTED_EVENT   = "DeprovisioningStarted"
+	DEPROVISIONING_FAILED_EVENT    = "DeprovisioningFailed"
+	DEPROVISIONING_COMPLETED_EVENT = "DeprovisioningCompleted"
+
+	CR_CREATED_EVENT              = "CustomResourceCreated"
+	CR_DELETED_EVENT              = "CustomResourceDeleted"
+	CR_STATUS_UPDATE_FAILED_EVENT = "CustomResourceStatusUpdateFailed"
+
+	EXTERNAL_DELETE_EVENT = "ExternalDeleteDetected"
+
+	RESOURCE_LOOKUP_ERROR = "ResourceLookupError"
+
+	SERVICE_SETUP_FAILED  = "ServiceSetupFailed"
+	ENDPOINT_SETUP_FAILED = "EndpointSetupFailed"
+)
+
 // doNotRequeue Finished processing. No need to put back on the reconcile queue.
 func doNotRequeue() (ctrl.Result, error) {
 	return ctrl.Result{}, nil
