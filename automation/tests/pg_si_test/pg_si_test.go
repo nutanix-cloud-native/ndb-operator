@@ -121,7 +121,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	}
 
 	// Create resources, wait for db to be ready, and pod to start
-	if err := automation.TestSetup(dbSecret, ndbSecret, database, appPod, appSvc, clientset, v1alpha1ClientSet, suite.T()); err != nil {
+	if err := automation.ProvisioningTestSetup(dbSecret, ndbSecret, database, appPod, appSvc, clientset, v1alpha1ClientSet, suite.T()); err != nil {
 		log.Printf(err.Error())
 		log.Printf("******************** FAILED PostgresqlSingleInstanceTestSuite SETUPSUITE() ********************\n")
 		suite.T().FailNow()
@@ -179,7 +179,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 	}
 
 	// Delete resources and de-provision database
-	if err = automation.TestTeardown(dbSecret, ndbSecret, database, appPod, appSvc, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
+	if err = automation.ProvisioningTestTeardown(dbSecret, ndbSecret, database, appPod, appSvc, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
 		log.Printf(err.Error())
 		log.Printf("******************** FAILED PostgresqlSingleInstanceTestSuite TEARDOWNSUITE() ********************\n")
 		suite.T().FailNow()
