@@ -87,7 +87,6 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 				r.recorder.Eventf(database, "Warning", DEPROVISIONING_FAILED_EVENT, "Error: %s. %s", errStatement, err.Error())
 				return requeueOnErr(err)
 			}
-			r.recorder.Eventf(database, "Normal", DEPROVISIONING_COMPLETED_EVENT, "Database deprovisioned from NDB.")
 		}
 
 		log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
@@ -100,7 +99,8 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 	} else if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
 		// Checking if the database instance still exists in NDB. (It might take some time for the delete db instance operation to complete)
 		// Proceed to delete the database server vm only after the database instance has been deleted.
-		r.recorder.Eventf(database, "Normal", DEPROVISIONING_STARTED_EVENT, "Started deprovisioning datbase server from NDB.")
+		r.recorder.Eventf(database, "Normal", DEPROVISIONING_COMPLETED_EVENT, "Database deprovisioned from NDB.")
+		r.recorder.Eventf(database, "Normal", DEPROVISIONING_STARTED_EVENT, "Deprovisioning datbase server from NDB.")
 		log.Info("Checking if database instance exists")
 		allDatabases, err := ndb_api.GetAllDatabases(ctx, ndbClient)
 		if err != nil {
