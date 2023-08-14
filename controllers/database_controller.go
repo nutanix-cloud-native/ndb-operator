@@ -111,8 +111,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	// To check and handle the case when the database ha been deleted/aborted externally (not through the operator).
 	err = r.handleExternalDelete(ctx, database, ndbClient)
 	if err != nil {
-		errStatement := "Error occurred while external delete check"
-		log.Error(err, errStatement)
+		log.Error(err, "Error occurred while external delete check")
 		return requeueOnErr(err)
 	}
 	// Synchronize the database CR with the database instance on NDB.

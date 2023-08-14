@@ -69,8 +69,7 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 //	b. Database server
 func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
-	infoStatement := "Database CR is being deleted"
-	log.Info(infoStatement)
+	log.Info("Database CR is being deleted")
 	if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
 		// Check if the database instance id (database.Status.Id) is present in the status
 		// If present, then make a deprovisionDatabase API call to NDB
@@ -100,13 +99,13 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 		// Checking if the database instance still exists in NDB. (It might take some time for the delete db instance operation to complete)
 		// Proceed to delete the database server vm only after the database instance has been deleted.
 		r.recorder.Eventf(database, "Normal", DEPROVISIONING_COMPLETED_EVENT, "Database deprovisioned from NDB.")
-		r.recorder.Eventf(database, "Normal", DEPROVISIONING_STARTED_EVENT, "Deprovisioning datbase server from NDB.")
+		r.recorder.Eventf(database, "Normal", DEPROVISIONING_STARTED_EVENT, "Deprovisioning database server from NDB.")
 		log.Info("Checking if database instance exists")
 		allDatabases, err := ndb_api.GetAllDatabases(ctx, ndbClient)
 		if err != nil {
-			errStatement := "Failed to deprovision database server. Error fetching NDB database list"
+			errStatement := "Error fetching all databases from NDB"
 			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", DEPROVISIONING_FAILED_EVENT, "Error: %s. %s", errStatement, err.Error())
+			r.recorder.Eventf(database, "Warning", RESOURCE_LOOKUP_ERROR, "Error: %s. %s", errStatement, err.Error())
 			return requeueOnErr(err)
 		}
 		if len(util.Filter(allDatabases, func(d ndb_api.DatabaseResponse) bool { return d.Id == database.Status.Id })) == 0 {
@@ -176,7 +175,7 @@ func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database 
 		if databaseResponse.Status == common.DATABASE_CR_STATUS_EMPTY {
 			infoStatement := "The database might have been deleted externally, setting an empty status so it can be re-provisioned."
 			log.Info(infoStatement)
-			r.recorder.Event(database, "Normal", EXTERNAL_DELETE_EVENT, "The database has been deleted externally (on NDB). Reprovisioning.")
+			r.recorder.Event(database, "Normal", EXTERNAL_DELETE_EVENT, "The database has been deleted externally (on NDB). Reprovisioning database on NDB.")
 			database.Status.Status = common.DATABASE_CR_STATUS_EMPTY
 			err = r.Status().Update(ctx, database)
 			if err != nil {
@@ -201,7 +200,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 
 	case common.DATABASE_CR_STATUS_EMPTY:
 		// DB Status.Status is empty => Provision a DB
-		infoStatement := "Provisioning a database instance with NDB."
+		infoStatement := "Provisioning a database instance on NDB."
 		log.Info(infoStatement)
 
 		dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
