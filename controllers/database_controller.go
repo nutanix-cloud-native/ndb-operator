@@ -55,12 +55,6 @@ type DatabaseReconciler struct {
 	recorder record.EventRecorder
 }
 
-// +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/finalizers,verbs=update
-// +kubebuilder:rbac:groups=core,resources=services;endpoints,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch
-
 // The Reconcile method is where the controller logic resides.
 func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
@@ -85,7 +79,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	NDBInfo := database.Spec.NDB
 	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, NDBInfo.CredentialSecret, req.Namespace)
 	if err != nil {
-		r.recorder.Eventf(database, "Warning", INVALID_CREDENTIALS_EVENT, "Error: %s", err.Error())
+		r.recorder.Eventf(database, "Warning", EVENT_INVALID_CREDENTIALS, "Error: %s", err.Error())
 		return requeueOnErr(err)
 	}
 	if caCert == "" {
@@ -120,6 +114,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *DatabaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	//Create a new EventRecorder with the provided name
 	r.recorder = mgr.GetEventRecorderFor("database-controller")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ndbv1alpha1.Database{}).

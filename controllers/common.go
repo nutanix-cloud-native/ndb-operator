@@ -30,30 +30,30 @@ import (
 )
 
 const (
-	INVALID_CREDENTIALS_EVENT = "InvalidCredentials"
+	EVENT_INVALID_CREDENTIALS = "InvalidCredentials"
 
-	REQUEST_GENERATION_EVENT         = "RequestGenerated"
-	REQUEST_GENERATION_FAILURE_EVENT = "RequestGenerationFailed"
-	NDB_REQUEST_FAILED               = "NDBRequestFailed"
+	EVENT_REQUEST_GENERATION         = "RequestGenerated"
+	EVENT_REQUEST_GENERATION_FAILURE = "RequestGenerationFailed"
+	EVENT_NDB_REQUEST_FAILED         = "NDBRequestFailed"
 
-	PROVISIONING_STARTED_EVENT   = "ProvisioningStarted"
-	PROVISIONING_FAILED_EVENT    = "ProvisioningFailed"
-	PROVISIONING_COMPLETED_EVENT = "ProvisioningCompleted"
+	EVENT_PROVISIONING_STARTED   = "ProvisioningStarted"
+	EVENT_PROVISIONING_FAILED    = "ProvisioningFailed"
+	EVENT_PROVISIONING_COMPLETED = "ProvisioningCompleted"
 
-	DEPROVISIONING_STARTED_EVENT   = "DeprovisioningStarted"
-	DEPROVISIONING_FAILED_EVENT    = "DeprovisioningFailed"
-	DEPROVISIONING_COMPLETED_EVENT = "DeprovisioningCompleted"
+	EVENT_DEPROVISIONING_STARTED   = "DeprovisioningStarted"
+	EVENT_DEPROVISIONING_FAILED    = "DeprovisioningFailed"
+	EVENT_DEPROVISIONING_COMPLETED = "DeprovisioningCompleted"
 
-	CR_CREATED_EVENT              = "CustomResourceCreated"
-	CR_DELETED_EVENT              = "CustomResourceDeleted"
-	CR_STATUS_UPDATE_FAILED_EVENT = "CustomResourceStatusUpdateFailed"
+	EVENT_CR_CREATED              = "CustomResourceCreated"
+	EVENT_CR_DELETED              = "CustomResourceDeleted"
+	EVENT_CR_STATUS_UPDATE_FAILED = "CustomResourceStatusUpdateFailed"
 
-	EXTERNAL_DELETE_EVENT = "ExternalDeleteDetected"
+	EVENT_EXTERNAL_DELETE = "ExternalDeleteDetected"
 
-	RESOURCE_LOOKUP_ERROR = "ResourceLookupError"
+	EVENT_RESOURCE_LOOKUP_ERROR = "ResourceLookupError"
 
-	SERVICE_SETUP_FAILED  = "ServiceSetupFailed"
-	ENDPOINT_SETUP_FAILED = "EndpointSetupFailed"
+	EVENT_SERVICE_SETUP_FAILED  = "ServiceSetupFailed"
+	EVENT_ENDPOINT_SETUP_FAILED = "EndpointSetupFailed"
 )
 
 // doNotRequeue Finished processing. No need to put back on the reconcile queue.
