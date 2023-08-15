@@ -34,7 +34,6 @@ type PostgresqlSingleInstanceTestSuite struct {
 	config            *rest.Config
 	v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
 	clientset         *kubernetes.Clientset
-	kubeconfig        string
 	logFile           string
 }
 
@@ -128,7 +127,6 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	}
 
 	// Set variables for the entire suite
-	suite.kubeconfig = kubeconfig
 	suite.logFile = logFile
 	suite.v1alpha1ClientSet = v1alpha1ClientSet
 	suite.clientset = clientset
