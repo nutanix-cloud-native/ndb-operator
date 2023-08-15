@@ -24,12 +24,12 @@ type SetupPaths struct {
 // Ensure that theType is a pointer.
 func CreateTypeFromPath(theType any, path string) (err error) {
 	if theType == nil {
-		return errors.New("theType is nil!")
+		return errors.New("theType is nil! Ensure you are passing in a non-nil value!")
 	}
 
 	// Check if theType is not a pointer
 	if reflect.ValueOf(theType).Kind() != reflect.Ptr {
-		return errors.New("theType is not a pointer!")
+		return errors.New("theTyper is not a pointer! Ensure you are passing in a pointer for unmarshalling to work correctly!")
 	}
 
 	// Reads file path
