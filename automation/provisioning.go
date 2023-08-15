@@ -209,3 +209,21 @@ func ProvisioningTestTeardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv
 
 	return
 }
+
+// Performs an operation a certain number of times with a given interval
+func waitAndRetryOperation(interval time.Duration, retries int, operation func() error) (err error) {
+	for i := 0; i < retries; i++ {
+		if i != 0 {
+			log.Printf("Retrying, attempt # %d\n", i)
+		}
+		err = operation()
+		if err == nil {
+			return nil
+		} else {
+			log.Printf("Error: %s\n", err)
+		}
+		time.Sleep(interval)
+	}
+	// Operation failed after all retries, return the last error received
+	return err
+}
