@@ -1,0 +1,40 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: db-mssql-si
+spec:
+  ndb:
+    clusterId: <cluster-id>
+    credentialSecret: ndb-secret
+    server: https://<ip-for-ndb>:8443/era/v0.9
+    skipCertificateVerification: true
+  databaseInstance:
+    databaseInstanceName: db-mssql-si
+    databaseNames:
+      - database_one
+      - database_two
+      - database_three
+    credentialSecret: db-secret-mssql-si
+    size: 100
+    timezone: "UTC"
+    type: mssql
+    profiles:
+      compute:
+        name: ""
+        id: ""
+      # A Software profile is a mandatory input for closed-source engines: SQL Server & Oracle
+      software:
+        name: "MSSQL-MAZIN"
+        # id: "7281c9a9-1639-4cbd-a9cc-f0b0422ba90a"
+      dbParam:
+        name: "DEFAULT_SQLSERVER_INSTANCE_PARAMS"
+      dbParamInstance: 
+        name: "DEFAULT_SQLSERVER_INSTANCE_PARAMS"
+    timeMachine:
+      sla : "NONE"
+      dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
+      snapshotsPerDay:     4            # Number of snapshots per day
+      logCatchUpFrequency: 90           # Frequency (in minutes)
+      weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
+      monthlySnapshotDay:  24           # Day of the month for monthly snapshot
+      quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
