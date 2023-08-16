@@ -186,6 +186,8 @@ spec:
                 type: string
               ipAddress:
                 type: string
+              provisioningOperationId:
+                type: string
               status:
                 type: string
               type:
@@ -194,6 +196,7 @@ spec:
             - dbServerId
             - id
             - ipAddress
+            - provisioningOperationId
             - status
             - type
             type: object

@@ -244,6 +244,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		log.Info("Setting database CR status to provisioning and id as " + taskResponse.EntityId)
 		database.Status.Status = common.DATABASE_CR_STATUS_PROVISIONING
 		database.Status.Id = taskResponse.EntityId
+		database.Status.ProvisioningOperationId = taskResponse.OperationId
 
 		// Updating the type in the Database Status based on the input
 		database.Status.Type = database.Spec.Instance.Type
