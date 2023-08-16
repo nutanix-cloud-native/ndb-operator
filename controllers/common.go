@@ -29,6 +29,33 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+const (
+	EVENT_INVALID_CREDENTIALS = "InvalidCredentials"
+
+	EVENT_REQUEST_GENERATION         = "RequestGenerated"
+	EVENT_REQUEST_GENERATION_FAILURE = "RequestGenerationFailed"
+	EVENT_NDB_REQUEST_FAILED         = "NDBRequestFailed"
+
+	EVENT_PROVISIONING_STARTED   = "ProvisioningStarted"
+	EVENT_PROVISIONING_FAILED    = "ProvisioningFailed"
+	EVENT_PROVISIONING_COMPLETED = "ProvisioningCompleted"
+
+	EVENT_DEPROVISIONING_STARTED   = "DeprovisioningStarted"
+	EVENT_DEPROVISIONING_FAILED    = "DeprovisioningFailed"
+	EVENT_DEPROVISIONING_COMPLETED = "DeprovisioningCompleted"
+
+	EVENT_CR_CREATED              = "CustomResourceCreated"
+	EVENT_CR_DELETED              = "CustomResourceDeleted"
+	EVENT_CR_STATUS_UPDATE_FAILED = "CustomResourceStatusUpdateFailed"
+
+	EVENT_EXTERNAL_DELETE = "ExternalDeleteDetected"
+
+	EVENT_RESOURCE_LOOKUP_ERROR = "ResourceLookupError"
+
+	EVENT_SERVICE_SETUP_FAILED  = "ServiceSetupFailed"
+	EVENT_ENDPOINT_SETUP_FAILED = "EndpointSetupFailed"
+)
+
 // doNotRequeue Finished processing. No need to put back on the reconcile queue.
 func doNotRequeue() (ctrl.Result, error) {
 	return ctrl.Result{}, nil
@@ -62,14 +89,9 @@ func getNDBCredentialsFromSecret(ctx context.Context, k8sClient client.Client, n
 	username = string(secretDataMap[common.SECRET_DATA_KEY_USERNAME])
 	password = string(secretDataMap[common.SECRET_DATA_KEY_PASSWORD])
 	caCert = string(secretDataMap[common.SECRET_DATA_KEY_CA_CERTIFICATE])
-	if err != nil || username == "" || password == "" {
-		var errStatement string
-		if err != nil {
-			errStatement = "An error occured while fetching the NDB Secrets"
-		} else {
-			errStatement = "NDB username or password cannot be empty"
-			err = fmt.Errorf("empty credentials")
-		}
+	if username == "" || password == "" {
+		errStatement := "NDB username or password is empty."
+		err = fmt.Errorf("Empty credentials. " + errStatement)
 		log.Error(err, errStatement, "username empty", username == "", "password empty", password == "")
 		return
 	}
