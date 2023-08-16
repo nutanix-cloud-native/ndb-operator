@@ -38,7 +38,7 @@ type DatabaseStatus struct {
 	Status                  string `json:"status"`
 	DatabaseServerId        string `json:"dbServerId"`
 	Type                    string `json:"type"`
-	ProvisioningOperationId string `json:"ProvisioningOperationId"`
+	ProvisioningOperationId string `json:"provisioningOperationId"`
 }
 
 // Database is the Schema for the databases API

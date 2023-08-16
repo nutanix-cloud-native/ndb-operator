@@ -180,23 +180,23 @@ spec:
           status:
             description: DatabaseStatus defines the observed state of Database
             properties:
-              ProvisioningOperationId:
-                type: string
               dbServerId:
                 type: string
               id:
                 type: string
               ipAddress:
                 type: string
+              provisioningOperationId:
+                type: string
               status:
                 type: string
               type:
                 type: string
             required:
-            - ProvisioningOperationId
             - dbServerId
             - id
             - ipAddress
+            - provisioningOperationId
             - status
             - type
             type: object
