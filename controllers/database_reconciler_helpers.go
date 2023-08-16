@@ -173,8 +173,7 @@ func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database 
 		}
 		// Update the CR status if the database response is empty so that it triggers a provision operation
 		if databaseResponse.Status == common.DATABASE_CR_STATUS_EMPTY {
-			infoStatement := "The database might have been deleted externally, setting an empty status so it can be re-provisioned."
-			log.Info(infoStatement)
+			log.Info("The database might have been deleted externally, setting an empty status so it can be re-provisioned.")
 			r.recorder.Event(database, "Normal", EVENT_EXTERNAL_DELETE, "The database has been deleted externally (on NDB). Reprovisioning database on NDB.")
 			database.Status.Status = common.DATABASE_CR_STATUS_EMPTY
 			err = r.Status().Update(ctx, database)
