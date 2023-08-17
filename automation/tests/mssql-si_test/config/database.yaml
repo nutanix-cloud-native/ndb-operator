@@ -5,7 +5,7 @@ metadata:
 spec:
   ndb:
     clusterId: <cluster-id>
-    credentialSecret: ndb-secret
+    credentialSecret: ndb-secret-mssql-si
     server: https://<ip-for-ndb>:8443/era/v0.9
     skipCertificateVerification: true
   databaseInstance:
