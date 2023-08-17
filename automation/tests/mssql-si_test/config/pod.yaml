@@ -6,25 +6,30 @@ metadata:
     app: app-mssql-si
 spec:
   containers:
-  - name: best-app
-    image: manavrajvanshinx/best-app:latest
-    resources:
-      limits:
-        memory: 512Mi
-        cpu: "1"
+  - name: app-mssql-container
+    image: pritikanutanix/app-mssql:latest
     env:
-    - name: DBHOST
+    - name: DBHOST 
       value: db-mssql-si-svc
+    - name: USERNAME
+      value: Administrator
+    - name: DATABASE
+      value: database_one 
     - name: DBPORT
       value: '80'
+    - name: MSSQL_INSTANCE_NAME
+      value: CDMINSTANCE
     - name: PASSWORD
       valueFrom:
         secretKeyRef:
           name: db-secret-mssql-si
-          key: password
+          key: password 
     ports:
     - containerPort: 3000
   initContainers:
-  - name: init-db
-    image: busybox:1.28
-    command: ['sh', '-c', "until nslookup db-mssql-si-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for database service; sleep 2; done"]
+    - name: init-db
+      image: busybox:1.28
+      command: ['sh', '-c', "until nslookup $(DB_HOST).$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for $(DB_HOST); sleep 2; done"]
+      env:
+      - name: DB_HOST 
+        value: "db-mssql-si-svc" 
