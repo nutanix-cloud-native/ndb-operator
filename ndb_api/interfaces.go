@@ -30,6 +30,7 @@ type ProfileResolvers map[string]ProfileResolver
 
 type DatabaseInterface interface {
 	GetDBInstanceName() string
+	GetDBInstanceDescription() string
 	GetDBInstanceType() string
 	GetDBInstanceDatabaseNames() string
 	GetDBInstanceTimeZone() string

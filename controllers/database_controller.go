@@ -23,11 +23,11 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -39,17 +39,23 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 )
 
-// DatabaseReconciler reconciles a Database object
-type DatabaseReconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
-}
-
-// The Reconcile method is where the controller logic resides.
-
+// Annotation for generating RBAC role for writing Events
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups="core",resources=services,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="core",resources=endpoints,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="core",resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/finalizers,verbs=update
+
+// DatabaseReconciler reconciles a Database object
+type DatabaseReconciler struct {
+	client.Client
+	Scheme   *runtime.Scheme
+	recorder record.EventRecorder
+}
+
+// The Reconcile method is where the controller logic resides.
 func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("<==============================Reconcile Started=============================>")
@@ -61,27 +67,20 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			// Request object not found, could have been deleted after reconcile request.
 			// Return and don't requeue
 			log.Info("Database resource not found. Ignoring since object must be deleted")
-			return r.doNotRequeue()
+			return doNotRequeue()
 		}
 		// Error reading the object - requeue the request.
 		log.Error(err, "Failed to get Database")
-		return r.requeueOnErr(err)
+		return requeueOnErr(err)
 	}
 
 	log.Info("Database CR Status: " + util.ToString(database.Status))
 
 	NDBInfo := database.Spec.NDB
-	username, password, caCert, err := r.getNDBCredentials(ctx, NDBInfo.CredentialSecret, req.Namespace)
-	if err != nil || username == "" || password == "" {
-		var errStatement string
-		if err == nil {
-			errStatement = "NDB username or password cannot be empty"
-			err = fmt.Errorf("empty NDB credentials")
-		} else {
-			errStatement = "An error occured while fetching the NDB Secrets"
-		}
-		log.Error(err, errStatement)
-		return r.requeueOnErr(err)
+	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, NDBInfo.CredentialSecret, req.Namespace)
+	if err != nil {
+		r.recorder.Eventf(database, "Warning", EVENT_INVALID_CREDENTIALS, "Error: %s", err.Error())
+		return requeueOnErr(err)
 	}
 	if caCert == "" {
 		log.Info("Ca-cert not found, falling back to host's HTTPs certs.")
@@ -107,7 +106,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	err = r.handleExternalDelete(ctx, database, ndbClient)
 	if err != nil {
 		log.Error(err, "Error occurred while external delete check")
-		return r.requeueOnErr(err)
+		return requeueOnErr(err)
 	}
 	// Synchronize the database CR with the database instance on NDB.
 	return r.handleSync(ctx, database, ndbClient, req)
@@ -115,6 +114,8 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *DatabaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	//Create a new EventRecorder with the provided name
+	r.recorder = mgr.GetEventRecorderFor("database-controller")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ndbv1alpha1.Database{}).
 		Owns(&corev1.Service{}).

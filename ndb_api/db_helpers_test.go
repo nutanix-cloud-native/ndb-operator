@@ -699,6 +699,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 
 		mockDatabase := MockDatabaseInterface{}
 		mockDatabase.On("GetDBInstanceName").Return("db_instance_name")
+		mockDatabase.On("GetDBInstanceDescription").Return("db_instance_description")
 		mockDatabase.On("GetDBInstanceType").Return(instanceType)
 		mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", "SLA 1")
 		mockDatabase.On("GetTMSchedule").Return(Schedule{}, nil)

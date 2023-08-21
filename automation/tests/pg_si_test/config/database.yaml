@@ -1,25 +1,24 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db
+  name: db-pg-si
 spec:
   ndb:
-    clusterId: "Nutanix Cluster Id"
-    credentialSecret: ndb-secret-name
-    server: https://[NDB IP]:8443/era/v0.9
+    clusterId: <cluster-id>
+    credentialSecret: ndb-secret-pg-si
+    server: <https://<ip-for-ndb>:8443/era/v0.9>
     skipCertificateVerification: true
   databaseInstance:
-    databaseInstanceName: "Database Instance Name"
-    description: "Database Description"
+    databaseInstanceName: db-pg-si
     databaseNames:
       - database_one
       - database_two
       - database_three
-    credentialSecret: db-instance-secret-name
-    size: 10
+    credentialSecret: db-secret-pg-si
+    size: 100
     timezone: "UTC"
     type: postgres
-    profiles:
+    profiles: 
       compute:
         name: ""
         id: ""
@@ -37,7 +36,7 @@ spec:
         name: ""
         id: ""
     timeMachine:
-      sla : "NAME OF THE SLA"
+      sla : "NONE"
       dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
       snapshotsPerDay:     4            # Number of snapshots per day
       logCatchUpFrequency: 90           # Frequency (in minutes)

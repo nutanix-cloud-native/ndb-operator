@@ -33,11 +33,12 @@ type DatabaseSpec struct {
 
 // DatabaseStatus defines the observed state of Database
 type DatabaseStatus struct {
-	IPAddress        string `json:"ipAddress"`
-	Id               string `json:"id"`
-	Status           string `json:"status"`
-	DatabaseServerId string `json:"dbServerId"`
-	Type             string `json:"type"`
+	IPAddress               string `json:"ipAddress"`
+	Id                      string `json:"id"`
+	Status                  string `json:"status"`
+	DatabaseServerId        string `json:"dbServerId"`
+	Type                    string `json:"type"`
+	ProvisioningOperationId string `json:"provisioningOperationId"`
 }
 
 // Database is the Schema for the databases API
@@ -85,6 +86,9 @@ type NDB struct {
 type Instance struct {
 	// Name of the database instance
 	DatabaseInstanceName string `json:"databaseInstanceName"`
+	// Description of the database instance
+	// +optional
+	Description string `json:"description"`
 	// Name(s) of the database(s) to be provisiond inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
 	// +optional

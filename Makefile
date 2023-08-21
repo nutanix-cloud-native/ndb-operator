@@ -112,7 +112,7 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test `go list ./... | grep -v "/automation"` -coverprofile cover.out
 
 ##@ Build
 
@@ -266,3 +266,14 @@ else
 	touch ndb_api/$(api)_request_types.go && echo "package ndb_api" > ndb_api/$(api)_request_types.go
 	touch ndb_api/$(api)_response_types.go && echo "package ndb_api" > ndb_api/$(api)_response_types.go
 endif
+
+# Usage: Export the environment variables before running the target
+# KUBECONFIG='...' 
+# DB_SECRET_PASSWORD='...'
+# NDB_SECRET_USERNAME='...'
+# NDB_SECRET_PASSWORD='...'
+# NDB_SERVER='https://...:8443/era/v0.9'
+# NDB_CLUSTER_ID='...'
+.PHONY: run-automation
+run-automation: install
+	go test ./automation/tests/... -v -timeout 60m

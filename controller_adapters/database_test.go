@@ -25,6 +25,253 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Tests that GetDBInstanceName() retrieves DatabaseInstanceName correctly
+func TestDatabase_GetDBInstanceName(t *testing.T) {
+
+	tests := []struct {
+		name             string
+		database         Database
+		wantInstanceName string
+	}{
+		{
+			name: "Contains Instance Name",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							DatabaseInstanceName: "test-instance-name",
+						},
+					},
+				},
+			},
+			wantInstanceName: "test-instance-name",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotInstanceName := tt.database.GetDBInstanceName()
+			if gotInstanceName != tt.wantInstanceName {
+				t.Errorf("Database.GetDBInstanceName() gotInstanceName = %v, want %v", gotInstanceName, tt.wantInstanceName)
+			}
+		})
+	}
+}
+
+// Tests the GetDBInstanceDescription() function against the following:
+// 1. Description is NOT empty
+// 2. Description IS empty, in this case, a description is created for the user based on instance name
+func TestDatabase_GetDBInstanceDescription(t *testing.T) {
+
+	tests := []struct {
+		name            string
+		database        Database
+		wantDescription string
+	}{
+		{
+			name: "Description is NOT empty",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							Description: "test-description",
+						},
+					},
+				},
+			},
+			wantDescription: "test-description",
+		},
+		{
+			name: "Description IS empty",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							DatabaseInstanceName: "test-instance-name",
+							Description:          "",
+						},
+					},
+				},
+			},
+			wantDescription: "Database provisioned by ndb-operator: test-instance-name",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotDescription := tt.database.GetDBInstanceDescription()
+			if gotDescription != tt.wantDescription {
+				t.Errorf("Database.GetDBInstanceDescription() gotDescription = %v, want %v", gotDescription, tt.wantDescription)
+			}
+		})
+	}
+}
+
+// Tests the GetDBInstanceType() retrieves Type correctly:
+func TestDatabase_GetDBInstanceType(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		database Database
+		wantType string
+	}{
+		{
+			name: "Contains Type",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							Type: "test-type",
+						},
+					},
+				},
+			},
+			wantType: "test-type",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotType := tt.database.GetDBInstanceType()
+			if gotType != tt.wantType {
+				t.Errorf("Database.GetDBInstanceType() gotType = %v, want %v", gotType, tt.wantType)
+			}
+		})
+	}
+}
+
+// Tests the GetDBInstanceDatabaseNames() retrieves DatabaseNames correctly:
+func TestDatabase_GetDBInstanceDatabaseNames(t *testing.T) {
+
+	tests := []struct {
+		name              string
+		database          Database
+		wantDatabaseNames string
+	}{
+		{
+			name: "Contains DatabaseNames",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							DatabaseNames: []string{"database_one", "database_two", "database_three"},
+						},
+					},
+				},
+			},
+			wantDatabaseNames: "database_one,database_two,database_three",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotDatabaseNames := tt.database.GetDBInstanceDatabaseNames()
+			if gotDatabaseNames != tt.wantDatabaseNames {
+				t.Errorf("Database.GetDBInstanceDatabaseNames() gotDatabaseNames = %v, want %v", gotDatabaseNames, tt.wantDatabaseNames)
+			}
+		})
+	}
+}
+
+// Tests the GetDBInstanceTimeZone() function retrieves TimeZone correctly:
+func TestDatabase_GetDBInstanceTimeZone(t *testing.T) {
+
+	tests := []struct {
+		name         string
+		database     Database
+		wantTimeZone string
+	}{
+		{
+			name: "Contains TimeZone",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							TimeZone: "UTC",
+						},
+					},
+				},
+			},
+			wantTimeZone: "UTC",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotTimeZone := tt.database.GetDBInstanceTimeZone()
+			if gotTimeZone != tt.wantTimeZone {
+				t.Errorf("Database.GetInstanceTimeZone() gotTimeZone = %v, want %v", gotTimeZone, tt.wantTimeZone)
+			}
+		})
+	}
+}
+
+// Tests the GetDBInstanceSize() function retrieves Size correctly:
+func TestDatabase_GetDBInstanceSize(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		database Database
+		wantSize int
+	}{
+		{
+			name: "Contains Size",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							Size: 10,
+						},
+					},
+				},
+			},
+			wantSize: 10,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotSize := tt.database.GetDBInstanceSize()
+			if gotSize != tt.wantSize {
+				t.Errorf("Database.GetDBInstanceSize() gotSize= %v, want %v", gotSize, tt.wantSize)
+			}
+		})
+	}
+}
+
+// Tests the GetNDBClusterId() function retrieves ClusterId correctly:
+func TestDatabase_GetNDBClusterId(t *testing.T) {
+
+	tests := []struct {
+		name          string
+		database      Database
+		wantClusterId string
+	}{
+		{
+			name: "Contains ClusterId",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						NDB: v1alpha1.NDB{
+							ClusterId: "test-cluster-id",
+						},
+					},
+				},
+			},
+			wantClusterId: "test-cluster-id",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotClusterId := tt.database.GetNDBClusterId()
+			if gotClusterId != tt.wantClusterId {
+				t.Errorf("Database.GetNDBClusterId() gotClusterId= %v, want %v", gotClusterId, tt.wantClusterId)
+			}
+		})
+	}
+}
+
 // Tests the GetTMSchedule() function against the following:
 // 1. All inputs are valid, no error is returned
 // 2. DailySnapshotTime has incorrect values for hour, returns an error

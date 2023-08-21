@@ -46,6 +46,10 @@ var _ webhook.Defaulter = &Database{}
 
 func instanceSpecDefaulterForCreate(instance *Instance) {
 
+	if instance.Description == "" {
+		instance.Description = "Database provisioned by ndb-operator: " + instance.DatabaseInstanceName
+	}
+
 	if len(instance.DatabaseNames) == 0 {
 		instance.DatabaseNames = api.DefaultDatabaseNames
 	}

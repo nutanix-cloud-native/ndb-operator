@@ -6,6 +6,45 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - ndb.nutanix.com
   resources:
   - databases
@@ -32,10 +71,9 @@ rules:
   - patch
   - update
 - apiGroups:
-  - ""
+  - ndb.nutanix.com
   resources:
-  - services
-  - endpoints
+  - ndbservers
   verbs:
   - create
   - delete
@@ -45,10 +83,16 @@ rules:
   - update
   - watch
 - apiGroups:
-  - ""
+  - ndb.nutanix.com
   resources:
-  - secrets
+  - ndbservers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ndb.nutanix.com
+  resources:
+  - ndbservers/status
   verbs:
   - get
-  - list
-  - watch
+  - patch
+  - update
