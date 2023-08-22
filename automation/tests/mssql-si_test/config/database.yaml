@@ -15,7 +15,7 @@ spec:
       - database_two
       - database_three
     credentialSecret: db-secret-mssql-si
-    size: 100
+    size: 16
     timezone: "UTC"
     type: mssql
     profiles:

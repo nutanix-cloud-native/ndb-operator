@@ -8,6 +8,5 @@ spec:
     - protocol: TCP
       port: 3001
       targetPort: 3000
-      nodePort: 30001
   selector:
     app: app-mssql-si
