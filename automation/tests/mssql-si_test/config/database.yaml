@@ -12,8 +12,6 @@ spec:
     databaseInstanceName: db-mssql-si
     databaseNames:
       - database_one
-      - database_two
-      - database_three
     credentialSecret: db-secret-mssql-si
     size: 16
     timezone: "UTC"
@@ -24,8 +22,7 @@ spec:
         id: ""
       # A Software profile is a mandatory input for closed-source engines: SQL Server & Oracle
       software:
-        name: "MSSQL-MAZIN"
-        # id: "7281c9a9-1639-4cbd-a9cc-f0b0422ba90a"
+        name: "MSSQL-MAZIN2"
       dbParam:
         name: "DEFAULT_SQLSERVER_INSTANCE_PARAMS"
       dbParamInstance: 
