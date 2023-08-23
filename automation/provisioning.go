@@ -89,14 +89,6 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 			logger.Printf("Pod %s created.\n", st.AppPod.Name)
 		}
 	}
-	if st.AppSvc != nil {
-		st.AppSvc, err = clientset.CoreV1().Services(ns).Create(context.TODO(), st.AppSvc, metav1.CreateOptions{})
-		if err != nil {
-			logger.Printf("Error while creating Svc %s: %s\n", st.AppSvc.Name, err)
-		} else {
-			logger.Printf("Svc %s created.\n", st.AppSvc.Name)
-		}
-	}
 
 	// Wait for DB to get Ready
 	if st.Database != nil {
@@ -158,13 +150,24 @@ func ProvisioningTestTeardown(ctx context.Context, st *SetupTypes, clientset *ku
 		ns = st.Database.Namespace
 	}
 
+	// Delete Service
+	svcName := st.Database.Name + "-svc"
+	logger.Printf("Attempting to delete service: %s...", svcName)
+	err = clientset.CoreV1().Services(ns).Delete(context.TODO(), svcName, metav1.DeleteOptions{})
+	if err != nil {
+		logger.Printf("Error while deleting service %s: %s\n", svcName, err)
+	} else {
+		logger.Printf("Service %s deleted.\n", svcName)
+	}
+
 	// Delete Database
 	if st.Database != nil {
+		logger.Printf("Attempting to delete database: %s...", st.Database.Name)
 		st.Database.Spec.NDB.Server = os.Getenv("NDB-SERVER")
 		st.Database.Spec.NDB.ClusterId = os.Getenv("NDB-CLUSTER-ID")
 		err := v1alpha1ClientSet.Databases(st.Database.Namespace).Delete(st.Database.Name, &metav1.DeleteOptions{})
 		if err != nil {
-			logger.Printf("Error while deleting Database %s: %s\n", st.Database.Name, err)
+			logger.Printf("Error while deleting Database %s: %s!\n", st.Database.Name, err)
 		} else {
 			logger.Printf("Database %s deleted\n", st.Database.Name)
 		}
@@ -186,41 +189,36 @@ func ProvisioningTestTeardown(ctx context.Context, st *SetupTypes, clientset *ku
 
 	// Delete Secrets
 	if st.DbSecret != nil {
+		logger.Printf("Attempting to delete db secret: %s...", st.DbSecret.Name)
 		st.DbSecret.StringData[common.SECRET_DATA_KEY_USERNAME] = os.Getenv("DB-SECRET-USERNAME")
 		st.DbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv("DB-SECRET-PASSWORD")
 		err = clientset.CoreV1().Secrets(ns).Delete(context.TODO(), st.DbSecret.Name, metav1.DeleteOptions{})
-		if err == nil {
-			logger.Printf("Secret %s deleted\n", st.DbSecret.Name)
+		if err != nil {
+			logger.Printf("Error while deleting secret %s: %s!\n", st.DbSecret.Name, err)
 		} else {
-			logger.Printf("Error while deleting secret %s: %s\n", st.DbSecret.Name, err)
+			logger.Printf("Secret %s deleted.\n", st.DbSecret.Name)
 		}
 	}
 	if st.NdbSecret != nil {
+		logger.Printf("Attempting to delete ndb secret: %s...", st.NdbSecret.Name)
 		st.NdbSecret.StringData[common.SECRET_DATA_KEY_USERNAME] = os.Getenv("NDB-SECRET-USERNAME")
 		st.NdbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv("NDB-SECRET-PASSWORD")
 		err = clientset.CoreV1().Secrets(ns).Delete(context.TODO(), st.NdbSecret.Name, metav1.DeleteOptions{})
-		if err == nil {
-			logger.Printf("Secret %s deleted\n", st.NdbSecret.Name)
+		if err != nil {
+			logger.Printf("Error while deleting secret %s: %s!\n", st.NdbSecret.Name, err)
 		} else {
-			logger.Printf("Error while deleting secret %s: %s\n", st.NdbSecret.Name, err)
+			logger.Printf("Secret %s deleted.\n", st.NdbSecret.Name)
 		}
 	}
 
 	// Delete Application
 	if st.AppPod != nil {
+		logger.Printf("Attempting to delete application: %s...", st.AppPod.Name)
 		err := clientset.CoreV1().Pods(ns).Delete(context.TODO(), st.AppPod.Name, metav1.DeleteOptions{})
 		if err != nil {
-			logger.Printf("Error while deleting Pod %s: %s\n", st.AppPod.Name, err)
+			logger.Printf("Error while deleting pod %s: %s!\n", st.AppPod.Name, err)
 		} else {
-			logger.Printf("Pod %s deleted\n", st.AppPod.Name)
-		}
-	}
-	if st.AppSvc != nil {
-		err = clientset.CoreV1().Services(ns).Delete(context.TODO(), st.AppSvc.Name, metav1.DeleteOptions{})
-		if err != nil {
-			logger.Printf("Error while deleting Svc %s: %s\n", st.AppSvc.Name, err)
-		} else {
-			logger.Printf("Svc %s deleted\n", st.AppSvc.Name)
+			logger.Printf("Pod %s deleted.\n", st.AppPod.Name)
 		}
 	}
 
