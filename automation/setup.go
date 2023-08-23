@@ -145,21 +145,12 @@ func SetupTypeTemplates(ctx context.Context) (setupTypes *SetupTypes, err error)
 		logMsg += fmt.Sprintf("App Pod with path %s created. ", APP_POD_PATH)
 	}
 
-	// Create appSvc template from automation.APP_SVC_PATH
-	appSvc := &v1.Service{}
-	if err := CreateTypeFromPath(appSvc, APP_SVC_PATH); err != nil {
-		errMsg += fmt.Sprintf("App Service with path %s failed! %v. ", APP_SVC_PATH, err)
-	} else {
-		logMsg += fmt.Sprintf("App Service with path %s created. ", APP_SVC_PATH)
-	}
-
 	// The yaml types
 	setupTypes = &SetupTypes{
 		DbSecret:  dbSecret,
 		NdbSecret: ndbSecret,
 		Database:  database,
 		AppPod:    appPod,
-		AppSvc:    appSvc,
 	}
 
 	if errMsg == "" {
@@ -180,7 +171,6 @@ type SetupTypes struct {
 	NdbSecret *corev1.Secret
 	Database  *ndbv1alpha1.Database
 	AppPod    *corev1.Pod
-	AppSvc    *corev1.Service
 }
 
 // CreateTypeFromPath reads a file path, converts it to json, and unmarshals json to a pointer.
