@@ -128,7 +128,7 @@ func (suite *MicrosoftSingleInstanceTestSuite) TestProvisioningSuccess() {
 func (suite *MicrosoftSingleInstanceTestSuite) TestAppConnectivity() {
 	logger := automation.GetLogger(suite.ctx)
 
-	resp, err := automation.GetAppResponse(suite.ctx)
+	resp, err := automation.GetAppResponse(suite.ctx, suite.clientset, "3001")
 	if err != nil {
 		logger.Printf("TestAppConnectivity failed! %v", err)
 	} else {

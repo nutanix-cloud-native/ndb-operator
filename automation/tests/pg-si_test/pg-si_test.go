@@ -128,7 +128,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 func (suite *PostgresqlSingleInstanceTestSuite) TestAppConnectivity() {
 	logger := automation.GetLogger(suite.ctx)
 
-	resp, err := automation.GetAppResponse(suite.ctx)
+	resp, err := automation.GetAppResponse(suite.ctx, suite.clientset, "3000")
 	if err != nil {
 		logger.Printf("TestAppConnectivity failed! %v", err)
 	} else {
