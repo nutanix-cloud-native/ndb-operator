@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
   - name: app-mssql-container
-    image: pritikanutanix/app-mssql:latest
+    image: mazins/ndb-operator-mssql:latest
     env:
     - name: DBHOST 
       value: db-mssql-si-svc
@@ -16,7 +16,7 @@ spec:
     - name: DATABASE
       value: database_one 
     - name: DBPORT
-      value: '80'
+      value: "80"
     - name: MSSQL_INSTANCE_NAME
       value: CDMINSTANCE
     - name: PASSWORD
