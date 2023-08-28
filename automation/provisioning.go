@@ -92,7 +92,7 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 
 	// Wait for DB to get Ready
 	if st.Database != nil {
-		err = waitAndRetryOperation(ctx, time.Minute, 60, func() (err error) {
+		err = waitAndRetryOperation(ctx, time.Minute, 80, func() (err error) {
 			st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Get(st.Database.Name, metav1.GetOptions{})
 			if err != nil {
 				return
