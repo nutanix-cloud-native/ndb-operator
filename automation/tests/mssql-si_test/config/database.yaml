@@ -1,40 +1,32 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db-pg-si
+  name: db-mssql-si
 spec:
   ndb:
     clusterId: <cluster-id>
-    credentialSecret: ndb-secret-pg-si
-    server: <https://<ip-for-ndb>:8443/era/v0.9>
+    credentialSecret: ndb-secret-mssql-si
+    server: https://<ip-for-ndb>:8443/era/v0.9
     skipCertificateVerification: true
   databaseInstance:
-    databaseInstanceName: db-pg-si
+    databaseInstanceName: db-mssql-si
     databaseNames:
       - database_one
-      - database_two
-      - database_three
-    credentialSecret: db-secret-pg-si
-    size: 100
+    credentialSecret: db-secret-mssql-si
+    size: 16
     timezone: "UTC"
-    type: postgres
-    profiles: 
+    type: mssql
+    profiles:
       compute:
         name: ""
         id: ""
-      # A Software profile is a mandatory input for proprietary (closed-source) engines such as SQL Server & Oracle
+      # A Software profile is a mandatory input for closed-source engines: SQL Server & Oracle
       software:
-        name: ""
-        id: ""
-      network:
-        name: ""
-        id: ""
+        name: "MSSQL-MAZIN2"
       dbParam:
-        name: ""
-        id: ""
-      dbParamInstance:
-        name: ""
-        id: ""
+        name: "DEFAULT_SQLSERVER_INSTANCE_PARAMS"
+      dbParamInstance: 
+        name: "DEFAULT_SQLSERVER_INSTANCE_PARAMS"
     timeMachine:
       sla : "NONE"
       dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format

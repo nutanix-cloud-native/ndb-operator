@@ -1,0 +1,46 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: db-pg-si
+spec:
+  ndb:
+    clusterId: <cluster-id>
+    credentialSecret: ndb-secret-pg-si
+    server: <https://<ip-for-ndb>:8443/era/v0.9>
+    skipCertificateVerification: true
+  databaseInstance:
+    databaseInstanceName: db-pg-si
+    description: "Created by NDB operator"
+    databaseNames:
+      - database_one
+      - database_two
+      - database_three
+    credentialSecret: db-secret-pg-si
+    size: 16
+    timezone: "UTC"
+    type: postgres
+    profiles: 
+      compute:
+        name: ""
+        id: ""
+      # A Software profile is a mandatory input for proprietary (closed-source) engines such as SQL Server & Oracle
+      software:
+        name: ""
+        id: ""
+      network:
+        name: ""
+        id: ""
+      dbParam:
+        name: ""
+        id: ""
+      dbParamInstance:
+        name: ""
+        id: ""
+    timeMachine:
+      sla : "NONE"
+      dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
+      snapshotsPerDay:     4            # Number of snapshots per day
+      logCatchUpFrequency: 90           # Frequency (in minutes)
+      weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
+      monthlySnapshotDay:  24           # Day of the month for monthly snapshot
+      quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
