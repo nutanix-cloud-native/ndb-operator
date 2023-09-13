@@ -5,8 +5,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/nutanix-cloud-native/ndb-operator/automation"
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
+	util "github.com/nutanix-cloud-native/ndb-operator/automation/util"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -34,36 +34,36 @@ func (suite *MicrosoftSingleInstanceTestSuite) SetupSuite() {
 	var clientset *kubernetes.Clientset
 
 	// Setup logger and context
-	logger, err := automation.SetupLogger("./mssql-si_test.log")
+	logger, err := util.SetupLogger("./mssql-si_test.log")
 	if err != nil {
 		suite.T().FailNow()
 	}
-	ctx = automation.SetupContext(context.Background(), logger)
+	ctx = util.SetupContext(context.Background(), logger)
 
 	logger.Println("SetupSuite() starting...")
 
 	// Setup kubeconfig
-	config, err = automation.SetupKubeconfig(ctx)
+	config, err = util.SetupKubeconfig(ctx)
 	if err != nil {
 		logger.Printf("Error: SetupSuite() ended! %s\n", err)
 		suite.T().FailNow()
 	}
 
 	// Setup scheme and clientsets
-	if v1alpha1ClientSet, clientset, err = automation.SetupSchemeAndClientSet(ctx, config); err != nil {
+	if v1alpha1ClientSet, clientset, err = util.SetupSchemeAndClientSet(ctx, config); err != nil {
 		logger.Printf("Error: SetupSuite() ended! %s\n", err)
 		suite.T().FailNow()
 	}
 
 	// Setup yaml types
-	setupTypes, err := automation.SetupTypeTemplates(ctx)
+	setupTypes, err := util.SetupTypeTemplates(ctx)
 	if err != nil {
 		logger.Printf("Error: SetupSuite() ended! %s\n", err)
 		suite.T().FailNow()
 	}
 
 	// Provision database and wait for database and pod to be ready
-	if err := automation.ProvisioningTestSetup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
+	if err := util.ProvisioningTestSetup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("Error: SetupSuite() ended! %s\n", err)
 		suite.T().FailNow()
 	}
@@ -78,20 +78,20 @@ func (suite *MicrosoftSingleInstanceTestSuite) SetupSuite() {
 
 // TearDownSuite is called once after running the tests in the suite
 func (suite *MicrosoftSingleInstanceTestSuite) TearDownSuite() {
-	logger := automation.GetLogger(suite.ctx)
+	logger := util.GetLogger(suite.ctx)
 	var err error
 
 	logger.Println("TearDownSuite() starting...")
 
 	// Setup yaml types
-	setupTypes, err := automation.SetupTypeTemplates(suite.ctx)
+	setupTypes, err := util.SetupTypeTemplates(suite.ctx)
 	if err != nil {
 		logger.Printf("Error: TearDownSuite() ended! %s\n", err)
 		suite.T().FailNow()
 	}
 
 	// Delete resources and de-provision database
-	if err = automation.ProvisioningTestTeardown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
+	if err = util.ProvisioningTestTeardown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("Error: TearDownSuite() ended! %s\n", err)
 		suite.T().FailNow()
 	}
@@ -101,19 +101,19 @@ func (suite *MicrosoftSingleInstanceTestSuite) TearDownSuite() {
 
 // This will run right before the test starts and receives the suite and test names as input
 func (suite *MicrosoftSingleInstanceTestSuite) BeforeTest(suiteName, testName string) {
-	automation.GetLogger(suite.ctx).Printf("******************** RUNNING TEST %s %s ********************\n", suiteName, testName)
+	util.GetLogger(suite.ctx).Printf("******************** RUNNING TEST %s %s ********************\n", suiteName, testName)
 }
 
 // This will run after test finishes and receives the suite and test names as input
 func (suite *MicrosoftSingleInstanceTestSuite) AfterTest(suiteName, testName string) {
-	automation.GetLogger(suite.ctx).Printf("******************** END TEST %s %s ********************\n", suiteName, testName)
+	util.GetLogger(suite.ctx).Printf("******************** END TEST %s %s ********************\n", suiteName, testName)
 }
 
 // Tests if provisioning is succesful by checking if database status is 'READY'
 func (suite *MicrosoftSingleInstanceTestSuite) TestProvisioningSuccess() {
-	logger := automation.GetLogger(suite.ctx)
+	logger := util.GetLogger(suite.ctx)
 
-	databaseResponse, err := automation.GetDatabaseResponseFromCR(suite.ctx, suite.clientset, suite.v1alpha1ClientSet)
+	databaseResponse, err := util.GetDatabaseResponse(suite.ctx, suite.clientset, suite.v1alpha1ClientSet)
 	if err != nil {
 		logger.Printf("TestProvisioningSuccess() failed! %v", err)
 	} else {
@@ -126,9 +126,9 @@ func (suite *MicrosoftSingleInstanceTestSuite) TestProvisioningSuccess() {
 
 // Tests if app is able to connect to database
 func (suite *MicrosoftSingleInstanceTestSuite) TestAppConnectivity() {
-	logger := automation.GetLogger(suite.ctx)
+	logger := util.GetLogger(suite.ctx)
 
-	resp, err := automation.GetAppResponse(suite.ctx, suite.clientset, "3001")
+	resp, err := util.GetAppResponse(suite.ctx, suite.clientset, "3001")
 	if err != nil {
 		logger.Printf("TestAppConnectivity failed! %v", err)
 	} else {

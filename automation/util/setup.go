@@ -1,4 +1,4 @@
-package automation
+package util
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"reflect"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	automation "github.com/nutanix-cloud-native/ndb-operator/automation"
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -47,7 +48,7 @@ func SetupLogger(path string) (*log.Logger, error) {
 	return log.New(file, "pg-si: ", log.Ldate|log.Ltime|log.Lshortfile), nil
 }
 
-// Gets logger form context
+// Gets logger from context
 func GetLogger(ctx context.Context) *log.Logger {
 	logger, ok := ctx.Value(loggerKey).(*log.Logger)
 	if !ok {
@@ -115,34 +116,34 @@ func SetupTypeTemplates(ctx context.Context) (setupTypes *SetupTypes, err error)
 
 	// Create dbSecret template from automation.DB_SECRET_PATH
 	dbSecret := &v1.Secret{}
-	if err := CreateTypeFromPath(dbSecret, DB_SECRET_PATH); err != nil {
-		errMsg += fmt.Sprintf("DbSecret with path %s failed! %v. ", DB_SECRET_PATH, err)
+	if err := CreateTypeFromPath(dbSecret, automation.DB_SECRET_PATH); err != nil {
+		errMsg += fmt.Sprintf("DbSecret with path %s failed! %v. ", automation.DB_SECRET_PATH, err)
 	} else {
-		logMsg += fmt.Sprintf("DbSecret with path %s created. ", DB_SECRET_PATH)
+		logMsg += fmt.Sprintf("DbSecret with path %s created. ", automation.DB_SECRET_PATH)
 	}
 
 	// Create ndbSecret template automation.NDB_SECRET_PATH
 	ndbSecret := &v1.Secret{}
-	if err := CreateTypeFromPath(ndbSecret, NDB_SECRET_PATH); err != nil {
-		errMsg += fmt.Sprintf("NdbSecret with path %s failed! %v. ", NDB_SECRET_PATH, err)
+	if err := CreateTypeFromPath(ndbSecret, automation.NDB_SECRET_PATH); err != nil {
+		errMsg += fmt.Sprintf("NdbSecret with path %s failed! %v. ", automation.NDB_SECRET_PATH, err)
 	} else {
-		logMsg += fmt.Sprintf("NdbSecret with path %s created. ", NDB_SECRET_PATH)
+		logMsg += fmt.Sprintf("NdbSecret with path %s created. ", automation.NDB_SECRET_PATH)
 	}
 
 	// Create database template from automation.DATABASE_PATH
 	database := &ndbv1alpha1.Database{}
-	if err := CreateTypeFromPath(database, DATABASE_PATH); err != nil {
-		errMsg += fmt.Sprintf("Database with path %s failed! %v. ", DATABASE_PATH, err)
+	if err := CreateTypeFromPath(database, automation.DATABASE_PATH); err != nil {
+		errMsg += fmt.Sprintf("Database with path %s failed! %v. ", automation.DATABASE_PATH, err)
 	} else {
-		logMsg += fmt.Sprintf("database with path %s created. ", DATABASE_PATH)
+		logMsg += fmt.Sprintf("database with path %s created. ", automation.DATABASE_PATH)
 	}
 
 	// Create appPod template from automation.APP_POD_PATH
 	appPod := &v1.Pod{}
-	if err := CreateTypeFromPath(appPod, APP_POD_PATH); err != nil {
-		errMsg += fmt.Sprintf("App Pod with path %s failed! %v. ", APP_POD_PATH, err)
+	if err := CreateTypeFromPath(appPod, automation.APP_POD_PATH); err != nil {
+		errMsg += fmt.Sprintf("App Pod with path %s failed! %v. ", automation.APP_POD_PATH, err)
 	} else {
-		logMsg += fmt.Sprintf("App Pod with path %s created. ", APP_POD_PATH)
+		logMsg += fmt.Sprintf("App Pod with path %s created. ", automation.APP_POD_PATH)
 	}
 
 	// The yaml types

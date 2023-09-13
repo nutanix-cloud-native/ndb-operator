@@ -1,4 +1,4 @@
-package automation
+package util
 
 import (
 	"context"
@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"time"
 
+	automation "github.com/nutanix-cloud-native/ndb-operator/automation"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -16,14 +18,14 @@ import (
 // Tests if 'manavrajvanshinx/best-app:latest' is able to connect to database
 func GetAppResponse(ctx context.Context, clientset *kubernetes.Clientset, localPort string) (res http.Response, err error) {
 	logger := GetLogger(ctx)
-	logger.Println("TestAppConnectivity() started...")
+	logger.Println("GetAppResponse() started...")
 
 	// Create appPod template to retrieve the pod name and targetPort
 	appPod := &v1.Pod{}
-	if err := CreateTypeFromPath(appPod, APP_POD_PATH); err != nil {
-		return http.Response{}, fmt.Errorf("GetAppResponse() ended! App Pod with path %s failed! %v. ", APP_POD_PATH, err)
+	if err := CreateTypeFromPath(appPod, automation.APP_POD_PATH); err != nil {
+		return http.Response{}, fmt.Errorf("GetAppResponse() ended! App Pod with path %s failed! %v. ", automation.APP_POD_PATH, err)
 	} else {
-		logger.Printf("App Pod with path %s created. ", APP_POD_PATH)
+		logger.Printf("App Pod with path %s created. ", automation.APP_POD_PATH)
 	}
 
 	// Retrieve te pod name and targetPort
@@ -61,6 +63,8 @@ func GetAppResponse(ctx context.Context, clientset *kubernetes.Clientset, localP
 	} else {
 		logger.Println("Response: ", string(body))
 	}
+
+	logger.Println("GetAppResponse() ended!")
 
 	return *resp, nil
 }

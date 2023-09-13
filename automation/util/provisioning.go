@@ -1,4 +1,4 @@
-package automation
+package util
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	automation "github.com/nutanix-cloud-native/ndb-operator/automation"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
@@ -24,11 +26,11 @@ const namespace_default = "default"
 // It loads environment variables, instantiate resources, waits for db to be ready, and pod to start.
 func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	logger := GetLogger(ctx)
-	logger.Println("ProvisioningTestSetup() starting...")
+	logger.Println("ProvisioningTestSetup() starting. Attempting to initialize properties...")
 
 	// Nil check
 	if st == nil || clientset == nil || v1alpha1ClientSet == nil {
-		errMsg := "Error: ProvisioningTestSetup() starting ended! "
+		errMsg := "Error: ProvisioningTestSetup() ended! Initialization Failed! "
 		if st == nil {
 			errMsg += "st is nil! "
 		}
@@ -134,7 +136,7 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 		}
 	}
 
-	logger.Println("test_setup() ended.")
+	logger.Println("ProvisioningTestSetup() ended. Initialization complete.")
 
 	return
 }
@@ -222,29 +224,29 @@ func ProvisioningTestTeardown(ctx context.Context, st *SetupTypes, clientset *ku
 		}
 	}
 
-	logger.Println("ProvisioningTestTeardown() ended!")
+	logger.Println("ProvisioningTestTeardown() ended. Initialization complete.")
 
 	return
 }
 
-// Wrapper function called in all TestSuite GetDatabaseResponse methods. Returns a DatabaseResponse which indicates if provison was succesful
-func GetDatabaseResponseFromCR(ctx context.Context, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse ndb_api.DatabaseResponse, err error) {
+// Wrapper function called in all TestSuite TestProvisioningSuccess methods. Returns a DatabaseResponse which indicates if provison was succesful
+func GetDatabaseResponse(ctx context.Context, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse ndb_api.DatabaseResponse, err error) {
 	logger := GetLogger(ctx)
-	logger.Println("GetDatabaseResponseFromCR() starting...")
+	logger.Println("GetDatabaseResponse() starting...")
 
 	// Get db template from yaml to acquire database name
 	database := &v1alpha1.Database{}
-	err = CreateTypeFromPath(database, DATABASE_PATH)
+	err = CreateTypeFromPath(database, automation.DATABASE_PATH)
 	if err != nil {
-		return ndb_api.DatabaseResponse{}, fmt.Errorf("Error: GetDatabaseResponseFromCR() ended! Database with path %s failed! %v. ", DATABASE_PATH, err)
+		return ndb_api.DatabaseResponse{}, fmt.Errorf("Error: GetDatabaseResponse() ended! Database with path %s failed! %v. ", automation.DATABASE_PATH, err)
 	} else {
-		logger.Printf("Database with path %s created.", DATABASE_PATH)
+		logger.Printf("Database with path %s created.", automation.DATABASE_PATH)
 	}
 
 	// Get database CR from above database name
 	database, err = v1alpha1ClientSet.Databases(database.Namespace).Get(database.Name, metav1.GetOptions{})
 	if err != nil {
-		return ndb_api.DatabaseResponse{}, fmt.Errorf("Error: GetDatabaseResponseFromCR() ended! Could not fetch database '%s' CR! %s\n", database.Name, err)
+		return ndb_api.DatabaseResponse{}, fmt.Errorf("Error: GetDatabaseResponse() ended! Could not fetch database '%s' CR! %s\n", database.Name, err)
 	} else {
 		logger.Printf("Retrieved database '%s' CR from v1alpha1ClientSet", database.Name)
 	}
@@ -254,18 +256,18 @@ func GetDatabaseResponseFromCR(ctx context.Context, clientset *kubernetes.Client
 	secret, err := clientset.CoreV1().Secrets(database.Namespace).Get(context.TODO(), ndb_secret_name, metav1.GetOptions{})
 	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
 	if err != nil || username == "" || password == "" {
-		return ndb_api.DatabaseResponse{}, fmt.Errorf("Error: GetDatabaseResponseFromCR() ended! Could not fetch data from secret! %s\n", err)
+		return ndb_api.DatabaseResponse{}, fmt.Errorf("Error: GetDatabaseResponse() ended! Could not fetch data from secret! %s\n", err)
 	}
 
 	// Create ndbClient and getting databaseResponse
 	ndbClient := ndb_client.NewNDBClient(username, password, database.Spec.NDB.Server, "", true)
 	databaseResponse, err = ndb_api.GetDatabaseById(context.TODO(), ndbClient, database.Status.Id)
 	if err != nil {
-		return ndb_api.DatabaseResponse{}, fmt.Errorf("Error: GetDatabaseResponseFromCR() ended! Database response from ndb_api failed! %s\n", err)
+		return ndb_api.DatabaseResponse{}, fmt.Errorf("Error: GetDatabaseResponse() ended! Database response from ndb_api failed! %s\n", err)
 	}
 
 	logger.Printf("Database response.status: %s.\n", databaseResponse.Status)
-	logger.Println("GetDatabaseResponseFromCR() ended!")
+	logger.Println("GetDatabaseResponse() ended!")
 
 	return databaseResponse, nil
 }
