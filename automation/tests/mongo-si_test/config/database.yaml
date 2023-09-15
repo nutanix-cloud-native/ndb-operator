@@ -1,0 +1,30 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: db-mongo-si
+spec:
+  ndb:
+    clusterId: 600d54a1-af63-4af3-b252-51b4d5cba64f
+    credentialSecret: ndb-secret-name
+    server: https://10.51.140.71:8443/era/v0.9
+    skipCertificateVerification: true
+  databaseInstance:
+    databaseInstanceName:  mazin-mongodb1
+    databaseNames:
+      - database_one
+    credentialSecret: db-instance-secret-name
+    size: 20
+    timezone: "UTC"
+    type: mongodb
+    profiles:
+      compute:
+        name: ""
+        id: ""
+    timeMachine:
+      sla : "NONE"
+      dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
+      snapshotsPerDay:     4            # Number of snapshots per day
+      logCatchUpFrequency: 90           # Frequency (in minutes)
+      weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
+      monthlySnapshotDay:  24           # Day of the month for monthly snapshot
+      quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
