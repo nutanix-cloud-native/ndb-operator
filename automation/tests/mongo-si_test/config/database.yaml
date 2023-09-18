@@ -4,15 +4,15 @@ metadata:
   name: db-mongo-si
 spec:
   ndb:
-    clusterId: 600d54a1-af63-4af3-b252-51b4d5cba64f
-    credentialSecret: ndb-secret-name
-    server: https://10.51.140.71:8443/era/v0.9
+    clusterId: <cluster-id>
+    credentialSecret: ndb-secret-mongo-si
+    server: https://<ip-for-ndb>:8443/era/v0.9
     skipCertificateVerification: true
   databaseInstance:
-    databaseInstanceName:  mazin-mongodb1
+    databaseInstanceName:  mazin-mongodb25
     databaseNames:
       - database_one
-    credentialSecret: db-instance-secret-name
+    credentialSecret: db-secret-mongo-si
     size: 20
     timezone: "UTC"
     type: mongodb

@@ -6,8 +6,8 @@ metadata:
     app: app-mongo-si
 spec:
   containers:
-  - name: best-app
-    image: manavrajvanshinx/best-app:latest
+  - name: app-mongo-si
+    image: mazins/ndb-operator-mongodb:latest
     resources:
       limits:
         memory: 512Mi
@@ -17,10 +17,14 @@ spec:
       value: db-mongo-si-svc
     - name: DBPORT
       value: '80'
+    - name: DATABASE 
+      value: 'database_one'
+    - name: USERNAME
+      value: admin
     - name: PASSWORD
       valueFrom:
         secretKeyRef:
-          name: db-secret-pg-si
+          name: db-secret-mongo-si
           key: password
     ports:
     - containerPort: 3000

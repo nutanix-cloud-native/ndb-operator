@@ -128,7 +128,7 @@ func (suite *MongoDbSingleInstanceTestSuite) TestProvisioningSuccess() {
 func (suite *MongoDbSingleInstanceTestSuite) TestAppConnectivity() {
 	logger := util.GetLogger(suite.ctx)
 
-	resp, err := util.GetAppResponse(suite.ctx, suite.clientset, "3000")
+	resp, err := util.GetAppResponse(suite.ctx, suite.clientset, "3003")
 	if err != nil {
 		logger.Printf("TestAppConnectivity failed! %v", err)
 	} else {
