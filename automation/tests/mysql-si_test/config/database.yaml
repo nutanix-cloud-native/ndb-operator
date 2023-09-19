@@ -1,0 +1,30 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: db-mysql-si
+spec:
+  ndb:
+    clusterId: <cluster-id>
+    credentialSecret: ndb-secret-mysql-si
+    server: https://<ip-for-ndb>:8443/era/v0.9
+    skipCertificateVerification: true
+  databaseInstance:
+    databaseInstanceName:  mazin-mysql11
+    databaseNames:
+      - database_one
+    credentialSecret: db-secret-mysql-si
+    size: 20
+    timezone: "UTC"
+    type: mysql
+    profiles:
+      compute:
+        name: ""
+        id: ""
+    timeMachine:
+      sla : "NONE"
+      dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
+      snapshotsPerDay:     4            # Number of snapshots per day
+      logCatchUpFrequency: 90           # Frequency (in minutes)
+      weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
+      monthlySnapshotDay:  24           # Day of the month for monthly snapshot
+      quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot

@@ -1,4 +1,4 @@
-package mongosi
+package mysqlsi
 
 // Basic imports
 import (
@@ -16,8 +16,8 @@ import (
 
 // A test suite is a collection of related test cases that are grouped together for testing a specific package or functionality.
 // The testify package builds on top of Go's built-in testing package and enhances it with additional features like assertions and test suite management.
-// MongoDbSingleInstanceTestSuite is a test suite struct that embeds testify's suite.Suite
-type MongoDbSingleInstanceTestSuite struct {
+// MySQLSingleInstanceTestSuite is a test suite struct that embeds testify's suite.Suite
+type MySQLSingleInstanceTestSuite struct {
 	suite.Suite
 	ctx               context.Context
 	v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
@@ -25,7 +25,7 @@ type MongoDbSingleInstanceTestSuite struct {
 }
 
 // SetupSuite is called once before running the tests in the suite
-func (suite *MongoDbSingleInstanceTestSuite) SetupSuite() {
+func (suite *MySQLSingleInstanceTestSuite) SetupSuite() {
 	var err error
 	var config *rest.Config
 
@@ -77,7 +77,7 @@ func (suite *MongoDbSingleInstanceTestSuite) SetupSuite() {
 }
 
 // TearDownSuite is called once after running the tests in the suite
-func (suite *MongoDbSingleInstanceTestSuite) TearDownSuite() {
+func (suite *MySQLSingleInstanceTestSuite) TearDownSuite() {
 	logger := util.GetLogger(suite.ctx)
 	var err error
 
@@ -100,17 +100,17 @@ func (suite *MongoDbSingleInstanceTestSuite) TearDownSuite() {
 }
 
 // This will run right before the test starts and receives the suite and test names as input
-func (suite *MongoDbSingleInstanceTestSuite) BeforeTest(suiteName, testName string) {
+func (suite *MySQLSingleInstanceTestSuite) BeforeTest(suiteName, testName string) {
 	util.GetLogger(suite.ctx).Printf("******************** RUNNING TEST %s %s ********************\n", suiteName, testName)
 }
 
 // This will run after test finishes and receives the suite and test names as input
-func (suite *MongoDbSingleInstanceTestSuite) AfterTest(suiteName, testName string) {
+func (suite *MySQLSingleInstanceTestSuite) AfterTest(suiteName, testName string) {
 	util.GetLogger(suite.ctx).Printf("******************** END TEST %s %s ********************\n", suiteName, testName)
 }
 
 // Tests if provisioning is succesful by checking if database status is 'READY'
-func (suite *MongoDbSingleInstanceTestSuite) TestProvisioningSuccess() {
+func (suite *MySQLSingleInstanceTestSuite) TestProvisioningSuccess() {
 	logger := util.GetLogger(suite.ctx)
 
 	databaseResponse, err := util.GetDatabaseResponse(suite.ctx, suite.clientset, suite.v1alpha1ClientSet)
@@ -125,10 +125,10 @@ func (suite *MongoDbSingleInstanceTestSuite) TestProvisioningSuccess() {
 }
 
 // Tests if app is able to connect to database
-func (suite *MongoDbSingleInstanceTestSuite) TestAppConnectivity() {
+func (suite *MySQLSingleInstanceTestSuite) TestAppConnectivity() {
 	logger := util.GetLogger(suite.ctx)
 
-	resp, err := util.GetAppResponse(suite.ctx, suite.clientset, "3003")
+	resp, err := util.GetAppResponse(suite.ctx, suite.clientset, "3004")
 	if err != nil {
 		logger.Printf("TestAppConnectivity failed! %v", err)
 	} else {
@@ -141,6 +141,6 @@ func (suite *MongoDbSingleInstanceTestSuite) TestAppConnectivity() {
 
 // In order for 'go test' to run this suite, we need to create
 // a normal test function and pass our suite to suite.Run
-func TestMongoDbSingleInstanceTestSuite(t *testing.T) {
-	suite.Run(t, new(MongoDbSingleInstanceTestSuite))
+func TestMySQLSingleInstanceTestSuite(t *testing.T) {
+	suite.Run(t, new(MySQLSingleInstanceTestSuite))
 }
