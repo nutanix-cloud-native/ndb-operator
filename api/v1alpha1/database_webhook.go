@@ -29,6 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -211,7 +212,7 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Database) ValidateCreate() error {
+func (r *Database) ValidateCreate() (admission.Warnings, error) {
 	databaselog.Info("Entering ValidateCreate...")
 
 	ndbSpecErrors := ndbServerSpecValidatorForCreate(&r.Spec.NDB, field.ErrorList{}, field.NewPath("spec").Child("ndb"))
@@ -224,22 +225,22 @@ func (r *Database) ValidateCreate() error {
 	databaselog.Info("validate create database webhook response...", "combined_err", combined_err)
 
 	databaselog.Info("Exiting ValidateCreate...")
-	return combined_err
+	return nil, combined_err
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Database) ValidateUpdate(old runtime.Object) error {
+func (r *Database) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	databaselog.Info("validate update", "name", r.Name)
 
 	// TODO: This method will be used to make fields immutable.
 	// Here you can reject the updates to any fields. I think we should mark everything immutable by default.
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Database) ValidateDelete() error {
+func (r *Database) ValidateDelete() (admission.Warnings, error) {
 	databaselog.Info("validate delete", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
-	return nil
+	return nil, nil
 }
