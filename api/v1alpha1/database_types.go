@@ -28,6 +28,7 @@ import (
 // DatabaseSpec defines the desired state of Database
 type DatabaseSpec struct {
 	NDB      NDB      `json:"ndb"`
+	NDBRef   string   `json:"ndbRef"`
 	Instance Instance `json:"databaseInstance"`
 }
 
@@ -89,6 +90,8 @@ type Instance struct {
 	// Description of the database instance
 	// +optional
 	Description string `json:"description"`
+	// Name of the cluster to provision the database on
+	ClusterId string `json:"clusterId"`
 	// Name(s) of the database(s) to be provisiond inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
 	// +optional

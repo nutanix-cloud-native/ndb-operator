@@ -44,8 +44,8 @@ type ReconcileCounter struct {
 	Database int `json:"database"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // +kubebuilder:resource:shortName={"ndb","ndbs"}
 // +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
 // +kubebuilder:printcolumn:name="Updated At",type=string,JSONPath=`.status.lastUpdated`

@@ -51,6 +51,9 @@ spec:
               databaseInstance:
                 description: Database instance specific details
                 properties:
+                  clusterId:
+                    description: Name of the cluster to provision the database on
+                    type: string
                   credentialSecret:
                     description: Name of the secret holding the credentials for the
                       database instance (password and ssh key)
@@ -147,6 +150,7 @@ spec:
                   type:
                     type: string
                 required:
+                - clusterId
                 - credentialSecret
                 - databaseInstanceName
                 - size
@@ -173,9 +177,12 @@ spec:
                 - server
                 - skipCertificateVerification
                 type: object
+              ndbRef:
+                type: string
             required:
             - databaseInstance
             - ndb
+            - ndbRef
             type: object
           status:
             description: DatabaseStatus defines the observed state of Database

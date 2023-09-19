@@ -37,7 +37,7 @@ func GetAllDatabases(ctx context.Context, ndbClient *ndb_client.NDBClient) (data
 		log.Error(err, "Received nil ndbClient reference")
 		return
 	}
-	res, err := ndbClient.Get("databases")
+	res, err := ndbClient.Get("databases?detailed=true")
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
 			if res != nil {

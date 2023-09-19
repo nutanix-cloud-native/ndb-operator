@@ -76,7 +76,24 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	log.Info("Database CR Status: " + util.ToString(database.Status))
 
-	NDBInfo := database.Spec.NDB
+	// Fetch the database resource from the namespace
+	ndbServer := &ndbv1alpha1.NDBServer{}
+	ndbNamespacedName := req.NamespacedName
+	ndbNamespacedName.Name = database.Spec.NDBRef
+	err = r.Get(ctx, ndbNamespacedName, ndbServer)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Return and don't requeue
+			log.Info("NDBServer resource not found. Ignoring since object must be deleted")
+			return doNotRequeue()
+		}
+		// Error reading the object - requeue the request.
+		log.Error(err, "Failed to get NDB")
+		return requeueOnErr(err)
+	}
+
+	NDBInfo := ndbServer.Spec
 	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, NDBInfo.CredentialSecret, req.Namespace)
 	if err != nil {
 		r.recorder.Eventf(database, "Warning", EVENT_INVALID_CREDENTIALS, "Error: %s", err.Error())
@@ -103,13 +120,14 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	// To check and handle the case when the database ha been deleted/aborted externally (not through the operator).
-	err = r.handleExternalDelete(ctx, database, ndbClient)
-	if err != nil {
-		log.Error(err, "Error occurred while external delete check")
-		return requeueOnErr(err)
-	}
+	// err = r.handleExternalDelete(ctx, database, ndbClient)
+	// if err != nil {
+	// 	log.Error(err, "Error occurred while external delete check")
+	// 	return requeueOnErr(err)
+	// }
+	// r.handleExternalSync(ctx, database, ndbServer)
 	// Synchronize the database CR with the database instance on NDB.
-	return r.handleSync(ctx, database, ndbClient, req)
+	return r.handleSync(ctx, database, ndbClient, req, ndbServer)
 }
 
 // SetupWithManager sets up the controller with the Manager.
