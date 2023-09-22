@@ -60,7 +60,7 @@ var AllowedMongoDBTypeDetails = map[string]bool{
 	"journal_size":  true,
 }
 
-var AllowedMySQLTypeDetails = map[string]bool{
+var AllowedMsSqlTypeDetails = map[string]bool{
 	"listener_port": true,
 }
 
