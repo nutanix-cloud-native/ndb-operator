@@ -207,8 +207,45 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 		))
 	}
 
+	// validating type details
+	instanceSpecTypeDetailsValidator(instance, allErrs, instancePath)
+
 	databaselog.Info("Exiting instanceSpecValidatorForCreate...")
 	return allErrs
+}
+
+/* Indicates whether the retrievedTypeDetails are invalid, and returns the allowed typeDetails */
+func invalidTypeDetails(typ string, retrievedTypeDetails map[string]string) (bool, map[string]bool) {
+	var allowedTypeDetails map[string]bool
+	switch typ {
+	case "mysql":
+		allowedTypeDetails = api.AllowedMySqlTypeDetails
+	case "postgres":
+		allowedTypeDetails = api.AllowedPostGresTypeDetails
+	case "mongodb":
+		allowedTypeDetails = api.AllowedMongoDBTypeDetails
+	case "mssql":
+		allowedTypeDetails = api.AllowedMsSqlTypeDetails
+	}
+
+	for arg := range retrievedTypeDetails {
+		if _, isPresent := allowedTypeDetails[arg]; !isPresent {
+			return true, allowedTypeDetails
+		}
+	}
+
+	return false, allowedTypeDetails
+}
+
+/* Validates typeDetails */
+func instanceSpecTypeDetailsValidator(instance *Instance, allErrs field.ErrorList, instancePath *field.Path) {
+	typeDetailsPath := instancePath.Child("typeDetails")
+	isInvalidTypeDetails, allowedTypeDetails := invalidTypeDetails(instance.Type, instance.TypeDetails)
+	if isInvalidTypeDetails {
+		allErrs = append(allErrs, field.Invalid(typeDetailsPath, instance.TypeDetails,
+			fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", reflect.ValueOf(allowedTypeDetails).MapKeys()),
+		))
+	}
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
