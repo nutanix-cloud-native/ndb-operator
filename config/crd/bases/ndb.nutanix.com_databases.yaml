@@ -146,6 +146,11 @@ spec:
                     type: string
                   type:
                     type: string
+                  typeDetails:
+                    additionalProperties:
+                      type: string
+                    description: Additional database engine specific action arguments
+                    type: object
                 required:
                 - credentialSecret
                 - databaseInstanceName
