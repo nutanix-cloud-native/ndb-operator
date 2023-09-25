@@ -219,7 +219,9 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 	}
 
 	// Get NDB username and password from NDB CredentialSecret
-	ndb_secret_name := database.Spec.NDB.CredentialSecret
+	// TODO: REFACTOR
+	// ndb_secret_name := database.Spec.NDB.CredentialSecret
+	ndb_secret_name := "database.Spec.NDB.CredentialSecret"
 	secret, err := suite.clientset.CoreV1().Secrets(database.Namespace).Get(context.TODO(), ndb_secret_name, metav1.GetOptions{})
 	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
 	if err != nil || username == "" || password == "" {
@@ -228,7 +230,9 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 	}
 
 	// Create ndbClient and getting databaseResponse
-	ndbClient := ndb_client.NewNDBClient(username, password, database.Spec.NDB.Server, "", true)
+	// TODO: REFACTOR
+	// ndbClient := ndb_client.NewNDBClient(username, password, database.Spec.NDB.Server, "", true)
+	ndbClient := ndb_client.NewNDBClient(username, password, "database.Spec.NDB.Server", "", true)
 	databaseResponse, err := ndb_api.GetDatabaseById(context.TODO(), ndbClient, database.Status.Id)
 	if err != nil {
 		log.Printf("Error: Database response from ndb_api failed! %s\n", err)

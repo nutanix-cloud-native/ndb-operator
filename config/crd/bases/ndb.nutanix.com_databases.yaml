@@ -156,32 +156,10 @@ spec:
                 - size
                 - type
                 type: object
-              ndb:
-                description: Details of the NDB installation
-                properties:
-                  clusterId:
-                    type: string
-                  credentialSecret:
-                    description: Name of the secret holding the credentials for NDB
-                      (username and password)
-                    type: string
-                  server:
-                    description: NDB Server URL
-                    type: string
-                  skipCertificateVerification:
-                    description: Skip server's certificate and hostname verification
-                    type: boolean
-                required:
-                - clusterId
-                - credentialSecret
-                - server
-                - skipCertificateVerification
-                type: object
               ndbRef:
                 type: string
             required:
             - databaseInstance
-            - ndb
             - ndbRef
             type: object
           status:

@@ -52,8 +52,9 @@ func ProvisioningTestSetup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1al
 	// Create Database
 	if database != nil {
 		// log.Printf(database.Spec.Instance.DatabaseInstanceName + ", " + database.Spec.NDB.ClusterId)
-		database.Spec.NDB.Server = os.Getenv("NDB_SERVER")
-		database.Spec.NDB.ClusterId = os.Getenv("NDB_CLUSTER_ID")
+		// TODO: REFACTOR
+		// database.Spec.NDB.Server = os.Getenv("NDB_SERVER")
+		// database.Spec.NDB.ClusterId = os.Getenv("NDB_CLUSTER_ID")
 		database, err = v1alpha1ClientSet.Databases(database.Namespace).Create(database)
 		if err != nil {
 			log.Printf("Error while creating Database %s: %s\n", database.Name, err)
@@ -141,8 +142,9 @@ func ProvisioningTestTeardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv
 
 	// Delete Database
 	if database != nil {
-		database.Spec.NDB.Server = os.Getenv("NDB-SERVER")
-		database.Spec.NDB.ClusterId = os.Getenv("NDB-CLUSTER-ID")
+		// TODO: REFACTOR
+		// database.Spec.NDB.Server = os.Getenv("NDB-SERVER")
+		// database.Spec.NDB.ClusterId = os.Getenv("NDB-CLUSTER-ID")
 		err := v1alpha1ClientSet.Databases(database.Namespace).Delete(database.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			log.Printf("Error while deleting Database %s: %s\n", database.Name, err)

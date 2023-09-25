@@ -120,29 +120,6 @@ func (r *Database) Default() {
 
 var _ webhook.Validator = &Database{}
 
-func ndbServerSpecValidatorForCreate(ndb *NDB, allErrs field.ErrorList, ndbPath *field.Path) field.ErrorList {
-	databaselog.Info("Entering ndbServerSpecValidatorForCreate...")
-
-	if *ndb == (NDB{}) {
-		allErrs = append(allErrs, field.Invalid(ndbPath, ndb, "NDB spec field must not be empty"))
-	}
-
-	if err := util.ValidateUUID(ndb.ClusterId); err != nil {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("clusterId"), ndb.ClusterId, "ClusterId field must be a valid UUID"))
-	}
-
-	if ndb.CredentialSecret == "" {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), ndb.CredentialSecret, "CredentialSecret must be provided in the NDB Server Spec"))
-	}
-
-	if err := util.ValidateURL(ndb.Server); err != nil {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("server"), ndb.Server, "Server must be a valid URL"))
-	}
-
-	databaselog.Info("Exiting ndbServerSpecValidatorForCreate...")
-	return allErrs
-}
-
 func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	databaselog.Info("Entering instanceSpecValidatorForCreate...")
 
@@ -151,6 +128,10 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 	// need to assert using a regex
 	if instance.DatabaseInstanceName == "" {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified"))
+	}
+
+	if instance.ClusterId == "" {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("clusterId"), instance.ClusterId, "ClusterId field must be a valid UUID"))
 	}
 
 	if instance.Size < 10 {
@@ -215,10 +196,11 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 func (r *Database) ValidateCreate() (admission.Warnings, error) {
 	databaselog.Info("Entering ValidateCreate...")
 
-	ndbSpecErrors := ndbServerSpecValidatorForCreate(&r.Spec.NDB, field.ErrorList{}, field.NewPath("spec").Child("ndb"))
+	// ndbSpecErrors := ndbServerSpecValidatorForCreate(&r.Spec.NDB, field.ErrorList{}, field.NewPath("spec").Child("ndb"))
 	dbSpecErrors := instanceSpecValidatorForCreate(&r.Spec.Instance, field.ErrorList{}, field.NewPath("spec").Child("databaseInstance"))
 
-	allErrs := append(ndbSpecErrors, dbSpecErrors...)
+	// allErrs := append(ndbSpecErrors, dbSpecErrors...)
+	allErrs := dbSpecErrors
 
 	combined_err := util.CombineFieldErrors(allErrs)
 

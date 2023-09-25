@@ -27,7 +27,7 @@ import (
 
 // DatabaseSpec defines the desired state of Database
 type DatabaseSpec struct {
-	NDB      NDB      `json:"ndb"`
+	// +kubebuilder:validation:Required
 	NDBRef   string   `json:"ndbRef"`
 	Instance Instance `json:"databaseInstance"`
 }
@@ -71,17 +71,6 @@ func init() {
 
 // These are required to have a deep copy, object interface implementation
 // These are the structs for the Spec and Status
-
-// Details of the NDB installation
-type NDB struct {
-	ClusterId string `json:"clusterId"`
-	// Name of the secret holding the credentials for NDB (username and password)
-	CredentialSecret string `json:"credentialSecret"`
-	// NDB Server URL
-	Server string `json:"server"`
-	// Skip server's certificate and hostname verification
-	SkipCertificateVerification bool `json:"skipCertificateVerification"`
-}
 
 // Database instance specific details
 type Instance struct {

@@ -30,11 +30,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
-	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 )
@@ -105,28 +103,12 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	ndbClient := ndb_client.NewNDBClient(username, password, NDBInfo.Server, caCert, NDBInfo.SkipCertificateVerification)
 
 	// Examine DeletionTimestamp to determine if object is under deletion
-	if database.ObjectMeta.DeletionTimestamp.IsZero() {
-		// The object is not being deleted,
-		// if it does not have our finalizer then add the finalizer(s) and update the object.
-		if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
-			return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_INSTANCE, database)
-		}
-		if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
-			return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_SERVER, database)
-		}
-	} else {
-		// The object is under deletion. Perform deletion based on the finalizers we've added.
-		return r.handleDelete(ctx, database, ndbClient)
-	}
-
-	// To check and handle the case when the database ha been deleted/aborted externally (not through the operator).
-	// err = r.handleExternalDelete(ctx, database, ndbClient)
-	// if err != nil {
-	// 	log.Error(err, "Error occurred while external delete check")
-	// 	return requeueOnErr(err)
+	// If so, perform deletion based on the finalizers we've added.
+	// Else synchronize the database CR with the database instance on NDB.
+	// if !database.ObjectMeta.DeletionTimestamp.IsZero() {
+	// 	return r.handleDelete(ctx, database, ndbClient)
+	// } else {
 	// }
-	// r.handleExternalSync(ctx, database, ndbServer)
-	// Synchronize the database CR with the database instance on NDB.
 	return r.handleSync(ctx, database, ndbClient, req, ndbServer)
 }
 
