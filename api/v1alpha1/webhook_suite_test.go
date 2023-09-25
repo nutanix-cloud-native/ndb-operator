@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -30,6 +31,8 @@ import (
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	//+kubebuilder:scaffold:imports
+
+	"github.com/nutanix-cloud-native/ndb-operator/api"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -322,7 +325,6 @@ var _ = Describe("Webhook Tests", func() {
 				},
 			}
 			err := k8sClient.Create(context.Background(), database)
-			fmt.Print(err)
 			Expect(err).To(HaveOccurred())
 
 			// Extract the error message from the error object
@@ -453,6 +455,289 @@ var _ = Describe("Webhook Tests", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-	})
+		It("TypeDetails for mysql valid", func() {
 
+			database := &Database{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "db2",
+					Namespace: "default",
+				},
+				Spec: DatabaseSpec{
+					NDB: NDB{
+						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+						SkipCertificateVerification: true,
+						CredentialSecret:            "ndb-secret",
+						Server:                      "https://10.51.140.43:8443/era/v0.9",
+					},
+					Instance: Instance{
+						CredentialSecret:     "db-instance-secret",
+						DatabaseInstanceName: "db-instance-name",
+						Size:                 10,
+						TimeZone:             "UTC",
+						Type:                 "mysql",
+						/* Valid arguments. These are optional */
+						TypeDetails: map[string]string{
+							"listener_port": "3306",
+						},
+					},
+				},
+			}
+			err := k8sClient.Create(context.Background(), database)
+			fmt.Print(err)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("TypeDetails for mysql invalid", func() {
+
+			database := &Database{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "db3",
+					Namespace: "default",
+				},
+				Spec: DatabaseSpec{
+					NDB: NDB{
+						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+						SkipCertificateVerification: true,
+						CredentialSecret:            "ndb-secret",
+						Server:                      "https://10.51.140.43:8443/era/v0.9",
+					},
+					Instance: Instance{
+						CredentialSecret:     "db-instance-secret",
+						DatabaseInstanceName: "db-instance-name",
+						Size:                 10,
+						TimeZone:             "UTC",
+						Type:                 "mysql",
+						TypeDetails: map[string]string{
+							"invalid": "invalid",
+						},
+					},
+				},
+			}
+			err := k8sClient.Create(context.Background(), database)
+			Expect(err).To(HaveOccurred())
+
+			// Extract the error message from the error object
+			errMsg := err.(*errors.StatusError).ErrStatus.Message
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", reflect.ValueOf(api.AllowedMySqlTypeDetails).MapKeys())))
+		})
+
+		It("TypeDetails for postgres valid", func() {
+
+			database := &Database{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "db4",
+					Namespace: "default",
+				},
+				Spec: DatabaseSpec{
+					NDB: NDB{
+						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+						SkipCertificateVerification: true,
+						CredentialSecret:            "ndb-secret",
+						Server:                      "https://10.51.140.43:8443/era/v0.9",
+					},
+					Instance: Instance{
+						CredentialSecret:     "db-instance-secret",
+						DatabaseInstanceName: "db-instance-name",
+						Size:                 10,
+						TimeZone:             "UTC",
+						Type:                 "postgres",
+						/* Valid arguments. These are optional */
+						TypeDetails: map[string]string{
+							"listener_port": "5432",
+						},
+					},
+				},
+			}
+			err := k8sClient.Create(context.Background(), database)
+			fmt.Print(err)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("TypeDetails for postgres invalid", func() {
+
+			database := &Database{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "db5",
+					Namespace: "default",
+				},
+				Spec: DatabaseSpec{
+					NDB: NDB{
+						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+						SkipCertificateVerification: true,
+						CredentialSecret:            "ndb-secret",
+						Server:                      "https://10.51.140.43:8443/era/v0.9",
+					},
+					Instance: Instance{
+						CredentialSecret:     "db-instance-secret",
+						DatabaseInstanceName: "db-instance-name",
+						Size:                 10,
+						TimeZone:             "UTC",
+						Type:                 "postgres",
+						TypeDetails: map[string]string{
+							"invalid": "invalid",
+						},
+					},
+				},
+			}
+			err := k8sClient.Create(context.Background(), database)
+			Expect(err).To(HaveOccurred())
+
+			// Extract the error message from the error object
+			errMsg := err.(*errors.StatusError).ErrStatus.Message
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", reflect.ValueOf(api.AllowedPostGresTypeDetails).MapKeys())))
+		})
+
+		It("TypeDetails for mongodb valid", func() {
+
+			database := &Database{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "db6",
+					Namespace: "default",
+				},
+				Spec: DatabaseSpec{
+					NDB: NDB{
+						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+						SkipCertificateVerification: true,
+						CredentialSecret:            "ndb-secret",
+						Server:                      "https://10.51.140.43:8443/era/v0.9",
+					},
+					Instance: Instance{
+						CredentialSecret:     "db-instance-secret",
+						DatabaseInstanceName: "db-instance-name",
+						Size:                 10,
+						TimeZone:             "UTC",
+						Type:                 "mongodb",
+						/* Valid arguments. These are optional */
+						TypeDetails: map[string]string{
+							"listener_port": "5432",
+							"log_size":      "10",
+							"journal_size":  "10",
+						},
+					},
+				},
+			}
+			err := k8sClient.Create(context.Background(), database)
+			fmt.Print(err)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("TypeDetails for mongodb invalid", func() {
+
+			database := &Database{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "db7",
+					Namespace: "default",
+				},
+				Spec: DatabaseSpec{
+					NDB: NDB{
+						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+						SkipCertificateVerification: true,
+						CredentialSecret:            "ndb-secret",
+						Server:                      "https://10.51.140.43:8443/era/v0.9",
+					},
+					Instance: Instance{
+						CredentialSecret:     "db-instance-secret",
+						DatabaseInstanceName: "db-instance-name",
+						Size:                 10,
+						TimeZone:             "UTC",
+						Type:                 "mongodb",
+						TypeDetails: map[string]string{
+							"invalid": "invalid",
+						},
+					},
+				},
+			}
+			err := k8sClient.Create(context.Background(), database)
+			Expect(err).To(HaveOccurred())
+
+			// Extract the error message from the error object
+			errMsg := err.(*errors.StatusError).ErrStatus.Message
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", sortKeys(api.AllowedMongoDBTypeDetails))))
+		})
+
+		It("TypeDetails for mssql valid", func() {
+
+			database := &Database{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "db8",
+					Namespace: "default",
+				},
+				Spec: DatabaseSpec{
+					NDB: NDB{
+						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+						SkipCertificateVerification: true,
+						CredentialSecret:            "ndb-secret",
+						Server:                      "https://10.51.140.43:8443/era/v0.9",
+					},
+					Instance: Instance{
+						CredentialSecret:     "db-instance-secret",
+						DatabaseInstanceName: "db-instance-name",
+						Size:                 10,
+						TimeZone:             "UTC",
+						Type:                 "mssql",
+						Profiles: &Profiles{
+							Software: Profile{
+								Name: "MSSQL-MAZIN2",
+							},
+						},
+						/* Valid arguments. These are optional */
+						TypeDetails: map[string]string{
+							"server_collation":           "SQL_Latin1_General_CPI_CI_AS",
+							"database_collation":         "SQL_Latin1_General_CPI_CI_AS",
+							"vm_win_license_key":         "XXXX-XXXXX-XXXXX-XXXXX-XXXXX",
+							"vm_dbserver_admin_password": "<password>",
+							"authentication_mode":        "mixed",
+							"sql_user_name":              "sa",
+							"sql_user_password":          "<password>",
+							"windows_domain_profile_id":  "<XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+							"vm_db_server_user":          "<prod.cdm.com\\<user>",
+						},
+					},
+				},
+			}
+			err := k8sClient.Create(context.Background(), database)
+			fmt.Print(err)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("TypeDetails for mssql invalid", func() {
+
+			database := &Database{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "db9",
+					Namespace: "default",
+				},
+				Spec: DatabaseSpec{
+					NDB: NDB{
+						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+						SkipCertificateVerification: true,
+						CredentialSecret:            "ndb-secret",
+						Server:                      "https://10.51.140.43:8443/era/v0.9",
+					},
+					Instance: Instance{
+						CredentialSecret:     "db-instance-secret",
+						DatabaseInstanceName: "db-instance-name",
+						Size:                 10,
+						TimeZone:             "UTC",
+						Type:                 "mssql",
+						Profiles: &Profiles{
+							Software: Profile{
+								Name: "MSSQL-MAZIN2",
+							},
+						},
+						TypeDetails: map[string]string{
+							"invalid": "invalid",
+						},
+					},
+				},
+			}
+			err := k8sClient.Create(context.Background(), database)
+			Expect(err).To(HaveOccurred())
+
+			// Extract the error message from the error object
+			errMsg := err.(*errors.StatusError).ErrStatus.Message
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", sortKeys(api.AllowedMsSqlTypeDetails))))
+		})
+
+	})
 })

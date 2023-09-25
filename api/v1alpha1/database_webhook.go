@@ -62,7 +62,7 @@ func instanceSpecDefaulterForCreate(instance *Instance) {
 	// initialize Profiles field, if it's nil
 
 	if instance.Profiles == nil {
-		databaselog.Info("Initialzing empty Profiles ...")
+		databaselog.Info("Initialzing empty Profiles...")
 		instance.Profiles = &(Profiles{})
 	}
 
@@ -104,6 +104,12 @@ func instanceSpecDefaulterForCreate(instance *Instance) {
 
 	if instance.TMInfo.QuarterlySnapshotMonth == "" {
 		instance.TMInfo.QuarterlySnapshotMonth = "Jan"
+	}
+
+	// type details defaulting logic
+	if instance.TypeDetails == nil {
+		databaselog.Info("Initialzing empty TypeDetails...")
+		instance.TypeDetails = map[string]string{}
 	}
 
 }
@@ -208,7 +214,9 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 	}
 
 	// validating type details
-	instanceSpecTypeDetailsValidator(instance, allErrs, instancePath)
+	if typeDetailsErrors := instanceSpecTypeDetailsValidator(instance, field.ErrorList{}, instancePath); typeDetailsErrors != nil {
+		allErrs = append(allErrs, typeDetailsErrors...)
+	}
 
 	databaselog.Info("Exiting instanceSpecValidatorForCreate...")
 	return allErrs
@@ -230,6 +238,7 @@ func invalidTypeDetails(typ string, retrievedTypeDetails map[string]string) (boo
 
 	for arg := range retrievedTypeDetails {
 		if _, isPresent := allowedTypeDetails[arg]; !isPresent {
+			fmt.Printf("ivalid arg: %s", arg)
 			return true, allowedTypeDetails
 		}
 	}
@@ -238,14 +247,16 @@ func invalidTypeDetails(typ string, retrievedTypeDetails map[string]string) (boo
 }
 
 /* Validates typeDetails */
-func instanceSpecTypeDetailsValidator(instance *Instance, allErrs field.ErrorList, instancePath *field.Path) {
+func instanceSpecTypeDetailsValidator(instance *Instance, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	typeDetailsPath := instancePath.Child("typeDetails")
 	isInvalidTypeDetails, allowedTypeDetails := invalidTypeDetails(instance.Type, instance.TypeDetails)
 	if isInvalidTypeDetails {
 		allErrs = append(allErrs, field.Invalid(typeDetailsPath, instance.TypeDetails,
-			fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", reflect.ValueOf(allowedTypeDetails).MapKeys()),
+			fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", sortKeys(allowedTypeDetails)),
 		))
+		return allErrs
 	}
+	return nil
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
