@@ -156,26 +156,26 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 
 	// need to assert using a regex
 	if instance.DatabaseInstanceName == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified in the Instance Spec!"))
 	}
 
 	if instance.Size < 10 {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more in the Instance Spec!"))
 	}
 
 	if instance.CredentialSecret == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), instance.CredentialSecret, "CredentialSecret must be provided in the Instance Spec"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), instance.CredentialSecret, "CredentialSecret must be provided in the Instance Spec!"))
 	}
 
 	if _, isPresent := api.AllowedDatabaseTypes[instance.Type]; !isPresent {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), instance.Type,
-			fmt.Sprintf("A valid database type must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedDatabaseTypes).MapKeys()),
+			fmt.Sprintf("A valid database type must be specified in the Instance Spec!. Valid values are: %s", reflect.ValueOf(api.AllowedDatabaseTypes).MapKeys()),
 		))
 	}
 
 	if _, isPresent := api.ClosedSourceDatabaseTypes[instance.Type]; isPresent {
 		if instance.Profiles == &(Profiles{}) || instance.Profiles.Software == (Profile{}) {
-			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles").Child("software"), instance.Profiles.Software, "Software Profile must be provided for the closed-source database engines"))
+			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles").Child("software"), instance.Profiles.Software, "Software Profile must be provided for the closed-source database engines in the Instance Spec!"))
 		}
 	}
 
@@ -238,7 +238,6 @@ func invalidTypeDetails(typ string, retrievedTypeDetails map[string]string) (boo
 
 	for arg := range retrievedTypeDetails {
 		if _, isPresent := allowedTypeDetails[arg]; !isPresent {
-			fmt.Printf("ivalid arg: %s", arg)
 			return true, allowedTypeDetails
 		}
 	}
@@ -252,7 +251,7 @@ func instanceSpecTypeDetailsValidator(instance *Instance, allErrs field.ErrorLis
 	isInvalidTypeDetails, allowedTypeDetails := invalidTypeDetails(instance.Type, instance.TypeDetails)
 	if isInvalidTypeDetails {
 		allErrs = append(allErrs, field.Invalid(typeDetailsPath, instance.TypeDetails,
-			fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", sortKeys(allowedTypeDetails)),
+			fmt.Sprintf("Type Details for %s are invalid! Valid values are: %s", instance.Type, reflect.ValueOf(allowedTypeDetails).MapKeys()),
 		))
 		return allErrs
 	}
