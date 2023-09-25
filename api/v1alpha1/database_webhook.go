@@ -130,19 +130,19 @@ func ndbServerSpecValidatorForCreate(ndb *NDB, allErrs field.ErrorList, ndbPath 
 	databaselog.Info("Entering ndbServerSpecValidatorForCreate...")
 
 	if *ndb == (NDB{}) {
-		allErrs = append(allErrs, field.Invalid(ndbPath, ndb, "NDB spec field must not be empty"))
+		allErrs = append(allErrs, field.Invalid(ndbPath, ndb, "NDB server spec must be provided!"))
 	}
 
 	if err := util.ValidateUUID(ndb.ClusterId); err != nil {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("clusterId"), ndb.ClusterId, "ClusterId field must be a valid UUID"))
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("clusterId"), ndb.ClusterId, "NDB ClusterId must be provided and be a valid UUID!"))
 	}
 
 	if ndb.CredentialSecret == "" {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), ndb.CredentialSecret, "CredentialSecret must be provided in the NDB Server Spec"))
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), ndb.CredentialSecret, "NDB CredentialSecret must be provided!"))
 	}
 
 	if err := util.ValidateURL(ndb.Server); err != nil {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("server"), ndb.Server, "Server must be a valid URL"))
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("server"), ndb.Server, "NDB Server URL must be provided and be a valid URL!"))
 	}
 
 	databaselog.Info("Exiting ndbServerSpecValidatorForCreate...")

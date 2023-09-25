@@ -144,100 +144,50 @@ var _ = AfterEach(func() {
 })
 
 var _ = Describe("Webhook Tests", func() {
+
+	Describe("NDB Validation", func() {
+		When("Spec field is missing", func() {
+			It("Throws an rrror", func() {
+				database := ndbSpecMissing()
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("NDB server spec must be provided!"))
+			})
+		})
+		When("Cluster Id is missing", func() {
+			It("Throws an error", func() {
+				database := ndbClusterIdMissing()
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("NDB ClusterId must be provided and be a valid UUID!"))
+
+			})
+		})
+		When("CredentialSecret missing", func() {
+			It("Throws an error", func() {
+				database := ndbCredentialSecretMissing()
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("NDB CredentialSecret must be provided!"))
+
+			})
+		})
+
+		When("Server URL missing", func() {
+			It("Throws an error", func() {
+				database := ndbServerURLMissing()
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("NDB Server URL must be provided and be a valid URL!"))
+			})
+		})
+	})
+
 	Context("Validation Tests", func() {
-
-		It("ClusterId missing", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Type:                 "postgres",
-						Size:                 10,
-						TimeZone:             "UTC",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("ClusterId field must be a valid UUID"))
-
-		})
-
-		It("NDB CredentialSecret missing", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Type:                 "postgres",
-						Size:                 10,
-						TimeZone:             "UTC",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("CredentialSecret must be provided in the NDB Server Spec"))
-
-		})
-
-		It("Server URL missing", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Type:                 "postgres",
-						Size:                 10,
-						TimeZone:             "UTC",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("Server must be a valid URL"))
-
-		})
 
 		It("Database Instance Name missing", func() {
 
