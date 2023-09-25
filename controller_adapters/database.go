@@ -60,6 +60,10 @@ func (d *Database) GetDBInstanceType() string {
 	return d.Spec.Instance.Type
 }
 
+func (d *Database) GetDBInstanceTypeDetails() map[string]string {
+	return d.Spec.Instance.TypeDetails
+}
+
 func (d *Database) GetDBInstanceDatabaseNames() string {
 	return strings.Join(d.Spec.Instance.DatabaseNames, ",")
 }

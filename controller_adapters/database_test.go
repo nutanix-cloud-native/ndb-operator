@@ -140,6 +140,57 @@ func TestDatabase_GetDBInstanceType(t *testing.T) {
 	}
 }
 
+// Checks if two maps have the same keys
+func mapsHaveSameKeys(map1, map2 map[string]string) bool {
+	// Check if the number of keys in both maps is the same.
+	if len(map1) != len(map2) {
+		return false
+	}
+
+	// Iterate over the keys of map1 and check if each key exists in map2.
+	for key := range map1 {
+		if _, exists := map2[key]; !exists {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Tests the GetDBInstanceTypeDetails() retrieves TypeDetails correctly:
+func TestDatabase_GetDBInstanceTypeDetails(t *testing.T) {
+
+	tests := []struct {
+		name            string
+		database        Database
+		wantTypeDetails map[string]string
+	}{
+		{
+			name: "Contains Type Details",
+			database: Database{
+				Database: v1alpha1.Database{
+					Spec: v1alpha1.DatabaseSpec{
+						Instance: v1alpha1.Instance{
+							TypeDetails: map[string]string{"valid_key": "valid_value"},
+						},
+					},
+				},
+			},
+			wantTypeDetails: map[string]string{"valid_key": "valid_value"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			gotTypeDetails := tt.database.GetDBInstanceTypeDetails()
+			if !mapsHaveSameKeys(gotTypeDetails, tt.wantTypeDetails) {
+				t.Errorf("Database.GetDBInstanceTypeDetails gotTypeDetails = %v, want %v", gotTypeDetails, tt.wantTypeDetails)
+			}
+		})
+	}
+}
+
 // Tests the GetDBInstanceDatabaseNames() retrieves DatabaseNames correctly:
 func TestDatabase_GetDBInstanceDatabaseNames(t *testing.T) {
 
