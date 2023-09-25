@@ -140,16 +140,18 @@ func TestDatabase_GetDBInstanceType(t *testing.T) {
 	}
 }
 
-// Checks if two maps have the same keys
-func mapsHaveSameKeys(map1, map2 map[string]string) bool {
-	// Check if the number of keys in both maps is the same.
-	if len(map1) != len(map2) {
+func areSlicesEqual(slice1, slice2 interface{}) bool {
+	// First, check if the slices have the same length
+	val1 := reflect.ValueOf(slice1)
+	val2 := reflect.ValueOf(slice2)
+
+	if val1.Len() != val2.Len() {
 		return false
 	}
 
-	// Iterate over the keys of map1 and check if each key exists in map2.
-	for key := range map1 {
-		if _, exists := map2[key]; !exists {
+	// Then, compare each element of the slices
+	for i := 0; i < val1.Len(); i++ {
+		if val1.Index(i).Interface() != val2.Index(i).Interface() {
 			return false
 		}
 	}
@@ -163,7 +165,7 @@ func TestDatabase_GetDBInstanceTypeDetails(t *testing.T) {
 	tests := []struct {
 		name            string
 		database        Database
-		wantTypeDetails map[string]string
+		wantTypeDetails []ndb_api.ActionArgument
 	}{
 		{
 			name: "Contains Type Details",
@@ -171,12 +173,16 @@ func TestDatabase_GetDBInstanceTypeDetails(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							TypeDetails: map[string]string{"valid_key": "valid_value"},
+							TypeDetails: []ndb_api.ActionArgument{
+								{Name: "valid_key", Value: "valid_value"},
+							},
 						},
 					},
 				},
 			},
-			wantTypeDetails: map[string]string{"valid_key": "valid_value"},
+			wantTypeDetails: []ndb_api.ActionArgument{
+				{Name: "valid_key", Value: "valid_value"},
+			},
 		},
 	}
 
@@ -184,7 +190,7 @@ func TestDatabase_GetDBInstanceTypeDetails(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			gotTypeDetails := tt.database.GetDBInstanceTypeDetails()
-			if !mapsHaveSameKeys(gotTypeDetails, tt.wantTypeDetails) {
+			if !areSlicesEqual(gotTypeDetails, tt.wantTypeDetails) {
 				t.Errorf("Database.GetDBInstanceTypeDetails gotTypeDetails = %v, want %v", gotTypeDetails, tt.wantTypeDetails)
 			}
 		})

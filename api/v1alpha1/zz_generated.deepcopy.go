@@ -22,6 +22,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -151,10 +152,8 @@ func (in *Instance) DeepCopyInto(out *Instance) {
 	}
 	if in.TypeDetails != nil {
 		in, out := &in.TypeDetails, &out.TypeDetails
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
-		}
+		*out = make([]ndb_api.ActionArgument, len(*in))
+		copy(*out, *in)
 	}
 }
 

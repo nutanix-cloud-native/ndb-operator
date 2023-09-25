@@ -24,6 +24,7 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/api"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
+	ndb_api "github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -109,7 +110,7 @@ func instanceSpecDefaulterForCreate(instance *Instance) {
 	// type details defaulting logic
 	if instance.TypeDetails == nil {
 		databaselog.Info("Initialzing empty TypeDetails...")
-		instance.TypeDetails = map[string]string{}
+		instance.TypeDetails = []ndb_api.ActionArgument{}
 	}
 
 }
@@ -223,7 +224,7 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 }
 
 /* Indicates whether the retrievedTypeDetails are invalid, and returns the allowed typeDetails */
-func invalidTypeDetails(typ string, retrievedTypeDetails map[string]string) (bool, map[string]bool) {
+func invalidTypeDetails(typ string, retrievedTypeDetails []ndb_api.ActionArgument) (bool, map[string]bool) {
 	var allowedTypeDetails map[string]bool
 	switch typ {
 	case "mysql":
@@ -236,8 +237,8 @@ func invalidTypeDetails(typ string, retrievedTypeDetails map[string]string) (boo
 		allowedTypeDetails = api.AllowedMsSqlTypeDetails
 	}
 
-	for arg := range retrievedTypeDetails {
-		if _, isPresent := allowedTypeDetails[arg]; !isPresent {
+	for _, arg := range retrievedTypeDetails {
+		if _, isPresent := allowedTypeDetails[arg.Name]; !isPresent {
 			return true, allowedTypeDetails
 		}
 	}

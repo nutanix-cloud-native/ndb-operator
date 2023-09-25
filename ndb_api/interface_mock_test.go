@@ -34,6 +34,19 @@ func (m *MockDatabaseInterface) GetDBInstanceType() string {
 	return args.String(0)
 }
 
+// GetDBInstanceTypeDetails is a mock implementation of the GetDBInstanceTypeDetails method in the Database interface
+func (m *MockDatabaseInterface) GetDBInstanceTypeDetails() []ActionArgument {
+	args := m.Called()
+
+	// Perform a type assertion to convert the value to []ActionArgument
+	if result, ok := args.Get(0).([]ActionArgument); ok {
+		return result
+	}
+
+	// If the type assertion fails, return default
+	return []ActionArgument{}
+}
+
 // GetDBInstanceDatabaseNames is a mock implementation of the GetDBInstanceDatabaseNames method in the Database interface
 func (m *MockDatabaseInterface) GetDBInstanceDatabaseNames() string {
 	args := m.Called()

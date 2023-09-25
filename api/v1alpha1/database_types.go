@@ -22,6 +22,7 @@ Changes added
 package v1alpha1
 
 import (
+	ndb_api "github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -108,7 +109,7 @@ type Instance struct {
 	TMInfo *DBTimeMachineInfo `json:"timeMachine"`
 	// +optional
 	// Additional database engine specific action arguments
-	TypeDetails map[string]string `json:"typeDetails"`
+	TypeDetails []ndb_api.ActionArgument `json:"typeDetails"`
 }
 
 // Time Machine details

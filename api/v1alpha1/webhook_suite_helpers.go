@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	ndb_api "github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -315,7 +316,7 @@ func dbTimeMachineNotSpecified(db string) *Database {
 }
 
 /* Creates a database CR with 'db' name, 'type', and 'typeDetails' specified */
-func dbWithTypeDetailsSpecified(db string, typ string, typeDetails map[string]string) *Database {
+func dbWithTypeDetailsSpecified(db string, typ string, typeDetails []ndb_api.ActionArgument) *Database {
 	database := &Database{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      db,
