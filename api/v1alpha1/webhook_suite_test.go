@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
@@ -32,10 +31,7 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	//+kubebuilder:scaffold:imports
 
-	"github.com/nutanix-cloud-native/ndb-operator/api"
-
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -155,17 +151,18 @@ var _ = Describe("Webhook Tests", func() {
 				Expect(errMsg).To(ContainSubstring("NDB server spec must be provided!"))
 			})
 		})
-		When("Cluster Id is missing", func() {
+
+		When("'clusterId' is missing", func() {
 			It("Throws an error", func() {
 				database := ndbClusterIdMissing()
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).To(HaveOccurred())
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
 				Expect(errMsg).To(ContainSubstring("NDB ClusterId must be provided and be a valid UUID!"))
-
 			})
 		})
-		When("CredentialSecret missing", func() {
+
+		When("'credentialSecret' is missing", func() {
 			It("Throws an error", func() {
 				database := ndbCredentialSecretMissing()
 				err := k8sClient.Create(context.Background(), database)
@@ -176,7 +173,7 @@ var _ = Describe("Webhook Tests", func() {
 			})
 		})
 
-		When("Server URL missing", func() {
+		When("'server' URL is missing", func() {
 			It("Throws an error", func() {
 				database := ndbServerURLMissing()
 				err := k8sClient.Create(context.Background(), database)
@@ -187,451 +184,188 @@ var _ = Describe("Webhook Tests", func() {
 		})
 	})
 
-	Context("Validation Tests", func() {
-
-		It("Database Instance Name missing", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "",
-						Type:                 "postgres",
-						Size:                 10,
-						TimeZone:             "UTC",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("A valid Database Instance Name must be specified"))
-
+	Describe("DB Validation", func() {
+		When("'databaseInstanceName' is missing", func() {
+			It("Throws an error", func() {
+				database := dbInstanceNameMissing()
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("A valid Database Instance Name must be specified in the Instance Spec!"))
+			})
 		})
 
-		It("Instance CredentialSecret missing", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						DatabaseInstanceName: "db-instance-name",
-						Type:                 "postgres",
-						Size:                 10,
-						TimeZone:             "UTC",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("CredentialSecret must be provided in the Instance Spec"))
-
+		When("'description' not specified", func() {
+			It("Sets a default 'description'", func() {
+				database := dbDescriptionNotSpecified("db1")
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).ToNot(HaveOccurred())
+				// TODO: Check if 'description' was defaulted
+			})
 		})
 
-		It("Type missing", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("A valid database type must be specified"))
-
+		When("'databaseNames' not specified", func() {
+			It("Sets a default 'databaseNames'", func() {
+				database := dbDescriptionNotSpecified("db2")
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).ToNot(HaveOccurred())
+				// TODO: Check if 'databaseNames' were defaulted
+			})
 		})
 
-		It("Database Size < 10 GB", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Type:                 "postgres",
-						Size:                 8,
-						TimeZone:             "UTC",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("Initial Database size must be specified with a value 10 GBs or more"))
-
+		When("'credentialSecret' is missing", func() {
+			It("Throws an error'", func() {
+				database := dbCredentialSecretMissing()
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("CredentialSecret must be provided in the Instance Spec!"))
+			})
 		})
 
-		It("Profiles missing: Open-source engines", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "postgres",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			fmt.Print(err)
-			Expect(err).ToNot(HaveOccurred())
+		When("'size' is less than 10", func() {
+			It("Throws an error'", func() {
+				database := dbSizeLessThan10()
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("Initial Database size must be specified with a value 10 GBs or more in the Instance Spec!"))
+			})
 		})
 
-		It("Profiles missing: Closed-source engines", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "mssql",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			fmt.Print(err)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("Software Profile must be provided for the closed-source database engines"))
+		When("'timeZone' not specified", func() {
+			It("Sets a default 'timeZone'", func() {
+				database := dbDescriptionNotSpecified("db3")
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).ToNot(HaveOccurred())
+				// TODO: Check if 'timeZone' was defaulted
+			})
 		})
 
-		It("Time Machine missing", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					// need to provide a unique name to avoid getting " "db" already exists"
-					// this is because the previous test was a happy case and a db CR was successfully created
-					Name:      "db1",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "postgres",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			fmt.Print(err)
-			Expect(err).ToNot(HaveOccurred())
+		When("'type' missing", func() {
+			It("Throws an error'", func() {
+				database := dbTypeMissing()
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("A valid database type must be specified in the Instance Spec!"))
+			})
 		})
 
-		It("TypeDetails for mysql valid", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db2",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "mysql",
-						/* Valid arguments. These are optional */
-						TypeDetails: map[string]string{
-							"listener_port": "3306",
-						},
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			fmt.Print(err)
-			Expect(err).ToNot(HaveOccurred())
+		When("'type' invalid", func() {
+			It("Throws an error'", func() {
+				database := dbWithType("db", "invalid")
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("A valid database type must be specified in the Instance Spec!"))
+			})
 		})
 
-		It("TypeDetails for mysql invalid", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db3",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "mysql",
-						TypeDetails: map[string]string{
-							"invalid": "invalid",
-						},
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", reflect.ValueOf(api.AllowedMySqlTypeDetails).MapKeys())))
+		When("'profiles' missing", func() {
+			It("Passes because open-source engine was specified", func() {
+				database := dbWithType("db4", "postgres")
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			It("Throws error because closed-source engine was specified with no software id", func() {
+				database := dbWithType("db", "mssql")
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).To(HaveOccurred())
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("Software Profile must be provided for the closed-source database engines in the Instance Spec!"))
+			})
 		})
 
-		It("TypeDetails for postgres valid", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db4",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "postgres",
-						/* Valid arguments. These are optional */
-						TypeDetails: map[string]string{
-							"listener_port": "5432",
-						},
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			fmt.Print(err)
-			Expect(err).ToNot(HaveOccurred())
+		When("'timeMachine' not specified", func() {
+			It("Sets default 'timeMachineInfo", func() {
+				database := dbTimeMachineNotSpecified("db5")
+				err := k8sClient.Create(context.Background(), database)
+				Expect(err).ToNot(HaveOccurred())
+				// TODO: Check if 'timeMachine' was defaulted
+			})
 		})
 
-		It("TypeDetails for postgres invalid", func() {
+		Context("'typeDetails' is specified", func() {
+			When("'type' is mysql", func() {
+				It("Valid typeDetails specified", func() {
+					database := dbWithTypeDetailsSpecified(
+						"db6",
+						"mysql",
+						map[string]string{"listener_port": "3306"},
+					)
+					err := k8sClient.Create(context.Background(), database)
+					Expect(err).ToNot(HaveOccurred())
+				})
+				It("Invalid typeDetails specified", func() {
+					database := dbWithTypeDetailsSpecified(
+						"db",
+						"mysql",
+						map[string]string{"invalid": "invalid"},
+					)
+					err := k8sClient.Create(context.Background(), database)
+					Expect(err).To(HaveOccurred())
+					errMsg := err.(*errors.StatusError).ErrStatus.Message
+					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", "mysql")))
+				})
+			})
 
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db5",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "postgres",
-						TypeDetails: map[string]string{
-							"invalid": "invalid",
-						},
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
+			When("'type' is postgres", func() {
+				It("Valid typeDetails specified", func() {
+					database := dbWithTypeDetailsSpecified(
+						"db7",
+						"postgres",
+						map[string]string{"listener_port": "5432"},
+					)
+					err := k8sClient.Create(context.Background(), database)
+					Expect(err).ToNot(HaveOccurred())
+				})
+				It("Invalid typeDetails specified", func() {
+					database := dbWithTypeDetailsSpecified(
+						"db",
+						"postgres",
+						map[string]string{"invalid": "invalid"},
+					)
+					err := k8sClient.Create(context.Background(), database)
+					Expect(err).To(HaveOccurred())
+					errMsg := err.(*errors.StatusError).ErrStatus.Message
+					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", "postgres")))
+				})
+			})
 
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", reflect.ValueOf(api.AllowedPostGresTypeDetails).MapKeys())))
-		})
-
-		It("TypeDetails for mongodb valid", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db6",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "mongodb",
-						/* Valid arguments. These are optional */
-						TypeDetails: map[string]string{
+			When("'type' is mongodb", func() {
+				It("Valid typeDetails specified", func() {
+					database := dbWithTypeDetailsSpecified(
+						"db8",
+						"mongodb",
+						map[string]string{
 							"listener_port": "5432",
 							"log_size":      "10",
 							"journal_size":  "10",
 						},
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			fmt.Print(err)
-			Expect(err).ToNot(HaveOccurred())
-		})
+					)
+					err := k8sClient.Create(context.Background(), database)
+					Expect(err).ToNot(HaveOccurred())
+				})
+				It("Invalid typeDetails specified", func() {
+					database := dbWithTypeDetailsSpecified(
+						"db",
+						"mongodb",
+						map[string]string{"invalid": "invalid"},
+					)
+					err := k8sClient.Create(context.Background(), database)
+					Expect(err).To(HaveOccurred())
+					errMsg := err.(*errors.StatusError).ErrStatus.Message
+					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", "mongodb")))
+				})
+			})
 
-		It("TypeDetails for mongodb invalid", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db7",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "mongodb",
-						TypeDetails: map[string]string{
-							"invalid": "invalid",
-						},
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", sortKeys(api.AllowedMongoDBTypeDetails))))
-		})
-
-		It("TypeDetails for mssql valid", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db8",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "mssql",
-						Profiles: &Profiles{
-							Software: Profile{
-								Name: "MSSQL-MAZIN2",
-							},
-						},
-						/* Valid arguments. These are optional */
-						TypeDetails: map[string]string{
+			When("'type' is mssql", func() {
+				It("Valid typeDetails specified", func() {
+					database := dbWithTypeDetailsSpecified(
+						"db9",
+						"mssql",
+						map[string]string{
 							"server_collation":           "SQL_Latin1_General_CPI_CI_AS",
 							"database_collation":         "SQL_Latin1_General_CPI_CI_AS",
 							"vm_win_license_key":         "XXXX-XXXXX-XXXXX-XXXXX-XXXXX",
@@ -642,52 +376,22 @@ var _ = Describe("Webhook Tests", func() {
 							"windows_domain_profile_id":  "<XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
 							"vm_db_server_user":          "<prod.cdm.com\\<user>",
 						},
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			fmt.Print(err)
-			Expect(err).ToNot(HaveOccurred())
+					)
+					err := k8sClient.Create(context.Background(), database)
+					Expect(err).ToNot(HaveOccurred())
+				})
+				It("Invalid typeDetails specified", func() {
+					database := dbWithTypeDetailsSpecified(
+						"db",
+						"mssql",
+						map[string]string{"invalid": "invalid"},
+					)
+					err := k8sClient.Create(context.Background(), database)
+					Expect(err).To(HaveOccurred())
+					errMsg := err.(*errors.StatusError).ErrStatus.Message
+					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", "mssql")))
+				})
+			})
 		})
-
-		It("TypeDetails for mssql invalid", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db9",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "mssql",
-						Profiles: &Profiles{
-							Software: Profile{
-								Name: "MSSQL-MAZIN2",
-							},
-						},
-						TypeDetails: map[string]string{
-							"invalid": "invalid",
-						},
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details may optionally be provided. Valid values are: %s", sortKeys(api.AllowedMsSqlTypeDetails))))
-		})
-
 	})
 })
