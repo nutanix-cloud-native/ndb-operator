@@ -62,6 +62,20 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		log.Error(err, "Error occurred while validating reqData", "reqData", reqData)
 		return
 	}
+
+	// Fetching and appending ActionArguments
+	actionArguments := database.GetDBInstanceTypeDetails()
+	actionArguments = append(actionArguments, []ActionArgument{
+		{
+			Name:  "dbserver_description",
+			Value: "dbserver for " + database.GetDBInstanceName(),
+		},
+		{
+			Name:  "database_size",
+			Value: strconv.Itoa(database.GetDBInstanceSize()),
+		},
+	}...)
+
 	// Creating a provisioning request based on the database type
 	requestBody = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(database.GetDBInstanceType()),
@@ -93,16 +107,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 				VmName:     database.GetDBInstanceName() + "_VM",
 			},
 		},
-		ActionArguments: []ActionArgument{
-			{
-				Name:  "dbserver_description",
-				Value: "dbserver for " + database.GetDBInstanceName(),
-			},
-			{
-				Name:  "database_size",
-				Value: strconv.Itoa(database.GetDBInstanceSize()),
-			},
-		},
+		ActionArguments: actionArguments,
 	}
 
 	// Appending request body based on database type
@@ -166,6 +171,26 @@ func validateReqData(ctx context.Context, databaseInstanceType string, reqData m
 	return
 }
 
+// Appends defaultAction arguments and replacableActionArgs (if they are not specified in reqData)
+func appendActionArguments(req *DatabaseProvisionRequest, replacableActionArgs []ActionArgument, defaultActionArgs []ActionArgument) {
+	reqActionArgs := make(map[string]string)
+
+	// Append reqActionArgs to map so we know which replacableActionArgs we should add
+	for _, arg := range req.ActionArguments {
+		reqActionArgs[arg.Name] = arg.Value
+	}
+
+	// Add actionArgument to req if it is not present
+	for _, arg := range replacableActionArgs {
+		if _, isPresent := reqActionArgs[arg.Name]; !isPresent {
+			req.ActionArguments = append(req.ActionArguments, arg)
+		}
+	}
+
+	// Append defaultActionArgs
+	req.ActionArguments = append(req.ActionArguments, defaultActionArgs...)
+}
+
 // Appends request based on database type
 type DBProvisionRequestAppender interface {
 	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest
@@ -185,11 +210,7 @@ func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 	profileMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
 	dbParamInstanceProfile := profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE]
 
-	actionArgs := []ActionArgument{
-		{
-			Name:  "working_dir",
-			Value: "C:\\temp",
-		},
+	replacableActionArgs := []ActionArgument{
 		{
 			Name:  "sql_user_name",
 			Value: "sa",
@@ -197,6 +218,29 @@ func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 		{
 			Name:  "authentication_mode",
 			Value: "windows",
+		},
+		{
+			Name:  "server_collation",
+			Value: "SQL_Latin1_General_CP1_CI_AS",
+		},
+		{
+			Name:  "database_collation",
+			Value: "SQL_Latin1_General_CP1_CI_AS",
+		},
+		{
+			Name:  "dbParameterProfileIdInstance",
+			Value: dbParamInstanceProfile.Id,
+		},
+		{
+			Name:  "vm_dbserver_admin_password",
+			Value: adminPassword,
+		},
+	}
+
+	defaultActionArgs := []ActionArgument{
+		{
+			Name:  "working_dir",
+			Value: "C:\\temp",
 		},
 		{
 			Name:  "delete_vm_on_failure",
@@ -222,25 +266,9 @@ func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 			Name:  "dbserver_name",
 			Value: database.GetDBInstanceName(),
 		},
-		{
-			Name:  "server_collation",
-			Value: "SQL_Latin1_General_CP1_CI_AS",
-		},
-		{
-			Name:  "database_collation",
-			Value: "SQL_Latin1_General_CP1_CI_AS",
-		},
-		{
-			Name:  "dbParameterProfileIdInstance",
-			Value: dbParamInstanceProfile.Id,
-		},
-		{
-			Name:  "vm_dbserver_admin_password",
-			Value: adminPassword,
-		},
 	}
 
-	req.ActionArguments = append(req.ActionArguments, actionArgs...)
+	appendActionArguments(req, replacableActionArgs, defaultActionArgs)
 
 	return req
 }
