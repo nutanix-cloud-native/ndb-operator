@@ -52,8 +52,8 @@ func GetDatabasePortByType(dbType string) int32 {
 	}
 }
 
-// Sorts actionArgs by name
-func sortActionArgs(actionArgs []ActionArgument) {
+// Retrieves a list of actionArgs and sorts by name
+func sortActionArgsByName(actionArgs []ActionArgument) {
 	sort.Slice(actionArgs, func(i, j int) bool {
 		return actionArgs[i].Name < actionArgs[j].Name
 	})

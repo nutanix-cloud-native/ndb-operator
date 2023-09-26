@@ -143,8 +143,8 @@ func TestPostgresProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	// Call function being tested
 	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
-	sortActionArgs(expectedActionArgs)
-	sortActionArgs(resultRequest.ActionArguments)
+	sortActionArgsByName(expectedActionArgs)
+	sortActionArgsByName(resultRequest.ActionArguments)
 
 	// Check if the lengths of the slices are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
@@ -199,8 +199,8 @@ func TestPostgresProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	// Call function being tested
 	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
-	sortActionArgs(expectedActionArgs)
-	sortActionArgs(resultRequest.ActionArguments)
+	sortActionArgsByName(expectedActionArgs)
+	sortActionArgsByName(resultRequest.ActionArguments)
 
 	// Check if the lengths of the slices are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
@@ -273,8 +273,8 @@ func TestMSSQLProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetDBInstanceDatabaseNames(), resultRequest.DatabaseName)
 	}
 
-	sortActionArgs(expectedActionArgs)
-	sortActionArgs(resultRequest.ActionArguments)
+	sortActionArgsByName(expectedActionArgs)
+	sortActionArgsByName(resultRequest.ActionArguments)
 
 	// Check if the lengths of the slices are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
@@ -365,8 +365,8 @@ func TestMSSQLProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetDBInstanceDatabaseNames(), resultRequest.DatabaseName)
 	}
 
-	sortActionArgs(expectedActionArgs)
-	sortActionArgs(resultRequest.ActionArguments)
+	sortActionArgsByName(expectedActionArgs)
+	sortActionArgsByName(resultRequest.ActionArguments)
 
 	// Check if the lengths of the slices are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
@@ -417,8 +417,8 @@ func TestMongoDbProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	// Call function being tested
 	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
-	sortActionArgs(expectedActionArgs)
-	sortActionArgs(resultRequest.ActionArguments)
+	sortActionArgsByName(expectedActionArgs)
+	sortActionArgsByName(resultRequest.ActionArguments)
 
 	// Check if the lengths of the slices are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
@@ -475,8 +475,8 @@ func TestMongoDbProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	// Call function being tested
 	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
-	sortActionArgs(expectedActionArgs)
-	sortActionArgs(resultRequest.ActionArguments)
+	sortActionArgsByName(expectedActionArgs)
+	sortActionArgsByName(resultRequest.ActionArguments)
 
 	// Check if the lengths of the slices are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
@@ -532,8 +532,8 @@ func TestMySqlProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
 	}
 
-	sortActionArgs(expectedActionArgs)
-	sortActionArgs(resultRequest.ActionArguments)
+	sortActionArgsByName(expectedActionArgs)
+	sortActionArgsByName(resultRequest.ActionArguments)
 
 	// Check if the lengths of the slices are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
@@ -589,8 +589,8 @@ func TestMySqlProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	}
 
 	// Sort action args
-	sortActionArgs(expectedActionArgs)
-	sortActionArgs(resultRequest.ActionArguments)
+	sortActionArgsByName(expectedActionArgs)
+	sortActionArgsByName(resultRequest.ActionArguments)
 
 	// Check if the lengths of the slices are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
