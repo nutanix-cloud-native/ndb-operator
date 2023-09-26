@@ -143,16 +143,22 @@ func TestPostgresProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	// Call function being tested
 	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
+	// Assert expected results
+	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
+		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
+	}
+
+	// Sort expected and retrieved action arguments
 	sortActionArgsByName(expectedActionArgs)
 	sortActionArgsByName(resultRequest.ActionArguments)
 
-	// Check if the lengths of the slices are equal
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
 		return
 	}
 
-	// Iterate over the sorted slices and compare each element
+	// Checks if expected and retrieved action arguments are equal
 	for i := range expectedActionArgs {
 		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
 			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
@@ -179,11 +185,11 @@ func TestPostgresProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 
 	baseRequest.ActionArguments = append(baseRequest.ActionArguments, []ActionArgument{
-		{Name: "listener_port", Value: "5432"},
+		{Name: "listener_port", Value: "1111"},
 	}...)
 
 	expectedActionArgs := []ActionArgument{
-		{Name: "listener_port", Value: "5432"},
+		{Name: "listener_port", Value: "1111"},
 		{Name: "proxy_read_port", Value: "5001"},
 		{Name: "proxy_write_port", Value: "5000"},
 		{Name: "enable_synchronous_mode", Value: "false"},
@@ -199,16 +205,22 @@ func TestPostgresProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	// Call function being tested
 	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
+	// Assert expected results
+	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
+		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
+	}
+
+	// Sort expected and retrieved action arguments
 	sortActionArgsByName(expectedActionArgs)
 	sortActionArgsByName(resultRequest.ActionArguments)
 
-	// Check if the lengths of the slices are equal
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
 		return
 	}
 
-	// Iterate over the sorted slices and compare each element
+	// Checks if expected and retrieved action arguments are equal
 	for i := range expectedActionArgs {
 		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
 			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
@@ -273,16 +285,17 @@ func TestMSSQLProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetDBInstanceDatabaseNames(), resultRequest.DatabaseName)
 	}
 
+	// Sort expected and retrieved action arguments
 	sortActionArgsByName(expectedActionArgs)
 	sortActionArgsByName(resultRequest.ActionArguments)
 
-	// Check if the lengths of the slices are equal
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
 		return
 	}
 
-	// Iterate over the sorted slices and compare each element
+	// Checks if expected and retrieved action arguments are equal
 	for i := range expectedActionArgs {
 		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
 			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
@@ -365,16 +378,17 @@ func TestMSSQLProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetDBInstanceDatabaseNames(), resultRequest.DatabaseName)
 	}
 
+	// Sort expected and retrieved action arguments
 	sortActionArgsByName(expectedActionArgs)
 	sortActionArgsByName(resultRequest.ActionArguments)
 
-	// Check if the lengths of the slices are equal
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
 		return
 	}
 
-	// Iterate over the sorted slices and compare each element
+	// Checks if expected and retrieved action arguments are equal
 	for i := range expectedActionArgs {
 		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
 			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
@@ -417,16 +431,22 @@ func TestMongoDbProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	// Call function being tested
 	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
+	// Assert expected results
+	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
+		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
+	}
+
+	// Sort expected and retrieved action arguments
 	sortActionArgsByName(expectedActionArgs)
 	sortActionArgsByName(resultRequest.ActionArguments)
 
-	// Check if the lengths of the slices are equal
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
 		return
 	}
 
-	// Iterate over the sorted slices and compare each element
+	// Checks if expected and retrieved action arguments are equal
 	for i := range expectedActionArgs {
 		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
 			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
@@ -452,15 +472,15 @@ func TestMongoDbProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 
 	baseRequest.ActionArguments = append(baseRequest.ActionArguments, []ActionArgument{
-		{Name: "listener_port", Value: "27017"},
-		{Name: "log_size", Value: "100"},
-		{Name: "journal_size", Value: "100"},
+		{Name: "listener_port", Value: "11111"},
+		{Name: "log_size", Value: "1"},
+		{Name: "journal_size", Value: "1"},
 	}...)
 
 	expectedActionArgs := []ActionArgument{
-		{Name: "listener_port", Value: "27017"},
-		{Name: "log_size", Value: "100"},
-		{Name: "journal_size", Value: "100"},
+		{Name: "listener_port", Value: "11111"},
+		{Name: "log_size", Value: "1"},
+		{Name: "journal_size", Value: "1"},
 		{Name: "restart_mongod", Value: "true"},
 		{Name: "working_dir", Value: "/tmp"},
 		{Name: "db_user", Value: "admin"},
@@ -475,16 +495,22 @@ func TestMongoDbProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	// Call function being tested
 	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
+	// Assert expected results
+	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
+		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
+	}
+
+	// Sort expected and retrieved action arguments
 	sortActionArgsByName(expectedActionArgs)
 	sortActionArgsByName(resultRequest.ActionArguments)
 
-	// Check if the lengths of the slices are equal
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
 		return
 	}
 
-	// Iterate over the sorted slices and compare each element
+	// Checks if expected and retrieved action arguments are equal
 	for i := range expectedActionArgs {
 		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
 			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
@@ -532,16 +558,17 @@ func TestMySqlProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
 	}
 
+	// Sort expected and retrieved action arguments
 	sortActionArgsByName(expectedActionArgs)
 	sortActionArgsByName(resultRequest.ActionArguments)
 
-	// Check if the lengths of the slices are equal
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
 		return
 	}
 
-	// Iterate over the sorted slices and compare each element
+	// Checks if expected and retrieved action arguments are equal
 	for i := range expectedActionArgs {
 		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
 			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
@@ -588,17 +615,17 @@ func TestMySqlProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
 	}
 
-	// Sort action args
+	// Sort expected and retrieved action arguments
 	sortActionArgsByName(expectedActionArgs)
 	sortActionArgsByName(resultRequest.ActionArguments)
 
-	// Check if the lengths of the slices are equal
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
 		return
 	}
 
-	// Iterate over the sorted slices and compare each element
+	// Checks if expected and retrieved action arguments are equal
 	for i := range expectedActionArgs {
 		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
 			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
