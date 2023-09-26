@@ -32,6 +32,7 @@ type DatabaseInterface interface {
 	GetDBInstanceName() string
 	GetDBInstanceDescription() string
 	GetDBInstanceType() string
+	GetDBInstanceTypeDetails() []ActionArgument
 	GetDBInstanceDatabaseNames() string
 	GetDBInstanceTimeZone() string
 	GetDBInstanceSize() int
