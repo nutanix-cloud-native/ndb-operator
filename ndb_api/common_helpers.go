@@ -59,6 +59,7 @@ func sortActionArgs(actionArgs []ActionArgument) {
 	})
 }
 
+// MSSQL action arguments that may be overwritten by user.
 func mssqlReplacableActionArgs(dbParameterProfileIdInstance string, vmDbServerAdminPassword string) []ActionArgument {
 	return []ActionArgument{
 		{Name: "sql_user_name", Value: "sa"},
@@ -70,6 +71,7 @@ func mssqlReplacableActionArgs(dbParameterProfileIdInstance string, vmDbServerAd
 	}
 }
 
+// MSSQL action arguments that may not be overwritten by user.
 func mssqlDefaultActionArgs(dbServerName string) []ActionArgument {
 	return []ActionArgument{
 		{Name: "working_dir", Value: "C:\\temp"},
@@ -79,5 +81,26 @@ func mssqlDefaultActionArgs(dbServerName string) []ActionArgument {
 		{Name: "distribute_database_data", Value: "true"},
 		{Name: "retain_database_in_restoring_mode", Value: "false"},
 		{Name: "dbserver_name", Value: dbServerName},
+	}
+}
+
+// MongoDB action arguments that may be overwritten by user.
+func mongoDbReplacableActionArgs() []ActionArgument {
+	return []ActionArgument{
+		{Name: "listener_port", Value: "27017"},
+		{Name: "log_size", Value: "100"},
+		{Name: "journal_size", Value: "100"},
+	}
+}
+
+// MongoDB action arguments that may not be overwritten by user.
+func mongoDbDefaultActionArgs(dbPassword string, databaseNames string) []ActionArgument {
+	return []ActionArgument{
+		{Name: "restart_mongod", Value: "true"},
+		{Name: "working_dir", Value: "/tmp"},
+		{Name: "db_user", Value: "admin"},
+		{Name: "backup_policy", Value: "primary_only"},
+		{Name: "db_password", Value: dbPassword},
+		{Name: "database_names", Value: databaseNames},
 	}
 }
