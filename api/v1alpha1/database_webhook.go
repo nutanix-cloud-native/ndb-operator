@@ -198,10 +198,7 @@ func (r *Database) ValidateCreate() (admission.Warnings, error) {
 
 	dbSpecErrors := instanceSpecValidatorForCreate(&r.Spec.Instance, field.ErrorList{}, field.NewPath("spec").Child("databaseInstance"))
 
-	// allErrs := append(ndbSpecErrors, dbSpecErrors...)
-	allErrs := dbSpecErrors
-
-	combined_err := util.CombineFieldErrors(allErrs)
+	combined_err := util.CombineFieldErrors(dbSpecErrors)
 
 	databaselog.Info("validate create database webhook response...", "combined_err", combined_err)
 

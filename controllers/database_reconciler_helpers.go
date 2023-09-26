@@ -228,35 +228,6 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		databaseStatus.Status = common.DATABASE_CR_STATUS_NOT_FOUND
 		// TODO: Add operation tracking while the DB is in PROVISIONING state
 	}
-	// Not found in NDB CR
-	// if !isUnderDeletion && dbInfo == (ndbv1alpha1.NDBServerDatabaseInfo{}) {
-	// 	if databaseStatus.Status == common.DATABASE_CR_STATUS_WAITING {
-	// 		// NDB CR might not have been updated / reconciled yet OR
-	// 		// The operation to provision might have been aborted externally
-	// 		// So we will have to reconcile using operation Id and set the status accordingly
-	// 		log.Info("Database not found in NDB CR yet")
-	// 		r.recorder.Event(database, "Normal", EVENT_WAITING_FOR_NDB_RECONCILE, "Waiting for NDB server resource to reconcile")
-	// 	} else {
-	// 		// It is not in waiting state, which means it must have passed this
-	// 		// state in earlier reconciles and must have reached one of the next states.
-	// 		// The absence of the DB in the NDB CR indicates an external deletion/abortion
-	// 		// TODO: Can be replaced by retry logic later
-	// 		log.Info("Database missing from NDB CR")
-	// 		databaseStatus.Status = common.DATABASE_CR_STATUS_NOT_FOUND
-
-	// 	}
-	// 	// TODO: Add operation tracking while the DB is in PROVISIONING state
-	// } else {
-	// 	if isUnderDeletion {
-	// 		databaseStatus.Status = common.DATABASE_CR_STATUS_DELETING
-	// 	} else {
-	// 		databaseStatus.Status = dbInfo.Status
-	// 		databaseStatus.Id = dbInfo.Id
-	// 		databaseStatus.IPAddress = dbInfo.IPAddress
-	// 		databaseStatus.DatabaseServerId = dbInfo.DBServerId
-	// 	}
-
-	// }
 
 	if !reflect.DeepEqual(database.Status, *databaseStatus) {
 		database.Status = *databaseStatus
@@ -269,12 +240,14 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		}
 	}
 
-	// Handle Internal Sync
+	// Handle Internal Sync -
 	// [READY]
 	// Add finalizers only when the database is in ready state so that if
 	// any failure occurrs before reaching the ready state, the failure
 	// would not cause the deletion to block the terminal.
 	// Also, setup and create network services.
+	// [DELETING]
+	// Delete the database instance and the VM as per the finalizers
 	// [NOT FOUND]
 	// Record an event and then do not requeue since the resource has been deleted externally
 	// or was not found on NDB
@@ -293,7 +266,6 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		return r.handleDelete(ctx, database, ndbClient)
 	case common.DATABASE_CR_STATUS_NOT_FOUND:
 		r.recorder.Eventf(database, "Warning", EVENT_EXTERNAL_DELETE, "Error: Resource not found on NDB")
-		// return doNotRequeue()
 	default:
 		// No-Op
 	}

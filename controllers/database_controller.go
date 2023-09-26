@@ -102,13 +102,6 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 	ndbClient := ndb_client.NewNDBClient(username, password, NDBInfo.Server, caCert, NDBInfo.SkipCertificateVerification)
 
-	// Examine DeletionTimestamp to determine if object is under deletion
-	// If so, perform deletion based on the finalizers we've added.
-	// Else synchronize the database CR with the database instance on NDB.
-	// if !database.ObjectMeta.DeletionTimestamp.IsZero() {
-	// 	return r.handleDelete(ctx, database, ndbClient)
-	// } else {
-	// }
 	return r.handleSync(ctx, database, ndbClient, req, ndbServer)
 }
 

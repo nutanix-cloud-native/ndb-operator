@@ -8,10 +8,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// type V1alpha1Interface interface {
-// 	Databases(namespace string) DatabaseInterface
-// }
-
 type V1alpha1Client struct {
 	restClient rest.Interface
 }

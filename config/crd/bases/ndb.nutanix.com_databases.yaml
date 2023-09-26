@@ -52,7 +52,7 @@ spec:
                 description: Database instance specific details
                 properties:
                   clusterId:
-                    description: Name of the cluster to provision the database on
+                    description: Id of the cluster to provision the database on
                     type: string
                   credentialSecret:
                     description: Name of the secret holding the credentials for the

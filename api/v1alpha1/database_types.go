@@ -79,7 +79,7 @@ type Instance struct {
 	// Description of the database instance
 	// +optional
 	Description string `json:"description"`
-	// Name of the cluster to provision the database on
+	// Id of the cluster to provision the database on
 	ClusterId string `json:"clusterId"`
 	// Name(s) of the database(s) to be provisiond inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
