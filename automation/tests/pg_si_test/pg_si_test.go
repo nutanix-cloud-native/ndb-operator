@@ -9,7 +9,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/automation"
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
@@ -99,6 +98,13 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 		suite.T().FailNow()
 	}
 
+	// Create ndbServer template from automation.NDBSERVER_PATH
+	ndbServer := &ndbv1alpha1.NDBServer{}
+	if err := automation.CreateTypeFromPath(ndbServer, automation.NDBSERVER_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for ndbServer with path %s failed! %v\n", automation.NDBSERVER_PATH, err)
+		suite.T().FailNow()
+	}
+
 	// Create database template from automation.DATABASE_PATH
 	database := &ndbv1alpha1.Database{}
 	if err := automation.CreateTypeFromPath(database, automation.DATABASE_PATH); err != nil {
@@ -121,8 +127,8 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	}
 
 	// Create resources, wait for db to be ready, and pod to start
-	if err := automation.ProvisioningTestSetup(dbSecret, ndbSecret, database, appPod, appSvc, clientset, v1alpha1ClientSet, suite.T()); err != nil {
-		log.Printf(err.Error())
+	if err := automation.ProvisioningTestSetup(dbSecret, ndbSecret, ndbServer, database, appPod, appSvc, clientset, v1alpha1ClientSet, suite.T()); err != nil {
+		log.Println(err.Error())
 		log.Printf("******************** FAILED PostgresqlSingleInstanceTestSuite SETUPSUITE() ********************\n")
 		suite.T().FailNow()
 	}
@@ -157,6 +163,13 @@ func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 		suite.T().FailNow()
 	}
 
+	// Create ndbServer template from automation.NDBSERVER_PATH
+	ndbServer := &ndbv1alpha1.NDBServer{}
+	if err := automation.CreateTypeFromPath(ndbServer, automation.NDBSERVER_PATH); err != nil {
+		log.Printf("Error: utils.CreateTypeFromPath() for ndbServer with path %s failed! %v\n", automation.NDBSERVER_PATH, err)
+		suite.T().FailNow()
+	}
+
 	// Create database template from automation.DATABASE_PATH
 	database := &ndbv1alpha1.Database{}
 	if err = automation.CreateTypeFromPath(database, automation.DATABASE_PATH); err != nil {
@@ -179,8 +192,8 @@ func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 	}
 
 	// Delete resources and de-provision database
-	if err = automation.ProvisioningTestTeardown(dbSecret, ndbSecret, database, appPod, appSvc, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
-		log.Printf(err.Error())
+	if err = automation.ProvisioningTestTeardown(dbSecret, ndbSecret, ndbServer, database, appPod, appSvc, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
+		log.Println(err.Error())
 		log.Printf("******************** FAILED PostgresqlSingleInstanceTestSuite TEARDOWNSUITE() ********************\n")
 		suite.T().FailNow()
 	}
@@ -198,11 +211,12 @@ func (suite *PostgresqlSingleInstanceTestSuite) AfterTest(suiteName, testName st
 	log.Printf("******************** END TEST %s %s ********************\n", suiteName, testName)
 }
 
-// Tests if provisioning is succesful by checking if database stauts is 'READY'
+// Tests if provisioning is successful by checking if database stauts is 'READY'
 func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 	log.Println("TestProvisioningSuccess() starting...")
 
-	database := &v1alpha1.Database{}
+	ndbServer := &ndbv1alpha1.NDBServer{}
+	database := &ndbv1alpha1.Database{}
 
 	// Get db template from yaml to acquire database name
 	err := automation.CreateTypeFromPath(database, automation.DATABASE_PATH)
@@ -217,11 +231,14 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 		log.Printf("Error: Could not fetch database '%s' CR! %s\n", database.Name, err)
 		suite.T().FailNow()
 	}
-
+	// Get NDBServer CR from the database's NDBRef
+	ndbServer, err = suite.v1alpha1ClientSet.NDBServers(database.Namespace).Get(database.Spec.NDBRef, metav1.GetOptions{})
+	if err != nil {
+		log.Printf("Error: Could not fetch ndbServer '%s' CR! %s\n", database.Spec.NDBRef, err)
+		suite.T().FailNow()
+	}
 	// Get NDB username and password from NDB CredentialSecret
-	// TODO: REFACTOR
-	// ndb_secret_name := database.Spec.NDB.CredentialSecret
-	ndb_secret_name := "database.Spec.NDB.CredentialSecret"
+	ndb_secret_name := ndbServer.Spec.CredentialSecret
 	secret, err := suite.clientset.CoreV1().Secrets(database.Namespace).Get(context.TODO(), ndb_secret_name, metav1.GetOptions{})
 	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
 	if err != nil || username == "" || password == "" {
@@ -230,9 +247,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 	}
 
 	// Create ndbClient and getting databaseResponse
-	// TODO: REFACTOR
-	// ndbClient := ndb_client.NewNDBClient(username, password, database.Spec.NDB.Server, "", true)
-	ndbClient := ndb_client.NewNDBClient(username, password, "database.Spec.NDB.Server", "", true)
+	ndbClient := ndb_client.NewNDBClient(username, password, ndbServer.Spec.Server, "", true)
 	databaseResponse, err := ndb_api.GetDatabaseById(context.TODO(), ndbClient, database.Status.Id)
 	if err != nil {
 		log.Printf("Error: Database response from ndb_api failed! %s\n", err)

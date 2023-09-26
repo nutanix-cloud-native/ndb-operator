@@ -8,9 +8,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type V1alpha1Interface interface {
-	Databases(namespace string) DatabaseInterface
-}
+// type V1alpha1Interface interface {
+// 	Databases(namespace string) DatabaseInterface
+// }
 
 type V1alpha1Client struct {
 	restClient rest.Interface
@@ -39,6 +39,16 @@ func (c *V1alpha1Client) Databases(namespace string) DatabaseInterface {
 		namespace = "default"
 	}
 	return &DatabaseClient{
+		restClient: c.restClient,
+		namespace:  namespace,
+	}
+}
+
+func (c *V1alpha1Client) NDBServers(namespace string) NDBServerInterface {
+	if namespace == "" {
+		namespace = "default"
+	}
+	return &NDBServerClient{
 		restClient: c.restClient,
 		namespace:  namespace,
 	}

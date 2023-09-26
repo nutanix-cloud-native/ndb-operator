@@ -196,7 +196,6 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 func (r *Database) ValidateCreate() (admission.Warnings, error) {
 	databaselog.Info("Entering ValidateCreate...")
 
-	// ndbSpecErrors := ndbServerSpecValidatorForCreate(&r.Spec.NDB, field.ErrorList{}, field.NewPath("spec").Child("ndb"))
 	dbSpecErrors := instanceSpecValidatorForCreate(&r.Spec.Instance, field.ErrorList{}, field.NewPath("spec").Child("databaseInstance"))
 
 	// allErrs := append(ndbSpecErrors, dbSpecErrors...)
