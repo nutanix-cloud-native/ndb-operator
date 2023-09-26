@@ -5,7 +5,7 @@ metadata:
 spec:
   ndbRef: ndb
   databaseInstance:
-    databaseInstanceName: manav-db-pg-si
+    databaseInstanceName: db-pg-si
     databaseNames:
       - database_one
       - database_two
