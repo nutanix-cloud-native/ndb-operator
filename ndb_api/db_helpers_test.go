@@ -130,11 +130,11 @@ func TestPostgresProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	var expectedActionArgs []ActionArgument
 	expectedActionArgs = append(
 		expectedActionArgs,
-		postgresReplacableActionArgs()...,
+		getPostgresOverridableActionArgs()...,
 	)
 	expectedActionArgs = append(
 		expectedActionArgs,
-		postgresDefaultActionArgs(TEST_PASSWORD, mockDatabase.GetDBInstanceDatabaseNames())...,
+		getPostgresNonOverridableActionArgs(TEST_PASSWORD, mockDatabase.GetDBInstanceDatabaseNames())...,
 	)
 
 	// Get specific implementation of RequestAppender
@@ -252,14 +252,14 @@ func TestMSSQLProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	var expectedActionArgs []ActionArgument
 	expectedActionArgs = append(
 		expectedActionArgs,
-		mssqlReplacableActionArgs(
+		getMsSQLOverridableActionArgs(
 			profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE].Id,
 			adminPassword,
 		)...,
 	)
 	expectedActionArgs = append(
 		expectedActionArgs,
-		mssqlDefaultActionArgs(mockDatabase.GetDBInstanceName())...,
+		getMsSQLNonOverridableActionArgs(mockDatabase.GetDBInstanceName())...,
 	)
 
 	// Get specific implementation of RequestAppender
@@ -404,11 +404,11 @@ func TestMongoDbProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	var expectedActionArgs []ActionArgument
 	expectedActionArgs = append(
 		expectedActionArgs,
-		mongoDbReplacableActionArgs()...,
+		getMongoDbOverridableActionArgs()...,
 	)
 	expectedActionArgs = append(
 		expectedActionArgs,
-		mongoDbDefaultActionArgs(TEST_PASSWORD, mockDatabase.GetDBInstanceDatabaseNames())...,
+		getMongoDbNonOverridableActionArgs(TEST_PASSWORD, mockDatabase.GetDBInstanceDatabaseNames())...,
 	)
 
 	// Get specific implementation of RequestAppender
@@ -514,11 +514,11 @@ func TestMySqlProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	var expectedActionArgs []ActionArgument
 	expectedActionArgs = append(
 		expectedActionArgs,
-		mysqlReplacableActionArgs()...,
+		getMySQLOverridableActionArgs()...,
 	)
 	expectedActionArgs = append(
 		expectedActionArgs,
-		mysqlDefaultActionArgs(TEST_PASSWORD, mockDatabase.GetDBInstanceDatabaseNames())...,
+		getMySQLNonOverridableActionArgs(TEST_PASSWORD, mockDatabase.GetDBInstanceDatabaseNames())...,
 	)
 
 	// Get specific implementation of RequestAppender

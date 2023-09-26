@@ -210,7 +210,7 @@ func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 	profileMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
 	dbParamInstanceProfile := profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE]
 
-	appendActionArguments(req, mssqlReplacableActionArgs(dbParamInstanceProfile.Id, adminPassword), mssqlDefaultActionArgs(database.GetDBInstanceName()))
+	appendActionArguments(req, getMsSQLOverridableActionArgs(dbParamInstanceProfile.Id, adminPassword), getMsSQLNonOverridableActionArgs(database.GetDBInstanceName()))
 
 	return req
 }
@@ -222,7 +222,7 @@ func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRe
 
 	req.SSHPublicKey = SSHPublicKey
 
-	appendActionArguments(req, mongoDbReplacableActionArgs(), mongoDbDefaultActionArgs(dbPassword, databaseNames))
+	appendActionArguments(req, getMongoDbOverridableActionArgs(), getMongoDbNonOverridableActionArgs(dbPassword, databaseNames))
 
 	return req
 }
@@ -234,7 +234,7 @@ func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionR
 
 	req.SSHPublicKey = SSHPublicKey
 
-	appendActionArguments(req, postgresReplacableActionArgs(), postgresDefaultActionArgs(dbPassword, databaseNames))
+	appendActionArguments(req, getPostgresOverridableActionArgs(), getPostgresNonOverridableActionArgs(dbPassword, databaseNames))
 
 	return req
 }
@@ -246,7 +246,7 @@ func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 
 	req.SSHPublicKey = SSHPublicKey
 
-	appendActionArguments(req, mysqlReplacableActionArgs(), mysqlDefaultActionArgs(dbPassword, databaseNames))
+	appendActionArguments(req, getMySQLOverridableActionArgs(), getMySQLNonOverridableActionArgs(dbPassword, databaseNames))
 
 	return req
 }

@@ -52,15 +52,15 @@ func GetDatabasePortByType(dbType string) int32 {
 	}
 }
 
-// Retrieves a list of actionArgs and sorts by name
+// Sorts action arguments in place by name
 func sortActionArgsByName(actionArgs []ActionArgument) {
 	sort.Slice(actionArgs, func(i, j int) bool {
 		return actionArgs[i].Name < actionArgs[j].Name
 	})
 }
 
-// MSSQL action arguments that may be overwritten by user.
-func mssqlReplacableActionArgs(dbParameterProfileIdInstance string, vmDbServerAdminPassword string) []ActionArgument {
+// Gets MSSQL overridable action arguments.
+func getMsSQLOverridableActionArgs(dbParameterProfileIdInstance string, vmDbServerAdminPassword string) []ActionArgument {
 	return []ActionArgument{
 		{Name: "sql_user_name", Value: "sa"},
 		{Name: "authentication_mode", Value: "windows"},
@@ -71,8 +71,8 @@ func mssqlReplacableActionArgs(dbParameterProfileIdInstance string, vmDbServerAd
 	}
 }
 
-// MSSQL action arguments that may not be overwritten by user.
-func mssqlDefaultActionArgs(dbServerName string) []ActionArgument {
+// Gets MSSQL non-overridable action arguments.
+func getMsSQLNonOverridableActionArgs(dbServerName string) []ActionArgument {
 	return []ActionArgument{
 		{Name: "working_dir", Value: "C:\\temp"},
 		{Name: "delete_vm_on_failure", Value: "false"},
@@ -84,8 +84,8 @@ func mssqlDefaultActionArgs(dbServerName string) []ActionArgument {
 	}
 }
 
-// MongoDB action arguments that may be overwritten by user.
-func mongoDbReplacableActionArgs() []ActionArgument {
+// Gets MongoDB overridable action arguments.
+func getMongoDbOverridableActionArgs() []ActionArgument {
 	return []ActionArgument{
 		{Name: "listener_port", Value: "27017"},
 		{Name: "log_size", Value: "100"},
@@ -93,8 +93,8 @@ func mongoDbReplacableActionArgs() []ActionArgument {
 	}
 }
 
-// MongoDB action arguments that may not be overwritten by user.
-func mongoDbDefaultActionArgs(dbPassword string, databaseNames string) []ActionArgument {
+// Gets MongoDB non-overridable action arguments.
+func getMongoDbNonOverridableActionArgs(dbPassword string, databaseNames string) []ActionArgument {
 	return []ActionArgument{
 		{Name: "restart_mongod", Value: "true"},
 		{Name: "working_dir", Value: "/tmp"},
@@ -105,15 +105,15 @@ func mongoDbDefaultActionArgs(dbPassword string, databaseNames string) []ActionA
 	}
 }
 
-// PostGres action arguments that may be overwritten by user.
-func postgresReplacableActionArgs() []ActionArgument {
+// Gets Postgres overridable action arguments.
+func getPostgresOverridableActionArgs() []ActionArgument {
 	return []ActionArgument{
 		{Name: "listener_port", Value: "5432"},
 	}
 }
 
-// PostGres action arguments that may not be overwritten by user.
-func postgresDefaultActionArgs(dbPassword string, databaseNames string) []ActionArgument {
+// Gets Postgres non-overridable action arguments.
+func getPostgresNonOverridableActionArgs(dbPassword string, databaseNames string) []ActionArgument {
 	return []ActionArgument{
 		{Name: "proxy_read_port", Value: "5001"},
 		{Name: "proxy_write_port", Value: "5000"},
@@ -125,15 +125,15 @@ func postgresDefaultActionArgs(dbPassword string, databaseNames string) []Action
 	}
 }
 
-// MYSQL action arguments that may be overwritten by user.
-func mysqlReplacableActionArgs() []ActionArgument {
+// Gets MYSQL overridable action arguments.
+func getMySQLOverridableActionArgs() []ActionArgument {
 	return []ActionArgument{
 		{Name: "listener_port", Value: "3306"},
 	}
 }
 
-// MYSQL action arguments that may not be overwritten by user.
-func mysqlDefaultActionArgs(dbPassword string, databaseNames string) []ActionArgument {
+// Gets MYSQL non-overridable action arguments.
+func getMySQLNonOverridableActionArgs(dbPassword string, databaseNames string) []ActionArgument {
 	return []ActionArgument{
 		{Name: "db_password", Value: dbPassword},
 		{Name: "database_names", Value: databaseNames},
