@@ -256,7 +256,7 @@ func TestMSSQLProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-// Tests if MSSQLProvisionRequestAppender() function appends requests correctly with no typeDetails specified
+// Tests if MSSQLProvisionRequestAppender() function appends requests correctly with typeDetails specified
 func TestMSSQLProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
