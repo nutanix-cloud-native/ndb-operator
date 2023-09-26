@@ -496,8 +496,8 @@ func TestMongoDbProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 
 }
 
-// Tests if MySqlProvisionRequestAppender() function appends requests correctly
-func TestMySqlProvisionRequestAppender(t *testing.T) {
+// Tests if MySqlProvisionRequestAppender() function appends requests correctly without typeDetails
+func TestMySqlProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -511,19 +511,70 @@ func TestMySqlProvisionRequestAppender(t *testing.T) {
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 
+	var expectedActionArgs []ActionArgument
+	expectedActionArgs = append(
+		expectedActionArgs,
+		mysqlReplacableActionArgs()...,
+	)
+	expectedActionArgs = append(
+		expectedActionArgs,
+		mysqlDefaultActionArgs(TEST_PASSWORD, mockDatabase.GetDBInstanceDatabaseNames())...,
+	)
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
+
+	// Call function being tested
+	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Assert expected results
+	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
+		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
+	}
+
+	sortActionArgs(expectedActionArgs)
+	sortActionArgs(resultRequest.ActionArguments)
+
+	// Check if the lengths of the slices are equal
+	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
+		return
+	}
+
+	// Iterate over the sorted slices and compare each element
+	for i := range expectedActionArgs {
+		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
+			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
+		}
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests if MySqlProvisionRequestAppender() function appends requests correctly with type details
+func TestMySqlProvisionRequestAppenderWithTypeDetails(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+
+	baseRequest.ActionArguments = append(baseRequest.ActionArguments, []ActionArgument{
+		{Name: "listener_port", Value: "3306"},
+	}...)
+
 	expectedActionArgs := []ActionArgument{
-		{
-			Name:  "listener_port",
-			Value: "3306",
-		},
-		{
-			Name:  "db_password",
-			Value: TEST_PASSWORD,
-		},
-		{
-			Name:  "database_names",
-			Value: mockDatabase.GetDBInstanceDatabaseNames(),
-		},
+		{Name: "listener_port", Value: "3306"},
+		{Name: "db_password", Value: TEST_PASSWORD},
+		{Name: "database_names", Value: mockDatabase.GetDBInstanceDatabaseNames()},
 	}
 
 	// Get specific implementation of RequestAppender
@@ -537,8 +588,21 @@ func TestMySqlProvisionRequestAppender(t *testing.T) {
 		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
 	}
 
-	if !reflect.DeepEqual(resultRequest.ActionArguments, expectedActionArgs) {
-		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	// Sort action args
+	sortActionArgs(expectedActionArgs)
+	sortActionArgs(resultRequest.ActionArguments)
+
+	// Check if the lengths of the slices are equal
+	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
+		return
+	}
+
+	// Iterate over the sorted slices and compare each element
+	for i := range expectedActionArgs {
+		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
+			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
+		}
 	}
 
 	// Verify that the mock method was called with the expected arguments

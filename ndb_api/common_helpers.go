@@ -124,3 +124,18 @@ func postgresDefaultActionArgs(dbPassword string, databaseNames string) []Action
 		{Name: "database_names", Value: databaseNames},
 	}
 }
+
+// MYSQL action arguments that may be overwritten by user.
+func mysqlReplacableActionArgs() []ActionArgument {
+	return []ActionArgument{
+		{Name: "listener_port", Value: "3306"},
+	}
+}
+
+// MYSQL action arguments that may not be overwritten by user.
+func mysqlDefaultActionArgs(dbPassword string, databaseNames string) []ActionArgument {
+	return []ActionArgument{
+		{Name: "db_password", Value: dbPassword},
+		{Name: "database_names", Value: databaseNames},
+	}
+}

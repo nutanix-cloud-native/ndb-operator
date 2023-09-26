@@ -245,22 +245,9 @@ func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 
 	req.SSHPublicKey = SSHPublicKey
-	actionArgs := []ActionArgument{
-		{
-			Name:  "listener_port",
-			Value: "3306",
-		},
-		{
-			Name:  "db_password",
-			Value: dbPassword,
-		},
-		{
-			Name:  "database_names",
-			Value: databaseNames,
-		},
-	}
 
-	req.ActionArguments = append(req.ActionArguments, actionArgs...)
+	appendActionArguments(req, mysqlReplacableActionArgs(), mysqlDefaultActionArgs(dbPassword, databaseNames))
+
 	return req
 }
 
