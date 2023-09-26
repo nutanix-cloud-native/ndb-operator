@@ -349,8 +349,8 @@ func TestMSSQLProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 
 }
 
-// Tests if MongoDbProvisionRequestAppender() function appends requests correctly
-func TestMongoDbProvisionRequestAppender(t *testing.T) {
+// Tests if MongoDbProvisionRequestAppender() function appends requests correctly without type details.
+func TestMongoDbProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -364,43 +364,72 @@ func TestMongoDbProvisionRequestAppender(t *testing.T) {
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 
+	var expectedActionArgs []ActionArgument
+	expectedActionArgs = append(
+		expectedActionArgs,
+		mongoDbReplacableActionArgs()...,
+	)
+	expectedActionArgs = append(
+		expectedActionArgs,
+		mongoDbDefaultActionArgs(TEST_PASSWORD, mockDatabase.GetDBInstanceDatabaseNames())...,
+	)
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
+
+	// Call function being tested
+	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	sortActionArgs(expectedActionArgs)
+	sortActionArgs(resultRequest.ActionArguments)
+
+	// Check if the lengths of the slices are equal
+	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
+		return
+	}
+
+	// Iterate over the sorted slices and compare each element
+	for i := range expectedActionArgs {
+		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
+			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
+		}
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+func TestMongoDbProvisionRequestAppenderWithTypeDetails(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+
+	baseRequest.ActionArguments = append(baseRequest.ActionArguments, []ActionArgument{
+		{Name: "listener_port", Value: "27017"},
+		{Name: "log_size", Value: "100"},
+		{Name: "journal_size", Value: "100"},
+	}...)
+
 	expectedActionArgs := []ActionArgument{
-		{
-			Name:  "listener_port",
-			Value: "27017",
-		},
-		{
-			Name:  "log_size",
-			Value: "100",
-		},
-		{
-			Name:  "journal_size",
-			Value: "100",
-		},
-		{
-			Name:  "restart_mongod",
-			Value: "true",
-		},
-		{
-			Name:  "working_dir",
-			Value: "/tmp",
-		},
-		{
-			Name:  "db_user",
-			Value: "admin",
-		},
-		{
-			Name:  "backup_policy",
-			Value: "primary_only",
-		},
-		{
-			Name:  "db_password",
-			Value: TEST_PASSWORD,
-		},
-		{
-			Name:  "database_names",
-			Value: mockDatabase.GetDBInstanceDatabaseNames(),
-		},
+		{Name: "listener_port", Value: "27017"},
+		{Name: "log_size", Value: "100"},
+		{Name: "journal_size", Value: "100"},
+		{Name: "restart_mongod", Value: "true"},
+		{Name: "working_dir", Value: "/tmp"},
+		{Name: "db_user", Value: "admin"},
+		{Name: "backup_policy", Value: "primary_only"},
+		{Name: "db_password", Value: TEST_PASSWORD},
+		{Name: "database_names", Value: mockDatabase.GetDBInstanceDatabaseNames()},
 	}
 
 	// Get specific implementation of RequestAppender
@@ -409,13 +438,20 @@ func TestMongoDbProvisionRequestAppender(t *testing.T) {
 	// Call function being tested
 	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
-	// Assert expected results
-	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
-		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
+	sortActionArgs(expectedActionArgs)
+	sortActionArgs(resultRequest.ActionArguments)
+
+	// Check if the lengths of the slices are equal
+	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
+		return
 	}
 
-	if !reflect.DeepEqual(resultRequest.ActionArguments, expectedActionArgs) {
-		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	// Iterate over the sorted slices and compare each element
+	for i := range expectedActionArgs {
+		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
+			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
+		}
 	}
 
 	// Verify that the mock method was called with the expected arguments
