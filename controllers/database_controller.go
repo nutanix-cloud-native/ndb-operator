@@ -74,7 +74,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	log.Info("Database CR Status: " + util.ToString(database.Status))
 
-	// Fetch the database resource from the namespace
+	// Fetch the NDBServer resource from the namespace
 	ndbServer := &ndbv1alpha1.NDBServer{}
 	ndbNamespacedName := req.NamespacedName
 	ndbNamespacedName.Name = database.Spec.NDBRef
