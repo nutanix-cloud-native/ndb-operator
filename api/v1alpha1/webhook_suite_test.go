@@ -379,7 +379,7 @@ var _ = Describe("Webhook Tests", func() {
 						[]ndb_api.ActionArgument{
 							{Name: "server_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
 							{Name: "database_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
-							{Name: "vm_dbserver_admin_password", Value: "XXXX-XXXXX-XXXXX-XXXXX-XXXXX"},
+							{Name: "vm_win_license_key", Value: "XXXX-XXXXX-XXXXX-XXXXX-XXXXX"},
 							{Name: "vm_dbserver_admin_password", Value: "<password>"},
 							{Name: "authentication_mode", Value: "mixed"},
 							{Name: "sql_user_name", Value: "sa"},
