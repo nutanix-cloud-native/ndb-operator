@@ -58,3 +58,26 @@ func sortActionArgs(actionArgs []ActionArgument) {
 		return actionArgs[i].Name < actionArgs[j].Name
 	})
 }
+
+func mssqlReplacableActionArgs(dbParameterProfileIdInstance string, vmDbServerAdminPassword string) []ActionArgument {
+	return []ActionArgument{
+		{Name: "sql_user_name", Value: "sa"},
+		{Name: "authentication_mode", Value: "windows"},
+		{Name: "server_collation", Value: "SQL_Latin1_General_CP1_CI_AS"},
+		{Name: "database_collation", Value: "SQL_Latin1_General_CP1_CI_AS"},
+		{Name: "dbParameterProfileIdInstance", Value: dbParameterProfileIdInstance},
+		{Name: "vm_dbserver_admin_password", Value: vmDbServerAdminPassword},
+	}
+}
+
+func mssqlDefaultActionArgs(dbServerName string) []ActionArgument {
+	return []ActionArgument{
+		{Name: "working_dir", Value: "C:\\temp"},
+		{Name: "delete_vm_on_failure", Value: "false"},
+		{Name: "is_gmsa_sql_service_account", Value: "false"},
+		{Name: "provision_from_backup", Value: "false"},
+		{Name: "distribute_database_data", Value: "true"},
+		{Name: "retain_database_in_restoring_mode", Value: "false"},
+		{Name: "dbserver_name", Value: dbServerName},
+	}
+}
