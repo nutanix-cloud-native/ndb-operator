@@ -104,3 +104,23 @@ func mongoDbDefaultActionArgs(dbPassword string, databaseNames string) []ActionA
 		{Name: "database_names", Value: databaseNames},
 	}
 }
+
+// PostGres action arguments that may be overwritten by user.
+func postgresReplacableActionArgs() []ActionArgument {
+	return []ActionArgument{
+		{Name: "listener_port", Value: "5432"},
+	}
+}
+
+// PostGres action arguments that may not be overwritten by user.
+func postgresDefaultActionArgs(dbPassword string, databaseNames string) []ActionArgument {
+	return []ActionArgument{
+		{Name: "proxy_read_port", Value: "5001"},
+		{Name: "proxy_write_port", Value: "5000"},
+		{Name: "enable_synchronous_mode", Value: "false"},
+		{Name: "auto_tune_staging_drive", Value: "true"},
+		{Name: "backup_policy", Value: "primary_only"},
+		{Name: "db_password", Value: dbPassword},
+		{Name: "database_names", Value: databaseNames},
+	}
+}
