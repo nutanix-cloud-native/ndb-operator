@@ -183,7 +183,7 @@ func TestPostgresProvisionRequestAppender(t *testing.T) {
 }
 
 // Tests if MSSQLProvisionRequestAppender() function appends requests correctly with no typeDetails specified
-func TestMSSQLProvisionRequestAppenderNoTypeDetails(t *testing.T) {
+func TestMSSQLProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -212,59 +212,109 @@ func TestMSSQLProvisionRequestAppenderNoTypeDetails(t *testing.T) {
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 	mockDatabase.On("GetDBInstanceName").Return("testInstance")
 
+	var expectedActionArgs []ActionArgument
+	expectedActionArgs = append(
+		expectedActionArgs,
+		mssqlReplacableActionArgs(
+			profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE].Id,
+			adminPassword,
+		)...,
+	)
+	expectedActionArgs = append(
+		expectedActionArgs,
+		mssqlDefaultActionArgs(mockDatabase.GetDBInstanceName())...,
+	)
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
+
+	// Call function being tested
+	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Assert expected results
+	if resultRequest.DatabaseName != mockDatabase.GetDBInstanceDatabaseNames() {
+		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetDBInstanceDatabaseNames(), resultRequest.DatabaseName)
+	}
+
+	sortActionArgs(expectedActionArgs)
+	sortActionArgs(resultRequest.ActionArguments)
+
+	// Check if the lengths of the slices are equal
+	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
+		return
+	}
+
+	// Iterate over the sorted slices and compare each element
+	for i := range expectedActionArgs {
+		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
+			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
+		}
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests if MSSQLProvisionRequestAppender() function appends requests correctly with no typeDetails specified
+func TestMSSQLProvisionRequestAppenderWithTypeDetails(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	profileResponse := ProfileResponse{
+		Id:              "123",
+		Name:            "Test Profile",
+		Type:            "Test Type",
+		EngineType:      "Sample Engine",
+		LatestVersionId: "456",
+		Topology:        "Test Topology",
+		SystemProfile:   true,
+		Status:          "Active",
+	}
+	profileMap := map[string]ProfileResponse{
+		common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE: profileResponse,
+	}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_PASSWORD: TEST_PASSWORD,
+		common.PROFILE_MAP_PARAM:  profileMap}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceName").Return("testInstance")
+
+	baseRequest.ActionArguments = append(baseRequest.ActionArguments, []ActionArgument{
+		{Name: "server_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
+		{Name: "database_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
+		{Name: "vm_win_license_key", Value: "XXXX-XXXXX-XXXXX-XXXXX-XXXXX"},
+		{Name: "vm_dbserver_admin_password", Value: "<password>"},
+		{Name: "authentication_mode", Value: "mixed"},
+		{Name: "sql_user_name", Value: "sa"},
+		{Name: "sql_user_password", Value: "<password>"},
+		{Name: "windows_domain_profile_id", Value: "<XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"},
+		{Name: "vm_db_server_user", Value: "<prod.cdm.com\\<user>"},
+	}...)
+
 	expectedActionArgs := []ActionArgument{
-		{
-			Name:  "working_dir",
-			Value: "C:\\temp",
-		},
-		{
-			Name:  "sql_user_name",
-			Value: "sa",
-		},
-		{
-			Name:  "authentication_mode",
-			Value: "windows",
-		},
-		{
-			Name:  "delete_vm_on_failure",
-			Value: "false",
-		},
-		{
-			Name:  "is_gmsa_sql_service_account",
-			Value: "false",
-		},
-		{
-			Name:  "provision_from_backup",
-			Value: "false",
-		},
-		{
-			Name:  "distribute_database_data",
-			Value: "true",
-		},
-		{
-			Name:  "retain_database_in_restoring_mode",
-			Value: "false",
-		},
-		{
-			Name:  "dbserver_name",
-			Value: mockDatabase.GetDBInstanceName(),
-		},
-		{
-			Name:  "server_collation",
-			Value: "SQL_Latin1_General_CP1_CI_AS",
-		},
-		{
-			Name:  "database_collation",
-			Value: "SQL_Latin1_General_CP1_CI_AS",
-		},
-		{
-			Name:  "dbParameterProfileIdInstance",
-			Value: profileResponse.Id,
-		},
-		{
-			Name:  "vm_dbserver_admin_password",
-			Value: adminPassword,
-		},
+		{Name: "server_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
+		{Name: "database_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
+		{Name: "vm_win_license_key", Value: "XXXX-XXXXX-XXXXX-XXXXX-XXXXX"},
+		{Name: "vm_dbserver_admin_password", Value: "<password>"},
+		{Name: "authentication_mode", Value: "mixed"},
+		{Name: "sql_user_name", Value: "sa"},
+		{Name: "sql_user_password", Value: "<password>"},
+		{Name: "windows_domain_profile_id", Value: "<XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"},
+		{Name: "vm_db_server_user", Value: "<prod.cdm.com\\<user>"},
+		{Name: "working_dir", Value: "C:\\temp"},
+		{Name: "delete_vm_on_failure", Value: "false"},
+		{Name: "is_gmsa_sql_service_account", Value: "false"},
+		{Name: "provision_from_backup", Value: "false"},
+		{Name: "distribute_database_data", Value: "true"},
+		{Name: "retain_database_in_restoring_mode", Value: "false"},
+		{Name: "dbserver_name", Value: mockDatabase.GetDBInstanceName()},
+		{Name: "dbParameterProfileIdInstance", Value: profileResponse.Id},
 	}
 
 	// Get specific implementation of RequestAppender
