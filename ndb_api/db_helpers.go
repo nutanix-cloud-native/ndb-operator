@@ -210,65 +210,7 @@ func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 	profileMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
 	dbParamInstanceProfile := profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE]
 
-	replacableActionArgs := []ActionArgument{
-		{
-			Name:  "sql_user_name",
-			Value: "sa",
-		},
-		{
-			Name:  "authentication_mode",
-			Value: "windows",
-		},
-		{
-			Name:  "server_collation",
-			Value: "SQL_Latin1_General_CP1_CI_AS",
-		},
-		{
-			Name:  "database_collation",
-			Value: "SQL_Latin1_General_CP1_CI_AS",
-		},
-		{
-			Name:  "dbParameterProfileIdInstance",
-			Value: dbParamInstanceProfile.Id,
-		},
-		{
-			Name:  "vm_dbserver_admin_password",
-			Value: adminPassword,
-		},
-	}
-
-	defaultActionArgs := []ActionArgument{
-		{
-			Name:  "working_dir",
-			Value: "C:\\temp",
-		},
-		{
-			Name:  "delete_vm_on_failure",
-			Value: "false",
-		},
-		{
-			Name:  "is_gmsa_sql_service_account",
-			Value: "false",
-		},
-		{
-			Name:  "provision_from_backup",
-			Value: "false",
-		},
-		{
-			Name:  "distribute_database_data",
-			Value: "true",
-		},
-		{
-			Name:  "retain_database_in_restoring_mode",
-			Value: "false",
-		},
-		{
-			Name:  "dbserver_name",
-			Value: database.GetDBInstanceName(),
-		},
-	}
-
-	appendActionArguments(req, replacableActionArgs, defaultActionArgs)
+	appendActionArguments(req, mssqlReplacableActionArgs(dbParamInstanceProfile.Id, adminPassword), mssqlDefaultActionArgs(database.GetDBInstanceName()))
 
 	return req
 }
