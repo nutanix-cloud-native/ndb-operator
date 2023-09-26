@@ -233,42 +233,9 @@ func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionR
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 
 	req.SSHPublicKey = SSHPublicKey
-	actionArgs := []ActionArgument{
-		{
-			Name:  "proxy_read_port",
-			Value: "5001",
-		},
-		{
-			Name:  "listener_port",
-			Value: "5432",
-		},
-		{
-			Name:  "proxy_write_port",
-			Value: "5000",
-		},
-		{
-			Name:  "enable_synchronous_mode",
-			Value: "false",
-		},
-		{
-			Name:  "auto_tune_staging_drive",
-			Value: "true",
-		},
-		{
-			Name:  "backup_policy",
-			Value: "primary_only",
-		},
-		{
-			Name:  "db_password",
-			Value: dbPassword,
-		},
-		{
-			Name:  "database_names",
-			Value: databaseNames,
-		},
-	}
 
-	req.ActionArguments = append(req.ActionArguments, actionArgs...)
+	appendActionArguments(req, postgresReplacableActionArgs(), postgresDefaultActionArgs(dbPassword, databaseNames))
+
 	return req
 }
 
