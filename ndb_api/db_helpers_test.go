@@ -182,8 +182,8 @@ func TestPostgresProvisionRequestAppender(t *testing.T) {
 
 }
 
-// Tests if MSSQLProvisionRequestAppender() function appends requests correctly
-func TestMSSQLProvisionRequestAppender(t *testing.T) {
+// Tests if MSSQLProvisionRequestAppender() function appends requests correctly with no typeDetails specified
+func TestMSSQLProvisionRequestAppenderNoTypeDetails(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -278,8 +278,20 @@ func TestMSSQLProvisionRequestAppender(t *testing.T) {
 		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetDBInstanceDatabaseNames(), resultRequest.DatabaseName)
 	}
 
-	if !reflect.DeepEqual(resultRequest.ActionArguments, expectedActionArgs) {
-		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	sortActionArgs(expectedActionArgs)
+	sortActionArgs(resultRequest.ActionArguments)
+
+	// Check if the lengths of the slices are equal
+	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
+		return
+	}
+
+	// Iterate over the sorted slices and compare each element
+	for i := range expectedActionArgs {
+		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
+			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
+		}
 	}
 
 	// Verify that the mock method was called with the expected arguments
@@ -701,6 +713,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetDBInstanceName").Return("db_instance_name")
 		mockDatabase.On("GetDBInstanceDescription").Return("db_instance_description")
 		mockDatabase.On("GetDBInstanceType").Return(instanceType)
+		mockDatabase.On("GetDBInstanceTypeDetails").Return([]ActionArgument{})
 		mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", "SLA 1")
 		mockDatabase.On("GetTMSchedule").Return(Schedule{}, nil)
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
