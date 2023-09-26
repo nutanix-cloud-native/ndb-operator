@@ -221,46 +221,9 @@ func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRe
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 
 	req.SSHPublicKey = SSHPublicKey
-	actionArgs := []ActionArgument{
-		{
-			Name:  "listener_port",
-			Value: "27017",
-		},
-		{
-			Name:  "log_size",
-			Value: "100",
-		},
-		{
-			Name:  "journal_size",
-			Value: "100",
-		},
-		{
-			Name:  "restart_mongod",
-			Value: "true",
-		},
-		{
-			Name:  "working_dir",
-			Value: "/tmp",
-		},
-		{
-			Name:  "db_user",
-			Value: "admin",
-		},
-		{
-			Name:  "backup_policy",
-			Value: "primary_only",
-		},
-		{
-			Name:  "db_password",
-			Value: dbPassword,
-		},
-		{
-			Name:  "database_names",
-			Value: databaseNames,
-		},
-	}
 
-	req.ActionArguments = append(req.ActionArguments, actionArgs...)
+	appendActionArguments(req, mongoDbReplacableActionArgs(), mongoDbDefaultActionArgs(dbPassword, databaseNames))
+
 	return req
 }
 
