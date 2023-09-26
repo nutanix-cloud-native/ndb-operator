@@ -17,6 +17,8 @@ limitations under the License.
 package ndb_api
 
 import (
+	"sort"
+
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 )
 
@@ -48,4 +50,11 @@ func GetDatabasePortByType(dbType string) int32 {
 	default:
 		return -1
 	}
+}
+
+// Sorts actionArgs by name
+func sortActionArgs(actionArgs []ActionArgument) {
+	sort.Slice(actionArgs, func(i, j int) bool {
+		return actionArgs[i].Name < actionArgs[j].Name
+	})
 }
