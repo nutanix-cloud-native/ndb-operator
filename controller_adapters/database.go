@@ -60,8 +60,8 @@ func (d *Database) GetDBInstanceType() string {
 	return d.Spec.Instance.Type
 }
 
-func (d *Database) GetDBInstanceTypeDetails() []ndb_api.ActionArgument {
-	return d.Spec.Instance.TypeDetails
+func (d *Database) GetDBInstanceAdditionalArguments() map[string]string {
+	return d.Spec.Instance.AdditionalArguments
 }
 
 func (d *Database) GetDBInstanceDatabaseNames() string {
