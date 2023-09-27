@@ -223,7 +223,7 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 }
 
 /* Checks if configured additional arguments are invalid */
-func checkIfAdditionalArgumentsInvalid(typ string, additionalArguments map[string]string) (bool, map[string]bool) {
+func isAdditionalArgumentsInvalid(typ string, additionalArguments map[string]string) (bool, map[string]bool) {
 	var allowedAdditionalArguments map[string]bool
 	switch typ {
 	case common.DATABASE_TYPE_MYSQL:
@@ -248,7 +248,7 @@ func checkIfAdditionalArgumentsInvalid(typ string, additionalArguments map[strin
 /* Validates additionalaction arguments */
 func instanceSpecAdditionalArgumentsValidator(instance *Instance, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	additionalArgumentsPath := instancePath.Child("additionalArguments")
-	isInvalidTypeDetails, allowedTypeDetails := checkIfAdditionalArgumentsInvalid(instance.Type, instance.AdditionalArguments)
+	isInvalidTypeDetails, allowedTypeDetails := isAdditionalArgumentsInvalid(instance.Type, instance.AdditionalArguments)
 	if isInvalidTypeDetails {
 		allErrs = append(
 			allErrs,

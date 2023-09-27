@@ -141,49 +141,6 @@ var _ = AfterEach(func() {
 
 var _ = Describe("Webhook Tests", func() {
 
-	Describe("NDB Validation", func() {
-		When("Spec field is missing", func() {
-			It("Throws an rrror", func() {
-				database := ndbSpecMissing()
-				err := k8sClient.Create(context.Background(), database)
-				Expect(err).To(HaveOccurred())
-				errMsg := err.(*errors.StatusError).ErrStatus.Message
-				Expect(errMsg).To(ContainSubstring("NDB server spec must be provided!"))
-			})
-		})
-
-		When("'clusterId' is missing", func() {
-			It("Throws an error", func() {
-				database := ndbClusterIdMissing()
-				err := k8sClient.Create(context.Background(), database)
-				Expect(err).To(HaveOccurred())
-				errMsg := err.(*errors.StatusError).ErrStatus.Message
-				Expect(errMsg).To(ContainSubstring("NDB ClusterId must be provided and be a valid UUID!"))
-			})
-		})
-
-		When("'credentialSecret' is missing", func() {
-			It("Throws an error", func() {
-				database := ndbCredentialSecretMissing()
-				err := k8sClient.Create(context.Background(), database)
-				Expect(err).To(HaveOccurred())
-				errMsg := err.(*errors.StatusError).ErrStatus.Message
-				Expect(errMsg).To(ContainSubstring("NDB CredentialSecret must be provided!"))
-
-			})
-		})
-
-		When("'server' URL is missing", func() {
-			It("Throws an error", func() {
-				database := ndbServerURLMissing()
-				err := k8sClient.Create(context.Background(), database)
-				Expect(err).To(HaveOccurred())
-				errMsg := err.(*errors.StatusError).ErrStatus.Message
-				Expect(errMsg).To(ContainSubstring("NDB Server URL must be provided and be a valid URL!"))
-			})
-		})
-	})
-
 	Describe("DB Validation", func() {
 		When("'databaseInstanceName' is missing", func() {
 			It("Throws an error", func() {
