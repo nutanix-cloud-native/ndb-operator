@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -112,8 +113,8 @@ func TestGetRequestAppenderByType(t *testing.T) {
 	}
 }
 
-// Tests if PostgresProvisionRequestAppender() function appends requests correctly without type details
-func TestPostgresProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
+// Tests if PostgresProvisionRequestAdditionalArguments() function appends requests correctly without configured additional arguments
+func TestPostgresProvisionRequestAppenderWithoutAdditionalArguments(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -127,50 +128,38 @@ func TestPostgresProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 
-	var expectedActionArgs []ActionArgument
-	expectedActionArgs = append(
-		expectedActionArgs,
-		getPostgresOverridableActionArgs()...,
-	)
-	expectedActionArgs = append(
-		expectedActionArgs,
-		getPostgresNonOverridableActionArgs(TEST_PASSWORD, mockDatabase.GetDBInstanceDatabaseNames())...,
+	expectedActionArgs := convertMapToActionArguments(
+		getPostgresDefaultActionArguments(
+			TEST_PASSWORD,
+			TEST_DB_NAMES,
+		),
 	)
 
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_POSTGRES)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData, map[string]string{})
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
 		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
 	}
 
-	// Sort expected and retrieved action arguments
-	sortActionArgsByName(expectedActionArgs)
-	sortActionArgsByName(resultRequest.ActionArguments)
+	// Checks if expected and retrieved action arguments are equal
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
 	// Check if the lengths of expected and retrieved action arguments are equal
-	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
-		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
-		return
-	}
-
-	// Checks if expected and retrieved action arguments are equal
-	for i := range expectedActionArgs {
-		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
-			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
-		}
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
 	// Verify that the mock method was called with the expected arguments
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-// Tests if PostgresProvisionRequestAppender() function appends requests correctly with type details
-func TestPostgresProvisionRequestAppenderWithTypeDetails(t *testing.T) {
+// Tests if PostgresProvisionRequestAppender() function appends requests correctly with additional Arguments
+func TestPostgresProvisionRequestAppenderWithAdditionalArguments(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -184,26 +173,65 @@ func TestPostgresProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 
-	baseRequest.ActionArguments = append(baseRequest.ActionArguments, []ActionArgument{
-		{Name: "listener_port", Value: "1111"},
-	}...)
+	// baseRequest.ActionArguments = append(baseRequest.ActionArguments, []ActionArgument{
+	// 	{
+	// 		Name:  "dbserver_description",
+	// 		Value: "dbserver for " + mockD.GetDBInstanceName(),
+	// 	},
+	// 	{
+	// 		Name:  "database_size",
+	// 		Value: strconv.Itoa(database.GetDBInstanceSize()),
+	// 	},
+	// }...)
+
+	additionalArguments := map[string]string{
+		"listener_port": "0000",
+	}
 
 	expectedActionArgs := []ActionArgument{
-		{Name: "listener_port", Value: "1111"},
-		{Name: "proxy_read_port", Value: "5001"},
-		{Name: "proxy_write_port", Value: "5000"},
-		{Name: "enable_synchronous_mode", Value: "false"},
-		{Name: "auto_tune_staging_drive", Value: "true"},
-		{Name: "backup_policy", Value: "primary_only"},
-		{Name: "db_password", Value: TEST_PASSWORD},
-		{Name: "database_names", Value: mockDatabase.GetDBInstanceDatabaseNames()},
+		{
+			Name:  "listener_port",
+			Value: "0000",
+		},
+		{
+			Name:  "proxy_read_port",
+			Value: "5001",
+		},
+		{
+			Name:  "listener_port",
+			Value: "5432",
+		},
+		{
+			Name:  "proxy_write_port",
+			Value: "5000",
+		},
+		{
+			Name:  "enable_synchronous_mode",
+			Value: "false",
+		},
+		{
+			Name:  "auto_tune_staging_drive",
+			Value: "true",
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
+		},
+		{
+			Name:  "db_password",
+			Value: "dbPassword",
+		},
+		{
+			Name:  "database_names",
+			Value: "databaseNames",
+		},
 	}
 
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_POSTGRES)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData, additionalArguments)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -211,28 +239,19 @@ func TestPostgresProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	}
 
 	// Sort expected and retrieved action arguments
-	sortActionArgsByName(expectedActionArgs)
-	sortActionArgsByName(resultRequest.ActionArguments)
-
-	// Check if the lengths of expected and retrieved action arguments are equal
-	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
-		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
-		return
-	}
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
 	// Checks if expected and retrieved action arguments are equal
-	for i := range expectedActionArgs {
-		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
-			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
-		}
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
 	// Verify that the mock method was called with the expected arguments
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-// Tests if MSSQLProvisionRequestAppender() function appends requests correctly with no typeDetails specified
-func TestMSSQLProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
+// Tests if MSSQLProvisionRequestAppender() function appends requests correctly without action arguments specified
+func TestMSSQLProvisionRequestAppenderWithoutActionArguments(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -261,24 +280,19 @@ func TestMSSQLProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 	mockDatabase.On("GetDBInstanceName").Return("testInstance")
 
-	var expectedActionArgs []ActionArgument
-	expectedActionArgs = append(
-		expectedActionArgs,
-		getMsSQLOverridableActionArgs(
+	expectedActionArgs := convertMapToActionArguments(
+		getMsSQLDefaultActionArguments(
+			mockDatabase.GetDBInstanceName(),
 			profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE].Id,
 			adminPassword,
-		)...,
-	)
-	expectedActionArgs = append(
-		expectedActionArgs,
-		getMsSQLNonOverridableActionArgs(mockDatabase.GetDBInstanceName())...,
+		),
 	)
 
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData, map[string]string{})
 
 	// Assert expected results
 	if resultRequest.DatabaseName != mockDatabase.GetDBInstanceDatabaseNames() {
@@ -286,28 +300,19 @@ func TestMSSQLProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	}
 
 	// Sort expected and retrieved action arguments
-	sortActionArgsByName(expectedActionArgs)
-	sortActionArgsByName(resultRequest.ActionArguments)
-
-	// Check if the lengths of expected and retrieved action arguments are equal
-	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
-		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
-		return
-	}
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
 	// Checks if expected and retrieved action arguments are equal
-	for i := range expectedActionArgs {
-		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
-			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
-		}
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
 	// Verify that the mock method was called with the expected arguments
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-// Tests if MSSQLProvisionRequestAppender() function appends requests correctly with typeDetails specified
-func TestMSSQLProvisionRequestAppenderWithTypeDetails(t *testing.T) {
+// Tests if MSSQLProvisionRequestAppender() function appends requests correctly with action arguments specified
+func TestMSSQLProvisionRequestAppenderWithActionArguments(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -335,43 +340,86 @@ func TestMSSQLProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 	mockDatabase.On("GetDBInstanceName").Return("testInstance")
 
-	baseRequest.ActionArguments = append(baseRequest.ActionArguments, []ActionArgument{
-		{Name: "server_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
-		{Name: "database_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
-		{Name: "vm_win_license_key", Value: "XXXX-XXXXX-XXXXX-XXXXX-XXXXX"},
-		{Name: "vm_dbserver_admin_password", Value: "<password>"},
-		{Name: "authentication_mode", Value: "mixed"},
-		{Name: "sql_user_name", Value: "sa"},
-		{Name: "sql_user_password", Value: "<password>"},
-		{Name: "windows_domain_profile_id", Value: "<XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"},
-		{Name: "vm_db_server_user", Value: "<prod.cdm.com\\<user>"},
-	}...)
+	additionalArguments := map[string]string{
+		"sql_user_name":             "admin",
+		"sql_user_password":         TEST_PASSWORD,
+		"authentication_mode":       "mixed",
+		"windows_domain_profile_id": "<windows-domain-profile-id>",
+		"vm_db_server_user":         "<vm-db-server-user>",
+	}
 
 	expectedActionArgs := []ActionArgument{
-		{Name: "server_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
-		{Name: "database_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
-		{Name: "vm_win_license_key", Value: "XXXX-XXXXX-XXXXX-XXXXX-XXXXX"},
-		{Name: "vm_dbserver_admin_password", Value: "<password>"},
-		{Name: "authentication_mode", Value: "mixed"},
-		{Name: "sql_user_name", Value: "sa"},
-		{Name: "sql_user_password", Value: "<password>"},
-		{Name: "windows_domain_profile_id", Value: "<XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"},
-		{Name: "vm_db_server_user", Value: "<prod.cdm.com\\<user>"},
-		{Name: "working_dir", Value: "C:\\temp"},
-		{Name: "delete_vm_on_failure", Value: "false"},
-		{Name: "is_gmsa_sql_service_account", Value: "false"},
-		{Name: "provision_from_backup", Value: "false"},
-		{Name: "distribute_database_data", Value: "true"},
-		{Name: "retain_database_in_restoring_mode", Value: "false"},
-		{Name: "dbserver_name", Value: mockDatabase.GetDBInstanceName()},
-		{Name: "dbParameterProfileIdInstance", Value: profileResponse.Id},
+		{
+			Name:  "sql_user_name",
+			Value: "sa",
+		},
+		{
+			Name:  "sql_user_password",
+			Value: TEST_PASSWORD,
+		},
+		{
+			Name:  "authentication_mode",
+			Value: "mixed",
+		},
+		{
+			Name:  "windows_domain_profile_id",
+			Value: "<windows-domain_profile-id>",
+		},
+		{
+			Name:  "vm_db_server_user",
+			Value: "<vm-db-server-user>",
+		},
+		{
+			Name:  "working_dir",
+			Value: "C:\\temp",
+		},
+		{
+			Name:  "delete_vm_on_failure",
+			Value: "false",
+		},
+		{
+			Name:  "is_gmsa_sql_service_account",
+			Value: "false",
+		},
+		{
+			Name:  "provision_from_backup",
+			Value: "false",
+		},
+		{
+			Name:  "distribute_database_data",
+			Value: "true",
+		},
+		{
+			Name:  "retain_database_in_restoring_mode",
+			Value: "false",
+		},
+		{
+			Name:  "dbserver_name",
+			Value: mockDatabase.GetDBInstanceName(),
+		},
+		{
+			Name:  "server_collation",
+			Value: "SQL_Latin1_General_CP1_CI_AS",
+		},
+		{
+			Name:  "database_collation",
+			Value: "SQL_Latin1_General_CP1_CI_AS",
+		},
+		{
+			Name:  "dbParameterProfileIdInstance",
+			Value: profileResponse.Id,
+		},
+		{
+			Name:  "vm_dbserver_admin_password",
+			Value: TEST_PASSWORD,
+		},
 	}
 
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData, additionalArguments)
 
 	// Assert expected results
 	if resultRequest.DatabaseName != mockDatabase.GetDBInstanceDatabaseNames() {
@@ -379,20 +427,11 @@ func TestMSSQLProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	}
 
 	// Sort expected and retrieved action arguments
-	sortActionArgsByName(expectedActionArgs)
-	sortActionArgsByName(resultRequest.ActionArguments)
-
-	// Check if the lengths of expected and retrieved action arguments are equal
-	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
-		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
-		return
-	}
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
 	// Checks if expected and retrieved action arguments are equal
-	for i := range expectedActionArgs {
-		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
-			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
-		}
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
 	// Verify that the mock method was called with the expected arguments
@@ -400,8 +439,8 @@ func TestMSSQLProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 
 }
 
-// Tests if MongoDbProvisionRequestAppender() function appends requests correctly without type details.
-func TestMongoDbProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
+// Tests if MongoDbProvisionRequestAppender() function appends requests correctly without action arguments specified.
+func TestMongoDbProvisionRequestAppenderWithoutActionArguments(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -415,21 +454,18 @@ func TestMongoDbProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 
-	var expectedActionArgs []ActionArgument
-	expectedActionArgs = append(
-		expectedActionArgs,
-		getMongoDbOverridableActionArgs()...,
-	)
-	expectedActionArgs = append(
-		expectedActionArgs,
-		getMongoDbNonOverridableActionArgs(TEST_PASSWORD, mockDatabase.GetDBInstanceDatabaseNames())...,
+	expectedActionArgs := convertMapToActionArguments(
+		getMongoDbDefaultActionArguments(
+			TEST_PASSWORD,
+			mockDatabase.GetDBInstanceDatabaseNames(),
+		),
 	)
 
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData, map[string]string{})
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -437,27 +473,19 @@ func TestMongoDbProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	}
 
 	// Sort expected and retrieved action arguments
-	sortActionArgsByName(expectedActionArgs)
-	sortActionArgsByName(resultRequest.ActionArguments)
-
-	// Check if the lengths of expected and retrieved action arguments are equal
-	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
-		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
-		return
-	}
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
 	// Checks if expected and retrieved action arguments are equal
-	for i := range expectedActionArgs {
-		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
-			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
-		}
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
 	// Verify that the mock method was called with the expected arguments
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-func TestMongoDbProvisionRequestAppenderWithTypeDetails(t *testing.T) {
+// Tests if MongoDbProvisionRequestAppender() function appends requests correctly with action arguments specified.
+func TestMongoDbProvisionRequestAppenderWithActionArguments(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -471,29 +499,56 @@ func TestMongoDbProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 
-	baseRequest.ActionArguments = append(baseRequest.ActionArguments, []ActionArgument{
-		{Name: "listener_port", Value: "11111"},
-		{Name: "log_size", Value: "1"},
-		{Name: "journal_size", Value: "1"},
-	}...)
+	additionalArguments := map[string]string{
+		"listener_port": "1111",
+		"log_size":      "1",
+		"journal_size":  "1",
+	}
 
 	expectedActionArgs := []ActionArgument{
-		{Name: "listener_port", Value: "11111"},
-		{Name: "log_size", Value: "1"},
-		{Name: "journal_size", Value: "1"},
-		{Name: "restart_mongod", Value: "true"},
-		{Name: "working_dir", Value: "/tmp"},
-		{Name: "db_user", Value: "admin"},
-		{Name: "backup_policy", Value: "primary_only"},
-		{Name: "db_password", Value: TEST_PASSWORD},
-		{Name: "database_names", Value: mockDatabase.GetDBInstanceDatabaseNames()},
+		{
+			Name:  "listener_port",
+			Value: "1111",
+		},
+		{
+			Name:  "log_size",
+			Value: "1",
+		},
+		{
+			Name:  "journal_size",
+			Value: "1",
+		},
+		{
+			Name:  "restart_mongod",
+			Value: "true",
+		},
+		{
+			Name:  "working_dir",
+			Value: "/tmp",
+		},
+		{
+			Name:  "db_user",
+			Value: "admin",
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
+		},
+		{
+			Name:  "db_password",
+			Value: TEST_PASSWORD,
+		},
+		{
+			Name:  "database_names",
+			Value: mockDatabase.GetDBInstanceDatabaseNames(),
+		},
 	}
 
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData, additionalArguments)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -501,29 +556,19 @@ func TestMongoDbProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	}
 
 	// Sort expected and retrieved action arguments
-	sortActionArgsByName(expectedActionArgs)
-	sortActionArgsByName(resultRequest.ActionArguments)
-
-	// Check if the lengths of expected and retrieved action arguments are equal
-	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
-		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
-		return
-	}
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
 	// Checks if expected and retrieved action arguments are equal
-	for i := range expectedActionArgs {
-		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
-			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
-		}
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
 	// Verify that the mock method was called with the expected arguments
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
-
 }
 
-// Tests if MySqlProvisionRequestAppender() function appends requests correctly without typeDetails
-func TestMySqlProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
+// Tests if MySqlProvisionRequestAppender() function appends requests correctly without additional arguments specified
+func TestMySqlProvisionRequestAppenderWithoutAdditionalArguments(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -537,21 +582,18 @@ func TestMySqlProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 
-	var expectedActionArgs []ActionArgument
-	expectedActionArgs = append(
-		expectedActionArgs,
-		getMySQLOverridableActionArgs()...,
-	)
-	expectedActionArgs = append(
-		expectedActionArgs,
-		getMySQLNonOverridableActionArgs(TEST_PASSWORD, mockDatabase.GetDBInstanceDatabaseNames())...,
+	expectedActionArgs := convertMapToActionArguments(
+		getMySQLDefaultActionArguments(
+			TEST_PASSWORD,
+			mockDatabase.GetDBInstanceDatabaseNames(),
+		),
 	)
 
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData, map[string]string{})
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -559,28 +601,19 @@ func TestMySqlProvisionRequestAppenderWithoutTypeDetails(t *testing.T) {
 	}
 
 	// Sort expected and retrieved action arguments
-	sortActionArgsByName(expectedActionArgs)
-	sortActionArgsByName(resultRequest.ActionArguments)
-
-	// Check if the lengths of expected and retrieved action arguments are equal
-	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
-		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
-		return
-	}
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
 	// Checks if expected and retrieved action arguments are equal
-	for i := range expectedActionArgs {
-		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
-			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
-		}
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
 	// Verify that the mock method was called with the expected arguments
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-// Tests if MySqlProvisionRequestAppender() function appends requests correctly with type details
-func TestMySqlProvisionRequestAppenderWithTypeDetails(t *testing.T) {
+// Tests if MySqlProvisionRequestAppender() function appends requests correctly with additional arguments specified
+func TestMySqlProvisionRequestAppenderWithAdditionalArguments(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -594,21 +627,34 @@ func TestMySqlProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 
-	baseRequest.ActionArguments = append(baseRequest.ActionArguments, []ActionArgument{
-		{Name: "listener_port", Value: "3306"},
-	}...)
+	additionalArguments := map[string]string{
+		"listener_port": "1111",
+	}
 
 	expectedActionArgs := []ActionArgument{
-		{Name: "listener_port", Value: "3306"},
-		{Name: "db_password", Value: TEST_PASSWORD},
-		{Name: "database_names", Value: mockDatabase.GetDBInstanceDatabaseNames()},
+		{
+			Name:  "listener_port",
+			Value: "1111",
+		},
+		{
+			Name:  "db_password",
+			Value: TEST_PASSWORD,
+		},
+		{
+			Name:  "database_names",
+			Value: mockDatabase.GetDBInstanceDatabaseNames(),
+		},
+		{
+			Name:  "auto_tune_staging_drive",
+			Value: "true",
+		},
 	}
 
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData, additionalArguments)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -616,20 +662,11 @@ func TestMySqlProvisionRequestAppenderWithTypeDetails(t *testing.T) {
 	}
 
 	// Sort expected and retrieved action arguments
-	sortActionArgsByName(expectedActionArgs)
-	sortActionArgsByName(resultRequest.ActionArguments)
-
-	// Check if the lengths of expected and retrieved action arguments are equal
-	if len(expectedActionArgs) != len(resultRequest.ActionArguments) {
-		t.Errorf("Unexpected ActionArguments length. Expected: %d, Got: %d", len(expectedActionArgs), len(resultRequest.ActionArguments))
-		return
-	}
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
 	// Checks if expected and retrieved action arguments are equal
-	for i := range expectedActionArgs {
-		if expectedActionArgs[i] != resultRequest.ActionArguments[i] {
-			t.Errorf("Unexpected ActionArgument at index %d. Expected: %v, Got: %v", i, expectedActionArgs[i], resultRequest.ActionArguments[i])
-		}
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
 	// Verify that the mock method was called with the expected arguments
@@ -944,4 +981,14 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 			t.Fatalf("expected: %v, got: %v", tc.expectedError, err)
 		}
 	}
+}
+
+// Sorts want and got action args by name
+func sortWantAndGotActionArgsByName(wantActionArgs, gotActionArgs []ActionArgument) {
+	sort.Slice(wantActionArgs, func(i, j int) bool {
+		return wantActionArgs[i].Name < wantActionArgs[j].Name
+	})
+	sort.Slice(gotActionArgs, func(i, j int) bool {
+		return gotActionArgs[i].Name < gotActionArgs[j].Name
+	})
 }

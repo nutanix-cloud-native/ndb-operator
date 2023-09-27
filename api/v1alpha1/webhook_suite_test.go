@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	ndb_api "github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -293,8 +292,8 @@ var _ = Describe("Webhook Tests", func() {
 					database := dbWithTypeDetailsSpecified(
 						"db6",
 						"mysql",
-						[]ndb_api.ActionArgument{
-							{Name: "listener_port", Value: "3306"},
+						map[string]string{
+							"listener_port": "3306",
 						},
 					)
 					err := k8sClient.Create(context.Background(), database)
@@ -304,8 +303,8 @@ var _ = Describe("Webhook Tests", func() {
 					database := dbWithTypeDetailsSpecified(
 						"db",
 						"mysql",
-						[]ndb_api.ActionArgument{
-							{Name: "invalid", Value: "invalid"},
+						map[string]string{
+							"invalid": "invalid",
 						},
 					)
 					err := k8sClient.Create(context.Background(), database)
@@ -320,8 +319,8 @@ var _ = Describe("Webhook Tests", func() {
 					database := dbWithTypeDetailsSpecified(
 						"db7",
 						"postgres",
-						[]ndb_api.ActionArgument{
-							{Name: "listener_port", Value: "5432"},
+						map[string]string{
+							"listener_port": "5432",
 						},
 					)
 					err := k8sClient.Create(context.Background(), database)
@@ -331,8 +330,8 @@ var _ = Describe("Webhook Tests", func() {
 					database := dbWithTypeDetailsSpecified(
 						"db",
 						"postgres",
-						[]ndb_api.ActionArgument{
-							{Name: "invalid", Value: "invalid"},
+						map[string]string{
+							"invalid": "invalid",
 						},
 					)
 					err := k8sClient.Create(context.Background(), database)
@@ -347,10 +346,10 @@ var _ = Describe("Webhook Tests", func() {
 					database := dbWithTypeDetailsSpecified(
 						"db8",
 						"mongodb",
-						[]ndb_api.ActionArgument{
-							{Name: "listener_port", Value: "5432"},
-							{Name: "log_size", Value: "10"},
-							{Name: "journal_size", Value: "10"},
+						map[string]string{
+							"listener_port": "5432",
+							"log_size":      "10",
+							"journal_size":  "10",
 						},
 					)
 					err := k8sClient.Create(context.Background(), database)
@@ -360,8 +359,8 @@ var _ = Describe("Webhook Tests", func() {
 					database := dbWithTypeDetailsSpecified(
 						"db",
 						"mongodb",
-						[]ndb_api.ActionArgument{
-							{Name: "invalid", Value: "invalid"},
+						map[string]string{
+							"invalid": "invalid",
 						},
 					)
 					err := k8sClient.Create(context.Background(), database)
@@ -376,16 +375,16 @@ var _ = Describe("Webhook Tests", func() {
 					database := dbWithTypeDetailsSpecified(
 						"db9",
 						"mssql",
-						[]ndb_api.ActionArgument{
-							{Name: "server_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
-							{Name: "database_collation", Value: "SQL_Latin1_General_CPI_CI_AS"},
-							{Name: "vm_win_license_key", Value: "XXXX-XXXXX-XXXXX-XXXXX-XXXXX"},
-							{Name: "vm_dbserver_admin_password", Value: "<password>"},
-							{Name: "authentication_mode", Value: "mixed"},
-							{Name: "sql_user_name", Value: "sa"},
-							{Name: "sql_user_password", Value: "<password>"},
-							{Name: "windows_domain_profile_id", Value: "<XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"},
-							{Name: "vm_db_server_user", Value: "<prod.cdm.com\\<user>"},
+						map[string]string{
+							"server_collation":           "SQL_Latin1_General_CPI_CI_AS",
+							"database_collation":         "SQL_Latin1_General_CPI_CI_AS",
+							"vm_win_license_key":         "XXXX-XXXXX-XXXXX-XXXXX-XXXXX",
+							"vm_dbserver_admin_password": "<password>",
+							"authentication_mode":        "mixed",
+							"sql_user_name":              "sa",
+							"sql_user_password":          "<password>",
+							"windows_domain_profile_id":  "<XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+							"vm_db_server_user":          "<prod.cdm.com\\<user>",
 						},
 					)
 					err := k8sClient.Create(context.Background(), database)
@@ -395,8 +394,8 @@ var _ = Describe("Webhook Tests", func() {
 					database := dbWithTypeDetailsSpecified(
 						"db",
 						"mssql",
-						[]ndb_api.ActionArgument{
-							{Name: "invalid", Value: "invalid"},
+						map[string]string{
+							"invalid": "invalid",
 						},
 					)
 					err := k8sClient.Create(context.Background(), database)
