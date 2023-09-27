@@ -37,33 +37,3 @@ var AllowedQuarterlySnapshotMonths = map[string]bool{
 	"Feb": true,
 	"Mar": true,
 }
-
-var AllowedMySqlTypeDetails = map[string]bool{
-	"listener_port": true,
-}
-
-var AllowedPostGresTypeDetails = map[string]bool{
-	"listener_port": true,
-}
-
-var AllowedMongoDBTypeDetails = map[string]bool{
-	"listener_port": true,
-	"log_size":      true,
-	"journal_size":  true,
-}
-
-var AllowedMsSqlTypeDetails = map[string]bool{
-	"server_collation":           true,
-	"database_collation":         true,
-	"vm_win_license_key":         true,
-	"vm_dbserver_admin_password": true,
-	"authentication_mode":        true,
-	"sql_user_name":              true,
-	"sql_user_password":          true,
-	"windows_domain_profile_id":  true,
-	"vm_db_server_user":          true,
-}
-
-var AllowedMariaDBTypeDetails = map[string]bool{
-	"listener_port": true,
-}
