@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nutanix-cloud-native/ndb-operator/common"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -32,6 +33,7 @@ import (
 	//+kubebuilder:scaffold:imports
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -144,7 +146,26 @@ var _ = Describe("Webhook Tests", func() {
 	Describe("DB Validation", func() {
 		When("'databaseInstanceName' is missing", func() {
 			It("Throws an error", func() {
-				database := dbInstanceNameMissing()
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							CredentialSecret: "db-instance-secret",
+							Size:             10,
+							TimeZone:         "UTC",
+							Type:             common.DATABASE_TYPE_POSTGRES,
+						},
+					},
+				}
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).To(HaveOccurred())
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
@@ -154,7 +175,27 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("'description' not specified", func() {
 			It("Sets a default 'description'", func() {
-				database := dbDescriptionNotSpecified("db1")
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db1",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							DatabaseInstanceName: "db-instance-name",
+							CredentialSecret:     "db-instance-secret",
+							Size:                 10,
+							TimeZone:             "UTC",
+							Type:                 common.DATABASE_TYPE_POSTGRES,
+						},
+					},
+				}
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).ToNot(HaveOccurred())
 				// TODO: Check if 'description' was defaulted
@@ -163,7 +204,27 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("'databaseNames' not specified", func() {
 			It("Sets a default 'databaseNames'", func() {
-				database := dbDescriptionNotSpecified("db2")
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							DatabaseInstanceName: "db-instance-name",
+							CredentialSecret:     "db-instance-secret",
+							Size:                 10,
+							TimeZone:             "UTC",
+							Type:                 common.DATABASE_TYPE_POSTGRES,
+						},
+					},
+				}
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).ToNot(HaveOccurred())
 				// TODO: Check if 'databaseNames' were defaulted
@@ -172,7 +233,26 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("'credentialSecret' is missing", func() {
 			It("Throws an error'", func() {
-				database := dbCredentialSecretMissing()
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							DatabaseInstanceName: "db-instance-name",
+							Size:                 10,
+							TimeZone:             "UTC",
+							Type:                 common.DATABASE_TYPE_POSTGRES,
+						},
+					},
+				}
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).To(HaveOccurred())
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
@@ -182,7 +262,27 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("'size' is less than 10", func() {
 			It("Throws an error'", func() {
-				database := dbSizeLessThan10()
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							DatabaseInstanceName: "db-instance-name",
+							CredentialSecret:     "db-instance-secret",
+							Size:                 1,
+							TimeZone:             "UTC",
+							Type:                 common.DATABASE_TYPE_POSTGRES,
+						},
+					},
+				}
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).To(HaveOccurred())
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
@@ -192,7 +292,26 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("'timeZone' not specified", func() {
 			It("Sets a default 'timeZone'", func() {
-				database := dbDescriptionNotSpecified("db3")
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							DatabaseInstanceName: "db-instance-name",
+							CredentialSecret:     "db-instance-secret",
+							Size:                 10,
+							Type:                 common.DATABASE_TYPE_POSTGRES,
+						},
+					},
+				}
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).ToNot(HaveOccurred())
 				// TODO: Check if 'timeZone' was defaulted
@@ -201,7 +320,25 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("'type' missing", func() {
 			It("Throws an error'", func() {
-				database := dbTypeMissing()
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							DatabaseInstanceName: "db-instance-name",
+							CredentialSecret:     "db-instance-secret",
+							Size:                 1,
+						},
+					},
+				}
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).To(HaveOccurred())
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
@@ -236,7 +373,26 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("'timeMachine' not specified", func() {
 			It("Sets default 'timeMachineInfo", func() {
-				database := dbTimeMachineNotSpecified("db5")
+				database := &Database{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "db5",
+						Namespace: "default",
+					},
+					Spec: DatabaseSpec{
+						NDB: NDB{
+							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+							SkipCertificateVerification: true,
+							CredentialSecret:            "ndb-secret",
+							Server:                      "https://10.51.140.43:8443/era/v0.9",
+						},
+						Instance: Instance{
+							DatabaseInstanceName: "db-instance-name",
+							CredentialSecret:     "db-instance-secret",
+							Size:                 10,
+							Type:                 common.DATABASE_TYPE_POSTGRES,
+						},
+					},
+				}
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).ToNot(HaveOccurred())
 				// TODO: Check if 'timeMachine' was defaulted
@@ -248,7 +404,7 @@ var _ = Describe("Webhook Tests", func() {
 				It("Valid typeDetails specified", func() {
 					database := dbWithAdditionalArguments(
 						"db6",
-						"mysql",
+						common.DATABASE_TYPE_MYSQL,
 						map[string]string{
 							"listener_port": "3306",
 						},
@@ -259,7 +415,7 @@ var _ = Describe("Webhook Tests", func() {
 				It("Invalid typeDetails specified", func() {
 					database := dbWithAdditionalArguments(
 						"db",
-						"mysql",
+						common.DATABASE_TYPE_MYSQL,
 						map[string]string{
 							"invalid": "invalid",
 						},
@@ -275,7 +431,7 @@ var _ = Describe("Webhook Tests", func() {
 				It("Valid typeDetails specified", func() {
 					database := dbWithAdditionalArguments(
 						"db7",
-						"postgres",
+						common.DATABASE_TYPE_POSTGRES,
 						map[string]string{
 							"listener_port": "5432",
 						},
@@ -364,3 +520,60 @@ var _ = Describe("Webhook Tests", func() {
 		})
 	})
 })
+
+/* Creates a database CR with 'type'. */
+func dbWithType(db string, typ string) *Database {
+	return &Database{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      db,
+			Namespace: "default",
+		},
+		Spec: DatabaseSpec{
+			NDB: NDB{
+				ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+				SkipCertificateVerification: true,
+				CredentialSecret:            "ndb-secret",
+				Server:                      "https://10.51.140.43:8443/era/v0.9",
+			},
+			Instance: Instance{
+				DatabaseInstanceName: "db-instance-name",
+				CredentialSecret:     "db-instance-secret",
+				Size:                 10,
+				Type:                 typ,
+			},
+		},
+	}
+}
+
+/* Creates a database CR with 'db' name, 'type', and 'additionalArgument' specified */
+func dbWithAdditionalArguments(db string, typ string, additionalArguments map[string]string) *Database {
+	database := &Database{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      db,
+			Namespace: "default",
+		},
+		Spec: DatabaseSpec{
+			NDB: NDB{
+				ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
+				SkipCertificateVerification: true,
+				CredentialSecret:            "ndb-secret",
+				Server:                      "https://10.51.140.43:8443/era/v0.9",
+			},
+			Instance: Instance{
+				DatabaseInstanceName: "db-instance-name",
+				CredentialSecret:     "db-instance-secret",
+				Size:                 10,
+				Type:                 typ,
+				AdditionalArguments:  additionalArguments,
+			},
+		},
+	}
+
+	if typ == common.DATABASE_TYPE_MSSQL {
+		database.Spec.Instance.Profiles = &Profiles{
+			Software: Profile{Name: "MSSQL_SOFTWARE_PROFILE"},
+		}
+	}
+
+	return database
+}
