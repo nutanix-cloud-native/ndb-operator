@@ -146,8 +146,8 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 	return requeueWithTimeout(15)
 }
 
-// The handleSync function synchronizes the database CR's with the database instance in NDB
-// It handles the transition from EMPTY (initial state) => PROVISIONING => RUNNING
+// The handleSync function synchronizes the database CR with the database info object in the
+// NDBServer CR (which fetches it from NDB). It handles the transition from EMPTY (initial state) => WAITING => PROVISIONING => RUNNING
 // and updates the status accordingly. The update() triggers an implicit requeue of the reconcile request.
 func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient, req ctrl.Request, ndbServer *ndbv1alpha1.NDBServer) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
@@ -198,9 +198,8 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			r.recorder.Eventf(database, "Warning", EVENT_NDB_REQUEST_FAILED, "Error: %s. %s", errStatement, err.Error())
 			return requeueOnErr(err)
 		}
-		// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
 
-		log.Info("Setting database CR status to provisioning and id as " + taskResponse.EntityId)
+		log.Info(fmt.Sprintf("Updating Database CR to Status: WAITING, id: %s and provisioningOperationId: %s", taskResponse.EntityId, taskResponse.OperationId))
 
 		databaseStatus.Status = common.DATABASE_CR_STATUS_WAITING
 		databaseStatus.Id = taskResponse.EntityId
