@@ -269,7 +269,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		// No-Op
 	}
 
-	return requeueWithTimeout(15)
+	return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
 }
 
 // Sets up a kubernetes networking service (Without selectors)
