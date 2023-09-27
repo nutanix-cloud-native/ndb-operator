@@ -198,10 +198,6 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArguments(t *testing.T) {
 			Value: "5001",
 		},
 		{
-			Name:  "listener_port",
-			Value: "5432",
-		},
-		{
 			Name:  "proxy_write_port",
 			Value: "5000",
 		},
@@ -351,7 +347,7 @@ func TestMSSQLProvisionRequestAppenderWithActionArguments(t *testing.T) {
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "sql_user_name",
-			Value: "sa",
+			Value: "admin",
 		},
 		{
 			Name:  "sql_user_password",
@@ -363,7 +359,7 @@ func TestMSSQLProvisionRequestAppenderWithActionArguments(t *testing.T) {
 		},
 		{
 			Name:  "windows_domain_profile_id",
-			Value: "<windows-domain_profile-id>",
+			Value: "<windows-domain-profile-id>",
 		},
 		{
 			Name:  "vm_db_server_user",
@@ -964,7 +960,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetDBInstanceName").Return("db_instance_name")
 		mockDatabase.On("GetDBInstanceDescription").Return("db_instance_description")
 		mockDatabase.On("GetDBInstanceType").Return(instanceType)
-		mockDatabase.On("GetDBInstanceTypeDetails").Return([]ActionArgument{})
+		mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
 		mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", "SLA 1")
 		mockDatabase.On("GetTMSchedule").Return(Schedule{}, nil)
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)

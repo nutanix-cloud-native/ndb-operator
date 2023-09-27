@@ -226,7 +226,7 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 func checkIfAdditionalArgumentsInvalid(typ string, additionalArguments map[string]string) (bool, map[string]bool) {
 	var allowedAdditionalArguments map[string]bool
 	switch typ {
-	case common.DATABASE_ENGINE_TYPE_MYSQL:
+	case common.DATABASE_TYPE_MYSQL:
 		allowedAdditionalArguments = ndb_api.GetMySQLAllowedAdditionalArguments()
 	case common.DATABASE_TYPE_POSTGRES:
 		allowedAdditionalArguments = ndb_api.GetPostgresAllowedAdditionalArguments()

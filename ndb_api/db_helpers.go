@@ -184,9 +184,13 @@ func appendActionArguments(req *DatabaseProvisionRequest, defaultActionArguments
 
 	// 2) Appending remaining configured action arguments that have no default.
 	for name, value := range configuredAdditionalArgs {
-		// Checking if additional argument is an action argument.
-		if isActionArg, isExists := isConfiguredActionArg[name]; isExists && isActionArg {
-			req.ActionArguments = append(req.ActionArguments, ActionArgument{Name: name, Value: value})
+
+		// a) Checking if the key is not specified in default. If it is not, can add if its an action argument
+		if _, isInDefaultActionArguments := defaultActionArguments[name]; !isInDefaultActionArguments {
+			// b) Checking if it is an action argument
+			if isActionArg, isExists := isConfiguredActionArg[name]; isExists && isActionArg {
+				req.ActionArguments = append(req.ActionArguments, ActionArgument{Name: name, Value: value})
+			}
 		}
 	}
 }
