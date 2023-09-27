@@ -63,18 +63,8 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		return
 	}
 
-	// Fetching and appending ActionArguments
-	actionArguments := database.GetDBInstanceTypeDetails()
-	actionArguments = append(actionArguments, []ActionArgument{
-		{
-			Name:  "dbserver_description",
-			Value: "dbserver for " + database.GetDBInstanceName(),
-		},
-		{
-			Name:  "database_size",
-			Value: strconv.Itoa(database.GetDBInstanceSize()),
-		},
-	}...)
+	// Fetching additionalArguments
+	additionalArguments := database.GetDBInstanceAdditionalArguments()
 
 	// Creating a provisioning request based on the database type
 	requestBody = &DatabaseProvisionRequest{
@@ -107,7 +97,16 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 				VmName:     database.GetDBInstanceName() + "_VM",
 			},
 		},
-		ActionArguments: actionArguments,
+		ActionArguments: []ActionArgument{
+			{
+				Name:  "dbserver_description",
+				Value: "dbserver for " + database.GetDBInstanceName(),
+			},
+			{
+				Name:  "database_size",
+				Value: strconv.Itoa(database.GetDBInstanceSize()),
+			},
+		},
 	}
 
 	// Appending request body based on database type
@@ -116,7 +115,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		log.Error(err, "Error while appending provisioning request")
 		return
 	}
-	requestBody = appender.appendRequest(requestBody, database, reqData)
+	requestBody = appender.appendRequest(requestBody, database, reqData, additionalArguments)
 
 	log.Info("Database Provisioning", "requestBody", requestBody)
 	log.Info("Returning from ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
@@ -171,29 +170,30 @@ func validateReqData(ctx context.Context, databaseInstanceType string, reqData m
 	return
 }
 
-// Appends defaultAction arguments and replacableActionArgs (if they are not specified in reqData)
-func appendActionArguments(req *DatabaseProvisionRequest, replacableActionArgs []ActionArgument, defaultActionArgs []ActionArgument) {
-	reqActionArgs := make(map[string]string)
+// Appends action arguments to req.ActionArguments.
+func appendActionArguments(req *DatabaseProvisionRequest, defaultActionArguments map[string]string, configuredAdditionalArgs map[string]string, isConfiguredActionArg map[string]bool) {
 
-	// Append reqActionArgs to map so we know which replacableActionArgs we should add
-	for _, arg := range req.ActionArguments {
-		reqActionArgs[arg.Name] = arg.Value
-	}
-
-	// Add actionArgument to req if it is not present
-	for _, arg := range replacableActionArgs {
-		if _, isPresent := reqActionArgs[arg.Name]; !isPresent {
-			req.ActionArguments = append(req.ActionArguments, arg)
+	// 1) Appending configured action arg if specified, else appending default.
+	for name, defaultValue := range defaultActionArguments {
+		if configuredValue, nameExists := configuredAdditionalArgs[name]; nameExists {
+			req.ActionArguments = append(req.ActionArguments, ActionArgument{Name: name, Value: configuredValue})
+		} else {
+			req.ActionArguments = append(req.ActionArguments, ActionArgument{Name: name, Value: defaultValue})
 		}
 	}
 
-	// Append defaultActionArgs
-	req.ActionArguments = append(req.ActionArguments, defaultActionArgs...)
+	// 2) Appending remaining configured action arguments that have no default.
+	for name, value := range configuredAdditionalArgs {
+		// Checking if additional argument is an action argument.
+		if isActionArg, isExists := isConfiguredActionArg[name]; isExists && isActionArg {
+			req.ActionArguments = append(req.ActionArguments, ActionArgument{Name: name, Value: value})
+		}
+	}
 }
 
 // Appends request based on database type
 type DBProvisionRequestAppender interface {
-	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest
+	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}, additionalArguments map[string]string) *DatabaseProvisionRequest
 }
 
 type MSSQLProvisionRequestAppender struct{}
@@ -204,49 +204,79 @@ type PostgresProvisionRequestAppender struct{}
 
 type MySqlProvisionRequestAppender struct{}
 
-func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}, additionalArguments map[string]string) *DatabaseProvisionRequest {
 	req.DatabaseName = string(database.GetDBInstanceDatabaseNames())
 	adminPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	profileMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
 	dbParamInstanceProfile := profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE]
 
-	appendActionArguments(req, getMsSQLOverridableActionArgs(dbParamInstanceProfile.Id, adminPassword), getMsSQLNonOverridableActionArgs(database.GetDBInstanceName()))
+	appendActionArguments(
+		req,
+		getMsSQLDefaultActionArguments(
+			database.GetDBInstanceName(),
+			dbParamInstanceProfile.Id,
+			adminPassword,
+		),
+		additionalArguments,
+		GetMsSQLAllowedAdditionalArguments(),
+	)
 
 	return req
 }
 
-func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}, additionalArguments map[string]string) *DatabaseProvisionRequest {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
-
 	req.SSHPublicKey = SSHPublicKey
 
-	appendActionArguments(req, getMongoDbOverridableActionArgs(), getMongoDbNonOverridableActionArgs(dbPassword, databaseNames))
+	appendActionArguments(
+		req,
+		getMongoDbDefaultActionArguments(
+			dbPassword,
+			databaseNames,
+		),
+		additionalArguments,
+		GetMongoDbAllowedAdditionalArguments(),
+	)
 
 	return req
 }
 
-func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}, additionalArguments map[string]string) *DatabaseProvisionRequest {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
-
 	req.SSHPublicKey = SSHPublicKey
 
-	appendActionArguments(req, getPostgresOverridableActionArgs(), getPostgresNonOverridableActionArgs(dbPassword, databaseNames))
+	appendActionArguments(
+		req,
+		getPostgresDefaultActionArguments(
+			dbPassword,
+			databaseNames,
+		),
+		additionalArguments,
+		GetPostgresAllowedAdditionalArguments(),
+	)
 
 	return req
 }
 
-func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}, additionalArguments map[string]string) *DatabaseProvisionRequest {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
-
 	req.SSHPublicKey = SSHPublicKey
 
-	appendActionArguments(req, getMySQLOverridableActionArgs(), getMySQLNonOverridableActionArgs(dbPassword, databaseNames))
+	appendActionArguments(
+		req,
+		getMySQLDefaultActionArguments(
+			dbPassword,
+			databaseNames,
+		),
+		additionalArguments,
+		GetMySQLAllowedAdditionalArguments(),
+	)
 
 	return req
 }
