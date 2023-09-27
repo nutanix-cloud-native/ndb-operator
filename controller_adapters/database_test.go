@@ -159,13 +159,13 @@ func areSlicesEqual(slice1, slice2 interface{}) bool {
 	return true
 }
 
-// Tests the GetDBInstanceTypeDetails() retrieves TypeDetails correctly:
-func TestDatabase_GetDBInstanceTypeDetails(t *testing.T) {
+// Tests the GetDBInstanceAdditionalArguments() retrieves TypeDetails correctly:
+func TestDatabase_GetDBInstanceAdditionalArguments(t *testing.T) {
 
 	tests := []struct {
-		name            string
-		database        Database
-		wantTypeDetails []ndb_api.ActionArgument
+		name                    string
+		database                Database
+		wantAdditionalArguments map[string]string
 	}{
 		{
 			name: "Contains Type Details",
@@ -173,15 +173,15 @@ func TestDatabase_GetDBInstanceTypeDetails(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							TypeDetails: []ndb_api.ActionArgument{
-								{Name: "valid_key", Value: "valid_value"},
+							AdditionalArguments: map[string]string{
+								"valid_key": "valid_value",
 							},
 						},
 					},
 				},
 			},
-			wantTypeDetails: []ndb_api.ActionArgument{
-				{Name: "valid_key", Value: "valid_value"},
+			wantAdditionalArguments: map[string]string{
+				"valid_key": "valid_value",
 			},
 		},
 	}
@@ -189,9 +189,9 @@ func TestDatabase_GetDBInstanceTypeDetails(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotTypeDetails := tt.database.GetDBInstanceTypeDetails()
-			if !areSlicesEqual(gotTypeDetails, tt.wantTypeDetails) {
-				t.Errorf("Database.GetDBInstanceTypeDetails gotTypeDetails = %v, want %v", gotTypeDetails, tt.wantTypeDetails)
+			gotAdditionalArguments := tt.database.GetDBInstanceAdditionalArguments()
+			if !reflect.DeepEqual(tt.wantAdditionalArguments, gotAdditionalArguments) {
+				t.Errorf("Database.GetDBInstanceTypeDetails gotTypeDetails = %v, want %v", gotAdditionalArguments, tt.wantAdditionalArguments)
 			}
 		})
 	}
