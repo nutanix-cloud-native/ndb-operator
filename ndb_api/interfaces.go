@@ -32,7 +32,6 @@ type DatabaseInterface interface {
 	GetDBInstanceName() string
 	GetDBInstanceDescription() string
 	GetDBInstanceType() string
-	GetDBInstanceTypeDetails() []ActionArgument
 	GetDBInstanceDatabaseNames() string
 	GetDBInstanceTimeZone() string
 	GetDBInstanceSize() int
@@ -40,4 +39,5 @@ type DatabaseInterface interface {
 	GetProfileResolvers() ProfileResolvers
 	GetTMDetails() (string, string, string)
 	GetTMSchedule() (Schedule, error)
+	GetDBInstanceAdditionalArguments() map[string]string
 }
