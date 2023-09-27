@@ -289,7 +289,7 @@ var _ = Describe("Webhook Tests", func() {
 		Context("'typeDetails' is specified", func() {
 			When("'type' is mysql", func() {
 				It("Valid typeDetails specified", func() {
-					database := dbWithTypeDetailsSpecified(
+					database := dbWithAdditionalArguments(
 						"db6",
 						"mysql",
 						map[string]string{
@@ -300,7 +300,7 @@ var _ = Describe("Webhook Tests", func() {
 					Expect(err).ToNot(HaveOccurred())
 				})
 				It("Invalid typeDetails specified", func() {
-					database := dbWithTypeDetailsSpecified(
+					database := dbWithAdditionalArguments(
 						"db",
 						"mysql",
 						map[string]string{
@@ -316,7 +316,7 @@ var _ = Describe("Webhook Tests", func() {
 
 			When("'type' is postgres", func() {
 				It("Valid typeDetails specified", func() {
-					database := dbWithTypeDetailsSpecified(
+					database := dbWithAdditionalArguments(
 						"db7",
 						"postgres",
 						map[string]string{
@@ -327,7 +327,7 @@ var _ = Describe("Webhook Tests", func() {
 					Expect(err).ToNot(HaveOccurred())
 				})
 				It("Invalid typeDetails specified", func() {
-					database := dbWithTypeDetailsSpecified(
+					database := dbWithAdditionalArguments(
 						"db",
 						"postgres",
 						map[string]string{
@@ -343,7 +343,7 @@ var _ = Describe("Webhook Tests", func() {
 
 			When("'type' is mongodb", func() {
 				It("Valid typeDetails specified", func() {
-					database := dbWithTypeDetailsSpecified(
+					database := dbWithAdditionalArguments(
 						"db8",
 						"mongodb",
 						map[string]string{
@@ -356,7 +356,7 @@ var _ = Describe("Webhook Tests", func() {
 					Expect(err).ToNot(HaveOccurred())
 				})
 				It("Invalid typeDetails specified", func() {
-					database := dbWithTypeDetailsSpecified(
+					database := dbWithAdditionalArguments(
 						"db",
 						"mongodb",
 						map[string]string{
@@ -372,7 +372,7 @@ var _ = Describe("Webhook Tests", func() {
 
 			When("'type' is mssql", func() {
 				It("Valid typeDetails specified", func() {
-					database := dbWithTypeDetailsSpecified(
+					database := dbWithAdditionalArguments(
 						"db9",
 						"mssql",
 						map[string]string{
@@ -391,7 +391,7 @@ var _ = Describe("Webhook Tests", func() {
 					Expect(err).ToNot(HaveOccurred())
 				})
 				It("Invalid typeDetails specified", func() {
-					database := dbWithTypeDetailsSpecified(
+					database := dbWithAdditionalArguments(
 						"db",
 						"mssql",
 						map[string]string{

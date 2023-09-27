@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/nutanix-cloud-native/ndb-operator/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -17,7 +18,7 @@ func ndbSpecMissing() *Database {
 				DatabaseInstanceName: "db-instance-name",
 				CredentialSecret:     "db-instance-secret",
 				Size:                 10,
-				Type:                 "postgres",
+				Type:                 common.DATABASE_ENGINE_TYPE_POSTGRES,
 				TimeZone:             "UTC",
 			},
 		},
@@ -41,7 +42,7 @@ func ndbClusterIdMissing() *Database {
 				DatabaseInstanceName: "db-instance-name",
 				CredentialSecret:     "db-instance-secret",
 				Size:                 10,
-				Type:                 "postgres",
+				Type:                 common.DATABASE_ENGINE_TYPE_POSTGRES,
 				TimeZone:             "UTC",
 			},
 		},
@@ -65,7 +66,7 @@ func ndbCredentialSecretMissing() *Database {
 				DatabaseInstanceName: "db-instance-name",
 				CredentialSecret:     "db-instance-secret",
 				Size:                 10,
-				Type:                 "postgres",
+				Type:                 common.DATABASE_ENGINE_TYPE_POSTGRES,
 				TimeZone:             "UTC",
 			},
 		},
@@ -89,7 +90,7 @@ func ndbServerURLMissing() *Database {
 				DatabaseInstanceName: "db-instance-name",
 				CredentialSecret:     "db-instance-secret",
 				Size:                 10,
-				Type:                 "postgres",
+				Type:                 common.DATABASE_ENGINE_TYPE_POSTGRES,
 				TimeZone:             "UTC",
 			},
 		},
@@ -114,7 +115,7 @@ func dbInstanceNameMissing() *Database {
 				CredentialSecret: "db-instance-secret",
 				Size:             10,
 				TimeZone:         "UTC",
-				Type:             "postgres",
+				Type:             common.DATABASE_ENGINE_TYPE_POSTGRES,
 			},
 		},
 	}
@@ -139,7 +140,7 @@ func dbDescriptionNotSpecified(db string) *Database {
 				CredentialSecret:     "db-instance-secret",
 				Size:                 10,
 				TimeZone:             "UTC",
-				Type:                 "postgres",
+				Type:                 common.DATABASE_ENGINE_TYPE_POSTGRES,
 			},
 		},
 	}
@@ -164,7 +165,7 @@ func dbDatabaseNamesNotSpecified(db string) *Database {
 				CredentialSecret:     "db-instance-secret",
 				Size:                 10,
 				TimeZone:             "UTC",
-				Type:                 "postgres",
+				Type:                 common.DATABASE_ENGINE_TYPE_POSTGRES,
 			},
 		},
 	}
@@ -188,7 +189,7 @@ func dbCredentialSecretMissing() *Database {
 				DatabaseInstanceName: "db-instance-name",
 				Size:                 10,
 				TimeZone:             "UTC",
-				Type:                 "postgres",
+				Type:                 common.DATABASE_ENGINE_TYPE_POSTGRES,
 			},
 		},
 	}
@@ -213,7 +214,7 @@ func dbSizeLessThan10() *Database {
 				CredentialSecret:     "db-instance-secret",
 				Size:                 1,
 				TimeZone:             "UTC",
-				Type:                 "postgres",
+				Type:                 common.DATABASE_ENGINE_TYPE_POSTGRES,
 			},
 		},
 	}
@@ -237,7 +238,7 @@ func dbTimeZoneNotSpecified() *Database {
 				DatabaseInstanceName: "db-instance-name",
 				CredentialSecret:     "db-instance-secret",
 				Size:                 1,
-				Type:                 "postgres",
+				Type:                 common.DATABASE_ENGINE_TYPE_POSTGRES,
 			},
 		},
 	}
@@ -308,14 +309,14 @@ func dbTimeMachineNotSpecified(db string) *Database {
 				DatabaseInstanceName: "db-instance-name",
 				CredentialSecret:     "db-instance-secret",
 				Size:                 10,
-				Type:                 "postgres",
+				Type:                 common.DATABASE_ENGINE_TYPE_POSTGRES,
 			},
 		},
 	}
 }
 
-/* Creates a database CR with 'db' name, 'type', and 'typeDetails' specified */
-func dbWithTypeDetailsSpecified(db string, typ string, additionalArguments map[string]string) *Database {
+/* Creates a database CR with 'db' name, 'type', and 'additionalArgument' specified */
+func dbWithAdditionalArguments(db string, typ string, additionalArguments map[string]string) *Database {
 	database := &Database{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      db,
@@ -338,7 +339,7 @@ func dbWithTypeDetailsSpecified(db string, typ string, additionalArguments map[s
 		},
 	}
 
-	if typ == "mssql" {
+	if typ == common.DATABASE_TYPE_MSSQL {
 		database.Spec.Instance.Profiles = &Profiles{
 			Software: Profile{Name: "MSSQL_SOFTWARE_PROFILE"},
 		}
