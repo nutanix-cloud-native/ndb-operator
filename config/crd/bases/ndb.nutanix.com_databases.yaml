@@ -51,6 +51,11 @@ spec:
               databaseInstance:
                 description: Database instance specific details
                 properties:
+                  additionalArguments:
+                    additionalProperties:
+                      type: string
+                    description: Additional database engine specific arguments
+                    type: object
                   credentialSecret:
                     description: Name of the secret holding the credentials for the
                       database instance (password and ssh key)
@@ -146,19 +151,6 @@ spec:
                     type: string
                   type:
                     type: string
-                  typeDetails:
-                    description: Additional database engine specific action arguments
-                    items:
-                      properties:
-                        name:
-                          type: string
-                        value:
-                          type: string
-                      required:
-                      - name
-                      - value
-                      type: object
-                    type: array
                 required:
                 - credentialSecret
                 - databaseInstanceName
