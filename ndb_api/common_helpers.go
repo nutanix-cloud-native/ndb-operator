@@ -17,8 +17,6 @@ limitations under the License.
 package ndb_api
 
 import (
-	"sort"
-
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 )
 
@@ -52,90 +50,118 @@ func GetDatabasePortByType(dbType string) int32 {
 	}
 }
 
-// Sorts action arguments in place by name
-func sortActionArgsByName(actionArgs []ActionArgument) {
-	sort.Slice(actionArgs, func(i, j int) bool {
-		return actionArgs[i].Name < actionArgs[j].Name
-	})
+// Converts a map to an action arguments list
+func convertMapToActionArguments(myMap map[string]string) []ActionArgument {
+	actionArgs := []ActionArgument{}
+	for name, value := range myMap {
+		actionArgs = append(actionArgs, ActionArgument{Name: name, Value: value})
+	}
+	return actionArgs
 }
 
-// Gets MSSQL overridable action arguments.
-func getMsSQLOverridableActionArgs(dbParameterProfileIdInstance string, vmDbServerAdminPassword string) []ActionArgument {
-	return []ActionArgument{
-		{Name: "sql_user_name", Value: "sa"},
-		{Name: "authentication_mode", Value: "windows"},
-		{Name: "server_collation", Value: "SQL_Latin1_General_CP1_CI_AS"},
-		{Name: "database_collation", Value: "SQL_Latin1_General_CP1_CI_AS"},
-		{Name: "dbParameterProfileIdInstance", Value: dbParameterProfileIdInstance},
-		{Name: "vm_dbserver_admin_password", Value: vmDbServerAdminPassword},
+// Gets MSSQL allowed additional arguments.
+// If key is an action argument value is true, else false.
+func GetMsSQLAllowedAdditionalArguments() map[string]bool {
+	return map[string]bool{
+		/* Has a default */
+		"sql_user_name":                true,
+		"authentication_mode":          true,
+		"server_collation":             true,
+		"database_collation":           true,
+		"dbParameterProfileIdInstance": true,
+		"vm_dbserver_admin_password":   true,
+		/* No default */
+		"sql_user_password":         true,
+		"vm_win_license_key":        true,
+		"windows_domain_profile_id": true,
+		"vm_db_server_user":         true,
 	}
 }
 
-// Gets MSSQL non-overridable action arguments.
-func getMsSQLNonOverridableActionArgs(dbServerName string) []ActionArgument {
-	return []ActionArgument{
-		{Name: "working_dir", Value: "C:\\temp"},
-		{Name: "delete_vm_on_failure", Value: "false"},
-		{Name: "is_gmsa_sql_service_account", Value: "false"},
-		{Name: "provision_from_backup", Value: "false"},
-		{Name: "distribute_database_data", Value: "true"},
-		{Name: "retain_database_in_restoring_mode", Value: "false"},
-		{Name: "dbserver_name", Value: dbServerName},
+// Gets MSSQL default action arguments.
+func getMsSQLDefaultActionArguments(dbServerName string, dbParamInstanceProfileId string, adminPassword string) map[string]string {
+	return map[string]string{
+		"working_dir":                       "C:\\temp",
+		"sql_user_name":                     "sa",
+		"authentication_mode":               "windows",
+		"delete_vm_on_failure":              "false",
+		"is_gmsa_sql_service_account":       "false",
+		"provision_from_backup":             "false",
+		"distribute_database_data":          "true",
+		"retain_database_in_restoring_mode": "false",
+		"dbserver_name":                     dbServerName,
+		"server_collation":                  "SQL_Latin1_General_CP1_CI_AS",
+		"database_collation":                "SQL_Latin1_General_CP1_CI_AS",
+		"dbParameterProfileIdInstance":      dbParamInstanceProfileId,
+		"vm_dbserver_admin_password":        adminPassword,
 	}
 }
 
-// Gets MongoDB overridable action arguments.
-func getMongoDbOverridableActionArgs() []ActionArgument {
-	return []ActionArgument{
-		{Name: "listener_port", Value: "27017"},
-		{Name: "log_size", Value: "100"},
-		{Name: "journal_size", Value: "100"},
+// Gets MongoDb allowed additional arguments.
+// If key is an action argument value is true, else false.
+func GetMongoDbAllowedAdditionalArguments() map[string]bool {
+	return map[string]bool{
+		/* Has a default */
+		"listener_port": true,
+		"log_size":      true,
+		"journal_size":  true,
 	}
 }
 
-// Gets MongoDB non-overridable action arguments.
-func getMongoDbNonOverridableActionArgs(dbPassword string, databaseNames string) []ActionArgument {
-	return []ActionArgument{
-		{Name: "restart_mongod", Value: "true"},
-		{Name: "working_dir", Value: "/tmp"},
-		{Name: "db_user", Value: "admin"},
-		{Name: "backup_policy", Value: "primary_only"},
-		{Name: "db_password", Value: dbPassword},
-		{Name: "database_names", Value: databaseNames},
+// Gets MongoDB default action arguments.
+func getMongoDbDefaultActionArguments(dbPassword string, databaseNames string) map[string]string {
+	return map[string]string{
+		"listener_port":  "27017",
+		"log_size":       "100",
+		"journal_size":   "100",
+		"restart_mongod": "true",
+		"working_dir":    "/tmp",
+		"db_user":        "admin",
+		"backup_policy":  "primary_only",
+		"db_password":    dbPassword,
+		"database_names": databaseNames,
 	}
 }
 
-// Gets Postgres overridable action arguments.
-func getPostgresOverridableActionArgs() []ActionArgument {
-	return []ActionArgument{
-		{Name: "listener_port", Value: "5432"},
+// Gets Postgres allowed additional arguments.
+// If key is an action argument value is true, else false.
+func GetPostgresAllowedAdditionalArguments() map[string]bool {
+	return map[string]bool{
+		/* Has a default */
+		"listener_port": true,
 	}
 }
 
-// Gets Postgres non-overridable action arguments.
-func getPostgresNonOverridableActionArgs(dbPassword string, databaseNames string) []ActionArgument {
-	return []ActionArgument{
-		{Name: "proxy_read_port", Value: "5001"},
-		{Name: "proxy_write_port", Value: "5000"},
-		{Name: "enable_synchronous_mode", Value: "false"},
-		{Name: "auto_tune_staging_drive", Value: "true"},
-		{Name: "backup_policy", Value: "primary_only"},
-		{Name: "db_password", Value: dbPassword},
-		{Name: "database_names", Value: databaseNames},
+// Gets Postgres default action arguments.
+func getPostgresDefaultActionArguments(dbPassword string, databaseNames string) map[string]string {
+	return map[string]string{
+		"proxy_read_port":         "5001",
+		"listener_port":           "5432",
+		"proxy_write_port":        "5000",
+		"enable_synchronous_mode": "false",
+		"auto_tune_staging_drive": "true",
+		"backup_policy":           "primary_only",
+		"db_password":             "dbPassword",
+		"database_names":          "databaseNames",
 	}
 }
 
-// Gets MYSQL overridable action arguments.
-func getMySQLOverridableActionArgs() []ActionArgument {
-	return []ActionArgument{
-		{Name: "listener_port", Value: "3306"},
+// Gets MYSQL allowed additional arguments.
+// If key is an action argument value is true, else false.
+func GetMySQLAllowedAdditionalArguments() map[string]bool {
+	/* Has a default */
+	return map[string]bool{
+		"listener_port": true,
 	}
 }
 
-// Gets MYSQL non-overridable action arguments.
-func getMySQLNonOverridableActionArgs(dbPassword string, databaseNames string) []ActionArgument {
-	return []ActionArgument{
-		{Name: "db_password", Value: dbPassword},
-		{Name: "database_names", Value: databaseNames},
+// Gets MYSQL default action arguments.
+// If key is an action argument value is true, else false.
+func getMySQLDefaultActionArguments(dbPassword string, databaseNames string) map[string]string {
+	return map[string]string{
+		"listener_port":           "3306",
+		"db_password":             dbPassword,
+		"database_names":          databaseNames,
+		"auto_tune_staging_drive": "true",
 	}
 }
