@@ -169,65 +169,7 @@ var _ = Describe("Webhook Tests", func() {
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).To(HaveOccurred())
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
-				Expect(errMsg).To(ContainSubstring("A valid Database Instance Name must be specified in the Instance Spec!"))
-			})
-		})
-
-		When("'description' not specified", func() {
-			It("Sets a default 'description'", func() {
-				database := &Database{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "db1",
-						Namespace: "default",
-					},
-					Spec: DatabaseSpec{
-						NDB: NDB{
-							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-							SkipCertificateVerification: true,
-							CredentialSecret:            "ndb-secret",
-							Server:                      "https://10.51.140.43:8443/era/v0.9",
-						},
-						Instance: Instance{
-							DatabaseInstanceName: "db-instance-name",
-							CredentialSecret:     "db-instance-secret",
-							Size:                 10,
-							TimeZone:             "UTC",
-							Type:                 common.DATABASE_TYPE_POSTGRES,
-						},
-					},
-				}
-				err := k8sClient.Create(context.Background(), database)
-				Expect(err).ToNot(HaveOccurred())
-				// TODO: Check if 'description' was defaulted
-			})
-		})
-
-		When("'databaseNames' not specified", func() {
-			It("Sets a default 'databaseNames'", func() {
-				database := &Database{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "db",
-						Namespace: "default",
-					},
-					Spec: DatabaseSpec{
-						NDB: NDB{
-							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-							SkipCertificateVerification: true,
-							CredentialSecret:            "ndb-secret",
-							Server:                      "https://10.51.140.43:8443/era/v0.9",
-						},
-						Instance: Instance{
-							DatabaseInstanceName: "db-instance-name",
-							CredentialSecret:     "db-instance-secret",
-							Size:                 10,
-							TimeZone:             "UTC",
-							Type:                 common.DATABASE_TYPE_POSTGRES,
-						},
-					},
-				}
-				err := k8sClient.Create(context.Background(), database)
-				Expect(err).ToNot(HaveOccurred())
-				// TODO: Check if 'databaseNames' were defaulted
+				Expect(errMsg).To(ContainSubstring("A valid Database Instance Name must be specified"))
 			})
 		})
 
@@ -256,7 +198,7 @@ var _ = Describe("Webhook Tests", func() {
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).To(HaveOccurred())
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
-				Expect(errMsg).To(ContainSubstring("CredentialSecret must be provided in the Instance Spec!"))
+				Expect(errMsg).To(ContainSubstring("CredentialSecret must be provided in the Instance Spec"))
 			})
 		})
 
@@ -286,35 +228,7 @@ var _ = Describe("Webhook Tests", func() {
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).To(HaveOccurred())
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
-				Expect(errMsg).To(ContainSubstring("Initial Database size must be specified with a value 10 GBs or more in the Instance Spec!"))
-			})
-		})
-
-		When("'timeZone' not specified", func() {
-			It("Sets a default 'timeZone'", func() {
-				database := &Database{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "db",
-						Namespace: "default",
-					},
-					Spec: DatabaseSpec{
-						NDB: NDB{
-							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-							SkipCertificateVerification: true,
-							CredentialSecret:            "ndb-secret",
-							Server:                      "https://10.51.140.43:8443/era/v0.9",
-						},
-						Instance: Instance{
-							DatabaseInstanceName: "db-instance-name",
-							CredentialSecret:     "db-instance-secret",
-							Size:                 10,
-							Type:                 common.DATABASE_TYPE_POSTGRES,
-						},
-					},
-				}
-				err := k8sClient.Create(context.Background(), database)
-				Expect(err).ToNot(HaveOccurred())
-				// TODO: Check if 'timeZone' was defaulted
+				Expect(errMsg).To(ContainSubstring("Initial Database size must be specified with a value 10 GBs or more"))
 			})
 		})
 
@@ -335,14 +249,14 @@ var _ = Describe("Webhook Tests", func() {
 						Instance: Instance{
 							DatabaseInstanceName: "db-instance-name",
 							CredentialSecret:     "db-instance-secret",
-							Size:                 1,
+							Size:                 10,
 						},
 					},
 				}
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).To(HaveOccurred())
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
-				Expect(errMsg).To(ContainSubstring("A valid database type must be specified in the Instance Spec!"))
+				Expect(errMsg).To(ContainSubstring("A valid database type must be specified. Valid values are: "))
 			})
 		})
 
@@ -352,56 +266,28 @@ var _ = Describe("Webhook Tests", func() {
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).To(HaveOccurred())
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
-				Expect(errMsg).To(ContainSubstring("A valid database type must be specified in the Instance Spec!"))
+				Expect(errMsg).To(ContainSubstring("A valid database type must be specified. Valid values are: "))
 			})
 		})
 
 		When("'profiles' missing", func() {
 			It("Passes because open-source engine was specified", func() {
-				database := dbWithType("db4", "postgres")
+				database := dbWithType("db4", common.DATABASE_TYPE_POSTGRES)
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("Throws error because closed-source engine was specified with no software id", func() {
-				database := dbWithType("db", "mssql")
+				database := dbWithType("db", common.DATABASE_TYPE_MSSQL)
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).To(HaveOccurred())
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
-				Expect(errMsg).To(ContainSubstring("Software Profile must be provided for the closed-source database engines in the Instance Spec!"))
+				Expect(errMsg).To(ContainSubstring("Software Profile must be provided for the closed-source database engines"))
 			})
 		})
 
-		When("'timeMachine' not specified", func() {
-			It("Sets default 'timeMachineInfo", func() {
-				database := &Database{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "db5",
-						Namespace: "default",
-					},
-					Spec: DatabaseSpec{
-						NDB: NDB{
-							ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-							SkipCertificateVerification: true,
-							CredentialSecret:            "ndb-secret",
-							Server:                      "https://10.51.140.43:8443/era/v0.9",
-						},
-						Instance: Instance{
-							DatabaseInstanceName: "db-instance-name",
-							CredentialSecret:     "db-instance-secret",
-							Size:                 10,
-							Type:                 common.DATABASE_TYPE_POSTGRES,
-						},
-					},
-				}
-				err := k8sClient.Create(context.Background(), database)
-				Expect(err).ToNot(HaveOccurred())
-				// TODO: Check if 'timeMachine' was defaulted
-			})
-		})
-
-		Context("'typeDetails' is specified", func() {
+		Context("'additionalArguments' is specified", func() {
 			When("'type' is mysql", func() {
-				It("Valid typeDetails specified", func() {
+				It("Valid additionalArguments specified", func() {
 					database := dbWithAdditionalArguments(
 						"db6",
 						common.DATABASE_TYPE_MYSQL,
@@ -412,7 +298,7 @@ var _ = Describe("Webhook Tests", func() {
 					err := k8sClient.Create(context.Background(), database)
 					Expect(err).ToNot(HaveOccurred())
 				})
-				It("Invalid typeDetails specified", func() {
+				It("Invalid additionalArguments specified", func() {
 					database := dbWithAdditionalArguments(
 						"db",
 						common.DATABASE_TYPE_MYSQL,
@@ -423,12 +309,12 @@ var _ = Describe("Webhook Tests", func() {
 					err := k8sClient.Create(context.Background(), database)
 					Expect(err).To(HaveOccurred())
 					errMsg := err.(*errors.StatusError).ErrStatus.Message
-					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", "mysql")))
+					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MYSQL)))
 				})
 			})
 
 			When("'type' is postgres", func() {
-				It("Valid typeDetails specified", func() {
+				It("Valid additionalArguments specified", func() {
 					database := dbWithAdditionalArguments(
 						"db7",
 						common.DATABASE_TYPE_POSTGRES,
@@ -439,7 +325,7 @@ var _ = Describe("Webhook Tests", func() {
 					err := k8sClient.Create(context.Background(), database)
 					Expect(err).ToNot(HaveOccurred())
 				})
-				It("Invalid typeDetails specified", func() {
+				It("Invalid additionalArguments specified", func() {
 					database := dbWithAdditionalArguments(
 						"db",
 						"postgres",
@@ -450,15 +336,15 @@ var _ = Describe("Webhook Tests", func() {
 					err := k8sClient.Create(context.Background(), database)
 					Expect(err).To(HaveOccurred())
 					errMsg := err.(*errors.StatusError).ErrStatus.Message
-					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", "postgres")))
+					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", common.DATABASE_TYPE_POSTGRES)))
 				})
 			})
 
 			When("'type' is mongodb", func() {
-				It("Valid typeDetails specified", func() {
+				It("Valid additionalArguments specified", func() {
 					database := dbWithAdditionalArguments(
 						"db8",
-						"mongodb",
+						common.DATABASE_TYPE_MONGODB,
 						map[string]string{
 							"listener_port": "5432",
 							"log_size":      "10",
@@ -468,7 +354,7 @@ var _ = Describe("Webhook Tests", func() {
 					err := k8sClient.Create(context.Background(), database)
 					Expect(err).ToNot(HaveOccurred())
 				})
-				It("Invalid typeDetails specified", func() {
+				It("Invalid additionalArguments specified", func() {
 					database := dbWithAdditionalArguments(
 						"db",
 						"mongodb",
@@ -479,15 +365,15 @@ var _ = Describe("Webhook Tests", func() {
 					err := k8sClient.Create(context.Background(), database)
 					Expect(err).To(HaveOccurred())
 					errMsg := err.(*errors.StatusError).ErrStatus.Message
-					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", "mongodb")))
+					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MONGODB)))
 				})
 			})
 
 			When("'type' is mssql", func() {
-				It("Valid typeDetails specified", func() {
+				It("Valid additionalArguments specified", func() {
 					database := dbWithAdditionalArguments(
 						"db9",
-						"mssql",
+						common.DATABASE_TYPE_MSSQL,
 						map[string]string{
 							"server_collation":           "SQL_Latin1_General_CPI_CI_AS",
 							"database_collation":         "SQL_Latin1_General_CPI_CI_AS",
@@ -503,7 +389,7 @@ var _ = Describe("Webhook Tests", func() {
 					err := k8sClient.Create(context.Background(), database)
 					Expect(err).ToNot(HaveOccurred())
 				})
-				It("Invalid typeDetails specified", func() {
+				It("Invalid additionalArguments specified", func() {
 					database := dbWithAdditionalArguments(
 						"db",
 						"mssql",
@@ -514,7 +400,7 @@ var _ = Describe("Webhook Tests", func() {
 					err := k8sClient.Create(context.Background(), database)
 					Expect(err).To(HaveOccurred())
 					errMsg := err.(*errors.StatusError).ErrStatus.Message
-					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", "mssql")))
+					Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MSSQL)))
 				})
 			})
 		})
