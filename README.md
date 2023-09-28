@@ -151,7 +151,40 @@ spec:
       weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
       monthlySnapshotDay:  24           # Day of the month for monthly snapshot
       quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
+    additionalArguments:                # Optional black, can specify additional arguments that are unique to database engines.
+      listener_port: 8080
 
+```
+
+Below are the various optional addtionalArguments you can specify along with examples of their corresponding values. Arguments that have defaults will be indicated.
+
+```yaml
+# PostGres
+additionalArguments:
+  listener_port: "1111"                            # Default: "5432"
+
+# MySQL
+additionalArguments:
+  listener_port: "1111"                            # Default: "3306" 
+
+# MongoDB
+additionalArguments:
+  listener_port: "1111"                            # Default: "27017"
+  log_size: "150"                                  # Default: "100"
+  journal_size: "150"                              # Default: "100"
+
+# MSSQL
+additionalArguments:
+  sql_user_name: "mazin"                           # Defualt: "sa".
+  authentication_mode: "mixed"                     # Default: "windows". Options are "windows" or "mixed". Must specify sql_user.
+  server_collation: "<server-collation>"           # Default: "SQL_Latin1_General_CP1_CI_AS".
+  database_collation:  "<server-collation>"        # Default: "SQL_Latin1_General_CP1_CI_AS".
+  dbParameterProfileIdInstance: "<id-instance>"    # Default: Fetched from profile.
+  vm_dbserver_admin_password: "<admin-password>"   # Default: Fetched from database secret.
+  sql_user_password:         "<sq-user-password>"  # NO Default. Must specify authentication_mode as "mixed".
+  windows_domain_profile_id: <domain-profile-id>   # NO Default. Must specify vm_db_server_user.
+  vm_db_server_user: <vm-db-server-use>            # NO Default. Must specify windows_domain_profile_id.
+  vm_win_license_key: <licenseKey>                 # NO Default.
 ```
 
 ## Developement
