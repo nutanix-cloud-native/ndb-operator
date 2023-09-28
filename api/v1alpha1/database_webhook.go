@@ -156,11 +156,11 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 
 	// need to assert using a regex
 	if instance.DatabaseInstanceName == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified in the Instance Spec"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified"))
 	}
 
 	if instance.Size < 10 {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more in the Instance Spec"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
 	}
 
 	if instance.CredentialSecret == "" {
@@ -175,7 +175,7 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 
 	if _, isPresent := api.ClosedSourceDatabaseTypes[instance.Type]; isPresent {
 		if instance.Profiles == &(Profiles{}) || instance.Profiles.Software == (Profile{}) {
-			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles").Child("software"), instance.Profiles.Software, "Software Profile must be provided for the closed-source database engines in the Instance Spec"))
+			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles").Child("software"), instance.Profiles.Software, "Software Profile must be provided for the closed-source database engines"))
 		}
 	}
 
@@ -245,7 +245,7 @@ func isAdditionalArgumentsInvalid(typ string, additionalArguments map[string]str
 	return false, allowedAdditionalArguments
 }
 
-/* Validates additionalaction arguments */
+/* Validates additional arguments */
 func instanceSpecAdditionalArgumentsValidator(instance *Instance, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
 	additionalArgumentsPath := instancePath.Child("additionalArguments")
 	isInvalidTypeDetails, allowedTypeDetails := isAdditionalArgumentsInvalid(instance.Type, instance.AdditionalArguments)
