@@ -111,7 +111,7 @@ func (r *NDBServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// 4. Update the status if any changes are observed (excluding counter)
-	if !util.DeepEqualWithException(ndbServer.Status, *status, "Counter") {
+	if !util.DeepEqualWithException(ndbServer.Status, *status, "ReconcileCounter") {
 		log.Info("Status Changed, updating lastUpdated time")
 		status.LastUpdated = time.Now().Format(time.DateTime)
 	}

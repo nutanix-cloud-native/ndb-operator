@@ -134,7 +134,6 @@ var _ = BeforeEach(func() {
 
 var _ = AfterEach(func() {
 	cancel()
-
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
@@ -143,20 +142,15 @@ var _ = AfterEach(func() {
 var _ = Describe("Webhook Tests", func() {
 	Context("Validation Tests", func() {
 
-		It("ClusterId missing", func() {
-
+		It("Should check for missing clusterId", func() {
 			database := &Database{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "db",
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					NDB: NDB{
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
 					Instance: Instance{
+						ClusterId:            "",
 						CredentialSecret:     "db-instance-secret",
 						DatabaseInstanceName: "db-instance-name",
 						Type:                 "postgres",
@@ -174,83 +168,15 @@ var _ = Describe("Webhook Tests", func() {
 
 		})
 
-		It("NDB CredentialSecret missing", func() {
-
+		It("Should check for missing Database Instance Name", func() {
 			database := &Database{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "db",
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
 					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Type:                 "postgres",
-						Size:                 10,
-						TimeZone:             "UTC",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("CredentialSecret must be provided in the NDB Server Spec"))
-
-		})
-
-		It("Server URL missing", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-					},
-					Instance: Instance{
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Type:                 "postgres",
-						Size:                 10,
-						TimeZone:             "UTC",
-					},
-				},
-			}
-			err := k8sClient.Create(context.Background(), database)
-			Expect(err).To(HaveOccurred())
-
-			// Extract the error message from the error object
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("Server must be a valid URL"))
-
-		})
-
-		It("Database Instance Name missing", func() {
-
-			database := &Database{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "db",
-					Namespace: "default",
-				},
-				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
-					Instance: Instance{
+						ClusterId:            "cluster-id",
 						CredentialSecret:     "db-instance-secret",
 						DatabaseInstanceName: "",
 						Type:                 "postgres",
@@ -268,21 +194,15 @@ var _ = Describe("Webhook Tests", func() {
 
 		})
 
-		It("Instance CredentialSecret missing", func() {
-
+		It("Should check for missing Instance CredentialSecret", func() {
 			database := &Database{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "db",
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
 					Instance: Instance{
+						ClusterId:            "cluster-id",
 						DatabaseInstanceName: "db-instance-name",
 						Type:                 "postgres",
 						Size:                 10,
@@ -299,21 +219,15 @@ var _ = Describe("Webhook Tests", func() {
 
 		})
 
-		It("Type missing", func() {
-
+		It("Should check for missing Type", func() {
 			database := &Database{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "db",
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
 					Instance: Instance{
+						ClusterId:            "cluster-id",
 						CredentialSecret:     "db-instance-secret",
 						DatabaseInstanceName: "db-instance-name",
 						Size:                 10,
@@ -331,21 +245,15 @@ var _ = Describe("Webhook Tests", func() {
 
 		})
 
-		It("Database Size < 10 GB", func() {
-
+		It("Should check for Database Size < 10 GB", func() {
 			database := &Database{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "db",
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
 					Instance: Instance{
+						ClusterId:            "cluster-id",
 						CredentialSecret:     "db-instance-secret",
 						DatabaseInstanceName: "db-instance-name",
 						Type:                 "postgres",
@@ -363,21 +271,15 @@ var _ = Describe("Webhook Tests", func() {
 
 		})
 
-		It("Profiles missing: Open-source engines", func() {
-
+		It("Should not error out for missing Profiles: Open-source engines", func() {
 			database := &Database{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "db",
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
 					Instance: Instance{
+						ClusterId:            "cluster-id",
 						CredentialSecret:     "db-instance-secret",
 						DatabaseInstanceName: "db-instance-name",
 						Size:                 10,
@@ -391,21 +293,15 @@ var _ = Describe("Webhook Tests", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("Profiles missing: Closed-source engines", func() {
-
+		It("Should error out for missing Profiles: Closed-source engines", func() {
 			database := &Database{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "db",
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
 					Instance: Instance{
+						ClusterId:            "cluster-id",
 						CredentialSecret:     "db-instance-secret",
 						DatabaseInstanceName: "db-instance-name",
 						Size:                 10,
@@ -423,8 +319,7 @@ var _ = Describe("Webhook Tests", func() {
 			Expect(errMsg).To(ContainSubstring("Software Profile must be provided for the closed-source database engines"))
 		})
 
-		It("Time Machine missing", func() {
-
+		It("Should check for missing Time Machine", func() {
 			database := &Database{
 				ObjectMeta: metav1.ObjectMeta{
 					// need to provide a unique name to avoid getting " "db" already exists"
@@ -433,13 +328,8 @@ var _ = Describe("Webhook Tests", func() {
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					NDB: NDB{
-						ClusterId:                   "27bcce67-7b83-42c2-a3fe-88154425c170",
-						SkipCertificateVerification: true,
-						CredentialSecret:            "ndb-secret",
-						Server:                      "https://10.51.140.43:8443/era/v0.9",
-					},
 					Instance: Instance{
+						ClusterId:            "cluster-id",
 						CredentialSecret:     "db-instance-secret",
 						DatabaseInstanceName: "db-instance-name",
 						Size:                 10,

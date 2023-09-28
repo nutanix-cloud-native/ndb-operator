@@ -20,7 +20,16 @@ const namespace_default = "default"
 
 // This function is called from the SetupSuite() function of all testsuites.
 // It loads environment variables, instantiate resources, waits for db to be ready, and pod to start.
-func ProvisioningTestSetup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func ProvisioningTestSetup(
+	dbSecret,
+	ndbSecret *corev1.Secret,
+	ndbServer *ndbv1alpha1.NDBServer,
+	database *ndbv1alpha1.Database,
+	appPod *corev1.Pod,
+	appSvc *corev1.Service,
+	clientset *kubernetes.Clientset,
+	v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client,
+	t *testing.T) (err error) {
 	log.Println("test_setup() starting...")
 
 	ns := namespace_default
@@ -49,11 +58,20 @@ func ProvisioningTestSetup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1al
 		}
 	}
 
+	// Create NDBServer resource
+	if ndbServer != nil {
+		ndbServer.Spec.Server = os.Getenv("NDB_SERVER")
+		ndbServer, err = v1alpha1ClientSet.NDBServers(ndbServer.Namespace).Create(ndbServer)
+		if err != nil {
+			log.Printf("Error while creating ndbServer %s: %s\n", ndbServer.Name, err)
+		} else {
+			log.Printf("NDBServer %s created\n", ndbServer.Name)
+		}
+	}
+
 	// Create Database
 	if database != nil {
-		// log.Printf(database.Spec.Instance.DatabaseInstanceName + ", " + database.Spec.NDB.ClusterId)
-		database.Spec.NDB.Server = os.Getenv("NDB_SERVER")
-		database.Spec.NDB.ClusterId = os.Getenv("NDB_CLUSTER_ID")
+		database.Spec.Instance.ClusterId = os.Getenv("NDB_CLUSTER_ID")
 		database, err = v1alpha1ClientSet.Databases(database.Namespace).Create(database)
 		if err != nil {
 			log.Printf("Error while creating Database %s: %s\n", database.Name, err)
@@ -131,7 +149,16 @@ func ProvisioningTestSetup(dbSecret, ndbSecret *corev1.Secret, database *ndbv1al
 
 // This function is called from the TeardownSuite() function of all testsuites.
 // Delete resources and de-provision database.
-func ProvisioningTestTeardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv1alpha1.Database, appPod *corev1.Pod, appSvc *corev1.Service, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func ProvisioningTestTeardown(
+	dbSecret,
+	ndbSecret *corev1.Secret,
+	ndbServer *ndbv1alpha1.NDBServer,
+	database *ndbv1alpha1.Database,
+	appPod *corev1.Pod,
+	appSvc *corev1.Service,
+	clientset *kubernetes.Clientset,
+	v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client,
+	t *testing.T) (err error) {
 	log.Println("test_teardown() starting...")
 
 	ns := namespace_default
@@ -141,8 +168,7 @@ func ProvisioningTestTeardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv
 
 	// Delete Database
 	if database != nil {
-		database.Spec.NDB.Server = os.Getenv("NDB-SERVER")
-		database.Spec.NDB.ClusterId = os.Getenv("NDB-CLUSTER-ID")
+		database.Spec.Instance.ClusterId = os.Getenv("NDB-CLUSTER-ID")
 		err := v1alpha1ClientSet.Databases(database.Namespace).Delete(database.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			log.Printf("Error while deleting Database %s: %s\n", database.Name, err)
@@ -163,6 +189,17 @@ func ProvisioningTestTeardown(dbSecret, ndbSecret *corev1.Secret, database *ndbv
 			err = errors.New(statusMessage)
 			return
 		})
+	}
+
+	// Delete NDBServer
+	if ndbServer != nil {
+		ndbServer.Spec.Server = os.Getenv("NDB_SERVER")
+		err = v1alpha1ClientSet.NDBServers(ndbServer.Namespace).Delete(ndbServer.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			log.Printf("Error while deleting ndbServer %s: %s\n", ndbServer.Name, err)
+		} else {
+			log.Printf("NDBServer %s deleting\n", ndbServer.Name)
+		}
 	}
 
 	// Delete Secrets

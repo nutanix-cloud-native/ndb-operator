@@ -73,7 +73,7 @@ func (d *Database) GetDBInstanceSize() int {
 }
 
 func (d *Database) GetNDBClusterId() string {
-	return d.Spec.NDB.ClusterId
+	return d.Spec.Instance.ClusterId
 }
 
 func (d *Database) GetProfileResolvers() ndb_api.ProfileResolvers {

@@ -54,6 +54,8 @@ const (
 
 	EVENT_SERVICE_SETUP_FAILED  = "ServiceSetupFailed"
 	EVENT_ENDPOINT_SETUP_FAILED = "EndpointSetupFailed"
+
+	EVENT_WAITING_FOR_NDB_RECONCILE = "WaitingForNDBReconcile"
 )
 
 // doNotRequeue Finished processing. No need to put back on the reconcile queue.
