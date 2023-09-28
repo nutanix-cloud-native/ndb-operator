@@ -63,7 +63,7 @@ func instanceSpecDefaulterForCreate(instance *Instance) {
 	// initialize Profiles field, if it's nil
 
 	if instance.Profiles == nil {
-		databaselog.Info("Initialzing empty Profiles...")
+		databaselog.Info("Initialzing empty Profiles ...")
 		instance.Profiles = &(Profiles{})
 	}
 
@@ -130,19 +130,19 @@ func ndbServerSpecValidatorForCreate(ndb *NDB, allErrs field.ErrorList, ndbPath 
 	databaselog.Info("Entering ndbServerSpecValidatorForCreate...")
 
 	if *ndb == (NDB{}) {
-		allErrs = append(allErrs, field.Invalid(ndbPath, ndb, "NDB server spec must be provided!"))
+		allErrs = append(allErrs, field.Invalid(ndbPath, ndb, "NDB spec field must not be empty"))
 	}
 
 	if err := util.ValidateUUID(ndb.ClusterId); err != nil {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("clusterId"), ndb.ClusterId, "NDB ClusterId must be provided and be a valid UUID!"))
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("clusterId"), ndb.ClusterId, "ClusterId field must be a valid UUID"))
 	}
 
 	if ndb.CredentialSecret == "" {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), ndb.CredentialSecret, "NDB CredentialSecret must be provided!"))
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("credentialSecret"), ndb.CredentialSecret, "CredentialSecret must be provided in the NDB Server Spec"))
 	}
 
 	if err := util.ValidateURL(ndb.Server); err != nil {
-		allErrs = append(allErrs, field.Invalid(ndbPath.Child("server"), ndb.Server, "NDB Server URL must be provided and be a valid URL!"))
+		allErrs = append(allErrs, field.Invalid(ndbPath.Child("server"), ndb.Server, "Server must be a valid URL"))
 	}
 
 	databaselog.Info("Exiting ndbServerSpecValidatorForCreate...")
@@ -156,26 +156,26 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 
 	// need to assert using a regex
 	if instance.DatabaseInstanceName == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified in the Instance Spec!"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified in the Instance Spec"))
 	}
 
 	if instance.Size < 10 {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more in the Instance Spec!"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more in the Instance Spec"))
 	}
 
 	if instance.CredentialSecret == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), instance.CredentialSecret, "CredentialSecret must be provided in the Instance Spec!"))
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), instance.CredentialSecret, "CredentialSecret must be provided in the Instance Spec"))
 	}
 
 	if _, isPresent := api.AllowedDatabaseTypes[instance.Type]; !isPresent {
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), instance.Type,
-			fmt.Sprintf("A valid database type must be specified in the Instance Spec!. Valid values are: %s", reflect.ValueOf(api.AllowedDatabaseTypes).MapKeys()),
+			fmt.Sprintf("A valid database type must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedDatabaseTypes).MapKeys()),
 		))
 	}
 
 	if _, isPresent := api.ClosedSourceDatabaseTypes[instance.Type]; isPresent {
 		if instance.Profiles == &(Profiles{}) || instance.Profiles.Software == (Profile{}) {
-			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles").Child("software"), instance.Profiles.Software, "Software Profile must be provided for the closed-source database engines in the Instance Spec!"))
+			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles").Child("software"), instance.Profiles.Software, "Software Profile must be provided for the closed-source database engines in the Instance Spec"))
 		}
 	}
 
