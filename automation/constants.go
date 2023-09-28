@@ -1,6 +1,7 @@
 package automation
 
 const (
+	NDBSERVER_PATH  = "./config/ndb.yaml"
 	DATABASE_PATH   = "./config/database.yaml"
 	DB_SECRET_PATH  = "./config/db-secret.yaml"
 	NDB_SECRET_PATH = "./config/ndb-secret.yaml"

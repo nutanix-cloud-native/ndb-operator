@@ -30,7 +30,7 @@ make deploy
 
 ### Using the Operator
 
-1. Create file "secrets.yaml" to store the secrets that can be used by the custom resources:
+1. Create the secrets that will be used by the NDBServer and Database resources:
 
 ```yaml
 apiVersion: v1
@@ -60,7 +60,7 @@ stringData:
 Apply the secrets:
 
 ```
-kubectl apply -f <path/to/secrets.yaml>
+kubectl apply -f <path/to/secrets-manifest.yaml>
 ```
 You can optionally verify that they have been created:
 
@@ -68,21 +68,36 @@ You can optionally verify that they have been created:
 kubectl get secrets
 ```
 
-2. To create a Database CR, update these fields in the "spec" section of [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml)
-    <br /> a. "server"               : NDB Server IP
-    <br /> b. "clusterId"            : Nutanix Cluster Id
-    <br /> c. "databaseInstanceName" : Database Instance Name
+2. To create a NDBServer resource manifest that holds the information about the NDB setup, the fields in the `spec` section of the sample manifest [ndb_v1alpha1_ndbserver.yaml](config/samples/ndb_v1alpha1_ndbserver.yaml) should be updated. The file is described as follows:
 
-3. Finally, run this command to provision the database using NDB Operator:
-```sh
-kubectl apply -f config/samples/ndb_v1alpha1_database.yaml
-```
-4. To delete the Database CR (deprovision database) run:
+```yaml
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: NDBServer
+metadata:
+  labels:
+    app.kubernetes.io/name: ndbserver
+    app.kubernetes.io/instance: ndbserver
+    app.kubernetes.io/part-of: ndb-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: ndb-operator
+  name: ndb
+spec:
+    # Name of the secret that holds the credentials for NDB: username, password and ca_certificate (created in step 1) 
+    credentialSecret: ndb-secret-name
+    # NDB Server's API URL
+    server: https://[NDB IP]:8443/era/v0.9
+    # Set to true to skip SSL certificate validation, should be false if ca_certificate is provided in the credential secret.
+    skipCertificateVerification: true
 
-```sh
-kubectl delete -f config/samples/ndb_v1alpha1_database.yaml
 ```
-The [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) is described as follows:
+
+3. Run this command to create the NDBServer resource:
+```sh
+kubectl apply -f config/samples/ndb_v1alpha1_ndbserver.yaml
+```
+
+4. To create a Database resource manifest that holds the information about the Database, the fields in the `spec` section of the sample manifest [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) should be updated. The file is described as follows:
+
 ```yaml
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
@@ -90,21 +105,13 @@ metadata:
   # This name that will be used within the kubernetes cluster
   name: db
 spec:
-  # NDB server specific details
-  ndb:
+  # Name of the NDBServer resource created in step 3
+  ndbRef: ndb
+  # Database instance specific details (that is to be provisioned)
+  databaseInstance:
     # Cluster id of the cluster where the Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
     clusterId: "Nutanix Cluster Id"
-    # Credentials secret name for NDB installation
-    # data: username, password,
-    # stringData: ca_certificate
-    credentialSecret: ndb-secret-name
-    # The NDB Server
-    server: https://[NDB IP]:8443/era/v0.9
-    # Set to true to skip SSL verification, default: false.
-    skipCertificateVerification: true
-  # Database instance specific details (that is to be provisioned)
-  databaseInstance:
     # The database instance name on NDB
     databaseInstanceName: "Database-Instance-Name"
     # The description of the database instance
@@ -156,6 +163,21 @@ spec:
 
 ```
 
+5. Run this command to create the Database resource:
+
+```sh
+kubectl apply -f config/samples/ndb_v1alpha1_database.yaml
+```
+6. To delete the Database resource (deprovision database) run:
+
+```sh
+kubectl delete -f config/samples/ndb_v1alpha1_database.yaml
+```
+7. To delete the NDBServer resource run:
+
+```sh
+kubectl delete -f config/samples/ndb_v1alpha1_ndbserver.yaml
+```
 Below are the various optional addtionalArguments you can specify along with examples of their corresponding values. Arguments that have defaults will be indicated.
 
 ```yaml

@@ -3,12 +3,9 @@ kind: Database
 metadata:
   name: db
 spec:
-  ndb:
-    clusterId: "Nutanix Cluster Id"
-    credentialSecret: ndb-secret-name
-    server: https://[NDB IP]:8443/era/v0.9
-    skipCertificateVerification: true
+  ndbRef: "Name of the NDBServer Resource"
   databaseInstance:
+    clusterId: "Nutanix Cluster Id"
     databaseInstanceName: "Database Instance Name"
     description: "Database Description"
     databaseNames:

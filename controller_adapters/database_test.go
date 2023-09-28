@@ -238,7 +238,7 @@ func TestDatabase_GetNDBClusterId(t *testing.T) {
 	database := Database{
 		Database: v1alpha1.Database{
 			Spec: v1alpha1.DatabaseSpec{
-				NDB: v1alpha1.NDB{
+				Instance: v1alpha1.Instance{
 					ClusterId: "test-cluster-id",
 				},
 			},
@@ -247,7 +247,6 @@ func TestDatabase_GetNDBClusterId(t *testing.T) {
 	wantClusterId := "test-cluster-id"
 
 	t.Run(name, func(t *testing.T) {
-
 		gotClusterId := database.GetNDBClusterId()
 		if gotClusterId != wantClusterId {
 			t.Errorf("Database.GetNDBClusterId() gotClusterId= %v, want %v", gotClusterId, wantClusterId)

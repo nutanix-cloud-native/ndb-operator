@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -145,59 +146,18 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 	return requeueWithTimeout(15)
 }
 
-// When a database is provisioned, an id is assigned to the database CR.
-// In case if someone deletes the database externally/aborts the operation through NDB (and not through the operator), the operator should
-// create a new database. To do this, we fetch the database by the Id we have in the datbase CR's Status.Id.
-// If the database response's status is empty, we set our CR's status to be empty so that it is provisioned again.
-func (r *DatabaseReconciler) handleExternalDelete(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient) (err error) {
-	log := ctrllog.FromContext(ctx)
-	log.Info("Entered database_reconciler_helpers.handleExternalDelete")
-	if database.Status.Id != "" {
-		// database was provisioned earlier => sync status
-		var databaseResponse ndb_api.DatabaseResponse
-		allDatabases, err := ndb_api.GetAllDatabases(ctx, ndbClient)
-		if err != nil {
-			errStatement := "Error fetching all databases from NDB"
-			log.Error(err, errStatement)
-			// CHECK
-			r.recorder.Eventf(database, "Warning", EVENT_RESOURCE_LOOKUP_ERROR, "Error: %s", errStatement, err)
-
-			return err
-		} else {
-			for _, db := range allDatabases {
-				if db.Id == database.Status.Id {
-					databaseResponse = db
-					break
-				}
-			}
-		}
-		// Update the CR status if the database response is empty so that it triggers a provision operation
-		if databaseResponse.Status == common.DATABASE_CR_STATUS_EMPTY {
-			log.Info("The database might have been deleted externally, setting an empty status so it can be re-provisioned.")
-			r.recorder.Event(database, "Normal", EVENT_EXTERNAL_DELETE, "The database has been deleted externally (on NDB). Reprovisioning database on NDB.")
-			database.Status.Status = common.DATABASE_CR_STATUS_EMPTY
-			err = r.Status().Update(ctx, database)
-			if err != nil {
-				errStatement := "Failed to update status of database custom resource"
-				log.Error(err, errStatement)
-				r.recorder.Eventf(database, "Warning", EVENT_CR_STATUS_UPDATE_FAILED, "Error: %s. %s.", err.Error())
-				return err
-			}
-		}
-
-	}
-	return nil
-}
-
-// The handleSync function synchronizes the database CR's with the database instance in NDB
-// It handles the transition from EMPTY (initial state) => PROVISIONING => RUNNING
+// The handleSync function synchronizes the database CR with the database info object in the
+// NDBServer CR (which fetches it from NDB). It handles the transition from EMPTY (initial state) => WAITING => PROVISIONING => RUNNING
 // and updates the status accordingly. The update() triggers an implicit requeue of the reconcile request.
-func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient, req ctrl.Request) (ctrl.Result, error) {
+func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient, req ctrl.Request, ndbServer *ndbv1alpha1.NDBServer) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.handleSync")
-	switch database.Status.Status {
 
-	case common.DATABASE_CR_STATUS_EMPTY:
+	databaseStatus := database.Status.DeepCopy()
+	databaseStatus.Type = database.Spec.Instance.Type
+
+	// Provision the database if it has not been provisioned earlier
+	if databaseStatus.Status == "" || databaseStatus.Id == "" {
 		// DB Status.Status is empty => Provision a DB
 		infoStatement := "Provisioning a database instance on NDB."
 		log.Info(infoStatement)
@@ -223,7 +183,6 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 
 		databaseAdapter := &controller_adapters.Database{Database: *database}
 		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
-		// generatedReq, err := ndb_api.GenerateProvisioningRequestt(ctx, ndbClient, database.Spec, reqData)
 		if err != nil {
 			errStatement := "Could not generate database provisioning request"
 			log.Error(err, errStatement)
@@ -239,65 +198,78 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			r.recorder.Eventf(database, "Warning", EVENT_NDB_REQUEST_FAILED, "Error: %s. %s", errStatement, err.Error())
 			return requeueOnErr(err)
 		}
-		// log.Info(fmt.Sprintf("Provisioning response from NDB: %+v", taskResponse))
 
-		log.Info("Setting database CR status to provisioning and id as " + taskResponse.EntityId)
-		database.Status.Status = common.DATABASE_CR_STATUS_PROVISIONING
-		database.Status.Id = taskResponse.EntityId
-		database.Status.ProvisioningOperationId = taskResponse.OperationId
+		log.Info(fmt.Sprintf("Updating Database CR to Status: WAITING, id: %s and provisioningOperationId: %s", taskResponse.EntityId, taskResponse.OperationId))
 
-		// Updating the type in the Database Status based on the input
-		database.Status.Type = database.Spec.Instance.Type
+		databaseStatus.Status = common.DATABASE_CR_STATUS_WAITING
+		databaseStatus.Id = taskResponse.EntityId
+		databaseStatus.ProvisioningOperationId = taskResponse.OperationId
 
 		r.recorder.Event(database, "Normal", EVENT_PROVISIONING_STARTED, "Database provisioning initiated on NDB")
 
-		err = r.Status().Update(ctx, database)
+	}
+
+	// Handle External Sync
+	dbInfo := ndbServer.Status.Databases[databaseStatus.Id]
+	isUnderDeletion := !database.ObjectMeta.DeletionTimestamp.IsZero()
+	if isUnderDeletion {
+		databaseStatus.Status = common.DATABASE_CR_STATUS_DELETING
+	} else if dbInfo != (ndbv1alpha1.NDBServerDatabaseInfo{}) {
+		databaseStatus.Status = dbInfo.Status
+		databaseStatus.Id = dbInfo.Id
+		databaseStatus.IPAddress = dbInfo.IPAddress
+		databaseStatus.DatabaseServerId = dbInfo.DBServerId
+	} else if databaseStatus.Status == common.DATABASE_CR_STATUS_WAITING {
+		log.Info("Database not found in NDB CR yet")
+		r.recorder.Event(database, "Normal", EVENT_WAITING_FOR_NDB_RECONCILE, "Waiting for NDB server resource to reconcile")
+	} else {
+		log.Info("Database missing from NDB CR")
+		databaseStatus.Status = common.DATABASE_CR_STATUS_NOT_FOUND
+		// TODO: Add operation tracking while the DB is in PROVISIONING state
+	}
+
+	if !reflect.DeepEqual(database.Status, *databaseStatus) {
+		database.Status = *databaseStatus
+		err := r.Status().Update(ctx, database)
 		if err != nil {
 			errStatement := "Failed to update status of database custom resource"
 			log.Error(err, errStatement)
 			r.recorder.Eventf(database, "Warning", EVENT_CR_STATUS_UPDATE_FAILED, "Error: %s. %s.", err.Error())
 			return requeueOnErr(err)
 		}
-
-	case common.DATABASE_CR_STATUS_PROVISIONING:
-		// Check the status of the DB
-		databaseResponse, err := ndb_api.GetDatabaseById(ctx, ndbClient, database.Status.Id)
-		if err != nil {
-			errStatement := fmt.Sprintf("Failed to get db with id %s", database.Status.Id)
-			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", EVENT_RESOURCE_LOOKUP_ERROR, "Error: %s, %s", errStatement, err.Error())
-			return requeueOnErr(err)
-		}
-
-		// if READY => Change status
-		// log.Info("DEBUG Database Response: " + util.ToString(databaseResponse))
-		if databaseResponse.Status == common.DATABASE_CR_STATUS_READY {
-			log.Info("Database instance is READY, adding data to CR's status and updating the CR")
-			r.recorder.Event(database, "Normal", EVENT_PROVISIONING_COMPLETED, "Database has been provisioned on NDB.")
-			database.Status.Status = common.DATABASE_CR_STATUS_READY
-			database.Status.DatabaseServerId = databaseResponse.DatabaseNodes[0].DatabaseServerId
-			database.Status.IPAddress = databaseResponse.DatabaseNodes[0].DbServer.IPAddresses[0]
-			if database.Status.IPAddress != "" {
-				err = r.Status().Update(ctx, database)
-				if err != nil {
-					errStatement := "Failed to update status of database custom resource"
-					log.Error(err, errStatement)
-					r.recorder.Eventf(database, "Warning", EVENT_CR_STATUS_UPDATE_FAILED, "Error: %s. %s.", err.Error())
-					return requeueOnErr(err)
-				}
-			}
-		}
-		// If database instance is not yet ready, requeue with wait
-		return requeueWithTimeout(15)
-
-	case common.DATABASE_CR_STATUS_READY:
-		r.setupConnectivity(ctx, database, req)
-
-	default:
-		// Do Nothing
 	}
 
-	return doNotRequeue()
+	// Handle Internal Sync -
+	// [READY]
+	// Add finalizers only when the database is in ready state so that if
+	// any failure occurrs before reaching the ready state, the failure
+	// would not cause the deletion to block the terminal.
+	// Also, setup and create network services.
+	// [DELETING]
+	// Delete the database instance and the VM as per the finalizers
+	// [NOT FOUND]
+	// Record an event and then do not requeue since the resource has been deleted externally
+	// or was not found on NDB
+	switch databaseStatus.Status {
+	case common.DATABASE_CR_STATUS_READY:
+		if !isUnderDeletion {
+			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
+				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_INSTANCE, database)
+			}
+			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
+				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_SERVER, database)
+			}
+		}
+		r.setupConnectivity(ctx, database, req)
+	case common.DATABASE_CR_STATUS_DELETING:
+		return r.handleDelete(ctx, database, ndbClient)
+	case common.DATABASE_CR_STATUS_NOT_FOUND:
+		r.recorder.Eventf(database, "Warning", EVENT_EXTERNAL_DELETE, "Error: Resource not found on NDB")
+	default:
+		// No-Op
+	}
+
+	return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
 }
 
 // Sets up a kubernetes networking service (Without selectors)

@@ -16,7 +16,9 @@ limitations under the License.
 
 package util
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // Returns if two structs/objects are equal with the exception of
 // the field under the exceptionKey
