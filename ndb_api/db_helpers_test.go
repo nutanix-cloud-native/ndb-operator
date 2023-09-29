@@ -344,7 +344,7 @@ func TestMSSQLProvisionRequestAppenderWithoutActionArguments(t *testing.T) {
 		},
 		{
 			Name:  "dbParameterProfileIdInstance",
-			Value: profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE].Id,
+			Value: profileResponse.Id,
 		},
 		{
 			Name:  "vm_dbserver_admin_password",
