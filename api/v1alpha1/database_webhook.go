@@ -24,7 +24,6 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/api"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
-	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -205,17 +204,7 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 
 /* Checks if configured additional arguments are invalid */
 func isAdditionalArgumentsInvalid(typ string, additionalArguments map[string]string) (bool, map[string]bool) {
-	var allowedAdditionalArguments map[string]bool
-	switch typ {
-	case common.DATABASE_TYPE_MYSQL:
-		allowedAdditionalArguments = ndb_api.GetMySQLAllowedAdditionalArguments()
-	case common.DATABASE_TYPE_POSTGRES:
-		allowedAdditionalArguments = ndb_api.GetPostgresAllowedAdditionalArguments()
-	case common.DATABASE_TYPE_MONGODB:
-		allowedAdditionalArguments = ndb_api.GetMongoDbAllowedAdditionalArguments()
-	case common.DATABASE_TYPE_MSSQL:
-		allowedAdditionalArguments = ndb_api.GetMsSQLAllowedAdditionalArguments()
-	}
+	var allowedAdditionalArguments = util.GetAllowedAdditionalArgumentsForType(typ)
 
 	for name, _ := range additionalArguments {
 		if _, isPresent := allowedAdditionalArguments[name]; !isPresent {
