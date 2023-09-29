@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
+	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -62,9 +63,6 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		log.Error(err, "Error occurred while validating reqData", "reqData", reqData)
 		return
 	}
-
-	// Fetching additionalArguments
-	additionalArguments := database.GetDBInstanceAdditionalArguments()
 
 	// Creating a provisioning request based on the database type
 	requestBody = &DatabaseProvisionRequest{
@@ -115,7 +113,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		log.Error(err, "Error while appending provisioning request")
 		return
 	}
-	requestBody = appender.appendRequest(requestBody, database, reqData, additionalArguments)
+	requestBody = appender.appendRequest(requestBody, database, reqData)
 
 	log.Info("Database Provisioning", "requestBody", requestBody)
 	log.Info("Returning from ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
@@ -170,34 +168,28 @@ func validateReqData(ctx context.Context, databaseInstanceType string, reqData m
 	return
 }
 
-// Appends action arguments to req.ActionArguments.
-func appendActionArguments(req *DatabaseProvisionRequest, defaultActionArguments map[string]string, configuredAdditionalArgs map[string]string, isConfiguredActionArg map[string]bool) {
-
-	// 1) Appending configured action arg if specified, else appending default.
-	for name, defaultValue := range defaultActionArguments {
-		if configuredValue, nameExists := configuredAdditionalArgs[name]; nameExists {
-			req.ActionArguments = append(req.ActionArguments, ActionArgument{Name: name, Value: configuredValue})
-		} else {
-			req.ActionArguments = append(req.ActionArguments, ActionArgument{Name: name, Value: defaultValue})
-		}
+// Converts a map to an action arguments list
+func convertMapToActionArguments(myMap map[string]string) []ActionArgument {
+	actionArgs := []ActionArgument{}
+	for name, value := range myMap {
+		actionArgs = append(actionArgs, ActionArgument{Name: name, Value: value})
 	}
+	return actionArgs
+}
 
-	// 2) Appending remaining configured action arguments that have no default.
-	for name, value := range configuredAdditionalArgs {
-
-		// a) Checking if the key is not specified in default. If it is not, can add if its an action argument
-		if _, isInDefaultActionArguments := defaultActionArguments[name]; !isInDefaultActionArguments {
-			// b) Checking if it is an action argument
-			if isActionArg, isExists := isConfiguredActionArg[name]; isExists && isActionArg {
-				req.ActionArguments = append(req.ActionArguments, ActionArgument{Name: name, Value: value})
-			}
+// Overwrites and appends actionArguments from database.additionalArguments to actionArguments
+func setConfiguredActionArguments(database DatabaseInterface, actionArguments map[string]string) {
+	allowedAdditionalArguments := util.GetAllowedAdditionalArgumentsForType(database.GetDBInstanceType())
+	for name, value := range database.GetDBInstanceAdditionalArguments() {
+		if isActionArgument, _ := allowedAdditionalArguments[name]; isActionArgument {
+			actionArguments[name] = value
 		}
 	}
 }
 
 // Appends request based on database type
 type DBProvisionRequestAppender interface {
-	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}, additionalArguments map[string]string) *DatabaseProvisionRequest
+	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest
 }
 
 type MSSQLProvisionRequestAppender struct{}
@@ -208,79 +200,112 @@ type PostgresProvisionRequestAppender struct{}
 
 type MySqlProvisionRequestAppender struct{}
 
-func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}, additionalArguments map[string]string) *DatabaseProvisionRequest {
+func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
 	req.DatabaseName = string(database.GetDBInstanceDatabaseNames())
 	adminPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	profileMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
 	dbParamInstanceProfile := profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE]
 
-	appendActionArguments(
-		req,
-		getMsSQLDefaultActionArguments(
-			database.GetDBInstanceName(),
-			dbParamInstanceProfile.Id,
-			adminPassword,
-		),
-		additionalArguments,
-		GetMsSQLAllowedAdditionalArguments(),
-	)
+	// Default action arguments
+	actionArguments := map[string]string{
+		"working_dir":                       "C:\\temp",
+		"sql_user_name":                     "sa",
+		"authentication_mode":               "windows",
+		"delete_vm_on_failure":              "false",
+		"is_gmsa_sql_service_account":       "false",
+		"provision_from_backup":             "false",
+		"distribute_database_data":          "true",
+		"retain_database_in_restoring_mode": "false",
+		"dbserver_name":                     database.GetDBInstanceName(),
+		"server_collation":                  "SQL_Latin1_General_CP1_CI_AS",
+		"database_collation":                "SQL_Latin1_General_CP1_CI_AS",
+		"dbParameterProfileIdInstance":      dbParamInstanceProfile.Id,
+		"vm_dbserver_admin_password":        adminPassword,
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	setConfiguredActionArguments(database, actionArguments)
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
 	return req
 }
 
-func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}, additionalArguments map[string]string) *DatabaseProvisionRequest {
+func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	req.SSHPublicKey = SSHPublicKey
 
-	appendActionArguments(
-		req,
-		getMongoDbDefaultActionArguments(
-			dbPassword,
-			databaseNames,
-		),
-		additionalArguments,
-		GetMongoDbAllowedAdditionalArguments(),
-	)
+	// Default action arguments
+	actionArguments := map[string]string{
+		"listener_port":  "27017",
+		"log_size":       "100",
+		"journal_size":   "100",
+		"restart_mongod": "true",
+		"working_dir":    "/tmp",
+		"db_user":        "admin",
+		"backup_policy":  "primary_only",
+		"db_password":    dbPassword,
+		"database_names": databaseNames,
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	setConfiguredActionArguments(database, actionArguments)
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
 	return req
 }
 
-func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}, additionalArguments map[string]string) *DatabaseProvisionRequest {
+func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	req.SSHPublicKey = SSHPublicKey
 
-	appendActionArguments(
-		req,
-		getPostgresDefaultActionArguments(
-			dbPassword,
-			databaseNames,
-		),
-		additionalArguments,
-		GetPostgresAllowedAdditionalArguments(),
-	)
+	// Default action arguments
+	actionArguments := map[string]string{
+		"proxy_read_port":         "5001",
+		"listener_port":           "5432",
+		"proxy_write_port":        "5000",
+		"enable_synchronous_mode": "false",
+		"auto_tune_staging_drive": "true",
+		"backup_policy":           "primary_only",
+		"db_password":             dbPassword,
+		"database_names":          databaseNames,
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	setConfiguredActionArguments(database, actionArguments)
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
 	return req
 }
 
-func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}, additionalArguments map[string]string) *DatabaseProvisionRequest {
+func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	req.SSHPublicKey = SSHPublicKey
 
-	appendActionArguments(
-		req,
-		getMySQLDefaultActionArguments(
-			dbPassword,
-			databaseNames,
-		),
-		additionalArguments,
-		GetMySQLAllowedAdditionalArguments(),
-	)
+	// Default action arguments
+	actionArguments := map[string]string{
+		"listener_port":           "3306",
+		"db_password":             dbPassword,
+		"database_names":          databaseNames,
+		"auto_tune_staging_drive": "true",
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	setConfiguredActionArguments(database, actionArguments)
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
 	return req
 }
