@@ -111,7 +111,12 @@ func instanceSpecDefaulterForCreate(instance *Instance) {
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Database) Default() {
 	databaselog.Info("Entering Defaulter logic...")
-	instanceSpecDefaulterForCreate(&r.Spec.Instance)
+	instanceSpecDefaulterForCreate(r.Spec.Instance)
+	if r.Spec.Clone == nil {
+		r.Spec.Clone = &Clone{
+			Profiles: &Profiles{},
+		}
+	}
 	databaselog.Info("Exiting Defaulter logic...")
 }
 
@@ -196,7 +201,7 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 func (r *Database) ValidateCreate() (admission.Warnings, error) {
 	databaselog.Info("Entering ValidateCreate...")
 
-	dbSpecErrors := instanceSpecValidatorForCreate(&r.Spec.Instance, field.ErrorList{}, field.NewPath("spec").Child("databaseInstance"))
+	dbSpecErrors := instanceSpecValidatorForCreate(r.Spec.Instance, field.ErrorList{}, field.NewPath("spec").Child("databaseInstance"))
 
 	combined_err := util.CombineFieldErrors(dbSpecErrors)
 

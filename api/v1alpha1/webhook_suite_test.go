@@ -149,7 +149,7 @@ var _ = Describe("Webhook Tests", func() {
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					Instance: Instance{
+					Instance: &Instance{
 						ClusterId:        "",
 						CredentialSecret: "db-instance-secret",
 						Name:             "db-instance-name",
@@ -175,7 +175,7 @@ var _ = Describe("Webhook Tests", func() {
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					Instance: Instance{
+					Instance: &Instance{
 						ClusterId:        "cluster-id",
 						CredentialSecret: "db-instance-secret",
 						Name:             "",
@@ -201,7 +201,7 @@ var _ = Describe("Webhook Tests", func() {
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					Instance: Instance{
+					Instance: &Instance{
 						ClusterId: "cluster-id",
 						Name:      "db-instance-name",
 						Type:      "postgres",
@@ -226,7 +226,7 @@ var _ = Describe("Webhook Tests", func() {
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					Instance: Instance{
+					Instance: &Instance{
 						ClusterId:        "cluster-id",
 						CredentialSecret: "db-instance-secret",
 						Name:             "db-instance-name",
@@ -252,7 +252,7 @@ var _ = Describe("Webhook Tests", func() {
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					Instance: Instance{
+					Instance: &Instance{
 						ClusterId:        "cluster-id",
 						CredentialSecret: "db-instance-secret",
 						Name:             "db-instance-name",
@@ -278,7 +278,7 @@ var _ = Describe("Webhook Tests", func() {
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					Instance: Instance{
+					Instance: &Instance{
 						ClusterId:        "cluster-id",
 						CredentialSecret: "db-instance-secret",
 						Name:             "db-instance-name",
@@ -300,7 +300,7 @@ var _ = Describe("Webhook Tests", func() {
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					Instance: Instance{
+					Instance: &Instance{
 						ClusterId:        "cluster-id",
 						CredentialSecret: "db-instance-secret",
 						Name:             "db-instance-name",
@@ -328,7 +328,7 @@ var _ = Describe("Webhook Tests", func() {
 					Namespace: "default",
 				},
 				Spec: DatabaseSpec{
-					Instance: Instance{
+					Instance: &Instance{
 						ClusterId:        "cluster-id",
 						CredentialSecret: "db-instance-secret",
 						Name:             "db-instance-name",

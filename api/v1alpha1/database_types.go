@@ -28,10 +28,10 @@ import (
 // DatabaseSpec defines the desired state of Database
 type DatabaseSpec struct {
 	// +kubebuilder:validation:Required
-	NDBRef   string   `json:"ndbRef"`
-	IsClone  bool     `json:"isClone"`
-	Instance Instance `json:"databaseInstance"`
-	Clone    Clone    `json:"clone"`
+	NDBRef   string    `json:"ndbRef"`
+	IsClone  bool      `json:"isClone"`
+	Instance *Instance `json:"databaseInstance"`
+	Clone    *Clone    `json:"clone"`
 }
 
 // DatabaseStatus defines the observed state of Database
