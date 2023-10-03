@@ -29,7 +29,9 @@ import (
 type DatabaseSpec struct {
 	// +kubebuilder:validation:Required
 	NDBRef   string   `json:"ndbRef"`
+	IsClone  bool     `json:"isClone"`
 	Instance Instance `json:"databaseInstance"`
+	Clone    Clone    `json:"clone"`
 }
 
 // DatabaseStatus defines the observed state of Database
@@ -72,29 +74,50 @@ func init() {
 // These are required to have a deep copy, object interface implementation
 // These are the structs for the Spec and Status
 
+type Clone struct {
+	// Name of the clone instance
+	Name string `json:"name"`
+	// Description of the clone instance
+	// +optional
+	Description string `json:"description"`
+	// Id of the cluster to clone the database on
+	ClusterId string `json:"clusterId"`
+	// +optional
+	Profiles *Profiles `json:"profiles"`
+	// Name of the secret holding the credentials for the database instance (password and ssh key)
+	CredentialSecret string `json:"credentialSecret"`
+	// +optional
+	// default UTC
+	TimeZone string `json:"timezone"`
+	// Id of the source database on NDB to clone from
+	SourceDatabaseId string `json:"sourceDatabaseId"`
+	// Id of the snapshot to create a clone from
+	SnapshotId string `json:"snapshotId"`
+}
+
 // Database instance specific details
 type Instance struct {
 	// Name of the database instance
-	DatabaseInstanceName string `json:"databaseInstanceName"`
+	Name string `json:"name"`
 	// Description of the database instance
 	// +optional
 	Description string `json:"description"`
 	// Id of the cluster to provision the database on
 	ClusterId string `json:"clusterId"`
+	// +optional
+	Profiles *Profiles `json:"profiles"`
+	// Name of the secret holding the credentials for the database instance (password and ssh key)
+	CredentialSecret string `json:"credentialSecret"`
+	// +optional
+	TimeZone string `json:"timezone"`
 	// Name(s) of the database(s) to be provisiond inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
 	// +optional
 	DatabaseNames []string `json:"databaseNames"`
-	// Name of the secret holding the credentials for the database instance (password and ssh key)
-	CredentialSecret string `json:"credentialSecret"`
 	// Size of the database instance, minimum 10 (GBs)
 	Size int `json:"size"`
 	// default UTC
-	// +optional
-	TimeZone string `json:"timezone"`
-	Type     string `json:"type"`
-	// +optional
-	Profiles *Profiles `json:"profiles"`
+	Type string `json:"type"`
 	// +optional
 	// Information related to time machine that is to be associated with this database
 	TMInfo *DBTimeMachineInfo `json:"timeMachine"`

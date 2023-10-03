@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Tests that GetDBInstanceName() retrieves DatabaseInstanceName correctly
-func TestDatabase_GetDBInstanceName(t *testing.T) {
+// Tests that GetName() retrieves Name correctly
+func TestDatabase_GetName(t *testing.T) {
 
 	tests := []struct {
 		name             string
@@ -39,7 +39,7 @@ func TestDatabase_GetDBInstanceName(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-instance-name",
+							Name: "test-instance-name",
 						},
 					},
 				},
@@ -50,18 +50,18 @@ func TestDatabase_GetDBInstanceName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotInstanceName := tt.database.GetDBInstanceName()
+			gotInstanceName := tt.database.GetName()
 			if gotInstanceName != tt.wantInstanceName {
-				t.Errorf("Database.GetDBInstanceName() gotInstanceName = %v, want %v", gotInstanceName, tt.wantInstanceName)
+				t.Errorf("Database.GetName() gotInstanceName = %v, want %v", gotInstanceName, tt.wantInstanceName)
 			}
 		})
 	}
 }
 
-// Tests the GetDBInstanceDescription() function against the following:
+// Tests the GetDescription() function against the following:
 // 1. Description is NOT empty
 // 2. Description IS empty, in this case, a description is created for the user based on instance name
-func TestDatabase_GetDBInstanceDescription(t *testing.T) {
+func TestDatabase_GetDescription(t *testing.T) {
 
 	tests := []struct {
 		name            string
@@ -87,8 +87,8 @@ func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-instance-name",
-							Description:          "",
+							Name:        "test-instance-name",
+							Description: "",
 						},
 					},
 				},
@@ -99,16 +99,16 @@ func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotDescription := tt.database.GetDBInstanceDescription()
+			gotDescription := tt.database.GetDescription()
 			if gotDescription != tt.wantDescription {
-				t.Errorf("Database.GetDBInstanceDescription() gotDescription = %v, want %v", gotDescription, tt.wantDescription)
+				t.Errorf("Database.GetDescription() gotDescription = %v, want %v", gotDescription, tt.wantDescription)
 			}
 		})
 	}
 }
 
-// Tests the GetDBInstanceType() retrieves Type correctly:
-func TestDatabase_GetDBInstanceType(t *testing.T) {
+// Tests the GetInstanceType() retrieves Type correctly:
+func TestDatabase_GetInstanceType(t *testing.T) {
 
 	tests := []struct {
 		name     string
@@ -132,16 +132,16 @@ func TestDatabase_GetDBInstanceType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotType := tt.database.GetDBInstanceType()
+			gotType := tt.database.GetInstanceType()
 			if gotType != tt.wantType {
-				t.Errorf("Database.GetDBInstanceType() gotType = %v, want %v", gotType, tt.wantType)
+				t.Errorf("Database.GetInstanceType() gotType = %v, want %v", gotType, tt.wantType)
 			}
 		})
 	}
 }
 
-// Tests the GetDBInstanceDatabaseNames() retrieves DatabaseNames correctly:
-func TestDatabase_GetDBInstanceDatabaseNames(t *testing.T) {
+// Tests the GetInstanceDatabaseNames() retrieves DatabaseNames correctly:
+func TestDatabase_GetInstanceDatabaseNames(t *testing.T) {
 
 	tests := []struct {
 		name              string
@@ -165,16 +165,16 @@ func TestDatabase_GetDBInstanceDatabaseNames(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotDatabaseNames := tt.database.GetDBInstanceDatabaseNames()
+			gotDatabaseNames := tt.database.GetInstanceDatabaseNames()
 			if gotDatabaseNames != tt.wantDatabaseNames {
-				t.Errorf("Database.GetDBInstanceDatabaseNames() gotDatabaseNames = %v, want %v", gotDatabaseNames, tt.wantDatabaseNames)
+				t.Errorf("Database.GetInstanceDatabaseNames() gotDatabaseNames = %v, want %v", gotDatabaseNames, tt.wantDatabaseNames)
 			}
 		})
 	}
 }
 
-// Tests the GetDBInstanceTimeZone() function retrieves TimeZone correctly:
-func TestDatabase_GetDBInstanceTimeZone(t *testing.T) {
+// Tests the GetTimeZone() function retrieves TimeZone correctly:
+func TestDatabase_GetTimeZone(t *testing.T) {
 
 	tests := []struct {
 		name         string
@@ -198,7 +198,7 @@ func TestDatabase_GetDBInstanceTimeZone(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotTimeZone := tt.database.GetDBInstanceTimeZone()
+			gotTimeZone := tt.database.GetTimeZone()
 			if gotTimeZone != tt.wantTimeZone {
 				t.Errorf("Database.GetInstanceTimeZone() gotTimeZone = %v, want %v", gotTimeZone, tt.wantTimeZone)
 			}
@@ -206,8 +206,8 @@ func TestDatabase_GetDBInstanceTimeZone(t *testing.T) {
 	}
 }
 
-// Tests the GetDBInstanceSize() function retrieves Size correctly:
-func TestDatabase_GetDBInstanceSize(t *testing.T) {
+// Tests the GetInstanceSize() function retrieves Size correctly:
+func TestDatabase_GetInstanceSize(t *testing.T) {
 
 	tests := []struct {
 		name     string
@@ -231,16 +231,16 @@ func TestDatabase_GetDBInstanceSize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotSize := tt.database.GetDBInstanceSize()
+			gotSize := tt.database.GetInstanceSize()
 			if gotSize != tt.wantSize {
-				t.Errorf("Database.GetDBInstanceSize() gotSize= %v, want %v", gotSize, tt.wantSize)
+				t.Errorf("Database.GetInstanceSize() gotSize= %v, want %v", gotSize, tt.wantSize)
 			}
 		})
 	}
 }
 
-// Tests the GetNDBClusterId() function retrieves ClusterId correctly:
-func TestDatabase_GetNDBClusterId(t *testing.T) {
+// Tests the GetClusterId() function retrieves ClusterId correctly:
+func TestDatabase_GetClusterId(t *testing.T) {
 
 	tests := []struct {
 		name          string
@@ -264,22 +264,22 @@ func TestDatabase_GetNDBClusterId(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotClusterId := tt.database.GetNDBClusterId()
+			gotClusterId := tt.database.GetClusterId()
 			if gotClusterId != tt.wantClusterId {
-				t.Errorf("Database.GetNDBClusterId() gotClusterId= %v, want %v", gotClusterId, tt.wantClusterId)
+				t.Errorf("Database.GetClusterId() gotClusterId= %v, want %v", gotClusterId, tt.wantClusterId)
 			}
 		})
 	}
 }
 
-// Tests the GetTMSchedule() function against the following:
+// Tests the GetInstanceTMSchedule() function against the following:
 // 1. All inputs are valid, no error is returned
 // 2. DailySnapshotTime has incorrect values for hour, returns an error
 // 3. DailySnapshotTime has incorrect values for minutes, returns an error
 // 4. DailySnapshotTime has incorrect values for seconds, returns an error
 // 5. DailySnapshotTime has incorrect values (all), returns an error
 // 6. DailySnapshotTime has incorrect format, returns an error
-func TestDatabase_GetTMSchedule(t *testing.T) {
+func TestDatabase_GetInstanceTMSchedule(t *testing.T) {
 
 	tests := []struct {
 		name         string
@@ -382,24 +382,24 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotSchedule, err := tt.database.GetTMSchedule()
+			gotSchedule, err := tt.database.GetInstanceTMSchedule()
 
 			if tt.wantErr {
 				assert.Error(t, err)
 			}
 			if !reflect.DeepEqual(gotSchedule, tt.wantSchedule) {
-				t.Errorf("Database.GetTMSchedule() = %v, want %v", gotSchedule, tt.wantSchedule)
+				t.Errorf("Database.GetInstanceTMSchedule() = %v, want %v", gotSchedule, tt.wantSchedule)
 			}
 		})
 	}
 }
 
-// Tests the GetTMDetails() function against the following test cases:
+// Tests the GetInstanceTMDetails() function against the following test cases:
 // 1. TM name, description and sla name are empty, returns default values
 // 2. TM name is non empty, returns default values for other empty fields
 // 3. TM description is non empty, returns default values for other empty fields
 // 4. SLA name is non empty, returns default values for other empty fields
-func TestDatabase_GetTMDetails(t *testing.T) {
+func TestDatabase_GetInstanceTMDetails(t *testing.T) {
 
 	tests := []struct {
 		name              string
@@ -414,8 +414,8 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-database",
-							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
+							Name:   "test-database",
+							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
 				},
@@ -430,8 +430,8 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-database",
-							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "test-name", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
+							Name:   "test-database",
+							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "test-name", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
 				},
@@ -446,8 +446,8 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-database",
-							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "", Description: "test-description", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
+							Name:   "test-database",
+							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "", Description: "test-description", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
 				},
@@ -462,8 +462,8 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
 						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-database",
-							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "test-sla", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
+							Name:   "test-database",
+							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "test-sla", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
 				},
@@ -476,15 +476,15 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotTmName, gotTmDescription, gotSlaName := tt.database.GetTMDetails()
+			gotTmName, gotTmDescription, gotSlaName := tt.database.GetInstanceTMDetails()
 			if gotTmName != tt.wantTmName {
-				t.Errorf("Database.GetTMDetails() gotTmName = %v, want %v", gotTmName, tt.wantTmName)
+				t.Errorf("Database.GetInstanceTMDetails() gotTmName = %v, want %v", gotTmName, tt.wantTmName)
 			}
 			if gotTmDescription != tt.wantTmDescription {
-				t.Errorf("Database.GetTMDetails() gotTmDescription = %v, want %v", gotTmDescription, tt.wantTmDescription)
+				t.Errorf("Database.GetInstanceTMDetails() gotTmDescription = %v, want %v", gotTmDescription, tt.wantTmDescription)
 			}
 			if gotSlaName != tt.wantSlaName {
-				t.Errorf("Database.GetTMDetails() gotSlaName = %v, want %v", gotSlaName, tt.wantSlaName)
+				t.Errorf("Database.GetInstanceTMDetails() gotSlaName = %v, want %v", gotSlaName, tt.wantSlaName)
 			}
 		})
 	}

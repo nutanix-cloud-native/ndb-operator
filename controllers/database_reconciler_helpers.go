@@ -158,40 +158,11 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 
 	// Provision the database if it has not been provisioned earlier
 	if databaseStatus.Status == "" || databaseStatus.Id == "" {
-		// DB Status.Status is empty => Provision a DB
-		infoStatement := "Provisioning a database instance on NDB."
-		log.Info(infoStatement)
+		// DB Status.Status is empty => Create a DB
+		log.Info("Creating a database instance on NDB.")
 
-		dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
-		if err != nil || dbPassword == "" || sshPublicKey == "" {
-			var errStatement string
-			if err == nil {
-				errStatement = "Database instance password and ssh key cannot be empty"
-				err = fmt.Errorf("empty DB instance credentials")
-			} else {
-				errStatement = "An error occured while fetching the DB Instance Secrets"
-			}
-			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", EVENT_INVALID_CREDENTIALS, "Error: %s", errStatement)
-			return requeueOnErr(err)
-		}
-
-		reqData := map[string]interface{}{
-			common.NDB_PARAM_PASSWORD:       dbPassword,
-			common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
-		}
-
-		databaseAdapter := &controller_adapters.Database{Database: *database}
-		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
-		if err != nil {
-			errStatement := "Could not generate database provisioning request"
-			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", EVENT_REQUEST_GENERATION_FAILURE, "Error: %s. %s", errStatement, err.Error())
-			return requeueOnErr(err)
-		}
-		r.recorder.Event(database, "Normal", EVENT_REQUEST_GENERATION, "Generated database provisiong request")
-
-		taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
+		databaseCreator := getDatabaseCreator(*database)
+		taskResponse, err := databaseCreator.create(ctx, r, ndbClient, database, req.Namespace)
 		if err != nil {
 			errStatement := "Failed to make database provisioning request to NDB"
 			log.Error(err, errStatement)
@@ -399,9 +370,9 @@ func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1
 
 // Returns the credentials(password and ssh public key) for NDB
 // Returns an error if reading the secret containing credentials fails
-func (r *DatabaseReconciler) getDatabaseInstanceCredentials(ctx context.Context, name, namespace string) (password, sshPublicKey string, err error) {
+func (r *DatabaseReconciler) getDatabaseCredentials(ctx context.Context, name, namespace string) (password, sshPublicKey string, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered database_reconciler_helpers.getDatabaseInstanceCredentials")
+	log.Info("Entered database_reconciler_helpers.getDatabaseCredentials")
 	secretDataMap, err := util.GetAllDataFromSecret(ctx, r.Client, name, namespace)
 	if err != nil {
 		log.Error(err, "Error occured in util.GetAllDataFromSecret while fetching all database instance secrets", "Secret Name", name, "Namespace", namespace)
@@ -409,6 +380,108 @@ func (r *DatabaseReconciler) getDatabaseInstanceCredentials(ctx context.Context,
 	}
 	password = string(secretDataMap[common.SECRET_DATA_KEY_PASSWORD])
 	sshPublicKey = string(secretDataMap[common.SECRET_DATA_KEY_SSH_PUBLIC_KEY])
-	log.Info("Returning from database_reconciler_helpers.getDatabaseInstanceCredentials")
+	log.Info("Returning from database_reconciler_helpers.getDatabaseCredentials")
+	return
+}
+
+type DatabaseCreator interface {
+	create(
+		ctx context.Context,
+		r *DatabaseReconciler,
+		ndbClient *ndb_client.NDBClient,
+		database *ndbv1alpha1.Database,
+		namespace string) (task ndb_api.TaskInfoSummaryResponse, err error)
+}
+type DatabaseProvisioner struct{}
+type DatabaseCloner struct{}
+
+func (p *DatabaseProvisioner) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse ndb_api.TaskInfoSummaryResponse, err error) {
+	log := ctrllog.FromContext(ctx)
+	dbPassword, sshPublicKey, err := r.getDatabaseCredentials(ctx, database.Spec.Instance.CredentialSecret, namespace)
+	if err != nil || dbPassword == "" || sshPublicKey == "" {
+		var errStatement string
+		if err == nil {
+			errStatement = "Database instance password and ssh key cannot be empty"
+			err = fmt.Errorf("empty DB instance credentials")
+		} else {
+			errStatement = "An error occured while fetching the DB Instance Secrets"
+		}
+		log.Error(err, errStatement)
+		r.recorder.Eventf(database, "Warning", EVENT_INVALID_CREDENTIALS, "Error: %s", errStatement)
+		return
+	}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_PASSWORD:       dbPassword,
+		common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+	}
+
+	databaseAdapter := &controller_adapters.Database{Database: *database}
+	generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
+	if err != nil {
+		errStatement := "Could not generate database provisioning request"
+		log.Error(err, errStatement)
+		r.recorder.Eventf(database, "Warning", EVENT_REQUEST_GENERATION_FAILURE, "Error: %s. %s", errStatement, err.Error())
+		return
+	}
+	r.recorder.Event(database, "Normal", EVENT_REQUEST_GENERATION, "Generated database provisiong request")
+
+	taskResponse, err = ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
+	if err != nil {
+		errStatement := "Failed to make database provisioning request to NDB"
+		log.Error(err, errStatement)
+		r.recorder.Eventf(database, "Warning", EVENT_NDB_REQUEST_FAILED, "Error: %s. %s", errStatement, err.Error())
+		return
+	}
+	return
+}
+
+func (c *DatabaseCloner) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse ndb_api.TaskInfoSummaryResponse, err error) {
+	log := ctrllog.FromContext(ctx)
+	dbPassword, sshPublicKey, err := r.getDatabaseCredentials(ctx, database.Spec.Instance.CredentialSecret, namespace)
+	if err != nil || dbPassword == "" || sshPublicKey == "" {
+		var errStatement string
+		if err == nil {
+			errStatement = "Database clone password and ssh key cannot be empty"
+			err = fmt.Errorf("empty DB clone credentials")
+		} else {
+			errStatement = "An error occured while fetching the DB clone Secrets"
+		}
+		log.Error(err, errStatement)
+		r.recorder.Eventf(database, "Warning", EVENT_INVALID_CREDENTIALS, "Error: %s", errStatement)
+		return
+	}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_PASSWORD:       dbPassword,
+		common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+	}
+
+	databaseAdapter := &controller_adapters.Database{Database: *database}
+	generatedReq, err := ndb_api.GenerateCloningRequest(ctx, ndbClient, databaseAdapter, reqData)
+	if err != nil {
+		errStatement := "Could not generate database cloning request"
+		log.Error(err, errStatement)
+		r.recorder.Eventf(database, "Warning", EVENT_REQUEST_GENERATION_FAILURE, "Error: %s. %s", errStatement, err.Error())
+		return
+	}
+	r.recorder.Event(database, "Normal", EVENT_REQUEST_GENERATION, "Generated database cloning request")
+
+	taskResponse, err = ndb_api.ProvisionClone(ctx, ndbClient, generatedReq)
+	if err != nil {
+		errStatement := "Failed to make database cloning request to NDB"
+		log.Error(err, errStatement)
+		r.recorder.Eventf(database, "Warning", EVENT_NDB_REQUEST_FAILED, "Error: %s. %s", errStatement, err.Error())
+		return
+	}
+	return
+}
+
+func getDatabaseCreator(database ndbv1alpha1.Database) (creator DatabaseCreator) {
+	if database.Spec.IsClone {
+		creator = &DatabaseCloner{}
+	} else {
+		creator = &DatabaseProvisioner{}
+	}
 	return
 }

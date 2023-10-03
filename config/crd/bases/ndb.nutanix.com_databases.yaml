@@ -48,6 +48,75 @@ spec:
           spec:
             description: DatabaseSpec defines the desired state of Database
             properties:
+              clone:
+                properties:
+                  clusterId:
+                    description: Id of the cluster to clone the database on
+                    type: string
+                  credentialSecret:
+                    description: Name of the secret holding the credentials for the
+                      database instance (password and ssh key)
+                    type: string
+                  description:
+                    description: Description of the clone instance
+                    type: string
+                  name:
+                    description: Name of the clone instance
+                    type: string
+                  profiles:
+                    properties:
+                      compute:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                      dbParam:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                      dbParamInstance:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                      network:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                      software:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                    type: object
+                  snapshotId:
+                    description: Id of the snapshot to create a clone from
+                    type: string
+                  sourceDatabaseId:
+                    description: Id of the source database on NDB to clone from
+                    type: string
+                  timezone:
+                    description: default UTC
+                    type: string
+                required:
+                - clusterId
+                - credentialSecret
+                - name
+                - snapshotId
+                - sourceDatabaseId
+                type: object
               databaseInstance:
                 description: Database instance specific details
                 properties:
@@ -58,9 +127,6 @@ spec:
                     description: Name of the secret holding the credentials for the
                       database instance (password and ssh key)
                     type: string
-                  databaseInstanceName:
-                    description: Name of the database instance
-                    type: string
                   databaseNames:
                     description: Name(s) of the database(s) to be provisiond inside
                       the database instance default [ "database_one", "database_two",
@@ -70,6 +136,9 @@ spec:
                     type: array
                   description:
                     description: Description of the database instance
+                    type: string
+                  name:
+                    description: Name of the database instance
                     type: string
                   profiles:
                     properties:
@@ -145,21 +214,25 @@ spec:
                         type: string
                     type: object
                   timezone:
-                    description: default UTC
                     type: string
                   type:
+                    description: default UTC
                     type: string
                 required:
                 - clusterId
                 - credentialSecret
-                - databaseInstanceName
+                - name
                 - size
                 - type
                 type: object
+              isClone:
+                type: boolean
               ndbRef:
                 type: string
             required:
+            - clone
             - databaseInstance
+            - isClone
             - ndbRef
             type: object
           status:

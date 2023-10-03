@@ -27,13 +27,12 @@ import (
 )
 
 // This function generates and returns a request for provisioning a database (and a dbserver vm) on NDB
-// The database provisioned has a NONE time machine SLA attached to it, and uses the default OOB profiles
 func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDBClient, database DatabaseInterface, reqData map[string]interface{}) (requestBody *DatabaseProvisionRequest, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+	log.Info("Entered ndb_api.GenerateProvisioningRequest", "database name", database.GetName(), "database type", database.GetInstanceType())
 
 	// Fetching the TM details
-	tmName, tmDescription, slaName := database.GetTMDetails()
+	tmName, tmDescription, slaName := database.GetInstanceTMDetails()
 	// Fetching the SLA for the TM by name
 	sla, err := GetSLAByName(ctx, ndb_client, slaName)
 	if err != nil {
@@ -41,41 +40,41 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		return
 	}
 
-	schedule, err := database.GetTMSchedule()
+	schedule, err := database.GetInstanceTMSchedule()
 	if err != nil {
 		log.Error(err, "Error occurred while generating the Time Machine Schedule")
 		return
 	}
 
 	// Fetch the required profiles for the database
-	profilesMap, err := ResolveProfiles(ctx, ndb_client, database.GetDBInstanceType(), database.GetProfileResolvers())
+	profilesMap, err := ResolveProfiles(ctx, ndb_client, database.GetInstanceType(), database.GetProfileResolvers())
 	if err != nil {
-		log.Error(err, "Error occurred while getting required profiles", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+		log.Error(err, "Error occurred while getting required profiles", "database name", database.GetName(), "database type", database.GetInstanceType())
 		return
 	}
 	// Required for dbParameterProfileIdInstance in MSSQL action args
 	reqData[common.PROFILE_MAP_PARAM] = profilesMap
 
 	// Validate request data
-	err = validateReqData(ctx, database.GetDBInstanceType(), reqData)
+	err = validateReqData(ctx, database.GetInstanceType(), reqData)
 	if err != nil {
 		log.Error(err, "Error occurred while validating reqData", "reqData", reqData)
 		return
 	}
 	// Creating a provisioning request based on the database type
 	requestBody = &DatabaseProvisionRequest{
-		DatabaseType:             GetDatabaseEngineName(database.GetDBInstanceType()),
-		Name:                     database.GetDBInstanceName(),
-		DatabaseDescription:      database.GetDBInstanceDescription(),
+		DatabaseType:             GetDatabaseEngineName(database.GetInstanceType()),
+		Name:                     database.GetName(),
+		DatabaseDescription:      database.GetDescription(),
 		SoftwareProfileId:        profilesMap[common.PROFILE_TYPE_SOFTWARE].Id,
 		SoftwareProfileVersionId: profilesMap[common.PROFILE_TYPE_SOFTWARE].LatestVersionId,
 		ComputeProfileId:         profilesMap[common.PROFILE_TYPE_COMPUTE].Id,
 		NetworkProfileId:         profilesMap[common.PROFILE_TYPE_NETWORK].Id,
 		DbParameterProfileId:     profilesMap[common.PROFILE_TYPE_DATABASE_PARAMETER].Id,
-		NewDbServerTimeZone:      database.GetDBInstanceTimeZone(),
+		NewDbServerTimeZone:      database.GetTimeZone(),
 		CreateDbServer:           true,
 		NodeCount:                1,
-		NxClusterId:              database.GetNDBClusterId(),
+		NxClusterId:              database.GetClusterId(),
 		Clustered:                false,
 		AutoTuneStagingDrive:     true,
 
@@ -90,30 +89,30 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		Nodes: []Node{
 			{
 				Properties: make([]string, 0),
-				VmName:     database.GetDBInstanceName() + "_VM",
+				VmName:     database.GetName() + "_VM",
 			},
 		},
 		ActionArguments: []ActionArgument{
 			{
 				Name:  "dbserver_description",
-				Value: "dbserver for " + database.GetDBInstanceName(),
+				Value: "dbserver for " + database.GetName(),
 			},
 			{
 				Name:  "database_size",
-				Value: strconv.Itoa(database.GetDBInstanceSize()),
+				Value: strconv.Itoa(database.GetInstanceSize()),
 			},
 		},
 	}
 	// Appending request body based on database type
-	appender, err := GetDbProvRequestAppender(database.GetDBInstanceType())
+	appender, err := GetRequestAppender(database.GetInstanceType())
 	if err != nil {
 		log.Error(err, "Error while appending provisioning request")
 		return
 	}
-	requestBody = appender.appendRequest(requestBody, database, reqData)
+	requestBody = appender.appendProvisioningRequest(requestBody, database, reqData)
 
 	log.Info("Database Provisioning", "requestBody", requestBody)
-	log.Info("Returning from ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
+	log.Info("Returning from ndb_api.GenerateProvisioningRequest", "database name", database.GetName(), "database type", database.GetInstanceType())
 	return
 }
 
@@ -165,21 +164,8 @@ func validateReqData(ctx context.Context, databaseInstanceType string, reqData m
 	return
 }
 
-// Appends request based on database type
-type DBProvisionRequestAppender interface {
-	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest
-}
-
-type MSSQLProvisionRequestAppender struct{}
-
-type MongoDbProvisionRequestAppender struct{}
-
-type PostgresProvisionRequestAppender struct{}
-
-type MySqlProvisionRequestAppender struct{}
-
-func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
-	req.DatabaseName = string(database.GetDBInstanceDatabaseNames())
+func (a *MSSQLRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+	req.DatabaseName = string(database.GetInstanceDatabaseNames())
 	adminPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	profileMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
 	dbParamInstanceProfile := profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE]
@@ -219,7 +205,7 @@ func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 		},
 		{
 			Name:  "dbserver_name",
-			Value: database.GetDBInstanceName(),
+			Value: database.GetName(),
 		},
 		{
 			Name:  "server_collation",
@@ -244,9 +230,9 @@ func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 	return req
 }
 
-func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *MongoDbRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
-	databaseNames := database.GetDBInstanceDatabaseNames()
+	databaseNames := database.GetInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 
 	req.SSHPublicKey = SSHPublicKey
@@ -293,9 +279,9 @@ func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRe
 	return req
 }
 
-func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *PostgresRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
-	databaseNames := database.GetDBInstanceDatabaseNames()
+	databaseNames := database.GetInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 
 	req.SSHPublicKey = SSHPublicKey
@@ -338,9 +324,9 @@ func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionR
 	return req
 }
 
-func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
-	databaseNames := database.GetDBInstanceDatabaseNames()
+	databaseNames := database.GetInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 
 	req.SSHPublicKey = SSHPublicKey
@@ -361,21 +347,4 @@ func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 
 	req.ActionArguments = append(req.ActionArguments, actionArgs...)
 	return req
-}
-
-// Get specific implementation of the DBProvisionRequestAppender interface based on the provided databaseType
-func GetDbProvRequestAppender(databaseType string) (requestAppender DBProvisionRequestAppender, err error) {
-	switch databaseType {
-	case common.DATABASE_TYPE_MYSQL:
-		requestAppender = &MySqlProvisionRequestAppender{}
-	case common.DATABASE_TYPE_POSTGRES:
-		requestAppender = &PostgresProvisionRequestAppender{}
-	case common.DATABASE_TYPE_MONGODB:
-		requestAppender = &MongoDbProvisionRequestAppender{}
-	case common.DATABASE_TYPE_MSSQL:
-		requestAppender = &MSSQLProvisionRequestAppender{}
-	default:
-		return nil, errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb")
-	}
-	return
 }

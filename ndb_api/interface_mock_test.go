@@ -16,44 +16,26 @@ type MockProfileResolverInterface struct {
 	mock.Mock
 }
 
-// GetDBInstanceName is a mock implementation of the GetDBInstanceName method in the Database interface
-func (m *MockDatabaseInterface) GetDBInstanceName() string {
+// IsClone is a mock implementation of the IsClone method defined in the Database interface
+func (m *MockDatabaseInterface) IsClone() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
+
+// GetName is a mock implementation of the GetName method in the Database interface
+func (m *MockDatabaseInterface) GetName() string {
 	args := m.Called()
 	return args.String(0)
 }
 
-// GetDBInstanceDescription is a mock implementation of the GetDBInstanceDescription method in the Database interface
-func (m *MockDatabaseInterface) GetDBInstanceDescription() string {
+// GetDescription is a mock implementation of the GetDescription method in the Database interface
+func (m *MockDatabaseInterface) GetDescription() string {
 	args := m.Called()
 	return args.String(0)
 }
 
-// GetDBInstanceType is a mock implementation of the GetDBInstanceType method in the Database interface
-func (m *MockDatabaseInterface) GetDBInstanceType() string {
-	args := m.Called()
-	return args.String(0)
-}
-
-// GetDBInstanceDatabaseNames is a mock implementation of the GetDBInstanceDatabaseNames method in the Database interface
-func (m *MockDatabaseInterface) GetDBInstanceDatabaseNames() string {
-	args := m.Called()
-	return args.String(0)
-}
-
-// GetDBInstanceTimeZone is a mock implementation of the GetDBInstanceTimeZone method in the Database interface
-func (m *MockDatabaseInterface) GetDBInstanceTimeZone() string {
-	args := m.Called()
-	return args.String(0)
-}
-
-// GetDBInstanceSize is a mock implementation of the GetDBInstanceSize method in the Database interface
-func (m *MockDatabaseInterface) GetDBInstanceSize() int {
-	args := m.Called()
-	return args.Int(0)
-}
-
-// GetNDBClusterId is a mock implementation of the GetNDBClusterId method in the Database interface
-func (m *MockDatabaseInterface) GetNDBClusterId() string {
+// GetClusterId is a mock implementation of the GetClusterId method in the Database interface
+func (m *MockDatabaseInterface) GetClusterId() string {
 	args := m.Called()
 	return args.String(0)
 }
@@ -64,16 +46,64 @@ func (m *MockDatabaseInterface) GetProfileResolvers() ProfileResolvers {
 	return args.Get(0).(ProfileResolvers)
 }
 
-// GetTMDetails is a mock implementation of the GetTMDetails method in the Database interface
-func (m *MockDatabaseInterface) GetTMDetails() (string, string, string) {
+// GetInstanceSize is a mock implementation of the GetInstanceSize method in the Database interface
+func (m *MockDatabaseInterface) GetCredentialSecret() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+// GetTimeZone is a mock implementation of the GetTimeZone method in the Database interface
+func (m *MockDatabaseInterface) GetTimeZone() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+// GetInstanceType is a mock implementation of the GetInstanceType method in the Database interface
+func (m *MockDatabaseInterface) GetInstanceType() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+// GetInstanceDatabaseNames is a mock implementation of the GetInstanceDatabaseNames method in the Database interface
+func (m *MockDatabaseInterface) GetInstanceDatabaseNames() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+// GetInstanceSize is a mock implementation of the GetInstanceSize method in the Database interface
+func (m *MockDatabaseInterface) GetInstanceSize() int {
+	args := m.Called()
+	return args.Int(0)
+}
+
+// GetInstanceTMDetails is a mock implementation of the GetInstanceTMDetails method in the Database interface
+func (m *MockDatabaseInterface) GetInstanceTMDetails() (string, string, string) {
 	args := m.Called()
 	return args.String(0), args.String(1), args.String(2)
 }
 
-// GetTMSchedule is a mock implementation of the GetTMSchedule method in the Database interface
-func (m *MockDatabaseInterface) GetTMSchedule() (Schedule, error) {
+// GetInstanceTMSchedule is a mock implementation of the GetInstanceTMSchedule method in the Database interface
+func (m *MockDatabaseInterface) GetInstanceTMSchedule() (Schedule, error) {
 	args := m.Called()
 	return args.Get(0).(Schedule), args.Error(1)
+}
+
+// GetCloneSourceDBId is a mock implementation of the GetCloneSourceDBId method in the Database interface
+func (m *MockDatabaseInterface) GetCloneSourceDBId() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+// GetCloneTMName is a mock implementation of the GetCloneTMName method in the Database interface
+func (m *MockDatabaseInterface) GetCloneTMName() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+// GetCloneSnapshotId is a mock implementation of the GetCloneSnapshotId method in the Database interface
+func (m *MockDatabaseInterface) GetCloneSnapshotId() string {
+	args := m.Called()
+	return args.String(0)
 }
 
 // GetName is a mock implementation of the GetName method defined in the ProfileResolver interface

@@ -150,12 +150,12 @@ var _ = Describe("Webhook Tests", func() {
 				},
 				Spec: DatabaseSpec{
 					Instance: Instance{
-						ClusterId:            "",
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Type:                 "postgres",
-						Size:                 10,
-						TimeZone:             "UTC",
+						ClusterId:        "",
+						CredentialSecret: "db-instance-secret",
+						Name:             "db-instance-name",
+						Type:             "postgres",
+						Size:             10,
+						TimeZone:         "UTC",
 					},
 				},
 			}
@@ -176,12 +176,12 @@ var _ = Describe("Webhook Tests", func() {
 				},
 				Spec: DatabaseSpec{
 					Instance: Instance{
-						ClusterId:            "cluster-id",
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "",
-						Type:                 "postgres",
-						Size:                 10,
-						TimeZone:             "UTC",
+						ClusterId:        "cluster-id",
+						CredentialSecret: "db-instance-secret",
+						Name:             "",
+						Type:             "postgres",
+						Size:             10,
+						TimeZone:         "UTC",
 					},
 				},
 			}
@@ -202,11 +202,11 @@ var _ = Describe("Webhook Tests", func() {
 				},
 				Spec: DatabaseSpec{
 					Instance: Instance{
-						ClusterId:            "cluster-id",
-						DatabaseInstanceName: "db-instance-name",
-						Type:                 "postgres",
-						Size:                 10,
-						TimeZone:             "UTC",
+						ClusterId: "cluster-id",
+						Name:      "db-instance-name",
+						Type:      "postgres",
+						Size:      10,
+						TimeZone:  "UTC",
 					},
 				},
 			}
@@ -227,11 +227,11 @@ var _ = Describe("Webhook Tests", func() {
 				},
 				Spec: DatabaseSpec{
 					Instance: Instance{
-						ClusterId:            "cluster-id",
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
+						ClusterId:        "cluster-id",
+						CredentialSecret: "db-instance-secret",
+						Name:             "db-instance-name",
+						Size:             10,
+						TimeZone:         "UTC",
 					},
 				},
 			}
@@ -253,12 +253,12 @@ var _ = Describe("Webhook Tests", func() {
 				},
 				Spec: DatabaseSpec{
 					Instance: Instance{
-						ClusterId:            "cluster-id",
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Type:                 "postgres",
-						Size:                 8,
-						TimeZone:             "UTC",
+						ClusterId:        "cluster-id",
+						CredentialSecret: "db-instance-secret",
+						Name:             "db-instance-name",
+						Type:             "postgres",
+						Size:             8,
+						TimeZone:         "UTC",
 					},
 				},
 			}
@@ -279,12 +279,12 @@ var _ = Describe("Webhook Tests", func() {
 				},
 				Spec: DatabaseSpec{
 					Instance: Instance{
-						ClusterId:            "cluster-id",
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "postgres",
+						ClusterId:        "cluster-id",
+						CredentialSecret: "db-instance-secret",
+						Name:             "db-instance-name",
+						Size:             10,
+						TimeZone:         "UTC",
+						Type:             "postgres",
 					},
 				},
 			}
@@ -301,12 +301,12 @@ var _ = Describe("Webhook Tests", func() {
 				},
 				Spec: DatabaseSpec{
 					Instance: Instance{
-						ClusterId:            "cluster-id",
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "mssql",
+						ClusterId:        "cluster-id",
+						CredentialSecret: "db-instance-secret",
+						Name:             "db-instance-name",
+						Size:             10,
+						TimeZone:         "UTC",
+						Type:             "mssql",
 					},
 				},
 			}
@@ -329,12 +329,12 @@ var _ = Describe("Webhook Tests", func() {
 				},
 				Spec: DatabaseSpec{
 					Instance: Instance{
-						ClusterId:            "cluster-id",
-						CredentialSecret:     "db-instance-secret",
-						DatabaseInstanceName: "db-instance-name",
-						Size:                 10,
-						TimeZone:             "UTC",
-						Type:                 "postgres",
+						ClusterId:        "cluster-id",
+						CredentialSecret: "db-instance-secret",
+						Name:             "db-instance-name",
+						Size:             10,
+						TimeZone:         "UTC",
+						Type:             "postgres",
 					},
 				},
 			}

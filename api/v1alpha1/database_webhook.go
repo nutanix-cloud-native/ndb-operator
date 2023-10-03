@@ -48,7 +48,7 @@ var _ webhook.Defaulter = &Database{}
 func instanceSpecDefaulterForCreate(instance *Instance) {
 
 	if instance.Description == "" {
-		instance.Description = "Database provisioned by ndb-operator: " + instance.DatabaseInstanceName
+		instance.Description = "Database provisioned by ndb-operator: " + instance.Name
 	}
 
 	if len(instance.DatabaseNames) == 0 {
@@ -126,8 +126,8 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 	databaselog.Info("Logging the Instance details inside validator method", "databaseInstance", instance)
 
 	// need to assert using a regex
-	if instance.DatabaseInstanceName == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified"))
+	if instance.Name == "" {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.Name, "A valid Database Instance Name must be specified"))
 	}
 
 	if instance.ClusterId == "" {
