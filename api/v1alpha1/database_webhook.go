@@ -193,9 +193,10 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 		))
 	}
 
-	// validating additional arguments
-	if additionalArgumentsErrors := instanceSpecAdditionalArgumentsValidator(instance, field.ErrorList{}, instancePath); additionalArgumentsErrors != nil {
-		allErrs = append(allErrs, additionalArgumentsErrors...)
+	if isInvalidAdditionalArguments, allowedAdditionalArguments := isAdditionalArgumentsInvalid(instance.Type, instance.AdditionalArguments); isInvalidAdditionalArguments {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("additionalArguments"), instance.AdditionalArguments,
+			fmt.Sprintf("Additional Arguments for %s are invalid! Valid values are: %s", instance.Type, reflect.ValueOf(allowedAdditionalArguments).MapKeys()),
+		))
 	}
 
 	databaselog.Info("Exiting instanceSpecValidatorForCreate...")
@@ -204,33 +205,21 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 
 /* Checks if configured additional arguments are invalid */
 func isAdditionalArgumentsInvalid(typ string, additionalArguments map[string]string) (bool, map[string]bool) {
-	var allowedAdditionalArguments = util.GetAllowedAdditionalArgumentsForType(typ)
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(typ)
 
-	for name, _ := range additionalArguments {
-		if _, isPresent := allowedAdditionalArguments[name]; !isPresent {
-			return true, allowedAdditionalArguments
+	if additionalArguments == nil {
+		return true, allowedAdditionalArguments
+	}
+
+	if err == nil {
+		for name, _ := range additionalArguments {
+			if _, isPresent := allowedAdditionalArguments[name]; !isPresent {
+				return true, allowedAdditionalArguments
+			}
 		}
 	}
 
-	return false, allowedAdditionalArguments
-}
-
-/* Validates additional arguments */
-func instanceSpecAdditionalArgumentsValidator(instance *Instance, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
-	additionalArgumentsPath := instancePath.Child("additionalArguments")
-	isInvalidTypeDetails, allowedTypeDetails := isAdditionalArgumentsInvalid(instance.Type, instance.AdditionalArguments)
-	if isInvalidTypeDetails {
-		allErrs = append(
-			allErrs,
-			field.Invalid(
-				additionalArgumentsPath,
-				instance.AdditionalArguments,
-				fmt.Sprintf("Type Details for %s are invalid! Valid values are: %s", instance.Type, reflect.ValueOf(allowedTypeDetails).MapKeys()),
-			),
-		)
-		return allErrs
-	}
-	return nil
+	return false, map[string]bool{}
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type

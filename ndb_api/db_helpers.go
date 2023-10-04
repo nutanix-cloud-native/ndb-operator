@@ -179,10 +179,11 @@ func convertMapToActionArguments(myMap map[string]string) []ActionArgument {
 
 // Overwrites and appends actionArguments from database.additionalArguments to actionArguments
 func setConfiguredActionArguments(database DatabaseInterface, actionArguments map[string]string) {
-	allowedAdditionalArguments := util.GetAllowedAdditionalArgumentsForType(database.GetDBInstanceType())
-	for name, value := range database.GetDBInstanceAdditionalArguments() {
-		if isActionArgument, _ := allowedAdditionalArguments[name]; isActionArgument {
-			actionArguments[name] = value
+	if allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(database.GetDBInstanceType()); actionArguments != nil && err == nil {
+		for name, value := range database.GetDBInstanceAdditionalArguments() {
+			if isActionArgument, _ := allowedAdditionalArguments[name]; isActionArgument {
+				actionArguments[name] = value
+			}
 		}
 	}
 }

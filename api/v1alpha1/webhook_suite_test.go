@@ -298,7 +298,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MYSQL)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MYSQL)))
 		})
 	})
 
@@ -326,7 +326,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", common.DATABASE_TYPE_POSTGRES)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments for %s are invalid! Valid values are: ", common.DATABASE_TYPE_POSTGRES)))
 		})
 	})
 
@@ -356,7 +356,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MONGODB)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MONGODB)))
 		})
 	})
 
@@ -391,7 +391,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Type Details for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MSSQL)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MSSQL)))
 		})
 	})
 })
