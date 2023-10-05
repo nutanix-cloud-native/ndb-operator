@@ -396,8 +396,8 @@ var _ = Describe("Webhook Tests", func() {
 	})
 })
 
-/* Creates a database CR with 'type'. */
-func createDbWithType(db string, typ string) *Database {
+/* Creates a database CR with 'dbType'. */
+func createDbWithType(db string, dbType string) *Database {
 	return &Database{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      db,
@@ -410,14 +410,14 @@ func createDbWithType(db string, typ string) *Database {
 				ClusterId:            "27bcce67-7b83-42c2-a3fe-88154425c170",
 				CredentialSecret:     "db-instance-secret",
 				Size:                 10,
-				Type:                 typ,
+				Type:                 dbType,
 			},
 		},
 	}
 }
 
-/* Creates a database CR with 'db' name, 'type', and 'additionalArguments' specified */
-func createDbWithAdditionalArguments(db string, typ string, additionalArguments map[string]string) *Database {
+/* Creates a database CR with db with additionalArguments specified */
+func createDbWithAdditionalArguments(db string, dbType string, additionalArguments map[string]string) *Database {
 	database := &Database{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      db,
@@ -430,13 +430,13 @@ func createDbWithAdditionalArguments(db string, typ string, additionalArguments 
 				ClusterId:            "27bcce67-7b83-42c2-a3fe-88154425c170",
 				CredentialSecret:     "db-instance-secret",
 				Size:                 10,
-				Type:                 typ,
+				Type:                 dbType,
 				AdditionalArguments:  additionalArguments,
 			},
 		},
 	}
 
-	if typ == common.DATABASE_TYPE_MSSQL {
+	if dbType == common.DATABASE_TYPE_MSSQL {
 		database.Spec.Instance.Profiles = &Profiles{
 			Software: Profile{Name: "MSSQL_SOFTWARE_PROFILE"},
 		}

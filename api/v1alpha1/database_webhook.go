@@ -108,7 +108,7 @@ func instanceSpecDefaulterForCreate(instance *Instance) {
 
 	// additional arguments defaulting logic
 	if instance.AdditionalArguments == nil {
-		databaselog.Info("Initialzing empty TypeDetails...")
+		databaselog.Info("Initializing empty additional db arguments...")
 		instance.AdditionalArguments = map[string]string{}
 	}
 }
@@ -204,8 +204,8 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 }
 
 /* Checks if configured additional arguments are invalid */
-func isAdditionalArgumentsInvalid(typ string, additionalArguments map[string]string) (bool, map[string]bool) {
-	allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(typ)
+func isAdditionalArgumentsInvalid(dbType string, additionalArguments map[string]string) (bool, map[string]bool) {
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(dbType)
 
 	if additionalArguments == nil {
 		return true, allowedAdditionalArguments
