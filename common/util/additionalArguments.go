@@ -8,8 +8,8 @@ import (
 )
 
 // Gets allowed additional argument types and indicates whether it is an action argument. Also returns if there is an error or not.
-func GetAllowedAdditionalArgumentsForType(typ string) (map[string]bool, error) {
-	switch typ {
+func GetAllowedAdditionalArgumentsForType(dbType string) (map[string]bool, error) {
+	switch dbType {
 	case common.DATABASE_TYPE_MSSQL:
 		return map[string]bool{
 			/* Has a default */
@@ -43,5 +43,5 @@ func GetAllowedAdditionalArgumentsForType(typ string) (map[string]bool, error) {
 		}, nil
 	}
 	// Return error
-	return map[string]bool{}, errors.New(fmt.Sprintf("Could not find an allowed map for type: %s. Please specify an allowed map or pass an appropriate type", typ))
+	return map[string]bool{}, errors.New(fmt.Sprintf("Could not find allowed additional arguments for database type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES))
 }
