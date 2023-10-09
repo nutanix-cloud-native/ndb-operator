@@ -9,6 +9,7 @@ import (
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
+	"github.com/stretchr/testify/assert"
 )
 
 // Test constants
@@ -169,8 +170,7 @@ func TestPostgresProvisionRequestAppenderWithoutAdditionalArguments(t *testing.T
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_POSTGRES)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
-
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
 		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
@@ -179,9 +179,11 @@ func TestPostgresProvisionRequestAppenderWithoutAdditionalArguments(t *testing.T
 	// Checks if expected and retrieved action arguments are equal
 	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
-	// Check if the lengths of expected and retrieved action arguments are equal
-	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
-		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	// Checks requestAppender.appendRequest return type has no error and resultRequest.ActionArguments correctly configured
+	if assert.NoError(t, err) {
+		if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+			t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+		}
 	}
 
 	// Verify that the mock method was called with the expected arguments
@@ -246,7 +248,7 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArguments(t *testing.T) {
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_POSTGRES)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -256,7 +258,11 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArguments(t *testing.T) {
 	// Sort expected and retrieved action arguments
 	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
-	// Checks if expected and retrieved action arguments are equal
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
@@ -356,7 +362,7 @@ func TestMSSQLProvisionRequestAppenderWithoutActionArguments(t *testing.T) {
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.DatabaseName != mockDatabase.GetDBInstanceDatabaseNames() {
@@ -366,7 +372,11 @@ func TestMSSQLProvisionRequestAppenderWithoutActionArguments(t *testing.T) {
 	// Sort expected and retrieved action arguments
 	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
-	// Checks if expected and retrieved action arguments are equal
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
@@ -483,7 +493,7 @@ func TestMSSQLProvisionRequestAppenderWithActionArguments(t *testing.T) {
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.DatabaseName != mockDatabase.GetDBInstanceDatabaseNames() {
@@ -493,7 +503,11 @@ func TestMSSQLProvisionRequestAppenderWithActionArguments(t *testing.T) {
 	// Sort expected and retrieved action arguments
 	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
-	// Checks if expected and retrieved action arguments are equal
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
@@ -563,7 +577,7 @@ func TestMongoDbProvisionRequestAppenderWithoutActionArguments(t *testing.T) {
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -573,7 +587,11 @@ func TestMongoDbProvisionRequestAppenderWithoutActionArguments(t *testing.T) {
 	// Sort expected and retrieved action arguments
 	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
-	// Checks if expected and retrieved action arguments are equal
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
@@ -646,7 +664,7 @@ func TestMongoDbProvisionRequestAppenderWithActionArguments(t *testing.T) {
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -656,7 +674,11 @@ func TestMongoDbProvisionRequestAppenderWithActionArguments(t *testing.T) {
 	// Sort expected and retrieved action arguments
 	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
-	// Checks if expected and retrieved action arguments are equal
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
@@ -705,7 +727,7 @@ func TestMySqlProvisionRequestAppenderWithoutAdditionalArguments(t *testing.T) {
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -715,7 +737,11 @@ func TestMySqlProvisionRequestAppenderWithoutAdditionalArguments(t *testing.T) {
 	// Sort expected and retrieved action arguments
 	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
-	// Checks if expected and retrieved action arguments are equal
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
@@ -766,7 +792,7 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArguments(t *testing.T) {
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -776,7 +802,11 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArguments(t *testing.T) {
 	// Sort expected and retrieved action arguments
 	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
-	// Checks if expected and retrieved action arguments are equal
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
 	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}

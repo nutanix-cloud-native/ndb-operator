@@ -19,6 +19,7 @@ package ndb_api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -113,7 +114,11 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		log.Error(err, "Error while appending provisioning request")
 		return
 	}
-	requestBody = appender.appendRequest(requestBody, database, reqData)
+
+	requestBody, err = appender.appendRequest(requestBody, database, reqData)
+	if err != nil {
+		log.Error(err, "Error while appending provisioning request")
+	}
 
 	log.Info("Database Provisioning", "requestBody", requestBody)
 	log.Info("Returning from ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
@@ -178,19 +183,29 @@ func convertMapToActionArguments(myMap map[string]string) []ActionArgument {
 }
 
 // Overwrites and appends actionArguments from database.additionalArguments to actionArguments
-func setConfiguredActionArguments(database DatabaseInterface, actionArguments map[string]string) {
-	if allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(database.GetDBInstanceType()); actionArguments != nil && err == nil {
-		for name, value := range database.GetDBInstanceAdditionalArguments() {
-			if isActionArgument, _ := allowedAdditionalArguments[name]; isActionArgument {
-				actionArguments[name] = value
-			}
+func setConfiguredActionArguments(database DatabaseInterface, actionArguments map[string]string) error {
+	if actionArguments == nil {
+		return errors.New("Setting configured action arguments failed! Action arguments cannot be null.")
+	}
+
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(database.GetDBInstanceType())
+	if err != nil {
+		return errors.New(fmt.Sprintf("Setting configured action arguments failed! %s", err.Error()))
+	}
+
+	for name, value := range database.GetDBInstanceAdditionalArguments() {
+		// Only configure correct actionArguments
+		if isActionArgument, isPresent := allowedAdditionalArguments[name]; isPresent && isActionArgument {
+			actionArguments[name] = value
 		}
 	}
+
+	return nil
 }
 
 // Appends request based on database type
 type DBProvisionRequestAppender interface {
-	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest
+	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error)
 }
 
 type MSSQLProvisionRequestAppender struct{}
@@ -201,7 +216,7 @@ type PostgresProvisionRequestAppender struct{}
 
 type MySqlProvisionRequestAppender struct{}
 
-func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	req.DatabaseName = string(database.GetDBInstanceDatabaseNames())
 	adminPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	profileMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
@@ -225,15 +240,17 @@ func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 	}
 
 	// Appending/overwriting database actionArguments to actionArguments
-	setConfiguredActionArguments(database, actionArguments)
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
 
 	// Converting action arguments map to list and appending to req.ActionArguments
 	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
-	return req
+	return req, nil
 }
 
-func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
@@ -253,15 +270,17 @@ func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRe
 	}
 
 	// Appending/overwriting database actionArguments to actionArguments
-	setConfiguredActionArguments(database, actionArguments)
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
 
 	// Converting action arguments map to list and appending to req.ActionArguments
 	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
-	return req
+	return req, nil
 }
 
-func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
@@ -280,15 +299,17 @@ func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionR
 	}
 
 	// Appending/overwriting database actionArguments to actionArguments
-	setConfiguredActionArguments(database, actionArguments)
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
 
 	// Converting action arguments map to list and appending to req.ActionArguments
 	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
-	return req
+	return req, nil
 }
 
-func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
@@ -303,12 +324,14 @@ func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 	}
 
 	// Appending/overwriting database actionArguments to actionArguments
-	setConfiguredActionArguments(database, actionArguments)
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
 
 	// Converting action arguments map to list and appending to req.ActionArguments
 	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
-	return req
+	return req, nil
 }
 
 // Get specific implementation of the DBProvisionRequestAppender interface based on the provided databaseType
@@ -323,7 +346,8 @@ func GetDbProvRequestAppender(databaseType string) (requestAppender DBProvisionR
 	case common.DATABASE_TYPE_MSSQL:
 		requestAppender = &MSSQLProvisionRequestAppender{}
 	default:
-		return nil, errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb")
+		return nil, errors.New(fmt.Sprintf("invalid database type: supported values: %s", common.DATABASE_TYPES))
 	}
+
 	return
 }
