@@ -71,36 +71,46 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Database CR is being deleted")
-	if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
+	if controllerutil.ContainsFinalizer(database, common.FINALIZER_INSTANCE) {
 		// Check if the database instance id (database.Status.Id) is present in the status
-		// If present, then make a deprovisionDatabase API call to NDB
-		// else proceed with removing finalizer as database instance provisioning wasn't successful earlier.
+		// If present, then make a deprovision API call to NDB
+		// else proceed with removing finalizer as instance provisioning wasn't successful earlier.
 		if database.Status.Id != "" {
-			infoStatement := "Deprovisioning database instance from NDB."
+			infoStatement := "Deprovisioning instance from NDB."
 			log.Info(infoStatement)
 			r.recorder.Event(database, "Normal", EVENT_DEPROVISIONING_STARTED, infoStatement)
-
-			_, err := ndb_api.DeprovisionDatabase(ctx, ndbClient, database.Status.Id, *ndb_api.GenerateDeprovisionDatabaseRequest())
+			var err error
+			if database.Spec.IsClone {
+				_, err = ndb_api.DeprovisionClone(ctx, ndbClient, database.Status.Id, *ndb_api.GenerateDeprovisionCloneRequest())
+			} else {
+				_, err = ndb_api.DeprovisionDatabase(ctx, ndbClient, database.Status.Id, *ndb_api.GenerateDeprovisionDatabaseRequest())
+			}
 			if err != nil {
-				errStatement := "Deprovisioning database instance request failed."
+				errStatement := "Deprovisioning instance request failed."
 				log.Error(err, errStatement)
 				r.recorder.Eventf(database, "Warning", EVENT_DEPROVISIONING_FAILED, "Error: %s. %s", errStatement, err.Error())
 				return requeueOnErr(err)
 			}
 		}
 
-		log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
-		controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_INSTANCE)
+		log.Info("Removing Finalizer " + common.FINALIZER_INSTANCE)
+		controllerutil.RemoveFinalizer(database, common.FINALIZER_INSTANCE)
 		if err := r.Update(ctx, database); err != nil {
 			return requeueOnErr(err)
 		}
-		log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
+		log.Info("Removed Finalizer " + common.FINALIZER_INSTANCE)
 
-	} else if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
+	} else if controllerutil.ContainsFinalizer(database, common.FINALIZER_VM) {
 		// Checking if the database instance still exists in NDB. (It might take some time for the delete db instance operation to complete)
 		// Proceed to delete the database server vm only after the database instance has been deleted.
 		log.Info("Checking if database instance exists")
-		allDatabases, err := ndb_api.GetAllDatabases(ctx, ndbClient)
+		var err error
+		var allDatabases []ndb_api.DatabaseResponse
+		if database.Spec.IsClone {
+			allDatabases, err = ndb_api.GetAllClones(ctx, ndbClient)
+		} else {
+			allDatabases, err = ndb_api.GetAllDatabases(ctx, ndbClient)
+		}
 		if err != nil {
 			errStatement := "Error fetching all databases from NDB"
 			log.Error(err, errStatement)
@@ -128,12 +138,12 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 				log.Info("Database server id was not found on the database CR, removing finalizers and deleting the CR.")
 			}
 			// remove our finalizer from the list and update it.
-			log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_SERVER)
-			controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_SERVER)
+			log.Info("Removing Finalizer " + common.FINALIZER_VM)
+			controllerutil.RemoveFinalizer(database, common.FINALIZER_VM)
 			if err := r.Update(ctx, database); err != nil {
 				return requeueOnErr(err)
 			}
-			log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_SERVER)
+			log.Info("Removed Finalizer " + common.FINALIZER_VM)
 			r.recorder.Event(database, "Normal", EVENT_CR_DELETED, "Database Custom Resource has been deleted from the k8s cluster")
 			return requeue()
 		}
@@ -154,7 +164,6 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 	log.Info("Entered database_reconciler_helpers.handleSync")
 
 	databaseStatus := database.Status.DeepCopy()
-	databaseStatus.Type = database.Spec.Instance.Type
 
 	// Provision the database if it has not been provisioned earlier
 	if databaseStatus.Status == "" || databaseStatus.Id == "" {
@@ -190,6 +199,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		databaseStatus.Id = dbInfo.Id
 		databaseStatus.IPAddress = dbInfo.IPAddress
 		databaseStatus.DatabaseServerId = dbInfo.DBServerId
+		databaseStatus.Type = ndb_api.GetDatabaseTypeFromEngine(dbInfo.Type)
 	} else if databaseStatus.Status == common.DATABASE_CR_STATUS_WAITING {
 		log.Info("Database not found in NDB CR yet")
 		r.recorder.Event(database, "Normal", EVENT_WAITING_FOR_NDB_RECONCILE, "Waiting for NDB server resource to reconcile")
@@ -224,11 +234,11 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 	switch databaseStatus.Status {
 	case common.DATABASE_CR_STATUS_READY:
 		if !isUnderDeletion {
-			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
-				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_INSTANCE, database)
+			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_INSTANCE) {
+				return r.addFinalizer(ctx, req, common.FINALIZER_INSTANCE, database)
 			}
-			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
-				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_SERVER, database)
+			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_VM) {
+				return r.addFinalizer(ctx, req, common.FINALIZER_VM, database)
 			}
 		}
 		r.setupConnectivity(ctx, database, req)
@@ -259,7 +269,7 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 		Name:      database.Name + "-svc",
 		Namespace: req.Namespace,
 	}
-	targetPort := ndb_api.GetDatabasePortByType(database.Spec.Instance.Type)
+	targetPort := ndb_api.GetDatabasePortByType(database.Status.Type)
 
 	err = r.setupService(ctx, database, commonNamespacedName, commonMetadata, targetPort)
 	if err != nil {
@@ -438,7 +448,8 @@ func (p *DatabaseProvisioner) create(ctx context.Context, r *DatabaseReconciler,
 
 func (c *DatabaseCloner) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	dbPassword, sshPublicKey, err := r.getDatabaseCredentials(ctx, database.Spec.Instance.CredentialSecret, namespace)
+	databaseAdapter := &controller_adapters.Database{Database: *database}
+	dbPassword, sshPublicKey, err := r.getDatabaseCredentials(ctx, databaseAdapter.GetCredentialSecret(), namespace)
 	if err != nil || dbPassword == "" || sshPublicKey == "" {
 		var errStatement string
 		if err == nil {
@@ -457,7 +468,6 @@ func (c *DatabaseCloner) create(ctx context.Context, r *DatabaseReconciler, ndbC
 		common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
 	}
 
-	databaseAdapter := &controller_adapters.Database{Database: *database}
 	generatedReq, err := ndb_api.GenerateCloningRequest(ctx, ndbClient, databaseAdapter, reqData)
 	if err != nil {
 		errStatement := "Could not generate database cloning request"

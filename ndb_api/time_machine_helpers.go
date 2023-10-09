@@ -30,9 +30,9 @@ func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClien
 	log.Info("Entered ndb_api.GenerateCloningRequest", "database name", database.GetName())
 
 	sourceDatabase, _ := GetDatabaseById(ctx, ndb_client, database.GetCloneSourceDBId())
-	engineType := sourceDatabase.Type
+	databaseType := GetDatabaseTypeFromEngine(sourceDatabase.Type)
 	// Fetch the required profiles for the database
-	profilesMap, err := ResolveProfiles(ctx, ndb_client, engineType, database.GetProfileResolvers())
+	profilesMap, err := ResolveProfiles(ctx, ndb_client, databaseType, database.GetProfileResolvers())
 	if err != nil {
 		log.Error(err, "Error occurred while getting required profiles", "database name", database.GetName(), "isClone", database.IsClone())
 		return
@@ -76,7 +76,7 @@ func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClien
 		DatabaseParameterProfileId: profilesMap[common.PROFILE_TYPE_DATABASE_PARAMETER].Id,
 	}
 	// Appending request body based on database type
-	appender, err := GetRequestAppender(engineType)
+	appender, err := GetRequestAppender(databaseType)
 	if err != nil {
 		log.Error(err, "Error while getting a request appender")
 		return

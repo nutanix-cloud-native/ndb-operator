@@ -80,4 +80,5 @@ type NDBServerDatabaseInfo struct {
 	DBServerId    string `json:"dbServerId"`
 	TimeMachineId string `json:"timeMachineId"`
 	IPAddress     string `json:"ipAddress"`
+	Type          string `json:"type"`
 }

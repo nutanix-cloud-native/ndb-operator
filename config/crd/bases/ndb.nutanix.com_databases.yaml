@@ -230,8 +230,6 @@ spec:
               ndbRef:
                 type: string
             required:
-            - clone
-            - databaseInstance
             - isClone
             - ndbRef
             type: object
