@@ -292,13 +292,13 @@ var _ = Describe("Webhook Tests", func() {
 				"db",
 				common.DATABASE_TYPE_MYSQL,
 				map[string]string{
-					"invalid": "invalid",
+					"invalid-key": "invalid-value",
 				},
 			)
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MYSQL)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments validation for database type: %s failed!", common.DATABASE_TYPE_MYSQL)))
 		})
 	})
 
@@ -320,13 +320,14 @@ var _ = Describe("Webhook Tests", func() {
 				"db",
 				common.DATABASE_TYPE_POSTGRES,
 				map[string]string{
-					"invalid": "invalid",
+					"listener_port": "5432",
+					"invalid-key":   "invalid-value",
 				},
 			)
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments for %s are invalid! Valid values are: ", common.DATABASE_TYPE_POSTGRES)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments validation for database type: %s failed!", common.DATABASE_TYPE_POSTGRES)))
 		})
 	})
 
@@ -350,13 +351,15 @@ var _ = Describe("Webhook Tests", func() {
 				"db",
 				common.DATABASE_TYPE_MONGODB,
 				map[string]string{
-					"invalid": "invalid",
+					"listener_port": "5432",
+					"log_size":      "10",
+					"invalid-key":   "invalid-value",
 				},
 			)
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MONGODB)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments validation for database type: %s failed!", common.DATABASE_TYPE_MONGODB)))
 		})
 	})
 
@@ -380,18 +383,19 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).ToNot(HaveOccurred())
 		})
-		It("Should error out for valid MSSQL additionalArguments", func() {
+		It("Should error out for invalid MSSQL additionalArguments", func() {
 			database := createDbWithAdditionalArguments(
 				"db",
 				"mssql",
 				map[string]string{
-					"invalid": "invalid",
+					"invalid-key":  "invalid-value",
+					"invalid-key2": "invalid-value2",
 				},
 			)
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments for %s are invalid! Valid values are: ", common.DATABASE_TYPE_MSSQL)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments validation for database type: %s failed!", common.DATABASE_TYPE_MSSQL)))
 		})
 	})
 })

@@ -17,9 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -193,33 +195,41 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 		))
 	}
 
-	if isInvalidAdditionalArguments, allowedAdditionalArguments := isAdditionalArgumentsInvalid(instance.Type, instance.AdditionalArguments); isInvalidAdditionalArguments {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("additionalArguments"), instance.AdditionalArguments,
-			fmt.Sprintf("Additional Arguments for %s are invalid! Valid values are: %s", instance.Type, reflect.ValueOf(allowedAdditionalArguments).MapKeys()),
-		))
+	if err := additionalArgumentsValidationCheck(instance.Type, instance.AdditionalArguments); err != nil {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("additionalArguments"), instance.AdditionalArguments, err.Error()))
 	}
 
 	databaselog.Info("Exiting instanceSpecValidatorForCreate...")
 	return allErrs
 }
 
-/* Checks if configured additional arguments are invalid */
-func isAdditionalArgumentsInvalid(dbType string, additionalArguments map[string]string) (bool, map[string]bool) {
-	allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(dbType)
-
-	if additionalArguments == nil {
-		return true, allowedAdditionalArguments
+/* Checks if configured additional arguments are valid or not and returns the corresponding additional arguments. If error is nil valid, else invalid */
+func additionalArgumentsValidationCheck(dbType string, specifiedAdditionalArguments map[string]string) error {
+	// Empty additionalArguments is always valid
+	if specifiedAdditionalArguments == nil {
+		return nil
 	}
 
-	if err == nil {
-		for name, _ := range additionalArguments {
-			if _, isPresent := allowedAdditionalArguments[name]; !isPresent {
-				return true, allowedAdditionalArguments
-			}
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(dbType)
+
+	// Invalid type returns error
+	if err != nil {
+		return err
+	}
+
+	// Checking if arguments are valid
+	invalidArgs := []string{}
+	for name, _ := range specifiedAdditionalArguments {
+		if _, isPresent := allowedAdditionalArguments[name]; !isPresent {
+			invalidArgs = append(invalidArgs, name)
 		}
 	}
 
-	return false, map[string]bool{}
+	if len(invalidArgs) == 0 {
+		return nil
+	} else {
+		return errors.New(fmt.Sprintf("Additional Arguments validation for database type: %s failed! The following args are invalid: %s. These are the allowed args: %s", dbType, errors.New(strings.Join(invalidArgs, ", ")), reflect.ValueOf(allowedAdditionalArguments).MapKeys()))
+	}
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
