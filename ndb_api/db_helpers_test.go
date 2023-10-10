@@ -113,8 +113,8 @@ func TestGetRequestAppenderByType(t *testing.T) {
 	}
 }
 
-// Tests if PostgresProvisionRequestAdditionalArguments() function appends requests correctly without configured additional arguments
-func TestPostgresProvisionRequestAppenderWithoutAdditionalArguments(t *testing.T) {
+// Tests PostgresProvisionRequestAppender() valid case without additional arguments
+func TestPostgresProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -192,8 +192,8 @@ func TestPostgresProvisionRequestAppenderWithoutAdditionalArguments(t *testing.T
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-// Tests if PostgresProvisionRequestAppender() function appends requests correctly with additional Arguments
-func TestPostgresProvisionRequestAppenderWithAdditionalArguments(t *testing.T) {
+// Tests PostgresProvisionRequestAppender() valid case with additional arguments
+func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -273,8 +273,46 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArguments(t *testing.T) {
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-// Tests if MSSQLProvisionRequestAppender() function appends requests correctly without action arguments specified
-func TestMSSQLProvisionRequestAppenderWithoutActionArguments(t *testing.T) {
+// Tests PostgresProvisionRequestAppender() invalid case with additional arguments
+func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"invalid-key": "invalid-value",
+	})
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_POSTGRES)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Checks if error was returned
+	if err == nil {
+		t.Errorf("Should have errored. Expected: Setting configured action arguments failed! invalid-key is not an allowed additional argument, Got: %v", err)
+	}
+	// Checks if resultRequestIsNil
+	if resultRequest != nil {
+		t.Errorf("Should have errored. Expected: resultRequest to be nil, Got: %v", resultRequest)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests MSSQLProvisionRequestAppender() valid case without additional arguments
+func TestMSSQLProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -387,8 +425,8 @@ func TestMSSQLProvisionRequestAppenderWithoutActionArguments(t *testing.T) {
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-// Tests if MSSQLProvisionRequestAppender() function appends requests correctly with action arguments specified
-func TestMSSQLProvisionRequestAppenderWithActionArguments(t *testing.T) {
+// Tests MSSQLProvisionRequestAppender() valid case with additional arguments
+func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -519,8 +557,62 @@ func TestMSSQLProvisionRequestAppenderWithActionArguments(t *testing.T) {
 
 }
 
-// Tests if MongoDbProvisionRequestAppender() function appends requests correctly without action arguments specified.
-func TestMongoDbProvisionRequestAppenderWithoutActionArguments(t *testing.T) {
+// Tests MSSQLProvisionRequestAppender() invalid case with additional arguments
+func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	profileResponse := ProfileResponse{
+		Id:              "123",
+		Name:            "Test Profile",
+		Type:            "Test Type",
+		EngineType:      "Sample Engine",
+		LatestVersionId: "456",
+		Topology:        "Test Topology",
+		SystemProfile:   true,
+		Status:          "Active",
+	}
+	profileMap := map[string]ProfileResponse{
+		common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE: profileResponse,
+	}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_PASSWORD: TEST_PASSWORD,
+		common.PROFILE_MAP_PARAM:  profileMap}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceName").Return("testInstance")
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MSSQL)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"invalid-key":  "invalid-value",
+		"invalid-key2": "invalid-value",
+	})
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Checks if error was returned
+	if err == nil {
+		t.Errorf("Should have errored. Expected: Setting configured action arguments failed! invalid-key is not an allowed additional argument, Got: %v", err)
+	}
+	// Checks if resultRequestIsNil
+	if resultRequest != nil {
+		t.Errorf("Should have errored. Expected: resultRequest to be nil, Got: %v", resultRequest)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+
+}
+
+// Tests MongoDbProvisionRequestAppender() valid case without additional arguments
+func TestMongoDbProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -602,8 +694,8 @@ func TestMongoDbProvisionRequestAppenderWithoutActionArguments(t *testing.T) {
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-// Tests if MongoDbProvisionRequestAppender() function appends requests correctly with action arguments specified.
-func TestMongoDbProvisionRequestAppenderWithActionArguments(t *testing.T) {
+// Tests MongoDbProvisionRequestAppender() valid case with additional arguments
+func TestMongoDbProvisionRequestAppenderWithActionArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -689,8 +781,46 @@ func TestMongoDbProvisionRequestAppenderWithActionArguments(t *testing.T) {
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-// Tests if MySqlProvisionRequestAppender() function appends requests correctly without additional arguments specified
-func TestMySqlProvisionRequestAppenderWithoutAdditionalArguments(t *testing.T) {
+// Tests MongoDbProvisionRequestAppender() invalid case with additional arguments
+func TestMongoDbProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MONGODB)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"invalid-key": "invalid-value",
+	})
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Checks if error was returned
+	if err == nil {
+		t.Errorf("Should have errored. Expected: Setting configured action arguments failed! invalid-key is not an allowed additional argument, Got: %v", err)
+	}
+	// Checks if resultRequestIsNil
+	if resultRequest != nil {
+		t.Errorf("Should have errored. Expected: resultRequest to be nil, Got: %v", resultRequest)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests MySqlProvisionRequestAppender() valid case without additional arguments
+func TestMySqlProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -752,8 +882,8 @@ func TestMySqlProvisionRequestAppenderWithoutAdditionalArguments(t *testing.T) {
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
 }
 
-// Tests if MySqlProvisionRequestAppender() function appends requests correctly with additional arguments specified
-func TestMySqlProvisionRequestAppenderWithAdditionalArguments(t *testing.T) {
+// Tests MySqlProvisionRequestAppender() valid case with additional arguments
+func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -811,6 +941,44 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArguments(t *testing.T) {
 	// Check if the lengths of expected and retrieved action arguments are equal
 	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests MySqlProvisionRequestAppender() invalid case with additional arguments
+func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MYSQL)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"invalid-key": "invalid-value",
+	})
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Checks if error was returned
+	if err == nil {
+		t.Errorf("Should have errored. Expected: Setting configured action arguments failed! invalid-key is not an allowed additional argument, Got: %v", err)
+	}
+	// Checks if resultRequestIsNil
+	if resultRequest != nil {
+		t.Errorf("Should have errored. Expected: resultRequest to be nil, Got: %v", resultRequest)
 	}
 
 	// Verify that the mock method was called with the expected arguments
