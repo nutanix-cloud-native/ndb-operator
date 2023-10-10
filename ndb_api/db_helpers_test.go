@@ -9,7 +9,6 @@ import (
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
-	"github.com/stretchr/testify/assert"
 )
 
 // Test constants
@@ -179,11 +178,14 @@ func TestPostgresProvisionRequestAppenderWithoutAdditionalArguments(t *testing.T
 	// Checks if expected and retrieved action arguments are equal
 	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
 
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+
 	// Checks requestAppender.appendRequest return type has no error and resultRequest.ActionArguments correctly configured
-	if assert.NoError(t, err) {
-		if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
-			t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
-		}
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
 	// Verify that the mock method was called with the expected arguments
