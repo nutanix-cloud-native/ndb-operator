@@ -228,7 +228,11 @@ func additionalArgumentsValidationCheck(dbType string, specifiedAdditionalArgume
 	if len(invalidArgs) == 0 {
 		return nil
 	} else {
-		return errors.New(fmt.Sprintf("Additional Arguments validation for database type: %s failed! The following args are invalid: %s. These are the allowed args: %s", dbType, errors.New(strings.Join(invalidArgs, ", ")), reflect.ValueOf(allowedAdditionalArguments).MapKeys()))
+		return fmt.Errorf(
+			"Additional Arguments validation for database type: %s failed! The following args are invalid: %s. These are the allowed args: %s",
+			dbType,
+			errors.New(strings.Join(invalidArgs, ", ")),
+			reflect.ValueOf(allowedAdditionalArguments).MapKeys())
 	}
 }
 
