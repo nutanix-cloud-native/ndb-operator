@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -231,7 +230,7 @@ func additionalArgumentsValidationCheck(dbType string, specifiedAdditionalArgume
 		return fmt.Errorf(
 			"Additional Arguments validation for database type: %s failed! The following args are invalid: %s. These are the allowed args: %s",
 			dbType,
-			errors.New(strings.Join(invalidArgs, ", ")),
+			strings.Join(invalidArgs, ", "),
 			reflect.ValueOf(allowedAdditionalArguments).MapKeys())
 	}
 }
