@@ -72,71 +72,71 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 	log := ctrllog.FromContext(ctx)
 	log.Info("Database CR is being deleted")
 	if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
-		// Check if the database instance id (database.Status.Id) is present in the status
-		// If present, then make a deprovisionDatabase API call to NDB
-		// else proceed with removing finalizer as database instance provisioning wasn't successful earlier.
-		if database.Status.Id != "" {
-			infoStatement := "Deprovisioning database instance from NDB."
+		// Check if the deregistration operation id (database.Status.DeregistrationOperationId) is empty
+		// If so, then make a deprovisionDatabase API call to NDB
+		// else proceed check for the operation completion before removing finalizer.
+		deregistrationOperationId := database.Status.DeregistrationOperationId
+		if deregistrationOperationId == "" {
+			infoStatement := "Deregistering instance from NDB."
 			log.Info(infoStatement)
 			r.recorder.Event(database, "Normal", EVENT_DEPROVISIONING_STARTED, infoStatement)
-
-			_, err := ndb_api.DeprovisionDatabase(ctx, ndbClient, database.Status.Id, *ndb_api.GenerateDeprovisionDatabaseRequest())
+			deregistrationOp, err := ndb_api.DeprovisionDatabase(ctx, ndbClient, database.Status.Id, *ndb_api.GenerateDeprovisionDatabaseRequest())
 			if err != nil {
-				errStatement := "Deprovisioning database instance request failed."
+				errStatement := "Deregistering instance API call failed."
 				log.Error(err, errStatement)
 				r.recorder.Eventf(database, "Warning", EVENT_DEPROVISIONING_FAILED, "Error: %s. %s", errStatement, err.Error())
 				return requeueOnErr(err)
 			}
+			database.Status.DeregistrationOperationId = deregistrationOp.OperationId
+			if err := r.Status().Update(ctx, database); err != nil {
+				return requeueOnErr(err)
+			}
+		} else {
+			deregistrationOp, err := ndb_api.GetOperationById(ctx, ndbClient, deregistrationOperationId)
+			if err != nil || ndb_api.HasOperationFailed(deregistrationOp) {
+				if err == nil {
+					err = fmt.Errorf("deregistration operation terminated with status: %s, message: %s", deregistrationOp.Status, deregistrationOp.Message)
+				}
+				log.Error(err, "Deregistration Failed")
+				r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
+			} else if ndb_api.HasOperationPassed(deregistrationOp) {
+				r.recorder.Eventf(database, "Normal", EVENT_DEPROVISIONING_COMPLETED, "Database deprovisioned from NDB.")
+				log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
+				controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_INSTANCE)
+				if err := r.Update(ctx, database); err != nil {
+					return requeueOnErr(err)
+				}
+				log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
+			}
 		}
 
-		log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
-		controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_INSTANCE)
+	} else if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
+		r.recorder.Eventf(database, "Normal", EVENT_DEPROVISIONING_STARTED, "Deprovisioning database server from NDB.")
+		databaseServerId := database.Status.DatabaseServerId
+		// Make a dbserver deprovisioning request to NDB only if the serverId is present in status
+		if databaseServerId != "" {
+			_, err := ndb_api.DeprovisionDatabaseServer(ctx, ndbClient, databaseServerId, *ndb_api.GenerateDeprovisionDatabaseServerRequest())
+			if err != nil {
+				errStament := fmt.Sprintf("Deprovisioning database server request failed for id: %s", databaseServerId)
+				log.Error(err, errStament)
+				r.recorder.Eventf(database, "Warning", EVENT_DEPROVISIONING_FAILED, "Error: %s. %s", errStament, err.Error())
+				return requeueOnErr(err)
+			}
+		} else {
+			// Database and server has been deprovisioned
+			r.recorder.Event(database, "Normal", EVENT_DEPROVISIONING_COMPLETED, "Database Server has been deprovisioned from NDB.")
+			log.Info("Database server id was not found on the database CR, removing finalizers and deleting the CR.")
+		}
+		// remove our finalizer from the list and update it.
+		log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_SERVER)
+		controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_SERVER)
 		if err := r.Update(ctx, database); err != nil {
 			return requeueOnErr(err)
 		}
-		log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
+		log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_SERVER)
+		r.recorder.Event(database, "Normal", EVENT_CR_DELETED, "Database Custom Resource has been deleted from the k8s cluster")
+		return requeue()
 
-	} else if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
-		// Checking if the database instance still exists in NDB. (It might take some time for the delete db instance operation to complete)
-		// Proceed to delete the database server vm only after the database instance has been deleted.
-		log.Info("Checking if database instance exists")
-		allDatabases, err := ndb_api.GetAllDatabases(ctx, ndbClient)
-		if err != nil {
-			errStatement := "Error fetching all databases from NDB"
-			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", EVENT_RESOURCE_LOOKUP_ERROR, "Error: %s. %s", errStatement, err.Error())
-			return requeueOnErr(err)
-		}
-		if len(util.Filter(allDatabases, func(d ndb_api.DatabaseResponse) bool { return d.Id == database.Status.Id })) == 0 {
-			// Could not find the database with the given database id => database instance has been deleted
-			log.Info("Database instance not found, attempting to remove database server.")
-			r.recorder.Eventf(database, "Normal", EVENT_DEPROVISIONING_COMPLETED, "Database deprovisioned from NDB.")
-			r.recorder.Eventf(database, "Normal", EVENT_DEPROVISIONING_STARTED, "Deprovisioning database server from NDB.")
-			databaseServerId := database.Status.DatabaseServerId
-			// Make a dbserver deprovisioning request to NDB only if the serverId is present in status
-			if databaseServerId != "" {
-				_, err := ndb_api.DeprovisionDatabaseServer(ctx, ndbClient, databaseServerId, *ndb_api.GenerateDeprovisionDatabaseServerRequest())
-				if err != nil {
-					errStament := fmt.Sprintf("Deprovisioning database server request failed for id: %s", databaseServerId)
-					log.Error(err, errStament)
-					r.recorder.Eventf(database, "Warning", EVENT_DEPROVISIONING_FAILED, "Error: %s. %s", errStament, err.Error())
-					return requeueOnErr(err)
-				}
-			} else {
-				// Database and server has been deprovisioned
-				r.recorder.Event(database, "Normal", EVENT_DEPROVISIONING_COMPLETED, "Database Server has been deprovisioned from NDB.")
-				log.Info("Database server id was not found on the database CR, removing finalizers and deleting the CR.")
-			}
-			// remove our finalizer from the list and update it.
-			log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_SERVER)
-			controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_SERVER)
-			if err := r.Update(ctx, database); err != nil {
-				return requeueOnErr(err)
-			}
-			log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_SERVER)
-			r.recorder.Event(database, "Normal", EVENT_CR_DELETED, "Database Custom Resource has been deleted from the k8s cluster")
-			return requeue()
-		}
 	} else {
 		// Both database instance and database server finalizers have been removed, no need to requeue
 		// CR will be deleted.
@@ -157,7 +157,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 	databaseStatus.Type = database.Spec.Instance.Type
 
 	// Provision the database if it has not been provisioned earlier
-	if databaseStatus.Status == "" || databaseStatus.Id == "" {
+	if databaseStatus.Status == "" && databaseStatus.Id == "" {
 		// DB Status.Status is empty => Provision a DB
 		infoStatement := "Provisioning a database instance on NDB."
 		log.Info(infoStatement)
@@ -199,11 +199,11 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			return requeueOnErr(err)
 		}
 
-		log.Info(fmt.Sprintf("Updating Database CR to Status: WAITING, id: %s and provisioningOperationId: %s", taskResponse.EntityId, taskResponse.OperationId))
+		log.Info(fmt.Sprintf("Updating Database CR to Status: CREATING, id: %s and creationOperationId: %s", taskResponse.EntityId, taskResponse.OperationId))
 
-		databaseStatus.Status = common.DATABASE_CR_STATUS_WAITING
+		databaseStatus.Status = common.DATABASE_CR_STATUS_CREATING
 		databaseStatus.Id = taskResponse.EntityId
-		databaseStatus.ProvisioningOperationId = taskResponse.OperationId
+		databaseStatus.CreationOperationId = taskResponse.OperationId
 
 		r.recorder.Event(database, "Normal", EVENT_PROVISIONING_STARTED, "Database provisioning initiated on NDB")
 
@@ -214,18 +214,27 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 	isUnderDeletion := !database.ObjectMeta.DeletionTimestamp.IsZero()
 	if isUnderDeletion {
 		databaseStatus.Status = common.DATABASE_CR_STATUS_DELETING
+	} else if databaseStatus.Status == common.DATABASE_CR_STATUS_CREATING {
+		creationOp, err := ndb_api.GetOperationById(ctx, ndbClient, databaseStatus.CreationOperationId)
+		if err != nil || ndb_api.HasOperationFailed(creationOp) {
+			if err == nil {
+				err = fmt.Errorf("creation operation terminated with status: %s, message: %s", creationOp.Status, creationOp.Message)
+			}
+			log.Error(err, "Database Creation Failed")
+			databaseStatus.Status = common.DATABASE_CR_STATUS_ERROR
+			r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
+		} else if ndb_api.HasOperationPassed(creationOp) {
+			databaseStatus.Status = common.DATABASE_CR_STATUS_READY
+			r.recorder.Event(database, "Normal", "OPERATION PASSED", "Database creation operation passed")
+		}
 	} else if dbInfo != (ndbv1alpha1.NDBServerDatabaseInfo{}) {
 		databaseStatus.Status = dbInfo.Status
 		databaseStatus.Id = dbInfo.Id
 		databaseStatus.IPAddress = dbInfo.IPAddress
 		databaseStatus.DatabaseServerId = dbInfo.DBServerId
-	} else if databaseStatus.Status == common.DATABASE_CR_STATUS_WAITING {
-		log.Info("Database not found in NDB CR yet")
-		r.recorder.Event(database, "Normal", EVENT_WAITING_FOR_NDB_RECONCILE, "Waiting for NDB server resource to reconcile")
 	} else {
 		log.Info("Database missing from NDB CR")
 		databaseStatus.Status = common.DATABASE_CR_STATUS_NOT_FOUND
-		// TODO: Add operation tracking while the DB is in PROVISIONING state
 	}
 
 	if !reflect.DeepEqual(database.Status, *databaseStatus) {
@@ -260,11 +269,15 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_SERVER, database)
 			}
 		}
-		r.setupConnectivity(ctx, database, req)
+		if databaseStatus.IPAddress != "" {
+			r.setupConnectivity(ctx, database, req)
+		}
 	case common.DATABASE_CR_STATUS_DELETING:
 		return r.handleDelete(ctx, database, ndbClient)
 	case common.DATABASE_CR_STATUS_NOT_FOUND:
 		r.recorder.Eventf(database, "Warning", EVENT_EXTERNAL_DELETE, "Error: Resource not found on NDB")
+	case common.DATABASE_CR_STATUS_ERROR:
+		return doNotRequeue()
 	default:
 		// No-Op
 	}

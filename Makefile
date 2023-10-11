@@ -261,10 +261,10 @@ ifndef api
 	@echo "parameter 'api' missing, Usage: make add-api api='foo'"
 	@exit 1
 else
-	touch ndb_api/$(api).go && echo "package ndb_api" > ndb_api/$(api).go
-	touch ndb_api/$(api)_helpers.go && echo "package ndb_api" > ndb_api/$(api)_helpers.go
-	touch ndb_api/$(api)_request_types.go && echo "package ndb_api" > ndb_api/$(api)_request_types.go
-	touch ndb_api/$(api)_response_types.go && echo "package ndb_api" > ndb_api/$(api)_response_types.go
+	touch ndb_api/$(api).go && cp hack/boilerplate.go.txt ndb_api/$(api).go && echo -e "\n" >> ndb_api/$(api).go && echo "package ndb_api" >> ndb_api/$(api).go
+	touch ndb_api/$(api)_helpers.go && cp hack/boilerplate.go.txt ndb_api/$(api)_helpers.go && echo -e "\n" >> ndb_api/$(api)_helpers.go && echo "package ndb_api" >> ndb_api/$(api)_helpers.go
+	touch ndb_api/$(api)_request_types.go && cp hack/boilerplate.go.txt ndb_api/$(api)_request_types.go && echo -e "\n" >> ndb_api/$(api)_request_types.go && echo "package ndb_api" >> ndb_api/$(api)_request_types.go
+	touch ndb_api/$(api)_response_types.go && cp hack/boilerplate.go.txt ndb_api/$(api)_response_types.go && echo -e "\n" >> ndb_api/$(api)_response_types.go && echo "package ndb_api" >> ndb_api/$(api)_response_types.go
 endif
 
 # Usage: Export the environment variables before running the target
