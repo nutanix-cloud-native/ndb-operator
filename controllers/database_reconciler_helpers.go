@@ -93,13 +93,14 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 			}
 		} else {
 			deregistrationOp, err := ndb_api.GetOperationById(ctx, ndbClient, deregistrationOperationId)
+			opStatus := ndb_api.GetOperationStatus(deregistrationOp)
 			if err != nil {
 				r.recorder.Event(database, "Warning", EVENT_NDB_REQUEST_FAILED, "NDB API to fetch operation by id failed: "+err.Error())
-			} else if ndb_api.HasOperationFailed(deregistrationOp) {
+			} else if opStatus == ndb_api.OPERATION_STATUS_FAILED {
 				err := fmt.Errorf("deregistration operation terminated with status: %s, message: %s", deregistrationOp.Status, deregistrationOp.Message)
 				log.Error(err, "Deregistration Failed")
 				r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
-			} else if ndb_api.HasOperationPassed(deregistrationOp) {
+			} else if opStatus == ndb_api.OPERATION_STATUS_PASSED {
 				r.recorder.Eventf(database, "Normal", EVENT_DEPROVISIONING_COMPLETED, "Database deprovisioned from NDB.")
 				log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
 				controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_INSTANCE)
@@ -216,14 +217,14 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		databaseStatus.Status = common.DATABASE_CR_STATUS_DELETING
 	} else if databaseStatus.Status == common.DATABASE_CR_STATUS_CREATING {
 		creationOp, err := ndb_api.GetOperationById(ctx, ndbClient, databaseStatus.CreationOperationId)
-		if err != nil || ndb_api.HasOperationFailed(creationOp) {
-			if err == nil {
-				err = fmt.Errorf("creation operation terminated with status: %s, message: %s", creationOp.Status, creationOp.Message)
-			}
+		opStatus := ndb_api.GetOperationStatus(creationOp)
+		if err != nil {
+			r.recorder.Event(database, "Warning", EVENT_NDB_REQUEST_FAILED, "NDB API to fetch operation by id failed: "+err.Error())
+		} else if opStatus == ndb_api.OPERATION_STATUS_FAILED {
+			err = fmt.Errorf("creation operation terminated with status: %s, message: %s", creationOp.Status, creationOp.Message)
 			log.Error(err, "Database Creation Failed")
-			databaseStatus.Status = common.DATABASE_CR_STATUS_CREATION_ERROR
 			r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
-		} else if ndb_api.HasOperationPassed(creationOp) {
+		} else if opStatus == ndb_api.OPERATION_STATUS_PASSED {
 			databaseStatus.Status = common.DATABASE_CR_STATUS_READY
 			r.recorder.Event(database, "Normal", "OPERATION PASSED", "Database creation operation passed")
 		}

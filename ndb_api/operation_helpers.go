@@ -16,18 +16,24 @@ limitations under the License.
 
 package ndb_api
 
-// Returns a boolean indicating if an operation has reached a terminal state
-func HasOperationFailed(o OperationResponse) bool {
-	status := o.Status
+const OPERATION_STATUS_FAILED = "FAILED"
+const OPERATION_STATUS_PASSED = "PASSED"
+
+// Returns an operation status string
+func GetOperationStatus(o OperationResponse) string {
+	status := ""
 	// Statuses on NDB
 	// 2: STOPPED
 	// 3: SUSPENDED
 	// 4: FAILED
-	return status == "2" || status == "3" || status == "4"
-}
-
-// Returns a boolean indicating if an operation was successful
-func HasOperationPassed(o OperationResponse) bool {
-	// Status 5 on NDB: SUCCESS
-	return o.Status == "5"
+	// 5: PASSED
+	switch o.Status {
+	case "2", "3", "4":
+		status = OPERATION_STATUS_FAILED
+	case "5":
+		status = OPERATION_STATUS_PASSED
+	default:
+		status = ""
+	}
+	return status
 }
