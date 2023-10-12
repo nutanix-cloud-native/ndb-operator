@@ -19,10 +19,15 @@ package ndb_api
 // Returns a boolean indicating if an operation has reached a terminal state
 func HasOperationFailed(o OperationResponse) bool {
 	status := o.Status
+	// Statuses on NDB
+	// 2: STOPPED
+	// 3: SUSPENDED
+	// 4: FAILED
 	return status == "2" || status == "3" || status == "4"
 }
 
 // Returns a boolean indicating if an operation was successful
 func HasOperationPassed(o OperationResponse) bool {
+	// Status 5 on NDB: SUCCESS
 	return o.Status == "5"
 }

@@ -63,7 +63,7 @@ func GetOperationById(ctx context.Context, ndbClient *ndb_client.NDBClient, id s
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in Get Operation by ID")
+		log.Error(err, "Error occurred reading response.Body in Get Operation by ID", "operation id", id)
 		return
 	}
 	err = json.Unmarshal(body, &operation)

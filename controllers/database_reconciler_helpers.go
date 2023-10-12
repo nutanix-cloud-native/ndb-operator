@@ -93,10 +93,10 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 			}
 		} else {
 			deregistrationOp, err := ndb_api.GetOperationById(ctx, ndbClient, deregistrationOperationId)
-			if err != nil || ndb_api.HasOperationFailed(deregistrationOp) {
-				if err == nil {
-					err = fmt.Errorf("deregistration operation terminated with status: %s, message: %s", deregistrationOp.Status, deregistrationOp.Message)
-				}
+			if err != nil {
+				r.recorder.Event(database, "Warning", EVENT_NDB_REQUEST_FAILED, "NDB API to fetch operation by id failed: "+err.Error())
+			} else if ndb_api.HasOperationFailed(deregistrationOp) {
+				err := fmt.Errorf("deregistration operation terminated with status: %s, message: %s", deregistrationOp.Status, deregistrationOp.Message)
 				log.Error(err, "Deregistration Failed")
 				r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
 			} else if ndb_api.HasOperationPassed(deregistrationOp) {
