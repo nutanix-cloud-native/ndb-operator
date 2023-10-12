@@ -221,7 +221,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 				err = fmt.Errorf("creation operation terminated with status: %s, message: %s", creationOp.Status, creationOp.Message)
 			}
 			log.Error(err, "Database Creation Failed")
-			databaseStatus.Status = common.DATABASE_CR_STATUS_ERROR
+			databaseStatus.Status = common.DATABASE_CR_STATUS_CREATION_ERROR
 			r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
 		} else if ndb_api.HasOperationPassed(creationOp) {
 			databaseStatus.Status = common.DATABASE_CR_STATUS_READY
@@ -276,7 +276,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		return r.handleDelete(ctx, database, ndbClient)
 	case common.DATABASE_CR_STATUS_NOT_FOUND:
 		r.recorder.Eventf(database, "Warning", EVENT_EXTERNAL_DELETE, "Error: Resource not found on NDB")
-	case common.DATABASE_CR_STATUS_ERROR:
+	case common.DATABASE_CR_STATUS_CREATION_ERROR:
 		return doNotRequeue()
 	default:
 		// No-Op
