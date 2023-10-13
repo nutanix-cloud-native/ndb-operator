@@ -10,7 +10,7 @@ import (
 // Returns a tuple that consists of the following:
 //  1. A map where the keys are the allowed additional arguments for the database type, and the corresponding values indicates whether the key is an action argument (where true=yes and false=no).
 //     Currently, all additional arguments are action arguments but this might not always be the case, thus this distinction is made so actual action arguments are appended to the appropriate provisioning body property.
-//  2. An error if there is no allowed additional arugments for the corresponding type, in other words, if the dbType is not MSSQL, MngoDB, PostGres, or MYSQL. Else nil.
+//  2. An error if there is no allowed additional arguments for the corresponding type, in other words, if the dbType is not MSSQL, MngoDB, PostGres, or MYSQL. Else nil.
 func GetAllowedAdditionalArgumentsForType(dbType string) (map[string]bool, error) {
 	switch dbType {
 	case common.DATABASE_TYPE_MSSQL:
