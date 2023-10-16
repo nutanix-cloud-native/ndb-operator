@@ -18,7 +18,7 @@ testbin/*
 
 !vendor/**/zz_generated.*
 
-# editor and IDE paraphernalia
+# editor and IDE paraphernalia 
 .idea
 *.swp
 *.swo
