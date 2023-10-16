@@ -5,14 +5,14 @@ metadata:
 spec:
   ndbRef: ndb
   databaseInstance:
-    databaseInstanceName: mazin-db-pg-si23
+    databaseInstanceName: db-pg-si
     databaseNames:
       - database_one
       - database_two
       - database_three
     clusterId: <cluster-id>
     credentialSecret: db-secret-pg-si
-    size: 100
+    size: 25
     timezone: "UTC"
     type: postgres
     profiles: 
@@ -40,5 +40,3 @@ spec:
       weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
       monthlySnapshotDay:  24           # Day of the month for monthly snapshot
       quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
-    additionalArguments:  # optional
-      listener_port: "80"
