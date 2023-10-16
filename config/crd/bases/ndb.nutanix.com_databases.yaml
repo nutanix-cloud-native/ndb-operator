@@ -51,6 +51,11 @@ spec:
               databaseInstance:
                 description: Database instance specific details
                 properties:
+                  additionalArguments:
+                    additionalProperties:
+                      type: string
+                    description: Additional database engine specific arguments
+                    type: object
                   clusterId:
                     description: Id of the cluster to provision the database on
                     type: string

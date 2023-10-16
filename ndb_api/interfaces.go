@@ -39,4 +39,5 @@ type DatabaseInterface interface {
 	GetProfileResolvers() ProfileResolvers
 	GetTMDetails() (string, string, string)
 	GetTMSchedule() (Schedule, error)
+	GetDBInstanceAdditionalArguments() map[string]string
 }

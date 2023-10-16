@@ -99,6 +99,9 @@ type Instance struct {
 	// +optional
 	// Information related to time machine that is to be associated with this database
 	TMInfo *DBTimeMachineInfo `json:"timeMachine"`
+	// +optional
+	// Additional database engine specific arguments
+	AdditionalArguments map[string]string `json:"additionalArguments"`
 }
 
 // Time Machine details

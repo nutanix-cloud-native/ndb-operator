@@ -41,3 +41,5 @@ spec:
       weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
       monthlySnapshotDay:  24           # Day of the month for monthly snapshot
       quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
+    additionalArguments:                # Optional black, can specify additional arguments that are unique to database engines.
+      listener_port: "8080"
