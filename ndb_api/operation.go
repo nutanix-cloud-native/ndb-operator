@@ -31,9 +31,8 @@ import (
 // Fetches and returns a operation by an Id
 func GetOperationById(ctx context.Context, ndbClient *ndb_client.NDBClient, id string) (operation OperationResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.GetOperationById", "operationId", id)
 	if ndbClient == nil {
-		err = errors.New("nil reference")
+		err = errors.New("nil reference for ndbClient")
 		log.Error(err, "Received nil ndbClient reference")
 		return
 	}
@@ -56,7 +55,7 @@ func GetOperationById(ctx context.Context, ndbClient *ndb_client.NDBClient, id s
 				err = fmt.Errorf("GET %s responded with a nil response", getOperationPath)
 			}
 		}
-		log.Error(err, "Error occurred fetching operation")
+		log.Error(err, "Error occurred fetching operation", "operationId", id)
 		return
 	}
 	log.Info(getOperationPath, "HTTP status code", res.StatusCode)
@@ -71,6 +70,5 @@ func GetOperationById(ctx context.Context, ndbClient *ndb_client.NDBClient, id s
 		log.Error(err, "Error occurred trying to unmarshal.")
 		return
 	}
-	log.Info("Returning from ndb_api.GetOperationById")
 	return
 }

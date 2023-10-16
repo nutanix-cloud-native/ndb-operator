@@ -89,25 +89,31 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 			}
 			database.Status.DeregistrationOperationId = deregistrationOp.OperationId
 			if err := r.Status().Update(ctx, database); err != nil {
+				log.Error(err, "An error occurred while updating the CR.")
 				return requeueOnErr(err)
 			}
 		} else {
 			deregistrationOp, err := ndb_api.GetOperationById(ctx, ndbClient, deregistrationOperationId)
-			opStatus := ndb_api.GetOperationStatus(deregistrationOp)
 			if err != nil {
-				r.recorder.Event(database, "Warning", EVENT_NDB_REQUEST_FAILED, "NDB API to fetch operation by id failed: "+err.Error())
-			} else if opStatus == ndb_api.OPERATION_STATUS_FAILED {
-				err := fmt.Errorf("deregistration operation terminated with status: %s, message: %s", deregistrationOp.Status, deregistrationOp.Message)
-				log.Error(err, "Deregistration Failed")
-				r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
-			} else if opStatus == ndb_api.OPERATION_STATUS_PASSED {
-				r.recorder.Eventf(database, "Normal", EVENT_DEPROVISIONING_COMPLETED, "Database deprovisioned from NDB.")
-				log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
-				controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_INSTANCE)
-				if err := r.Update(ctx, database); err != nil {
-					return requeueOnErr(err)
+				message := fmt.Sprintf("NDB API to fetch operation by id failed. OperationId: %s:, error: %s", deregistrationOperationId, err.Error())
+				r.recorder.Event(database, "Warning", EVENT_NDB_REQUEST_FAILED, message)
+			} else {
+				switch ndb_api.GetOperationStatus(deregistrationOp) {
+				case ndb_api.OPERATION_STATUS_FAILED:
+					err := fmt.Errorf("deregistration operation terminated. status: %s, message: %s, operationId: %s", deregistrationOp.Status, deregistrationOp.Message, deregistrationOperationId)
+					log.Error(err, "Deregistration Failed")
+					r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
+				case ndb_api.OPERATION_STATUS_PASSED:
+					r.recorder.Eventf(database, "Normal", EVENT_DEPROVISIONING_COMPLETED, "Database deprovisioned from NDB.")
+					log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
+					controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_INSTANCE)
+					if err := r.Update(ctx, database); err != nil {
+						return requeueOnErr(err)
+					}
+					log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
+				default:
+					// Do nothing, we do not care about other statuses
 				}
-				log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
 			}
 		}
 
@@ -217,16 +223,21 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		databaseStatus.Status = common.DATABASE_CR_STATUS_DELETING
 	} else if databaseStatus.Status == common.DATABASE_CR_STATUS_CREATING {
 		creationOp, err := ndb_api.GetOperationById(ctx, ndbClient, databaseStatus.CreationOperationId)
-		opStatus := ndb_api.GetOperationStatus(creationOp)
 		if err != nil {
-			r.recorder.Event(database, "Warning", EVENT_NDB_REQUEST_FAILED, "NDB API to fetch operation by id failed: "+err.Error())
-		} else if opStatus == ndb_api.OPERATION_STATUS_FAILED {
-			err = fmt.Errorf("creation operation terminated with status: %s, message: %s", creationOp.Status, creationOp.Message)
-			log.Error(err, "Database Creation Failed")
-			r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
-		} else if opStatus == ndb_api.OPERATION_STATUS_PASSED {
-			databaseStatus.Status = common.DATABASE_CR_STATUS_READY
-			r.recorder.Event(database, "Normal", "OPERATION PASSED", "Database creation operation passed")
+			message := fmt.Sprintf("NDB API to fetch operation by id failed. OperationId: %s:, error: %s", creationOp.Id, err.Error())
+			r.recorder.Event(database, "Warning", EVENT_NDB_REQUEST_FAILED, message)
+		} else {
+			switch ndb_api.GetOperationStatus(creationOp) {
+			case ndb_api.OPERATION_STATUS_FAILED:
+				err = fmt.Errorf("creation operation terminated. status: %s, message: %s, operationId: %s", creationOp.Status, creationOp.Message, creationOp.Id)
+				log.Error(err, "Database Creation Failed")
+				r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
+			case ndb_api.OPERATION_STATUS_PASSED:
+				databaseStatus.Status = common.DATABASE_CR_STATUS_READY
+				r.recorder.Event(database, "Normal", "OPERATION PASSED", "Database creation operation passed")
+			default:
+				// Do nothing, we do not care about other statuses
+			}
 		}
 	} else if dbInfo != (ndbv1alpha1.NDBServerDatabaseInfo{}) {
 		databaseStatus.Status = dbInfo.Status
@@ -272,6 +283,13 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		}
 		if databaseStatus.IPAddress != "" {
 			r.setupConnectivity(ctx, database, req)
+		} else {
+			// The database is in "READY" state on NDB, but the API responses sometimes do not have
+			// an IP address in the response right after reaching the READY state. We only setup connectivity
+			// once we have a non-empty IP Address. Just logging and raising an event to notify the user.
+			message := fmt.Sprintf("Empty IP Address for Database %s, will setup connectivity once the IP address is assigned", database.Name)
+			log.Info(message)
+			r.recorder.Event(database, "Warning", EVENT_WAITING_FOR_IP_ADDRESS, message)
 		}
 	case common.DATABASE_CR_STATUS_DELETING:
 		return r.handleDelete(ctx, database, ndbClient)

@@ -56,6 +56,7 @@ const (
 	EVENT_ENDPOINT_SETUP_FAILED = "EndpointSetupFailed"
 
 	EVENT_WAITING_FOR_NDB_RECONCILE = "WaitingForNDBReconcile"
+	EVENT_WAITING_FOR_IP_ADDRESS    = "WaitingForIPAddress"
 )
 
 // doNotRequeue Finished processing. No need to put back on the reconcile queue.
