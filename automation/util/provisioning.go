@@ -74,7 +74,7 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 
 	// Create Database
 	if st.Database != nil {
-		st.Database.Spec.Instance.ClusterId = os.Getenv("NDB_CLUSTER_ID") // WHICH CLUSTER?
+		st.Database.Spec.Instance.ClusterId = os.Getenv("CLUSTER_ID")
 		st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Create(st.Database)
 		if err != nil {
 			logger.Printf("Error while creating Database %s: %s\n", st.Database.Name, err)
