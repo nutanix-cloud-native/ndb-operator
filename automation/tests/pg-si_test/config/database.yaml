@@ -5,7 +5,7 @@ metadata:
 spec:
   ndbRef: ndb
   databaseInstance:
-    databaseInstanceName: db-pg-si
+    databaseInstanceName: mazin-db-pg-si23
     databaseNames:
       - database_one
       - database_two
@@ -40,3 +40,5 @@ spec:
       weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
       monthlySnapshotDay:  24           # Day of the month for monthly snapshot
       quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
+    additionalArguments:  # optional
+      listener_port: "80"
