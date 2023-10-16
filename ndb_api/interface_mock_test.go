@@ -93,3 +93,16 @@ func (m *MockProfileResolverInterface) Resolve(ctx context.Context, allProfiles 
 	args := m.Called()
 	return args.Get(0).(ProfileResponse), args.Error(1)
 }
+
+// GetDBInstanceAdditionalArguments is a mock implementation of the GetDBInstanceTypeDetails method in the Database interface
+func (m *MockDatabaseInterface) GetDBInstanceAdditionalArguments() map[string]string {
+	args := m.Called()
+
+	// Perform a type assertion to convert the value to map[string]string
+	if result, ok := args.Get(0).(map[string]string); ok {
+		return result
+	}
+
+	// If the type assertion fails, return default
+	return map[string]string{}
+}

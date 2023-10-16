@@ -47,6 +47,7 @@ const (
 	DATABASE_TYPE_MYSQL    = "mysql"
 	DATABASE_TYPE_ORACLE   = "oracle"
 	DATABASE_TYPE_POSTGRES = "postgres"
+	DATABASE_TYPES         = "mssql, mysql, postgres, mongodb"
 
 	FINALIZER_DATABASE_INSTANCE = "ndb.nutanix.com/finalizerdatabaseinstance"
 	FINALIZER_DATABASE_SERVER   = "ndb.nutanix.com/finalizerdatabaseserver"

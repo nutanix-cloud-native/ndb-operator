@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -112,8 +113,8 @@ func TestGetRequestAppenderByType(t *testing.T) {
 	}
 }
 
-// Tests if PostgresProvisionRequestAppender() function appends requests correctly
-func TestPostgresProvisionRequestAppender(t *testing.T) {
+// Tests PostgresProvisionRequestAppender() valid case without additional arguments
+func TestPostgresProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -126,6 +127,8 @@ func TestPostgresProvisionRequestAppender(t *testing.T) {
 
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -158,7 +161,7 @@ func TestPostgresProvisionRequestAppender(t *testing.T) {
 		},
 		{
 			Name:  "database_names",
-			Value: mockDatabase.GetDBInstanceDatabaseNames(),
+			Value: TEST_DB_NAMES,
 		},
 	}
 
@@ -166,24 +169,150 @@ func TestPostgresProvisionRequestAppender(t *testing.T) {
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_POSTGRES)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	// Assert expected results
+	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
+		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
+	}
+
+	// Checks if expected and retrieved action arguments are equal
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
+
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+
+	// Checks requestAppender.appendRequest return type has no error and resultRequest.ActionArguments correctly configured
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests PostgresProvisionRequestAppender() valid case with additional arguments
+func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"listener_port": "0000",
+	})
+
+	expectedActionArgs := []ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "0000",
+		},
+		{
+			Name:  "proxy_read_port",
+			Value: "5001",
+		},
+		{
+			Name:  "proxy_write_port",
+			Value: "5000",
+		},
+		{
+			Name:  "enable_synchronous_mode",
+			Value: "false",
+		},
+		{
+			Name:  "auto_tune_staging_drive",
+			Value: "true",
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
+		},
+		{
+			Name:  "db_password",
+			Value: TEST_PASSWORD,
+		},
+		{
+			Name:  "database_names",
+			Value: TEST_DB_NAMES,
+		},
+	}
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_POSTGRES)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
 		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
 	}
 
-	if !reflect.DeepEqual(resultRequest.ActionArguments, expectedActionArgs) {
+	// Sort expected and retrieved action arguments
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
+
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
 	// Verify that the mock method was called with the expected arguments
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
-
 }
 
-// Tests if MSSQLProvisionRequestAppender() function appends requests correctly
-func TestMSSQLProvisionRequestAppender(t *testing.T) {
+// Tests PostgresProvisionRequestAppender() invalid case with additional arguments
+func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"invalid-key": "invalid-value",
+	})
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_POSTGRES)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Checks if error was returned
+	if err == nil {
+		t.Errorf("Should have errored. Expected: Setting configured action arguments failed! invalid-key is not an allowed additional argument, Got: %v", err)
+	}
+	// Checks if resultRequestIsNil
+	if resultRequest != nil {
+		t.Errorf("Should have errored. Expected: resultRequest to be nil, Got: %v", resultRequest)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests MSSQLProvisionRequestAppender() valid case without additional arguments
+func TestMSSQLProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -211,6 +340,8 @@ func TestMSSQLProvisionRequestAppender(t *testing.T) {
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
 	mockDatabase.On("GetDBInstanceName").Return("testInstance")
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MSSQL)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -271,14 +402,153 @@ func TestMSSQLProvisionRequestAppender(t *testing.T) {
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.DatabaseName != mockDatabase.GetDBInstanceDatabaseNames() {
 		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetDBInstanceDatabaseNames(), resultRequest.DatabaseName)
 	}
 
-	if !reflect.DeepEqual(resultRequest.ActionArguments, expectedActionArgs) {
+	// Sort expected and retrieved action arguments
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
+
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests MSSQLProvisionRequestAppender() valid case with additional arguments
+func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	profileResponse := ProfileResponse{
+		Id:              "123",
+		Name:            "Test Profile",
+		Type:            "Test Type",
+		EngineType:      "Sample Engine",
+		LatestVersionId: "456",
+		Topology:        "Test Topology",
+		SystemProfile:   true,
+		Status:          "Active",
+	}
+	profileMap := map[string]ProfileResponse{
+		common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE: profileResponse,
+	}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_PASSWORD: TEST_PASSWORD,
+		common.PROFILE_MAP_PARAM:  profileMap}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceName").Return("testInstance")
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MSSQL)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"sql_user_name":             "admin",
+		"sql_user_password":         TEST_PASSWORD,
+		"authentication_mode":       "mixed",
+		"windows_domain_profile_id": "<windows-domain-profile-id>",
+		"vm_db_server_user":         "<vm-db-server-user>",
+	})
+
+	expectedActionArgs := []ActionArgument{
+		{
+			Name:  "sql_user_name",
+			Value: "admin",
+		},
+		{
+			Name:  "sql_user_password",
+			Value: TEST_PASSWORD,
+		},
+		{
+			Name:  "authentication_mode",
+			Value: "mixed",
+		},
+		{
+			Name:  "windows_domain_profile_id",
+			Value: "<windows-domain-profile-id>",
+		},
+		{
+			Name:  "vm_db_server_user",
+			Value: "<vm-db-server-user>",
+		},
+		{
+			Name:  "working_dir",
+			Value: "C:\\temp",
+		},
+		{
+			Name:  "delete_vm_on_failure",
+			Value: "false",
+		},
+		{
+			Name:  "is_gmsa_sql_service_account",
+			Value: "false",
+		},
+		{
+			Name:  "provision_from_backup",
+			Value: "false",
+		},
+		{
+			Name:  "distribute_database_data",
+			Value: "true",
+		},
+		{
+			Name:  "retain_database_in_restoring_mode",
+			Value: "false",
+		},
+		{
+			Name:  "dbserver_name",
+			Value: mockDatabase.GetDBInstanceName(),
+		},
+		{
+			Name:  "server_collation",
+			Value: "SQL_Latin1_General_CP1_CI_AS",
+		},
+		{
+			Name:  "database_collation",
+			Value: "SQL_Latin1_General_CP1_CI_AS",
+		},
+		{
+			Name:  "dbParameterProfileIdInstance",
+			Value: profileResponse.Id,
+		},
+		{
+			Name:  "vm_dbserver_admin_password",
+			Value: TEST_PASSWORD,
+		},
+	}
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Assert expected results
+	if resultRequest.DatabaseName != mockDatabase.GetDBInstanceDatabaseNames() {
+		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetDBInstanceDatabaseNames(), resultRequest.DatabaseName)
+	}
+
+	// Sort expected and retrieved action arguments
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
+
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
@@ -287,8 +557,62 @@ func TestMSSQLProvisionRequestAppender(t *testing.T) {
 
 }
 
-// Tests if MongoDbProvisionRequestAppender() function appends requests correctly
-func TestMongoDbProvisionRequestAppender(t *testing.T) {
+// Tests MSSQLProvisionRequestAppender() invalid case with additional arguments
+func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	profileResponse := ProfileResponse{
+		Id:              "123",
+		Name:            "Test Profile",
+		Type:            "Test Type",
+		EngineType:      "Sample Engine",
+		LatestVersionId: "456",
+		Topology:        "Test Topology",
+		SystemProfile:   true,
+		Status:          "Active",
+	}
+	profileMap := map[string]ProfileResponse{
+		common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE: profileResponse,
+	}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_PASSWORD: TEST_PASSWORD,
+		common.PROFILE_MAP_PARAM:  profileMap}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceName").Return("testInstance")
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MSSQL)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"invalid-key":  "invalid-value",
+		"invalid-key2": "invalid-value",
+	})
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Checks if error was returned
+	if err == nil {
+		t.Errorf("Should have errored. Expected: Setting configured action arguments failed! invalid-key is not an allowed additional argument, Got: %v", err)
+	}
+	// Checks if resultRequestIsNil
+	if resultRequest != nil {
+		t.Errorf("Should have errored. Expected: resultRequest to be nil, Got: %v", resultRequest)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+
+}
+
+// Tests MongoDbProvisionRequestAppender() valid case without additional arguments
+func TestMongoDbProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -301,6 +625,8 @@ func TestMongoDbProvisionRequestAppender(t *testing.T) {
 
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MONGODB)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -345,24 +671,31 @@ func TestMongoDbProvisionRequestAppender(t *testing.T) {
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
 		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
 	}
 
-	if !reflect.DeepEqual(resultRequest.ActionArguments, expectedActionArgs) {
+	// Sort expected and retrieved action arguments
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
+
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
 
 	// Verify that the mock method was called with the expected arguments
 	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
-
 }
 
-// Tests if MySqlProvisionRequestAppender() function appends requests correctly
-func TestMySqlProvisionRequestAppender(t *testing.T) {
+// Tests MongoDbProvisionRequestAppender() valid case with additional arguments
+func TestMongoDbProvisionRequestAppenderWithActionArgumentsValid(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -375,6 +708,133 @@ func TestMySqlProvisionRequestAppender(t *testing.T) {
 
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MONGODB)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"listener_port": "1111",
+		"log_size":      "1",
+		"journal_size":  "1",
+	})
+
+	expectedActionArgs := []ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "1111",
+		},
+		{
+			Name:  "log_size",
+			Value: "1",
+		},
+		{
+			Name:  "journal_size",
+			Value: "1",
+		},
+		{
+			Name:  "restart_mongod",
+			Value: "true",
+		},
+		{
+			Name:  "working_dir",
+			Value: "/tmp",
+		},
+		{
+			Name:  "db_user",
+			Value: "admin",
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
+		},
+		{
+			Name:  "db_password",
+			Value: TEST_PASSWORD,
+		},
+		{
+			Name:  "database_names",
+			Value: mockDatabase.GetDBInstanceDatabaseNames(),
+		},
+	}
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Assert expected results
+	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
+		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
+	}
+
+	// Sort expected and retrieved action arguments
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
+
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests MongoDbProvisionRequestAppender() invalid case with additional arguments
+func TestMongoDbProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MONGODB)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"invalid-key": "invalid-value",
+	})
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Checks if error was returned
+	if err == nil {
+		t.Errorf("Should have errored. Expected: Setting configured action arguments failed! invalid-key is not an allowed additional argument, Got: %v", err)
+	}
+	// Checks if resultRequestIsNil
+	if resultRequest != nil {
+		t.Errorf("Should have errored. Expected: resultRequest to be nil, Got: %v", resultRequest)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests MySqlProvisionRequestAppender() valid case without additional arguments
+func TestMySqlProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MYSQL)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -389,21 +849,136 @@ func TestMySqlProvisionRequestAppender(t *testing.T) {
 			Name:  "database_names",
 			Value: mockDatabase.GetDBInstanceDatabaseNames(),
 		},
+		{
+			Name:  "auto_tune_staging_drive",
+			Value: "true",
+		},
 	}
 
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
 
 	// Call function being tested
-	resultRequest := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
 		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
 	}
 
-	if !reflect.DeepEqual(resultRequest.ActionArguments, expectedActionArgs) {
+	// Sort expected and retrieved action arguments
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
+
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests MySqlProvisionRequestAppender() valid case with additional arguments
+func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MYSQL)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"listener_port": "1111",
+	})
+
+	expectedActionArgs := []ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "1111",
+		},
+		{
+			Name:  "db_password",
+			Value: TEST_PASSWORD,
+		},
+		{
+			Name:  "database_names",
+			Value: mockDatabase.GetDBInstanceDatabaseNames(),
+		},
+		{
+			Name:  "auto_tune_staging_drive",
+			Value: "true",
+		},
+	}
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Assert expected results
+	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
+		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
+	}
+
+	// Sort expected and retrieved action arguments
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
+
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+}
+
+// Tests MySqlProvisionRequestAppender() invalid case with additional arguments
+func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MYSQL)
+	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+		"invalid-key": "invalid-value",
+	})
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+
+	// Checks if error was returned
+	if err == nil {
+		t.Errorf("Should have errored. Expected: Setting configured action arguments failed! invalid-key is not an allowed additional argument, Got: %v", err)
+	}
+	// Checks if resultRequestIsNil
+	if resultRequest != nil {
+		t.Errorf("Should have errored. Expected: resultRequest to be nil, Got: %v", resultRequest)
 	}
 
 	// Verify that the mock method was called with the expected arguments
@@ -461,6 +1036,7 @@ func TestGenerateProvisioningRequest_WithoutValidTMDetails_ReturnsError(t *testi
 		mockDatabase.On("GetDBInstanceType").Return("db_instance_type")
 		mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", tc.slaName)
 		mockDatabase.On("GetTMSchedule").Return(tc.tmSchedule, tc.tmScheduleErr)
+		mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, mockDatabase, reqData)
@@ -578,6 +1154,7 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 		mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", "SLA 1")
 		mockDatabase.On("GetTMSchedule").Return(Schedule{}, nil)
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
+		mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, &mockDatabase, reqData)
@@ -701,6 +1278,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetDBInstanceName").Return("db_instance_name")
 		mockDatabase.On("GetDBInstanceDescription").Return("db_instance_description")
 		mockDatabase.On("GetDBInstanceType").Return(instanceType)
+		mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
 		mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", "SLA 1")
 		mockDatabase.On("GetTMSchedule").Return(Schedule{}, nil)
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
@@ -708,6 +1286,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetNDBClusterId").Return(TEST_CLUSTER_ID)
 		mockDatabase.On("GetDBInstanceSize").Return(TEST_INSTANCE_SIZE)
 		mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
+		mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, &mockDatabase, tc.reqData)
@@ -717,4 +1296,14 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 			t.Fatalf("expected: %v, got: %v", tc.expectedError, err)
 		}
 	}
+}
+
+// Sorts want and got action args by name
+func sortWantAndGotActionArgsByName(wantActionArgs, gotActionArgs []ActionArgument) {
+	sort.Slice(wantActionArgs, func(i, j int) bool {
+		return wantActionArgs[i].Name < wantActionArgs[j].Name
+	})
+	sort.Slice(gotActionArgs, func(i, j int) bool {
+		return gotActionArgs[i].Name < gotActionArgs[j].Name
+	})
 }

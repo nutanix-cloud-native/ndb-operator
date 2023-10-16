@@ -19,9 +19,11 @@ package ndb_api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
+	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -62,6 +64,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		log.Error(err, "Error occurred while validating reqData", "reqData", reqData)
 		return
 	}
+
 	// Creating a provisioning request based on the database type
 	requestBody = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(database.GetDBInstanceType()),
@@ -104,13 +107,18 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 			},
 		},
 	}
+
 	// Appending request body based on database type
 	appender, err := GetDbProvRequestAppender(database.GetDBInstanceType())
 	if err != nil {
 		log.Error(err, "Error while appending provisioning request")
 		return
 	}
-	requestBody = appender.appendRequest(requestBody, database, reqData)
+
+	requestBody, err = appender.appendRequest(requestBody, database, reqData)
+	if err != nil {
+		log.Error(err, "Error while appending provisioning request")
+	}
 
 	log.Info("Database Provisioning", "requestBody", requestBody)
 	log.Info("Returning from ndb_api.GenerateProvisioningRequest", "database name", database.GetDBInstanceName(), "database type", database.GetDBInstanceType())
@@ -165,9 +173,43 @@ func validateReqData(ctx context.Context, databaseInstanceType string, reqData m
 	return
 }
 
+// Converts a map to an action arguments list
+func convertMapToActionArguments(myMap map[string]string) []ActionArgument {
+	actionArgs := []ActionArgument{}
+	for name, value := range myMap {
+		actionArgs = append(actionArgs, ActionArgument{Name: name, Value: value})
+	}
+	return actionArgs
+}
+
+// Overwrites and appends actionArguments from database.additionalArguments to actionArguments
+func setConfiguredActionArguments(database DatabaseInterface, actionArguments map[string]string) error {
+	errMsgRoot := "Setting configured action arguments failed"
+	if actionArguments == nil {
+		return fmt.Errorf("%s! Action arguments cannot be null.", errMsgRoot)
+	}
+
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(database.GetDBInstanceType())
+	if err != nil {
+		return fmt.Errorf("%s! %s.", errMsgRoot, err.Error())
+	}
+
+	for name, value := range database.GetDBInstanceAdditionalArguments() {
+		// Only configure correct actionArguments
+		isActionArgument, isPresent := allowedAdditionalArguments[name]
+		if !isPresent {
+			return fmt.Errorf("%s! %s is not an allowed additional argument.", errMsgRoot, name)
+		} else if isPresent && isActionArgument {
+			actionArguments[name] = value
+		}
+	}
+
+	return nil
+}
+
 // Appends request based on database type
 type DBProvisionRequestAppender interface {
-	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest
+	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error)
 }
 
 type MSSQLProvisionRequestAppender struct{}
@@ -178,189 +220,122 @@ type PostgresProvisionRequestAppender struct{}
 
 type MySqlProvisionRequestAppender struct{}
 
-func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	req.DatabaseName = string(database.GetDBInstanceDatabaseNames())
 	adminPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	profileMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
 	dbParamInstanceProfile := profileMap[common.PROFILE_TYPE_DATABASE_PARAMETER_INSTANCE]
 
-	actionArgs := []ActionArgument{
-		{
-			Name:  "working_dir",
-			Value: "C:\\temp",
-		},
-		{
-			Name:  "sql_user_name",
-			Value: "sa",
-		},
-		{
-			Name:  "authentication_mode",
-			Value: "windows",
-		},
-		{
-			Name:  "delete_vm_on_failure",
-			Value: "false",
-		},
-		{
-			Name:  "is_gmsa_sql_service_account",
-			Value: "false",
-		},
-		{
-			Name:  "provision_from_backup",
-			Value: "false",
-		},
-		{
-			Name:  "distribute_database_data",
-			Value: "true",
-		},
-		{
-			Name:  "retain_database_in_restoring_mode",
-			Value: "false",
-		},
-		{
-			Name:  "dbserver_name",
-			Value: database.GetDBInstanceName(),
-		},
-		{
-			Name:  "server_collation",
-			Value: "SQL_Latin1_General_CP1_CI_AS",
-		},
-		{
-			Name:  "database_collation",
-			Value: "SQL_Latin1_General_CP1_CI_AS",
-		},
-		{
-			Name:  "dbParameterProfileIdInstance",
-			Value: dbParamInstanceProfile.Id,
-		},
-		{
-			Name:  "vm_dbserver_admin_password",
-			Value: adminPassword,
-		},
+	// Default action arguments
+	actionArguments := map[string]string{
+		"working_dir":                       "C:\\temp",
+		"sql_user_name":                     "sa",
+		"authentication_mode":               "windows",
+		"delete_vm_on_failure":              "false",
+		"is_gmsa_sql_service_account":       "false",
+		"provision_from_backup":             "false",
+		"distribute_database_data":          "true",
+		"retain_database_in_restoring_mode": "false",
+		"dbserver_name":                     database.GetDBInstanceName(),
+		"server_collation":                  "SQL_Latin1_General_CP1_CI_AS",
+		"database_collation":                "SQL_Latin1_General_CP1_CI_AS",
+		"dbParameterProfileIdInstance":      dbParamInstanceProfile.Id,
+		"vm_dbserver_admin_password":        adminPassword,
 	}
 
-	req.ActionArguments = append(req.ActionArguments, actionArgs...)
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
 
-	return req
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
 }
 
-func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
-
 	req.SSHPublicKey = SSHPublicKey
-	actionArgs := []ActionArgument{
-		{
-			Name:  "listener_port",
-			Value: "27017",
-		},
-		{
-			Name:  "log_size",
-			Value: "100",
-		},
-		{
-			Name:  "journal_size",
-			Value: "100",
-		},
-		{
-			Name:  "restart_mongod",
-			Value: "true",
-		},
-		{
-			Name:  "working_dir",
-			Value: "/tmp",
-		},
-		{
-			Name:  "db_user",
-			Value: "admin",
-		},
-		{
-			Name:  "backup_policy",
-			Value: "primary_only",
-		},
-		{
-			Name:  "db_password",
-			Value: dbPassword,
-		},
-		{
-			Name:  "database_names",
-			Value: databaseNames,
-		},
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		"listener_port":  "27017",
+		"log_size":       "100",
+		"journal_size":   "100",
+		"restart_mongod": "true",
+		"working_dir":    "/tmp",
+		"db_user":        "admin",
+		"backup_policy":  "primary_only",
+		"db_password":    dbPassword,
+		"database_names": databaseNames,
 	}
 
-	req.ActionArguments = append(req.ActionArguments, actionArgs...)
-	return req
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
 }
 
-func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
-
 	req.SSHPublicKey = SSHPublicKey
-	actionArgs := []ActionArgument{
-		{
-			Name:  "proxy_read_port",
-			Value: "5001",
-		},
-		{
-			Name:  "listener_port",
-			Value: "5432",
-		},
-		{
-			Name:  "proxy_write_port",
-			Value: "5000",
-		},
-		{
-			Name:  "enable_synchronous_mode",
-			Value: "false",
-		},
-		{
-			Name:  "auto_tune_staging_drive",
-			Value: "true",
-		},
-		{
-			Name:  "backup_policy",
-			Value: "primary_only",
-		},
-		{
-			Name:  "db_password",
-			Value: dbPassword,
-		},
-		{
-			Name:  "database_names",
-			Value: databaseNames,
-		},
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		"proxy_read_port":         "5001",
+		"listener_port":           "5432",
+		"proxy_write_port":        "5000",
+		"enable_synchronous_mode": "false",
+		"auto_tune_staging_drive": "true",
+		"backup_policy":           "primary_only",
+		"db_password":             dbPassword,
+		"database_names":          databaseNames,
 	}
 
-	req.ActionArguments = append(req.ActionArguments, actionArgs...)
-	return req
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
 }
 
-func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) *DatabaseProvisionRequest {
+func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetDBInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
-
 	req.SSHPublicKey = SSHPublicKey
-	actionArgs := []ActionArgument{
-		{
-			Name:  "listener_port",
-			Value: "3306",
-		},
-		{
-			Name:  "db_password",
-			Value: dbPassword,
-		},
-		{
-			Name:  "database_names",
-			Value: databaseNames,
-		},
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		"listener_port":           "3306",
+		"db_password":             dbPassword,
+		"database_names":          databaseNames,
+		"auto_tune_staging_drive": "true",
 	}
 
-	req.ActionArguments = append(req.ActionArguments, actionArgs...)
-	return req
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
 }
 
 // Get specific implementation of the DBProvisionRequestAppender interface based on the provided databaseType
@@ -375,7 +350,8 @@ func GetDbProvRequestAppender(databaseType string) (requestAppender DBProvisionR
 	case common.DATABASE_TYPE_MSSQL:
 		requestAppender = &MSSQLProvisionRequestAppender{}
 	default:
-		return nil, errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb")
+		return nil, errors.New(fmt.Sprintf("invalid database type: supported values: %s", common.DATABASE_TYPES))
 	}
+
 	return
 }
