@@ -87,8 +87,12 @@ type ActionArgument struct {
 }
 
 type Node struct {
-	Properties []string `json:"properties"`
-	VmName     string   `json:"vmName"`
+	VmName              string   `json:"vmName"`
+	ComputeProfileId    string   `json:"computeProfileId,omitempty"`
+	NetworkProfileId    string   `json:"networkProfileId,omitempty"`
+	NewDbServerTimeZone string   `json:"newDbServerTimeZone,omitempty"`
+	NxClusterId         string   `json:"nxClusterId,omitempty"`
+	Properties          []string `json:"properties"`
 }
 
 type Property struct {

@@ -20,6 +20,11 @@ import (
 	"context"
 )
 
+// External Interfaces
+// Used by other packages that make use of the ndb_api package
+// Implementations defined in the packages that use this package
+// For example - controller_adapters
+
 type ProfileResolver interface {
 	Resolve(ctx context.Context, allProfiles []ProfileResponse, filter func(p ProfileResponse) bool) (profile ProfileResponse, err error)
 	GetName() string
@@ -45,3 +50,25 @@ type DatabaseInterface interface {
 	GetCloneSnapshotId() string
 	GetAdditionalArguments() map[string]string
 }
+
+// Internal Interfaces
+// Used internally within the ndb_api package
+
+type RequestAppender interface {
+	// Function to add additional arguments to the Provisioning request
+	appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error)
+	// Function to add additional arguments to the Cloning request
+	appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error)
+}
+
+// Implements RequestAppender
+type MSSQLRequestAppender struct{}
+
+// Implements RequestAppender
+type MongoDbRequestAppender struct{}
+
+// Implements RequestAppender
+type PostgresRequestAppender struct{}
+
+// Implements RequestAppender
+type MySqlRequestAppender struct{}

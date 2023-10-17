@@ -89,16 +89,16 @@ func TestGetRequestAppenderByType(t *testing.T) {
 		expected     interface{}
 	}{
 		{databaseType: common.DATABASE_TYPE_POSTGRES,
-			expected: &PostgresProvisionRequestAppender{},
+			expected: &PostgresRequestAppender{},
 		},
 		{databaseType: common.DATABASE_TYPE_MYSQL,
-			expected: &MySqlProvisionRequestAppender{},
+			expected: &MySqlRequestAppender{},
 		},
 		{databaseType: common.DATABASE_TYPE_MSSQL,
-			expected: &MSSQLProvisionRequestAppender{},
+			expected: &MSSQLRequestAppender{},
 		},
 		{databaseType: common.DATABASE_TYPE_MONGODB,
-			expected: &MongoDbProvisionRequestAppender{},
+			expected: &MongoDbRequestAppender{},
 		},
 		{databaseType: "test",
 			expected: nil,
@@ -106,7 +106,7 @@ func TestGetRequestAppenderByType(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got, _ := GetDbProvRequestAppender(tc.databaseType)
+		got, _ := GetRequestAppender(tc.databaseType)
 		if !reflect.DeepEqual(tc.expected, got) {
 			t.Fatalf("expected: %v, got: %v", tc.expected, got)
 		}
@@ -166,10 +166,10 @@ func TestPostgresProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *test
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_POSTGRES)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
 		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
@@ -183,7 +183,7 @@ func TestPostgresProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *test
 		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
 	}
 
-	// Checks requestAppender.appendRequest return type has no error and resultRequest.ActionArguments correctly configured
+	// Checks requestAppender.appendProvisioningRequest return type has no error and resultRequest.ActionArguments correctly configured
 	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
 		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
 	}
@@ -247,10 +247,10 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_POSTGRES)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -293,10 +293,10 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testi
 	})
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_POSTGRES)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 
 	// Checks if error was returned
 	if err == nil {
@@ -399,10 +399,10 @@ func TestMSSQLProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MSSQL)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.DatabaseName != mockDatabase.GetInstanceDatabaseNames() {
@@ -530,10 +530,10 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MSSQL)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.DatabaseName != mockDatabase.GetInstanceDatabaseNames() {
@@ -592,10 +592,10 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.
 	})
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MSSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MSSQL)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 
 	// Checks if error was returned
 	if err == nil {
@@ -668,10 +668,10 @@ func TestMongoDbProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testi
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -755,10 +755,10 @@ func TestMongoDbProvisionRequestAppenderWithActionArgumentsValid(t *testing.T) {
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -801,10 +801,10 @@ func TestMongoDbProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testin
 	})
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MONGODB)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 
 	// Checks if error was returned
 	if err == nil {
@@ -856,10 +856,10 @@ func TestMySqlProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -921,10 +921,10 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
 	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
@@ -967,10 +967,10 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.
 	})
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetDbProvRequestAppender(common.DATABASE_TYPE_MYSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL)
 
 	// Call function being tested
-	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
 
 	// Checks if error was returned
 	if err == nil {

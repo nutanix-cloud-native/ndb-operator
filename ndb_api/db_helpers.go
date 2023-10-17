@@ -109,13 +109,13 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 	}
 
 	// Appending request body based on database type
-	appender, err := GetDbProvRequestAppender(database.GetInstanceType())
+	appender, err := GetRequestAppender(database.GetInstanceType())
 	if err != nil {
 		log.Error(err, "Error while appending provisioning request")
 		return
 	}
 
-	requestBody, err = appender.appendRequest(requestBody, database, reqData)
+	requestBody, err = appender.appendProvisioningRequest(requestBody, database, reqData)
 	if err != nil {
 		log.Error(err, "Error while appending provisioning request")
 	}
@@ -207,20 +207,7 @@ func setConfiguredActionArguments(database DatabaseInterface, actionArguments ma
 	return nil
 }
 
-// Appends request based on database type
-type DBProvisionRequestAppender interface {
-	appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error)
-}
-
-type MSSQLProvisionRequestAppender struct{}
-
-type MongoDbProvisionRequestAppender struct{}
-
-type PostgresProvisionRequestAppender struct{}
-
-type MySqlProvisionRequestAppender struct{}
-
-func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
+func (a *MSSQLRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	req.DatabaseName = string(database.GetInstanceDatabaseNames())
 	adminPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	profileMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
@@ -254,7 +241,7 @@ func (a *MSSQLProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 	return req, nil
 }
 
-func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
+func (a *MongoDbRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
@@ -284,7 +271,7 @@ func (a *MongoDbProvisionRequestAppender) appendRequest(req *DatabaseProvisionRe
 	return req, nil
 }
 
-func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
+func (a *PostgresRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
@@ -313,7 +300,7 @@ func (a *PostgresProvisionRequestAppender) appendRequest(req *DatabaseProvisionR
 	return req, nil
 }
 
-func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
+func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
@@ -336,22 +323,4 @@ func (a *MySqlProvisionRequestAppender) appendRequest(req *DatabaseProvisionRequ
 	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
 	return req, nil
-}
-
-// Get specific implementation of the DBProvisionRequestAppender interface based on the provided databaseType
-func GetDbProvRequestAppender(databaseType string) (requestAppender DBProvisionRequestAppender, err error) {
-	switch databaseType {
-	case common.DATABASE_TYPE_MYSQL:
-		requestAppender = &MySqlProvisionRequestAppender{}
-	case common.DATABASE_TYPE_POSTGRES:
-		requestAppender = &PostgresProvisionRequestAppender{}
-	case common.DATABASE_TYPE_MONGODB:
-		requestAppender = &MongoDbProvisionRequestAppender{}
-	case common.DATABASE_TYPE_MSSQL:
-		requestAppender = &MSSQLProvisionRequestAppender{}
-	default:
-		return nil, fmt.Errorf("invalid database type: supported values: %s", common.DATABASE_TYPES)
-	}
-
-	return
 }
