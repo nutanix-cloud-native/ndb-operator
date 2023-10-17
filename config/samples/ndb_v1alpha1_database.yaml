@@ -6,7 +6,7 @@ spec:
   ndbRef: "Name of the NDBServer Resource"
   databaseInstance:
     clusterId: "Nutanix Cluster Id"
-    databaseInstanceName: "Database Instance Name"
+    Name: "Database Instance Name"
     description: "Database Description"
     databaseNames:
       - database_one

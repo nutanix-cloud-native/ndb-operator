@@ -149,7 +149,7 @@ var _ = Describe("Webhook Tests", func() {
 			},
 			Spec: DatabaseSpec{
 				NDBRef: "ndbRef",
-				Instance: Instance{
+				Instance: &Instance{
 					CredentialSecret: "db-instance-secret",
 					Size:             10,
 					TimeZone:         "UTC",
@@ -171,12 +171,12 @@ var _ = Describe("Webhook Tests", func() {
 			},
 			Spec: DatabaseSpec{
 				NDBRef: "ndbRef",
-				Instance: Instance{
-					CredentialSecret:     "db-instance-secret",
-					DatabaseInstanceName: "db-instance-name",
-					Type:                 "postgres",
-					Size:                 10,
-					TimeZone:             "UTC",
+				Instance: &Instance{
+					CredentialSecret: "db-instance-secret",
+					Name:             "db-instance-name",
+					Type:             "postgres",
+					Size:             10,
+					TimeZone:         "UTC",
 				},
 			},
 		}
@@ -194,11 +194,11 @@ var _ = Describe("Webhook Tests", func() {
 			},
 			Spec: DatabaseSpec{
 				NDBRef: "ndbRef",
-				Instance: Instance{
-					DatabaseInstanceName: "db-instance-name",
-					Size:                 10,
-					TimeZone:             "UTC",
-					Type:                 common.DATABASE_TYPE_POSTGRES,
+				Instance: &Instance{
+					Name:     "db-instance-name",
+					Size:     10,
+					TimeZone: "UTC",
+					Type:     common.DATABASE_TYPE_POSTGRES,
 				},
 			},
 		}
@@ -216,12 +216,12 @@ var _ = Describe("Webhook Tests", func() {
 			},
 			Spec: DatabaseSpec{
 				NDBRef: "ndbRef",
-				Instance: Instance{
-					DatabaseInstanceName: "db-instance-name",
-					CredentialSecret:     "db-instance-secret",
-					Size:                 1,
-					TimeZone:             "UTC",
-					Type:                 common.DATABASE_TYPE_POSTGRES,
+				Instance: &Instance{
+					Name:             "db-instance-name",
+					CredentialSecret: "db-instance-secret",
+					Size:             1,
+					TimeZone:         "UTC",
+					Type:             common.DATABASE_TYPE_POSTGRES,
 				},
 			},
 		}
@@ -239,10 +239,10 @@ var _ = Describe("Webhook Tests", func() {
 			},
 			Spec: DatabaseSpec{
 				NDBRef: "ndbRef",
-				Instance: Instance{
-					DatabaseInstanceName: "db-instance-name",
-					CredentialSecret:     "db-instance-secret",
-					Size:                 10,
+				Instance: &Instance{
+					Name:             "db-instance-name",
+					CredentialSecret: "db-instance-secret",
+					Size:             10,
 				},
 			},
 		}
@@ -298,7 +298,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments validation for database type: %s failed!", common.DATABASE_TYPE_MYSQL)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("additional arguments validation for database type: %s failed!", common.DATABASE_TYPE_MYSQL)))
 		})
 	})
 
@@ -327,7 +327,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments validation for database type: %s failed!", common.DATABASE_TYPE_POSTGRES)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("additional arguments validation for database type: %s failed!", common.DATABASE_TYPE_POSTGRES)))
 		})
 	})
 
@@ -359,7 +359,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments validation for database type: %s failed!", common.DATABASE_TYPE_MONGODB)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("additional arguments validation for database type: %s failed!", common.DATABASE_TYPE_MONGODB)))
 		})
 	})
 
@@ -395,7 +395,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("Additional Arguments validation for database type: %s failed!", common.DATABASE_TYPE_MSSQL)))
+			Expect(errMsg).To(ContainSubstring(fmt.Sprintf("additional arguments validation for database type: %s failed!", common.DATABASE_TYPE_MSSQL)))
 		})
 	})
 })
@@ -409,12 +409,12 @@ func createDbWithType(db string, dbType string) *Database {
 		},
 		Spec: DatabaseSpec{
 			NDBRef: "ndbRef",
-			Instance: Instance{
-				DatabaseInstanceName: "db-instance-name",
-				ClusterId:            "27bcce67-7b83-42c2-a3fe-88154425c170",
-				CredentialSecret:     "db-instance-secret",
-				Size:                 10,
-				Type:                 dbType,
+			Instance: &Instance{
+				Name:             "db-instance-name",
+				ClusterId:        "27bcce67-7b83-42c2-a3fe-88154425c170",
+				CredentialSecret: "db-instance-secret",
+				Size:             10,
+				Type:             dbType,
 			},
 		},
 	}
@@ -429,13 +429,13 @@ func createDbWithAdditionalArguments(db string, dbType string, additionalArgumen
 		},
 		Spec: DatabaseSpec{
 			NDBRef: "ndbRef",
-			Instance: Instance{
-				DatabaseInstanceName: "db-instance-name",
-				ClusterId:            "27bcce67-7b83-42c2-a3fe-88154425c170",
-				CredentialSecret:     "db-instance-secret",
-				Size:                 10,
-				Type:                 dbType,
-				AdditionalArguments:  additionalArguments,
+			Instance: &Instance{
+				Name:                "db-instance-name",
+				ClusterId:           "27bcce67-7b83-42c2-a3fe-88154425c170",
+				CredentialSecret:    "db-instance-secret",
+				Size:                10,
+				Type:                dbType,
+				AdditionalArguments: additionalArguments,
 			},
 		},
 	}

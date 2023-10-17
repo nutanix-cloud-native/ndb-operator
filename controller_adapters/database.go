@@ -44,7 +44,7 @@ type Database struct {
 }
 
 func (d *Database) GetDBInstanceName() string {
-	return d.Spec.Instance.DatabaseInstanceName
+	return d.Spec.Instance.Name
 }
 
 // Returns database description. If description is empty, creates a description

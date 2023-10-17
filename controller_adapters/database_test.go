@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Tests that GetDBInstanceName() retrieves DatabaseInstanceName correctly
+// Tests that GetDBInstanceName() retrieves Name correctly
 func TestDatabase_GetDBInstanceName(t *testing.T) {
 
 	tests := []struct {
@@ -38,8 +38,8 @@ func TestDatabase_GetDBInstanceName(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-instance-name",
+						Instance: &v1alpha1.Instance{
+							Name: "test-instance-name",
 						},
 					},
 				},
@@ -73,7 +73,7 @@ func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
+						Instance: &v1alpha1.Instance{
 							Description: "test-description",
 						},
 					},
@@ -86,9 +86,9 @@ func TestDatabase_GetDBInstanceDescription(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-instance-name",
-							Description:          "",
+						Instance: &v1alpha1.Instance{
+							Name:        "test-instance-name",
+							Description: "",
 						},
 					},
 				},
@@ -114,7 +114,7 @@ func TestDatabase_GetDBInstanceType(t *testing.T) {
 	database := Database{
 		Database: v1alpha1.Database{
 			Spec: v1alpha1.DatabaseSpec{
-				Instance: v1alpha1.Instance{
+				Instance: &v1alpha1.Instance{
 					Type: "test-type",
 				},
 			},
@@ -138,7 +138,7 @@ func TestDatabase_GetDBInstanceAdditionalArguments(t *testing.T) {
 	database := Database{
 		Database: v1alpha1.Database{
 			Spec: v1alpha1.DatabaseSpec{
-				Instance: v1alpha1.Instance{
+				Instance: &v1alpha1.Instance{
 					AdditionalArguments: map[string]string{
 						"valid_key": "valid_value",
 					},
@@ -166,7 +166,7 @@ func TestDatabase_GetDBInstanceDatabaseNames(t *testing.T) {
 	database := Database{
 		Database: v1alpha1.Database{
 			Spec: v1alpha1.DatabaseSpec{
-				Instance: v1alpha1.Instance{
+				Instance: &v1alpha1.Instance{
 					DatabaseNames: []string{"database_one", "database_two", "database_three"},
 				},
 			},
@@ -190,7 +190,7 @@ func TestDatabase_GetDBInstanceTimeZone(t *testing.T) {
 	database := Database{
 		Database: v1alpha1.Database{
 			Spec: v1alpha1.DatabaseSpec{
-				Instance: v1alpha1.Instance{
+				Instance: &v1alpha1.Instance{
 					TimeZone: "UTC",
 				},
 			},
@@ -214,7 +214,7 @@ func TestDatabase_GetDBInstanceSize(t *testing.T) {
 	database := Database{
 		Database: v1alpha1.Database{
 			Spec: v1alpha1.DatabaseSpec{
-				Instance: v1alpha1.Instance{
+				Instance: &v1alpha1.Instance{
 					Size: 10,
 				},
 			},
@@ -238,7 +238,7 @@ func TestDatabase_GetNDBClusterId(t *testing.T) {
 	database := Database{
 		Database: v1alpha1.Database{
 			Spec: v1alpha1.DatabaseSpec{
-				Instance: v1alpha1.Instance{
+				Instance: &v1alpha1.Instance{
 					ClusterId: "test-cluster-id",
 				},
 			},
@@ -274,7 +274,7 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
+						Instance: &v1alpha1.Instance{
 							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
@@ -295,7 +295,7 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
+						Instance: &v1alpha1.Instance{
 							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "xy-34-56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
@@ -309,7 +309,7 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
+						Instance: &v1alpha1.Instance{
 							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "12:xy:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
@@ -323,7 +323,7 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
+						Instance: &v1alpha1.Instance{
 							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "12:34:xy", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
@@ -337,7 +337,7 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
+						Instance: &v1alpha1.Instance{
 							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "a:b:c", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
@@ -351,7 +351,7 @@ func TestDatabase_GetTMSchedule(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
+						Instance: &v1alpha1.Instance{
 							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "tm-name", Description: "tm-description", SLAName: "sla-name", DailySnapshotTime: "1:2", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
@@ -395,9 +395,9 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-database",
-							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
+						Instance: &v1alpha1.Instance{
+							Name:   "test-database",
+							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
 				},
@@ -411,9 +411,9 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-database",
-							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "test-name", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
+						Instance: &v1alpha1.Instance{
+							Name:   "test-database",
+							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "test-name", Description: "", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
 				},
@@ -427,9 +427,9 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-database",
-							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "", Description: "test-description", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
+						Instance: &v1alpha1.Instance{
+							Name:   "test-database",
+							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "", Description: "test-description", SLAName: "", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
 				},
@@ -443,9 +443,9 @@ func TestDatabase_GetTMDetails(t *testing.T) {
 			database: Database{
 				Database: v1alpha1.Database{
 					Spec: v1alpha1.DatabaseSpec{
-						Instance: v1alpha1.Instance{
-							DatabaseInstanceName: "test-database",
-							TMInfo:               &v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "test-sla", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
+						Instance: &v1alpha1.Instance{
+							Name:   "test-database",
+							TMInfo: &v1alpha1.DBTimeMachineInfo{Name: "", Description: "", SLAName: "test-sla", DailySnapshotTime: "12:34:56", SnapshotsPerDay: 1, LogCatchUpFrequency: 30, WeeklySnapshotDay: "FRIDAY", MonthlySnapshotDay: 15, QuarterlySnapshotMonth: "Jan"},
 						},
 					},
 				},

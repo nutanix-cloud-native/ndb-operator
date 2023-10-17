@@ -49,7 +49,7 @@ var _ webhook.Defaulter = &Database{}
 func instanceSpecDefaulterForCreate(instance *Instance) {
 
 	if instance.Description == "" {
-		instance.Description = "Database provisioned by ndb-operator: " + instance.DatabaseInstanceName
+		instance.Description = "Database provisioned by ndb-operator: " + instance.Name
 	}
 
 	if len(instance.DatabaseNames) == 0 {
@@ -117,7 +117,13 @@ func instanceSpecDefaulterForCreate(instance *Instance) {
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Database) Default() {
 	databaselog.Info("Entering Defaulter logic...")
-	instanceSpecDefaulterForCreate(&r.Spec.Instance)
+	instanceSpecDefaulterForCreate(r.Spec.Instance)
+	if r.Spec.Clone == nil {
+		r.Spec.Clone = &Clone{
+			Profiles:            &Profiles{},
+			AdditionalArguments: map[string]string{},
+		}
+	}
 	databaselog.Info("Exiting Defaulter logic...")
 }
 
@@ -132,8 +138,8 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 	databaselog.Info("Logging the Instance details inside validator method", "databaseInstance", instance)
 
 	// need to assert using a regex
-	if instance.DatabaseInstanceName == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified"))
+	if instance.Name == "" {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("name"), instance.Name, "A valid Database Instance Name must be specified"))
 	}
 
 	if instance.ClusterId == "" {
@@ -218,7 +224,7 @@ func additionalArgumentsValidationCheck(dbType string, specifiedAdditionalArgume
 
 	// Checking if arguments are valid
 	invalidArgs := []string{}
-	for name, _ := range specifiedAdditionalArguments {
+	for name := range specifiedAdditionalArguments {
 		if _, isPresent := allowedAdditionalArguments[name]; !isPresent {
 			invalidArgs = append(invalidArgs, name)
 		}
@@ -228,7 +234,7 @@ func additionalArgumentsValidationCheck(dbType string, specifiedAdditionalArgume
 		return nil
 	} else {
 		return fmt.Errorf(
-			"Additional Arguments validation for database type: %s failed! The following args are invalid: %s. These are the allowed args: %s",
+			"additional arguments validation for database type: %s failed! The following args are invalid: %s. These are the allowed args: %s",
 			dbType,
 			strings.Join(invalidArgs, ", "),
 			reflect.ValueOf(allowedAdditionalArguments).MapKeys())
@@ -239,7 +245,7 @@ func additionalArgumentsValidationCheck(dbType string, specifiedAdditionalArgume
 func (r *Database) ValidateCreate() (admission.Warnings, error) {
 	databaselog.Info("Entering ValidateCreate...")
 
-	dbSpecErrors := instanceSpecValidatorForCreate(&r.Spec.Instance, field.ErrorList{}, field.NewPath("spec").Child("databaseInstance"))
+	dbSpecErrors := instanceSpecValidatorForCreate(r.Spec.Instance, field.ErrorList{}, field.NewPath("spec").Child("databaseInstance"))
 
 	combined_err := util.CombineFieldErrors(dbSpecErrors)
 

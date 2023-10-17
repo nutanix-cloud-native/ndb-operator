@@ -113,7 +113,7 @@ spec:
     # Can be fetched from the GET /clusters endpoint
     clusterId: "Nutanix Cluster Id"
     # The database instance name on NDB
-    databaseInstanceName: "Database-Instance-Name"
+    Name: "Database-Instance-Name"
     # The description of the database instance
     description: Database Description
     # Names of the databases on that instance
