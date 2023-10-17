@@ -29,15 +29,19 @@ type ProfileResolver interface {
 type ProfileResolvers map[string]ProfileResolver
 
 type DatabaseInterface interface {
-	GetDBInstanceName() string
-	GetDBInstanceDescription() string
-	GetDBInstanceType() string
-	GetDBInstanceDatabaseNames() string
-	GetDBInstanceTimeZone() string
-	GetDBInstanceSize() int
-	GetNDBClusterId() string
+	IsClone() bool
+	GetName() string
+	GetDescription() string
+	GetClusterId() string
 	GetProfileResolvers() ProfileResolvers
-	GetTMDetails() (string, string, string)
-	GetTMSchedule() (Schedule, error)
-	GetDBInstanceAdditionalArguments() map[string]string
+	GetCredentialSecret() string
+	GetTimeZone() string
+	GetInstanceType() string
+	GetInstanceDatabaseNames() string
+	GetInstanceSize() int
+	GetInstanceTMDetails() (string, string, string)
+	GetInstanceTMSchedule() (Schedule, error)
+	GetCloneSourceDBId() string
+	GetCloneSnapshotId() string
+	GetAdditionalArguments() map[string]string
 }

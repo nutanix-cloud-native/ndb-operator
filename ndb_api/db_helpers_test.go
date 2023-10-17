@@ -126,9 +126,9 @@ func TestPostgresProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *test
 	}
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -189,7 +189,7 @@ func TestPostgresProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *test
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
 // Tests PostgresProvisionRequestAppender() valid case with additional arguments
@@ -205,9 +205,9 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing
 	}
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"listener_port": "0000",
 	})
 
@@ -270,7 +270,7 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
 // Tests PostgresProvisionRequestAppender() invalid case with additional arguments
@@ -286,9 +286,9 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testi
 	}
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"invalid-key": "invalid-value",
 	})
 
@@ -308,7 +308,7 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testi
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
 // Tests MSSQLProvisionRequestAppender() valid case without additional arguments
@@ -338,10 +338,10 @@ func TestMSSQLProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 	adminPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceName").Return("testInstance")
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MSSQL)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetName").Return("testInstance")
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MSSQL)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -378,7 +378,7 @@ func TestMSSQLProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 		},
 		{
 			Name:  "dbserver_name",
-			Value: mockDatabase.GetDBInstanceName(),
+			Value: mockDatabase.GetName(),
 		},
 		{
 			Name:  "server_collation",
@@ -405,8 +405,8 @@ func TestMSSQLProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
-	if resultRequest.DatabaseName != mockDatabase.GetDBInstanceDatabaseNames() {
-		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetDBInstanceDatabaseNames(), resultRequest.DatabaseName)
+	if resultRequest.DatabaseName != mockDatabase.GetInstanceDatabaseNames() {
+		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetInstanceDatabaseNames(), resultRequest.DatabaseName)
 	}
 
 	// Sort expected and retrieved action arguments
@@ -422,7 +422,7 @@ func TestMSSQLProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
 // Tests MSSQLProvisionRequestAppender() valid case with additional arguments
@@ -451,10 +451,10 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 		common.PROFILE_MAP_PARAM:  profileMap}
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceName").Return("testInstance")
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MSSQL)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetName").Return("testInstance")
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MSSQL)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"sql_user_name":             "admin",
 		"sql_user_password":         TEST_PASSWORD,
 		"authentication_mode":       "mixed",
@@ -509,7 +509,7 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 		},
 		{
 			Name:  "dbserver_name",
-			Value: mockDatabase.GetDBInstanceName(),
+			Value: mockDatabase.GetName(),
 		},
 		{
 			Name:  "server_collation",
@@ -536,8 +536,8 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 	resultRequest, err := requestAppender.appendRequest(baseRequest, mockDatabase, reqData)
 
 	// Assert expected results
-	if resultRequest.DatabaseName != mockDatabase.GetDBInstanceDatabaseNames() {
-		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetDBInstanceDatabaseNames(), resultRequest.DatabaseName)
+	if resultRequest.DatabaseName != mockDatabase.GetInstanceDatabaseNames() {
+		t.Errorf("Unexpected Database Name. Expected: %s, Got: %s", mockDatabase.GetInstanceDatabaseNames(), resultRequest.DatabaseName)
 	}
 
 	// Sort expected and retrieved action arguments
@@ -553,7 +553,7 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 
 }
 
@@ -583,10 +583,10 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.
 		common.PROFILE_MAP_PARAM:  profileMap}
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceName").Return("testInstance")
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MSSQL)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetName").Return("testInstance")
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MSSQL)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"invalid-key":  "invalid-value",
 		"invalid-key2": "invalid-value",
 	})
@@ -607,7 +607,7 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 
 }
 
@@ -624,9 +624,9 @@ func TestMongoDbProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testi
 	}
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MONGODB)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MONGODB)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -663,7 +663,7 @@ func TestMongoDbProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testi
 		},
 		{
 			Name:  "database_names",
-			Value: mockDatabase.GetDBInstanceDatabaseNames(),
+			Value: mockDatabase.GetInstanceDatabaseNames(),
 		},
 	}
 
@@ -691,7 +691,7 @@ func TestMongoDbProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testi
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
 // Tests MongoDbProvisionRequestAppender() valid case with additional arguments
@@ -707,9 +707,9 @@ func TestMongoDbProvisionRequestAppenderWithActionArgumentsValid(t *testing.T) {
 	}
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MONGODB)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MONGODB)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"listener_port": "1111",
 		"log_size":      "1",
 		"journal_size":  "1",
@@ -750,7 +750,7 @@ func TestMongoDbProvisionRequestAppenderWithActionArgumentsValid(t *testing.T) {
 		},
 		{
 			Name:  "database_names",
-			Value: mockDatabase.GetDBInstanceDatabaseNames(),
+			Value: mockDatabase.GetInstanceDatabaseNames(),
 		},
 	}
 
@@ -778,7 +778,7 @@ func TestMongoDbProvisionRequestAppenderWithActionArgumentsValid(t *testing.T) {
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
 // Tests MongoDbProvisionRequestAppender() invalid case with additional arguments
@@ -794,9 +794,9 @@ func TestMongoDbProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testin
 	}
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MONGODB)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MONGODB)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"invalid-key": "invalid-value",
 	})
 
@@ -816,7 +816,7 @@ func TestMongoDbProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testin
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
 // Tests MySqlProvisionRequestAppender() valid case without additional arguments
@@ -832,9 +832,9 @@ func TestMySqlProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 	}
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MYSQL)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MYSQL)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -847,7 +847,7 @@ func TestMySqlProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 		},
 		{
 			Name:  "database_names",
-			Value: mockDatabase.GetDBInstanceDatabaseNames(),
+			Value: mockDatabase.GetInstanceDatabaseNames(),
 		},
 		{
 			Name:  "auto_tune_staging_drive",
@@ -879,7 +879,7 @@ func TestMySqlProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
 // Tests MySqlProvisionRequestAppender() valid case with additional arguments
@@ -895,9 +895,9 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 	}
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MYSQL)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MYSQL)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"listener_port": "1111",
 	})
 
@@ -912,7 +912,7 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 		},
 		{
 			Name:  "database_names",
-			Value: mockDatabase.GetDBInstanceDatabaseNames(),
+			Value: mockDatabase.GetInstanceDatabaseNames(),
 		},
 		{
 			Name:  "auto_tune_staging_drive",
@@ -944,7 +944,7 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
 // Tests MySqlProvisionRequestAppender() invalid case with additional arguments
@@ -960,9 +960,9 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.
 	}
 
 	// Mock required Mock Database Interface methods
-	mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-	mockDatabase.On("GetDBInstanceType").Return(common.DATABASE_TYPE_MYSQL)
-	mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MYSQL)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"invalid-key": "invalid-value",
 	})
 
@@ -982,7 +982,7 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.
 	}
 
 	// Verify that the mock method was called with the expected arguments
-	mockDatabase.AssertCalled(t, "GetDBInstanceDatabaseNames")
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 
 }
 
@@ -1032,11 +1032,11 @@ func TestGenerateProvisioningRequest_WithoutValidTMDetails_ReturnsError(t *testi
 
 	for _, tc := range tests {
 		mockDatabase := &MockDatabaseInterface{}
-		mockDatabase.On("GetDBInstanceName").Return("db_instance_name")
-		mockDatabase.On("GetDBInstanceType").Return("db_instance_type")
-		mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", tc.slaName)
-		mockDatabase.On("GetTMSchedule").Return(tc.tmSchedule, tc.tmScheduleErr)
-		mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("GetName").Return("db_instance_name")
+		mockDatabase.On("GetInstanceType").Return("db_instance_type")
+		mockDatabase.On("GetInstanceTMDetails").Return("tm_name", "rm_description", tc.slaName)
+		mockDatabase.On("GetInstanceTMSchedule").Return(tc.tmSchedule, tc.tmScheduleErr)
+		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, mockDatabase, reqData)
@@ -1149,12 +1149,12 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 		}
 
 		mockDatabase := MockDatabaseInterface{}
-		mockDatabase.On("GetDBInstanceName").Return("db_instance_name")
-		mockDatabase.On("GetDBInstanceType").Return(instanceType)
-		mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", "SLA 1")
-		mockDatabase.On("GetTMSchedule").Return(Schedule{}, nil)
+		mockDatabase.On("GetName").Return("db_instance_name")
+		mockDatabase.On("GetInstanceType").Return(instanceType)
+		mockDatabase.On("GetInstanceTMDetails").Return("tm_name", "rm_description", "SLA 1")
+		mockDatabase.On("GetInstanceTMSchedule").Return(Schedule{}, nil)
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
-		mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, &mockDatabase, reqData)
@@ -1275,18 +1275,18 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		}
 
 		mockDatabase := MockDatabaseInterface{}
-		mockDatabase.On("GetDBInstanceName").Return("db_instance_name")
-		mockDatabase.On("GetDBInstanceDescription").Return("db_instance_description")
-		mockDatabase.On("GetDBInstanceType").Return(instanceType)
-		mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
-		mockDatabase.On("GetTMDetails").Return("tm_name", "rm_description", "SLA 1")
-		mockDatabase.On("GetTMSchedule").Return(Schedule{}, nil)
+		mockDatabase.On("GetName").Return("db_instance_name")
+		mockDatabase.On("GetDescription").Return("db_instance_description")
+		mockDatabase.On("GetInstanceType").Return(instanceType)
+		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("GetInstanceTMDetails").Return("tm_name", "rm_description", "SLA 1")
+		mockDatabase.On("GetInstanceTMSchedule").Return(Schedule{}, nil)
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
-		mockDatabase.On("GetDBInstanceTimeZone").Return(TEST_TIMEZONE)
-		mockDatabase.On("GetNDBClusterId").Return(TEST_CLUSTER_ID)
-		mockDatabase.On("GetDBInstanceSize").Return(TEST_INSTANCE_SIZE)
-		mockDatabase.On("GetDBInstanceDatabaseNames").Return(TEST_DB_NAMES)
-		mockDatabase.On("GetDBInstanceAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("GetTimeZone").Return(TEST_TIMEZONE)
+		mockDatabase.On("GetClusterId").Return(TEST_CLUSTER_ID)
+		mockDatabase.On("GetInstanceSize").Return(TEST_INSTANCE_SIZE)
+		mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, &mockDatabase, tc.reqData)
