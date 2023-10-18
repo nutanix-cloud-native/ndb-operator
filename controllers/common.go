@@ -30,15 +30,15 @@ import (
 )
 
 const (
+	EVENT_CREATION_STARTED   = "CreationStarted"
+	EVENT_CREATION_FAILED    = "CreationFailed"
+	EVENT_CREATION_COMPLETED = "CreationCompleted"
+
 	EVENT_INVALID_CREDENTIALS = "InvalidCredentials"
 
 	EVENT_REQUEST_GENERATION         = "RequestGenerated"
 	EVENT_REQUEST_GENERATION_FAILURE = "RequestGenerationFailed"
 	EVENT_NDB_REQUEST_FAILED         = "NDBRequestFailed"
-
-	EVENT_PROVISIONING_STARTED   = "ProvisioningStarted"
-	EVENT_PROVISIONING_FAILED    = "ProvisioningFailed"
-	EVENT_PROVISIONING_COMPLETED = "ProvisioningCompleted"
 
 	EVENT_DEPROVISIONING_STARTED   = "DeprovisioningStarted"
 	EVENT_DEPROVISIONING_FAILED    = "DeprovisioningFailed"

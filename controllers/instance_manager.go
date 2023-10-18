@@ -33,7 +33,8 @@ type CloneManager struct{}
 
 func (dm *DatabaseManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, namespace)
+	log.Info("Provisioning a database on NDB")
+	dbPassword, sshPublicKey, err := r.getDatabaseCredentials(ctx, database.Spec.Instance.CredentialSecret, namespace)
 	if err != nil || dbPassword == "" || sshPublicKey == "" {
 		var errStatement string
 		if err == nil {
@@ -82,8 +83,9 @@ func (dm *DatabaseManager) deleteVM() error {
 
 func (cm *CloneManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
+	log.Info("Cloning a database on NDB")
 	databaseAdapter := &controller_adapters.Database{Database: *database}
-	dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, databaseAdapter.GetCredentialSecret(), namespace)
+	dbPassword, sshPublicKey, err := r.getDatabaseCredentials(ctx, databaseAdapter.GetCredentialSecret(), namespace)
 	if err != nil || dbPassword == "" || sshPublicKey == "" {
 		var errStatement string
 		if err == nil {

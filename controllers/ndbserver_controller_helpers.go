@@ -23,11 +23,19 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 		return
 	}
 	databases = make([]ndbv1alpha1.NDBServerDatabaseInfo, len(dbs))
+	clones, err := ndb_api.GetAllClones(ctx, ndbClient)
+	if err != nil {
+		log.Error(err, "NDB API error while fetching clones")
+		return
+	}
+	dbs = append(dbs, clones...)
 	for i, db := range dbs {
 		databaseInfo := ndbv1alpha1.NDBServerDatabaseInfo{
-			Name:   db.Name,
-			Id:     db.Id,
-			Status: db.Status,
+			Name:          db.Name,
+			Id:            db.Id,
+			Status:        db.Status,
+			TimeMachineId: db.TimeMachineId,
+			Type:          db.Type,
 		}
 		if len(db.DatabaseNodes) > 0 {
 			databaseInfo.DBServerId = db.DatabaseNodes[0].DatabaseServerId

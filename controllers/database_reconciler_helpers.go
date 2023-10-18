@@ -24,7 +24,6 @@ import (
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
-	"github.com/nutanix-cloud-native/ndb-operator/controller_adapters"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	corev1 "k8s.io/api/core/v1"
@@ -71,7 +70,7 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Database CR is being deleted")
-	if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
+	if controllerutil.ContainsFinalizer(database, common.FINALIZER_INSTANCE) {
 		// Check if the deregistration operation id (database.Status.DeregistrationOperationId) is empty
 		// If so, then make a deprovisionDatabase API call to NDB
 		// else proceed check for the operation completion before removing finalizer.
@@ -105,19 +104,19 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 					r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
 				case ndb_api.OPERATION_STATUS_PASSED:
 					r.recorder.Eventf(database, "Normal", EVENT_DEPROVISIONING_COMPLETED, "Database deprovisioned from NDB.")
-					log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
-					controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_INSTANCE)
+					log.Info("Removing Finalizer " + common.FINALIZER_INSTANCE)
+					controllerutil.RemoveFinalizer(database, common.FINALIZER_INSTANCE)
 					if err := r.Update(ctx, database); err != nil {
 						return requeueOnErr(err)
 					}
-					log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_INSTANCE)
+					log.Info("Removed Finalizer " + common.FINALIZER_INSTANCE)
 				default:
 					// Do nothing, we do not care about other statuses
 				}
 			}
 		}
 
-	} else if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
+	} else if controllerutil.ContainsFinalizer(database, common.FINALIZER_VM) {
 		r.recorder.Eventf(database, "Normal", EVENT_DEPROVISIONING_STARTED, "Deprovisioning database server from NDB.")
 		databaseServerId := database.Status.DatabaseServerId
 		// Make a dbserver deprovisioning request to NDB only if the serverId is present in status
@@ -135,12 +134,12 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 			log.Info("Database server id was not found on the database CR, removing finalizers and deleting the CR.")
 		}
 		// remove our finalizer from the list and update it.
-		log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_SERVER)
-		controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_SERVER)
+		log.Info("Removing Finalizer " + common.FINALIZER_VM)
+		controllerutil.RemoveFinalizer(database, common.FINALIZER_VM)
 		if err := r.Update(ctx, database); err != nil {
 			return requeueOnErr(err)
 		}
-		log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_SERVER)
+		log.Info("Removed Finalizer " + common.FINALIZER_VM)
 		r.recorder.Event(database, "Normal", EVENT_CR_DELETED, "Database Custom Resource has been deleted from the k8s cluster")
 		return requeue()
 
@@ -163,57 +162,24 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 	databaseStatus := database.Status.DeepCopy()
 	databaseStatus.Type = database.Spec.Instance.Type
 
+	instanceManager := getInstanceManager(*database)
+
 	// Provision the database if it has not been provisioned earlier
 	if databaseStatus.Status == "" && databaseStatus.Id == "" {
 		// DB Status.Status is empty => Provision a DB
-		infoStatement := "Provisioning a database instance on NDB."
-		log.Info(infoStatement)
-
-		dbPassword, sshPublicKey, err := r.getDatabaseInstanceCredentials(ctx, database.Spec.Instance.CredentialSecret, req.Namespace)
-		if err != nil || dbPassword == "" || sshPublicKey == "" {
-			var errStatement string
-			if err == nil {
-				errStatement = "Database instance password and ssh key cannot be empty"
-				err = fmt.Errorf("empty DB instance credentials")
-			} else {
-				errStatement = "An error occured while fetching the DB Instance Secrets"
-			}
-			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", EVENT_INVALID_CREDENTIALS, "Error: %s", errStatement)
-			return requeueOnErr(err)
-		}
-
-		reqData := map[string]interface{}{
-			common.NDB_PARAM_PASSWORD:       dbPassword,
-			common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
-		}
-
-		databaseAdapter := &controller_adapters.Database{Database: *database}
-		generatedReq, err := ndb_api.GenerateProvisioningRequest(ctx, ndbClient, databaseAdapter, reqData)
+		taskResponse, err := instanceManager.create(ctx, r, ndbClient, database, req.Namespace)
 		if err != nil {
-			errStatement := "Could not generate database provisioning request"
-			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", EVENT_REQUEST_GENERATION_FAILURE, "Error: %s. %s", errStatement, err.Error())
-			return requeueOnErr(err)
-		}
-		r.recorder.Event(database, "Normal", EVENT_REQUEST_GENERATION, "Generated database provisiong request")
-
-		taskResponse, err := ndb_api.ProvisionDatabase(ctx, ndbClient, generatedReq)
-		if err != nil {
-			errStatement := "Failed to make database provisioning request to NDB"
+			errStatement := "Failed to create database on NDB"
 			log.Error(err, errStatement)
 			r.recorder.Eventf(database, "Warning", EVENT_NDB_REQUEST_FAILED, "Error: %s. %s", errStatement, err.Error())
 			return requeueOnErr(err)
 		}
-
 		log.Info(fmt.Sprintf("Updating Database CR to Status: CREATING, id: %s and creationOperationId: %s", taskResponse.EntityId, taskResponse.OperationId))
 
 		databaseStatus.Status = common.DATABASE_CR_STATUS_CREATING
 		databaseStatus.Id = taskResponse.EntityId
 		databaseStatus.CreationOperationId = taskResponse.OperationId
-
-		r.recorder.Event(database, "Normal", EVENT_PROVISIONING_STARTED, "Database provisioning initiated on NDB")
-
+		r.recorder.Event(database, "Normal", EVENT_CREATION_STARTED, "Database creation initiated on NDB")
 	}
 
 	// Handle External Sync
@@ -231,10 +197,10 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			case ndb_api.OPERATION_STATUS_FAILED:
 				err = fmt.Errorf("creation operation terminated. status: %s, message: %s, operationId: %s", creationOp.Status, creationOp.Message, creationOp.Id)
 				log.Error(err, "Database Creation Failed")
-				r.recorder.Event(database, "Warning", "OPERATION FAILED", "Database creation operation failed with error: "+err.Error())
+				r.recorder.Event(database, "Warning", EVENT_CREATION_FAILED, "Database creation operation failed with error: "+err.Error())
 			case ndb_api.OPERATION_STATUS_PASSED:
 				databaseStatus.Status = common.DATABASE_CR_STATUS_READY
-				r.recorder.Event(database, "Normal", "OPERATION PASSED", "Database creation operation passed")
+				r.recorder.Event(database, "Normal", EVENT_CREATION_COMPLETED, "Database creation operation passed")
 			default:
 				// Do nothing, we do not care about other statuses
 			}
@@ -244,6 +210,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		databaseStatus.Id = dbInfo.Id
 		databaseStatus.IPAddress = dbInfo.IPAddress
 		databaseStatus.DatabaseServerId = dbInfo.DBServerId
+		databaseStatus.Type = ndb_api.GetDatabaseTypeFromEngine(dbInfo.Type)
 	} else {
 		log.Info("Database missing from NDB CR")
 		databaseStatus.Status = common.DATABASE_CR_STATUS_NOT_FOUND
@@ -274,11 +241,11 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 	switch databaseStatus.Status {
 	case common.DATABASE_CR_STATUS_READY:
 		if !isUnderDeletion {
-			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_INSTANCE) {
-				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_INSTANCE, database)
+			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_INSTANCE) {
+				return r.addFinalizer(ctx, req, common.FINALIZER_INSTANCE, database)
 			}
-			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
-				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_SERVER, database)
+			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_VM) {
+				return r.addFinalizer(ctx, req, common.FINALIZER_VM, database)
 			}
 		}
 		if databaseStatus.IPAddress != "" {
@@ -431,9 +398,9 @@ func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1
 
 // Returns the credentials(password and ssh public key) for NDB
 // Returns an error if reading the secret containing credentials fails
-func (r *DatabaseReconciler) getDatabaseInstanceCredentials(ctx context.Context, name, namespace string) (password, sshPublicKey string, err error) {
+func (r *DatabaseReconciler) getDatabaseCredentials(ctx context.Context, name, namespace string) (password, sshPublicKey string, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered database_reconciler_helpers.getDatabaseInstanceCredentials")
+	log.Info("Entered database_reconciler_helpers.getDatabaseCredentials")
 	secretDataMap, err := util.GetAllDataFromSecret(ctx, r.Client, name, namespace)
 	if err != nil {
 		log.Error(err, "Error occured in util.GetAllDataFromSecret while fetching all database instance secrets", "Secret Name", name, "Namespace", namespace)
@@ -441,6 +408,6 @@ func (r *DatabaseReconciler) getDatabaseInstanceCredentials(ctx context.Context,
 	}
 	password = string(secretDataMap[common.SECRET_DATA_KEY_PASSWORD])
 	sshPublicKey = string(secretDataMap[common.SECRET_DATA_KEY_SSH_PUBLIC_KEY])
-	log.Info("Returning from database_reconciler_helpers.getDatabaseInstanceCredentials")
+	log.Info("Returning from database_reconciler_helpers.getDatabaseCredentials")
 	return
 }
