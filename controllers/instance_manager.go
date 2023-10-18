@@ -14,9 +14,9 @@ import (
 
 func getInstanceManager(database ndbv1alpha1.Database) (instanceManager InstanceManager) {
 	if database.Spec.IsClone {
-		instanceManager = &DatabaseManager{}
-	} else {
 		instanceManager = &CloneManager{}
+	} else {
+		instanceManager = &DatabaseManager{}
 	}
 	return
 }

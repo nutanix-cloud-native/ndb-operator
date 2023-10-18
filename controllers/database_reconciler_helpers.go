@@ -160,7 +160,6 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 	log.Info("Entered database_reconciler_helpers.handleSync")
 
 	databaseStatus := database.Status.DeepCopy()
-	databaseStatus.Type = database.Spec.Instance.Type
 
 	instanceManager := getInstanceManager(*database)
 
