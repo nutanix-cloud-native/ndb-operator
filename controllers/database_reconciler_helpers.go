@@ -286,7 +286,7 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 		Name:      database.Name + "-svc",
 		Namespace: req.Namespace,
 	}
-	targetPort := ndb_api.GetDatabasePortByType(database.Spec.Instance.Type)
+	targetPort := ndb_api.GetDatabasePortByType(database.Status.Type)
 
 	err = r.setupService(ctx, database, commonNamespacedName, commonMetadata, targetPort)
 	if err != nil {

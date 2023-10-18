@@ -16,19 +16,22 @@ import (
 func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBClient) (databases []ndbv1alpha1.NDBServerDatabaseInfo, err error) {
 	log := log.FromContext(ctx)
 	log.Info("Fetching and converting databases from NDB")
-
+	// Difference between the vars 'dbs' and 'databases'
+	// dbs -> Holds the responses from GET /databases and /clones
+	// databases -> Holds the db objects that will be consumed by the database controller
 	dbs, err := ndb_api.GetAllDatabases(ctx, ndbClient)
 	if err != nil {
 		log.Error(err, "NDB API error while fetching databases")
 		return
 	}
-	databases = make([]ndbv1alpha1.NDBServerDatabaseInfo, len(dbs))
 	clones, err := ndb_api.GetAllClones(ctx, ndbClient)
 	if err != nil {
 		log.Error(err, "NDB API error while fetching clones")
 		return
 	}
 	dbs = append(dbs, clones...)
+
+	databases = make([]ndbv1alpha1.NDBServerDatabaseInfo, len(dbs))
 	for i, db := range dbs {
 		databaseInfo := ndbv1alpha1.NDBServerDatabaseInfo{
 			Name:          db.Name,
