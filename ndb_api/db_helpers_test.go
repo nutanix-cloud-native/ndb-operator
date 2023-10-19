@@ -113,8 +113,8 @@ func TestGetRequestAppenderByType(t *testing.T) {
 	}
 }
 
-// Tests PostgresProvisionRequestAppender() valid case without additional arguments
-func TestPostgresProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
+// Tests PostgresProvisionRequestAppender(), without additional arguments, positive workflow
+func TestPostgresProvisionRequestAppender_withoutAdditionalArguments_positiveWorkflow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -192,8 +192,8 @@ func TestPostgresProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *test
 	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
-// Tests PostgresProvisionRequestAppender() valid case with additional arguments
-func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T) {
+// Tests PostgresProvisionRequestAppender(), with additional arguments, positive workflow
+func TestPostgresProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -274,8 +274,8 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing
 	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
-// Tests PostgresProvisionRequestAppender() invalid case with additional arguments
-func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+// Tests PostgresProvisionRequestAppender(), with additional arguments, negative workflow
+func TestPostgresProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -312,8 +312,8 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testi
 	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
-// Tests MSSQLProvisionRequestAppender() valid case without additional arguments
-func TestMSSQLProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
+// Tests MSSQLProvisionRequestAppender(), without additional arguments, positive workflow
+func TestMSSQLProvisionRequestAppender_withoutAdditionalArguments_positiveWorklow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -426,8 +426,8 @@ func TestMSSQLProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
-// Tests MSSQLProvisionRequestAppender() valid case with additional arguments
-func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T) {
+// Tests MSSQLProvisionRequestAppender(), with additional arguments, positive workflow
+func TestMSSQLProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -558,8 +558,8 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 
 }
 
-// Tests MSSQLProvisionRequestAppender() invalid case with additional arguments
-func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+// Tests MSSQLProvisionRequestAppender(), with additionalArguments, negative workflow
+func TestMSSQLProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -612,8 +612,8 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.
 
 }
 
-// Tests MongoDbProvisionRequestAppender() valid case without additional arguments
-func TestMongoDbProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
+// Tests MongoDbProvisionRequestAppender(), without additionalArguments, positive workflow
+func TestMongoDbProvisionRequestAppender_withoutAdditionalArguments_positiveWorkflow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -695,8 +695,8 @@ func TestMongoDbProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testi
 	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
-// Tests MongoDbProvisionRequestAppender() valid case with additional arguments
-func TestMongoDbProvisionRequestAppenderWithActionArgumentsValid(t *testing.T) {
+// Tests MongoDbProvisionRequestAppender(), with additionalArguments, positive workflow
+func TestMongoDbProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -782,8 +782,8 @@ func TestMongoDbProvisionRequestAppenderWithActionArgumentsValid(t *testing.T) {
 	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
-// Tests MongoDbProvisionRequestAppender() invalid case with additional arguments
-func TestMongoDbProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+// Tests MongoDbProvisionRequestAppender(), with additionalArguments, negative workflow
+func TestMongoDbProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -820,8 +820,8 @@ func TestMongoDbProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testin
 	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
-// Tests MySqlProvisionRequestAppender() valid case without additional arguments
-func TestMySqlProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing.T) {
+// Tests MySqlProvisionRequestAppender(), without additional arguments, positive workflow
+func TestMySqlProvisionRequestAppender_withoutAdditionalArguments_positiveWorkflow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -883,8 +883,8 @@ func TestMySqlProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
-// Tests MySqlProvisionRequestAppender() valid case with additional arguments
-func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T) {
+// Tests MySqlProvisionRequestAppender(), with additional arguments, positive workflow
+func TestMySqlProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -948,8 +948,8 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
 }
 
-// Tests MySqlProvisionRequestAppender() invalid case with additional arguments
-func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.T) {
+// Tests MySqlProvisionRequestAppender(), with additional arguments, negative workflow
+func TestMySqlProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(t *testing.T) {
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
