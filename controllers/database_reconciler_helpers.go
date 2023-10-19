@@ -176,6 +176,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 		} else {
 			switch ndb_api.GetOperationStatus(creationOp) {
 			case ndb_api.OPERATION_STATUS_FAILED:
+				databaseStatus.Status = common.DATABASE_CR_STATUS_CREATION_ERROR
 				err = fmt.Errorf("creation operation terminated. status: %s, message: %s, operationId: %s", creationOp.Status, creationOp.Message, creationOp.Id)
 				log.Error(err, "Database Creation Failed")
 				r.recorder.Event(database, "Warning", EVENT_CREATION_FAILED, "Database creation operation failed with error: "+err.Error())

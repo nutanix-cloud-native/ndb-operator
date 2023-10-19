@@ -28,8 +28,9 @@ import (
 // DatabaseSpec defines the desired state of Database
 type DatabaseSpec struct {
 	// +kubebuilder:validation:Required
-	NDBRef  string `json:"ndbRef"`
-	IsClone bool   `json:"isClone"`
+	NDBRef string `json:"ndbRef"`
+	// +optional
+	IsClone bool `json:"isClone"`
 	// +optional
 	Instance *Instance `json:"databaseInstance"`
 	// +optional
@@ -80,7 +81,7 @@ func init() {
 // Database instance specific details
 type Instance struct {
 	// Name of the database instance
-	Name string `json:"Name"`
+	Name string `json:"name"`
 	// Description of the database instance
 	// +optional
 	Description string `json:"description"`

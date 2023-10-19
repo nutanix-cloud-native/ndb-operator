@@ -129,9 +129,6 @@ spec:
               databaseInstance:
                 description: Database instance specific details
                 properties:
-                  Name:
-                    description: Name of the database instance
-                    type: string
                   additionalArguments:
                     additionalProperties:
                       type: string
@@ -153,6 +150,9 @@ spec:
                     type: array
                   description:
                     description: Description of the database instance
+                    type: string
+                  name:
+                    description: Name of the database instance
                     type: string
                   profiles:
                     properties:
@@ -233,9 +233,9 @@ spec:
                   type:
                     type: string
                 required:
-                - Name
                 - clusterId
                 - credentialSecret
+                - name
                 - size
                 - type
                 type: object
@@ -244,7 +244,6 @@ spec:
               ndbRef:
                 type: string
             required:
-            - isClone
             - ndbRef
             type: object
           status:
