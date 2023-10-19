@@ -186,16 +186,20 @@ func convertMapToActionArguments(myMap map[string]string) []ActionArgument {
 func setConfiguredActionArguments(database DatabaseInterface, actionArguments map[string]string) error {
 	errMsgRoot := "Setting configured action arguments failed"
 	if actionArguments == nil {
-		return fmt.Errorf("%s! Action arguments cannot be null", errMsgRoot)
+		return fmt.Errorf("%s! Action arguments cannot be nil", errMsgRoot)
 	}
 
-	allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(database.GetInstanceType())
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArguments(database.IsClone(), database.GetInstanceType())
 	if err != nil {
 		return fmt.Errorf("%s! %s", errMsgRoot, err.Error())
 	}
 
+	if len(database.GetAdditionalArguments()) > len(allowedAdditionalArguments) {
+		return fmt.Errorf("%s! Length of specified action arguments is greater then allowed additional arguments", errMsgRoot)
+	}
+
+	// Rewrite or add actionArguments from additionalArgument list if it is an actionArgument
 	for name, value := range database.GetAdditionalArguments() {
-		// Only configure correct actionArguments
 		isActionArgument, isPresent := allowedAdditionalArguments[name]
 		if !isPresent {
 			return fmt.Errorf("%s! %s is not an allowed additional argument", errMsgRoot, name)

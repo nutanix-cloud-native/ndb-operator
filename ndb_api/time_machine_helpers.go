@@ -28,6 +28,7 @@ func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClien
 
 	sourceDatabase, _ := GetDatabaseById(ctx, ndb_client, database.GetCloneSourceDBId())
 	databaseType := GetDatabaseTypeFromEngine(sourceDatabase.Type)
+	// database.
 	// Fetch the required profiles for the database
 	profilesMap, err := ResolveProfiles(ctx, ndb_client, databaseType, database.GetProfileResolvers())
 	if err != nil {
@@ -90,36 +91,107 @@ func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClien
 }
 
 func (a *MSSQLRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
-	return nil, nil
+	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	vmName := req.Name
+	dbName := "DATABASE_NAME" // TODO
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		/* Non-Configurable */
+		"quorum_witness_type":   "disk_share",
+		"vm_win_lang_settings":  "en-US",
+		"drives_to_mountpoints": "false",
+		"cluster_db":            "false",
+		/* Configurable */
+		"vm_name":                    vmName,
+		"database_name":              dbName,
+		"vm_dbserver_admin_password": dbPassword,
+		"dbserver_description":       "DB Server VM for " + database.GetName(),
+		"sql_user_name":              "sa",
+		"authentication_mode":        "windows",
+		"instance_name":              "CDMINSTANCE",
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
 }
 
 func (a *MongoDbRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
-	return nil, nil
+	req.Description = "DB Server VM for " + database.GetName()
+	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		/* Non-Configurable */
+		"listener_port": "27017",
+		/* Configurable */
+		"vm_name":     database.GetName(),
+		"db_password": dbPassword,
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
 }
 
 func (a *PostgresRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
 	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
-
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
-	actionArgs := []ActionArgument{
-		{
-			Name:  "vm_name",
-			Value: database.GetName(),
-		},
-		{
-			Name:  "dbserver_description",
-			Value: "DB Server VM for " + database.GetName(),
-		},
-		{
-			Name:  "db_password",
-			Value: dbPassword,
-		},
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		/* Non-Configurable from additionalArguments*/
+		"vm_name":              database.GetName(),
+		"dbserver_description": "DB Server VM for " + database.GetName(),
+		"db_password":          dbPassword,
 	}
 
-	req.ActionArguments = append(req.ActionArguments, actionArgs...)
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
 	return req, nil
 }
 
 func (a *MySqlRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
-	return nil, nil
+	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		/* Non-Configurable */
+		/* Configurable */
+		"vm_name":              database.GetName(),
+		"dbserver_description": "DB Server VM for " + database.GetName(),
+		"db_password":          dbPassword,
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
 }

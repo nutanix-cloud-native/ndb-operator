@@ -115,12 +115,16 @@ spec:
                   timezone:
                     description: default UTC
                     type: string
+                  type:
+                    description: Type of parent clone
+                    type: string
                 required:
                 - clusterId
                 - credentialSecret
                 - name
                 - snapshotId
                 - sourceDatabaseId
+                - type
                 type: object
               databaseInstance:
                 description: Database instance specific details

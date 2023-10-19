@@ -11,7 +11,70 @@ import (
 //  1. A map where the keys are the allowed additional arguments for the database type, and the corresponding values indicates whether the key is an action argument (where true=yes and false=no).
 //     Currently, all additional arguments are action arguments but this might not always be the case, thus this distinction is made so actual action arguments are appended to the appropriate provisioning body property.
 //  2. An error if there is no allowed additional arguments for the corresponding type, in other words, if the dbType is not MSSQL, MongoDB, PostGres, or MYSQL. Else nil.
-func GetAllowedAdditionalArgumentsForType(dbType string) (map[string]bool, error) {
+func GetAllowedAdditionalArguments(isClone bool, dbType string) (map[string]bool, error) {
+	if isClone {
+		return GetAllowedAdditionalArgumentsForClone(dbType)
+	} else {
+		return GetAllowedAdditionalArgumentsForDatabase(dbType)
+	}
+}
+
+func GetAllowedAdditionalArgumentsForClone(dbType string) (map[string]bool, error) {
+	switch dbType {
+	case common.DATABASE_TYPE_MSSQL:
+		return map[string]bool{
+			/* Has a default */
+			"vm_name":                    true,
+			"database_name":              true,
+			"vm_dbserver_admin_password": true,
+			"dbserver_description":       true,
+			"sql_user_name":              true,
+			"authentication_mode":        true,
+			"instance_name":              true,
+			/* No default */
+			"windows_domain_profile_id":   true,
+			"era_worker_service_user":     true,
+			"sql_service_startup_account": true,
+			"vm_win_license_key":          true,
+			"target_mountpoints_location": true,
+			// "refreshInDays":               false, // In lcmConfig.databaseLCMConfig.refreshDetails
+			// "refreshTime":                 false, // In lcmConfig.databaseLCMConfig.refreshDetails
+			// "refreshDateTimezone":         false, // In lcmConfig.databaseLCMConfig.refreshDetails
+			// "expireInDays":                false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			// "expiryDateTimezone":          false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			// "deleteDatabase":              false, // In lcmConfig.databaseLCMConfig.expiryDetails
+		}, nil
+	case common.DATABASE_TYPE_MONGODB: // No configurable action arguments
+		return map[string]bool{}, nil
+		// "refreshInDays":               false, // In lcmConfig.databaseLCMConfig.refreshDetails
+		// "refreshTime":                 false, // In lcmConfig.databaseLCMConfig.refreshDetails
+		// "refreshDateTimezone":         false, // In lcmConfig.databaseLCMConfig.refreshDetails
+		// "expireInDays":                false, // In lcmConfig.databaseLCMConfig.expiryDetails
+		// "expiryDateTimezone":          false, // In lcmConfig.databaseLCMConfig.expiryDetails
+		// "deleteDatabase":              false, // In lcmConfig.databaseLCMConfig.expiryDetails
+	case common.DATABASE_TYPE_POSTGRES:
+		return map[string]bool{}, nil
+		// /* No default */
+		// 	"refreshInDays":       false, // In lcmConfig.databaseLCMConfig.refreshDetails
+		// 	"refreshTime":         false, // In lcmConfig.databaseLCMConfig.refreshDetails
+		// 	"refreshDateTimezone": false, // In lcmConfig.databaseLCMConfig.refreshDetails
+		// 	"expireInDays":        false, // In lcmConfig.databaseLCMConfig.expiryDetails
+		// 	"expiryDateTimezone":  false, // In lcmConfig.databaseLCMConfig.expiryDetails
+		// 	"deleteDatabase":      false, // In lcmConfig.databaseLCMConfig.expiryDetails
+	case common.DATABASE_TYPE_MYSQL:
+		return map[string]bool{}, nil // No configurable action arguments
+		// "refreshInDays":               false, // In lcmConfig.databaseLCMConfig.refreshDetails
+		// "refreshTime":                 false, // In lcmConfig.databaseLCMConfig.refreshDetails
+		// "refreshDateTimezone":         false, // In lcmConfig.databaseLCMConfig.refreshDetails
+		// "expireInDays":                false, // In lcmConfig.databaseLCMConfig.expiryDetails
+		// "expiryDateTimezone":          false, // In lcmConfig.databaseLCMConfig.expiryDetails
+		// "deleteDatabase":              false, // In lcmConfig.databaseLCMConfig.expiryDetails
+	default:
+		return map[string]bool{}, errors.New(fmt.Sprintf("Could not find allowed additional arguments for clone of type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES))
+	}
+}
+
+func GetAllowedAdditionalArgumentsForDatabase(dbType string) (map[string]bool, error) {
 	switch dbType {
 	case common.DATABASE_TYPE_MSSQL:
 		return map[string]bool{
@@ -44,7 +107,7 @@ func GetAllowedAdditionalArgumentsForType(dbType string) (map[string]bool, error
 		return map[string]bool{
 			"listener_port": true,
 		}, nil
+	default:
+		return map[string]bool{}, errors.New(fmt.Sprintf("Could not find allowed additional arguments for database of type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES))
 	}
-	// Return error
-	return map[string]bool{}, errors.New(fmt.Sprintf("Could not find allowed additional arguments for database type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES))
 }

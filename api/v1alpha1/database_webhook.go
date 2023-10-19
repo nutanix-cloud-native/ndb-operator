@@ -42,6 +42,8 @@ func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
+//TODO: Current Webhooks only validates a database instance
+
 //+kubebuilder:webhook:path=/mutate-ndb-nutanix-com-v1alpha1-database,mutating=true,failurePolicy=fail,sideEffects=None,groups=ndb.nutanix.com,resources=databases,verbs=create;update,versions=v1alpha1,name=mdatabase.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Defaulter = &Database{}
@@ -200,7 +202,7 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 		))
 	}
 
-	if err := additionalArgumentsValidationCheck(instance.Type, instance.AdditionalArguments); err != nil {
+	if err := additionalArgumentsValidationCheck(false, instance.Type, instance.AdditionalArguments); err != nil { // TOD: HARD CODING AS FALSE
 		allErrs = append(allErrs, field.Invalid(instancePath.Child("additionalArguments"), instance.AdditionalArguments, err.Error()))
 	}
 
@@ -209,13 +211,13 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 }
 
 /* Checks if configured additional arguments are valid or not and returns the corresponding additional arguments. If error is nil valid, else invalid */
-func additionalArgumentsValidationCheck(dbType string, specifiedAdditionalArguments map[string]string) error {
+func additionalArgumentsValidationCheck(isClone bool, dbType string, specifiedAdditionalArguments map[string]string) error {
 	// Empty additionalArguments is always valid
 	if specifiedAdditionalArguments == nil {
 		return nil
 	}
 
-	allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(dbType)
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArguments(isClone, dbType)
 
 	// Invalid type returns error
 	if err != nil {

@@ -129,7 +129,7 @@ func TestPostgresProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *test
 	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
-
+	mockDatabase.On("IsClone").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "proxy_read_port",
@@ -210,6 +210,7 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"listener_port": "0000",
 	})
+	mockDatabase.On("IsClone").Return(false)
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -291,7 +292,7 @@ func TestPostgresProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testi
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"invalid-key": "invalid-value",
 	})
-
+	mockDatabase.On("IsClone").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES)
 
@@ -342,7 +343,7 @@ func TestMSSQLProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 	mockDatabase.On("GetName").Return("testInstance")
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MSSQL)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
-
+	mockDatabase.On("IsClone").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "working_dir",
@@ -461,7 +462,7 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 		"windows_domain_profile_id": "<windows-domain-profile-id>",
 		"vm_db_server_user":         "<vm-db-server-user>",
 	})
-
+	mockDatabase.On("IsClone").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "sql_user_name",
@@ -590,7 +591,7 @@ func TestMSSQLProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.
 		"invalid-key":  "invalid-value",
 		"invalid-key2": "invalid-value",
 	})
-
+	mockDatabase.On("IsClone").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MSSQL)
 
@@ -627,7 +628,7 @@ func TestMongoDbProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testi
 	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MONGODB)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
-
+	mockDatabase.On("IsClone").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -714,7 +715,7 @@ func TestMongoDbProvisionRequestAppenderWithActionArgumentsValid(t *testing.T) {
 		"log_size":      "1",
 		"journal_size":  "1",
 	})
-
+	mockDatabase.On("IsClone").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -799,7 +800,7 @@ func TestMongoDbProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testin
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"invalid-key": "invalid-value",
 	})
-
+	mockDatabase.On("IsClone").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB)
 
@@ -835,7 +836,7 @@ func TestMySqlProvisionRequestAppenderWithoutAdditionalArgumentsValid(t *testing
 	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MYSQL)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
-
+	mockDatabase.On("IsClone").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -900,7 +901,7 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsValid(t *testing.T)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"listener_port": "1111",
 	})
-
+	mockDatabase.On("IsClone").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -965,7 +966,7 @@ func TestMySqlProvisionRequestAppenderWithAdditionalArgumentsInvalid(t *testing.
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"invalid-key": "invalid-value",
 	})
-
+	mockDatabase.On("IsClone").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL)
 
@@ -1287,6 +1288,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetInstanceSize").Return(TEST_INSTANCE_SIZE)
 		mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("IsClone").Return(false)
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, &mockDatabase, tc.reqData)

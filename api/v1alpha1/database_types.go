@@ -114,6 +114,8 @@ type Clone struct {
 	// Description of the clone instance
 	// +optional
 	Description string `json:"description"`
+	// Type of parent clone
+	Type string `json:"type"`
 	// Id of the cluster to clone the database on
 	ClusterId string `json:"clusterId"`
 	// +optional

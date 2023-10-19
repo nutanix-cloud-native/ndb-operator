@@ -131,6 +131,9 @@ func (d *Database) GetAdditionalArguments() map[string]string {
 }
 
 func (d *Database) GetInstanceType() string {
+	if d.IsClone() {
+		return d.Spec.Clone.Type
+	}
 	return d.Spec.Instance.Type
 }
 
