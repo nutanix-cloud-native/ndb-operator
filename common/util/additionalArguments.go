@@ -37,38 +37,44 @@ func GetAllowedAdditionalArgumentsForClone(dbType string) (map[string]bool, erro
 			"sql_service_startup_account": true,
 			"vm_win_license_key":          true,
 			"target_mountpoints_location": true,
-			// "refreshInDays":               false, // In lcmConfig.databaseLCMConfig.refreshDetails
-			// "refreshTime":                 false, // In lcmConfig.databaseLCMConfig.refreshDetails
-			// "refreshDateTimezone":         false, // In lcmConfig.databaseLCMConfig.refreshDetails
-			// "expireInDays":                false, // In lcmConfig.databaseLCMConfig.expiryDetails
-			// "expiryDateTimezone":          false, // In lcmConfig.databaseLCMConfig.expiryDetails
-			// "deleteDatabase":              false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"expireInDays":                false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"expiryDateTimezone":          false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"deleteDatabase":              false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"refreshInDays":               false, // In lcmConfig.refreshDetails.refreshDetails
+			"refreshTime":                 false, // In lcmConfig.refreshDetails.refreshDetails
+			"refreshDateTimezone":         false, // In lcmConfig.refreshDetails.refreshDetails
 		}, nil
-	case common.DATABASE_TYPE_MONGODB: // No configurable action arguments
-		return map[string]bool{}, nil
-		// "refreshInDays":               false, // In lcmConfig.databaseLCMConfig.refreshDetails
-		// "refreshTime":                 false, // In lcmConfig.databaseLCMConfig.refreshDetails
-		// "refreshDateTimezone":         false, // In lcmConfig.databaseLCMConfig.refreshDetails
-		// "expireInDays":                false, // In lcmConfig.databaseLCMConfig.expiryDetails
-		// "expiryDateTimezone":          false, // In lcmConfig.databaseLCMConfig.expiryDetails
-		// "deleteDatabase":              false, // In lcmConfig.databaseLCMConfig.expiryDetails
+	case common.DATABASE_TYPE_MONGODB:
+		return map[string]bool{
+			/* No default */
+			"expireInDays":        false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"expiryDateTimezone":  false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"deleteDatabase":      false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"refreshInDays":       false, // In lcmConfig.refreshDetails.refreshDetails
+			"refreshTime":         false, // In lcmConfig.refreshDetails.refreshDetails
+			"refreshDateTimezone": false, // In lcmConfig.refreshDetails.refreshDetails
+		}, nil
+
 	case common.DATABASE_TYPE_POSTGRES:
-		return map[string]bool{}, nil
-		// /* No default */
-		// 	"refreshInDays":       false, // In lcmConfig.databaseLCMConfig.refreshDetails
-		// 	"refreshTime":         false, // In lcmConfig.databaseLCMConfig.refreshDetails
-		// 	"refreshDateTimezone": false, // In lcmConfig.databaseLCMConfig.refreshDetails
-		// 	"expireInDays":        false, // In lcmConfig.databaseLCMConfig.expiryDetails
-		// 	"expiryDateTimezone":  false, // In lcmConfig.databaseLCMConfig.expiryDetails
-		// 	"deleteDatabase":      false, // In lcmConfig.databaseLCMConfig.expiryDetails
+		return map[string]bool{
+			/* No default */
+			"expireInDays":        false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"expiryDateTimezone":  false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"deleteDatabase":      false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"refreshInDays":       false, // In lcmConfig.refreshDetails.refreshDetails
+			"refreshTime":         false, // In lcmConfig.refreshDetails.refreshDetails
+			"refreshDateTimezone": false, // In lcmConfig.refreshDetails.refreshDetails
+		}, nil
 	case common.DATABASE_TYPE_MYSQL:
-		return map[string]bool{}, nil // No configurable action arguments
-		// "refreshInDays":               false, // In lcmConfig.databaseLCMConfig.refreshDetails
-		// "refreshTime":                 false, // In lcmConfig.databaseLCMConfig.refreshDetails
-		// "refreshDateTimezone":         false, // In lcmConfig.databaseLCMConfig.refreshDetails
-		// "expireInDays":                false, // In lcmConfig.databaseLCMConfig.expiryDetails
-		// "expiryDateTimezone":          false, // In lcmConfig.databaseLCMConfig.expiryDetails
-		// "deleteDatabase":              false, // In lcmConfig.databaseLCMConfig.expiryDetails
+		return map[string]bool{
+			/* No default */
+			"expireInDays":        false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"expiryDateTimezone":  false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"deleteDatabase":      false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"refreshInDays":       false, // In lcmConfig.refreshDetails.refreshDetails
+			"refreshTime":         false, // In lcmConfig.refreshDetails.refreshDetails
+			"refreshDateTimezone": false, // In lcmConfig.refreshDetails.refreshDetails
+		}, nil
 	default:
 		return map[string]bool{}, errors.New(fmt.Sprintf("Could not find allowed additional arguments for clone of type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES))
 	}

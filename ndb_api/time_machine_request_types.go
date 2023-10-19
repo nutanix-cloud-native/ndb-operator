@@ -32,8 +32,30 @@ type DatabaseCloneRequest struct {
 	Nodes                      []Node           `json:"nodes"`
 	ActionArguments            []ActionArgument `json:"actionArguments"`
 	Tags                       interface{}      `json:"tags"`
+	LcmConfig                  LcmConfig        `json:"lcmConfig"`
 	VmPassword                 string           `json:"vmPassword"`
 	ComputeProfileId           string           `json:"computeProfileId"`
 	NetworkProfileId           string           `json:"networkProfileId"`
 	DatabaseParameterProfileId string           `json:"databaseParameterProfileId"`
+}
+
+type LcmConfig struct {
+	DatabaseLCMConfig DatabaseLCMConfig `json:"databaseLCMConfig"`
+}
+
+type DatabaseLCMConfig struct {
+	ExpiryDetails  ExpiryDetails  `json:"expiryDetails"`
+	RefreshDetails RefreshDetails `json:"refreshDetails"`
+}
+
+type ExpiryDetails struct {
+	ExpireInDays       string `json:"expireInDays"`
+	ExpiryDateTimezone string `json:"expiryDateTimezone"`
+	DeleteDatabase     string `json:"deleteDatabase"`
+}
+
+type RefreshDetails struct {
+	RefreshInDays       string `json:"refreshInDays"`
+	RefreshTime         string `json:"refreshTime"`
+	RefreshDateTimezone string `json:"refreshDateTimezone"`
 }

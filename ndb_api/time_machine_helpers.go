@@ -15,6 +15,7 @@ package ndb_api
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
@@ -121,6 +122,11 @@ func (a *MSSQLRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, d
 	// Converting action arguments map to list and appending to req.ActionArguments
 	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
+	// Appending LCMConfig Details if specified
+	if err := appendLCMConfigDetailsToRequest(req, database.GetAdditionalArguments()); err != nil {
+		return nil, err
+	}
+
 	return req, nil
 }
 
@@ -146,6 +152,11 @@ func (a *MongoDbRequestAppender) appendCloningRequest(req *DatabaseCloneRequest,
 	// Converting action arguments map to list and appending to req.ActionArguments
 	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
+	// Appending LCMConfig Details if specified
+	if err := appendLCMConfigDetailsToRequest(req, database.GetAdditionalArguments()); err != nil {
+		return nil, err
+	}
+
 	return req, nil
 }
 
@@ -168,6 +179,11 @@ func (a *PostgresRequestAppender) appendCloningRequest(req *DatabaseCloneRequest
 
 	// Converting action arguments map to list and appending to req.ActionArguments
 	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	// Appending LCMConfig Details if specified
+	if err := appendLCMConfigDetailsToRequest(req, database.GetAdditionalArguments()); err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -193,5 +209,54 @@ func (a *MySqlRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, d
 	// Converting action arguments map to list and appending to req.ActionArguments
 	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
+	// Appending LCMConfig Details if specified
+	if err := appendLCMConfigDetailsToRequest(req, database.GetAdditionalArguments()); err != nil {
+		return nil, err
+	}
+
 	return req, nil
+}
+
+func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArguments map[string]string) error {
+	errMsg := "appendLCMConfigDetailsToRequest() failed!"
+
+	// expiryDetails appender
+	databaseLcmConfigProperties := []string{"expireInDays", "expiryDateTimezone", "deleteDatabase"}
+	databaseLcmConfigCount := 0
+	for _, property := range databaseLcmConfigProperties {
+		if _, isPresent := additionalArguments[property]; isPresent {
+			databaseLcmConfigCount += 1
+		}
+	}
+	if databaseLcmConfigCount == 3 {
+		req.LcmConfig.DatabaseLCMConfig = DatabaseLCMConfig{
+			ExpiryDetails: ExpiryDetails{
+				ExpireInDays:       additionalArguments["expireInDays"],
+				ExpiryDateTimezone: additionalArguments["expiryDateTimezone"],
+				DeleteDatabase:     additionalArguments["deleteDatabase"],
+			},
+		}
+	} else if databaseLcmConfigCount != 0 {
+		return fmt.Errorf("%s. Ensure expireInDays, expiryDateTimezone, and deleteDatabase are all specified. You only have %d/3 specified.", errMsg, databaseLcmConfigCount)
+	}
+
+	// refreshDetails appender
+	refreshDetailsProperties := []string{"refreshInDays", "refreshTime", "refreshDateTimezone"}
+	refreshDetailsCount := 0
+	for _, property := range refreshDetailsProperties {
+		if _, isPresent := additionalArguments[property]; isPresent {
+			refreshDetailsCount += 1
+		}
+	}
+	if refreshDetailsCount == 3 {
+		req.LcmConfig.DatabaseLCMConfig.RefreshDetails = RefreshDetails{
+			RefreshInDays:       additionalArguments["refreshInDays"],
+			RefreshTime:         additionalArguments["refreshTime"],
+			RefreshDateTimezone: additionalArguments["refreshDateTimezone"],
+		}
+	} else if databaseLcmConfigCount != 0 {
+		return fmt.Errorf("%s. Ensure refreshInDay, refreshTime, refreshDateTimezone are all specified. You only have %d/3 specified.", errMsg, refreshDetailsCount)
+	}
+
+	return nil
 }
