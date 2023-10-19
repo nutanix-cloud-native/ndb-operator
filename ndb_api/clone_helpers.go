@@ -20,7 +20,7 @@ func GenerateDeprovisionCloneRequest() (req *CloneDeprovisionRequest) {
 		Remove:               false,
 		Delete:               true,
 		Forced:               true,
-		DeleteDataDrives:     false,
+		DeleteDataDrives:     true,
 		DeleteLogicalCluster: true,
 		RemoveLogicalCluster: false,
 		DeleteTimeMachine:    true,

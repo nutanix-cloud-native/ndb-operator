@@ -40,9 +40,9 @@ const (
 	EVENT_REQUEST_GENERATION_FAILURE = "RequestGenerationFailed"
 	EVENT_NDB_REQUEST_FAILED         = "NDBRequestFailed"
 
-	EVENT_DEPROVISIONING_STARTED   = "DeprovisioningStarted"
-	EVENT_DEPROVISIONING_FAILED    = "DeprovisioningFailed"
-	EVENT_DEPROVISIONING_COMPLETED = "DeprovisioningCompleted"
+	EVENT_DEREGISTRATION_STARTED   = "DeregistrationStarted"
+	EVENT_DEREGISTRATION_FAILED    = "DeregistrationFailed"
+	EVENT_DEREGISTRATION_COMPLETED = "DeregistrationCompleted"
 
 	EVENT_CR_CREATED              = "CustomResourceCreated"
 	EVENT_CR_DELETED              = "CustomResourceDeleted"
