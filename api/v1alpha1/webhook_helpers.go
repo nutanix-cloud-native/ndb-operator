@@ -90,15 +90,15 @@ func (v *CloningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorL
 	}
 
 	if clone.TimeZone == "" {
-		*errors = append(*errors, field.Invalid(clonePath.Child("timeZone"), clone.CredentialSecret, "TimeZone must be provided in Clone Spec"))
+		*errors = append(*errors, field.Invalid(clonePath.Child("timeZone"), clone.TimeZone, "TimeZone must be provided in Clone Spec"))
 	}
 
 	if clone.SourceDatabaseId == "" {
-		*errors = append(*errors, field.Invalid(clonePath.Child("sourceDatabaseId"), clone.CredentialSecret, "sourceDatabaseId must be provided"))
+		*errors = append(*errors, field.Invalid(clonePath.Child("sourceDatabaseId"), clone.SourceDatabaseId, "sourceDatabaseId must be provided"))
 	}
 
 	if clone.SnapshotId == "" {
-		*errors = append(*errors, field.Invalid(clonePath.Child("sourceDatabaseId"), clone.CredentialSecret, "snapshotId must be provided"))
+		*errors = append(*errors, field.Invalid(clonePath.Child("snapshotId"), clone.SnapshotId, "snapshotId must be provided"))
 	}
 
 	if _, isPresent := api.AllowedDatabaseTypes[clone.Type]; !isPresent {
@@ -221,11 +221,11 @@ func (v *ProvisoningHandler) validateCreate(spec *DatabaseSpec, errors *field.Er
 	tmPath := instancePath.Child("timeMachine")
 
 	if instance.Name == "" {
-		*errors = append(*errors, field.Invalid(instancePath.Child("name"), instance.Name, "A valid Name must be specified"))
+		*errors = append(*errors, field.Invalid(instancePath.Child("name"), instance.Name, "A valid Database Instance Name must be specified"))
 	}
 
 	if instance.ClusterId == "" {
-		*errors = append(*errors, field.Invalid(instancePath.Child("clusterId"), instance.ClusterId, "Ensure ClusterId is a valid UUID"))
+		*errors = append(*errors, field.Invalid(instancePath.Child("clusterId"), instance.ClusterId, "ClusterId field must be a valid UUID"))
 	}
 
 	if instance.Size < 10 {
