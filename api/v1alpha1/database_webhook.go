@@ -122,7 +122,7 @@ func additionalArgumentsValidationCheck(isClone bool, dbType string, specifiedAd
 		return nil
 	} else {
 		return fmt.Errorf(
-			"additional arguments validation for database type: %s failed! The following args are invalid: %s. These are the allowed args: %s",
+			"additional arguments validation for type: %s failed! The following args are invalid: %s. These are the allowed args: %s",
 			dbType,
 			strings.Join(invalidArgs, ", "),
 			reflect.ValueOf(allowedAdditionalArguments).MapKeys())

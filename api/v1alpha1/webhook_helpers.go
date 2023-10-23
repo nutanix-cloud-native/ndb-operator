@@ -7,6 +7,7 @@ import (
 
 	"github.com/nutanix-cloud-native/ndb-operator/api"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
+	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
@@ -78,11 +79,11 @@ func (v *CloningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorL
 	clone := spec.Clone
 
 	if clone.Name == "" {
-		*errors = append(*errors, field.Invalid(clonePath.Child("name"), clone.Name, "A valid Name must be specified"))
+		*errors = append(*errors, field.Invalid(clonePath.Child("name"), clone.Name, "A valid Clone Name must be specified"))
 	}
 
-	if clone.ClusterId == "" {
-		*errors = append(*errors, field.Invalid(clonePath.Child("clusterId"), clone.ClusterId, "Ensure ClusterId is a valid UUID"))
+	if err := util.ValidateUUID(clone.ClusterId); err != nil {
+		*errors = append(*errors, field.Invalid(clonePath.Child("clusterId"), clone.ClusterId, "ClusterId field must be a valid UUID"))
 	}
 
 	if clone.CredentialSecret == "" {
@@ -93,11 +94,17 @@ func (v *CloningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorL
 		*errors = append(*errors, field.Invalid(clonePath.Child("timeZone"), clone.TimeZone, "TimeZone must be provided in Clone Spec"))
 	}
 
-	if clone.SourceDatabaseId == "" {
+	if _, isPresent := api.AllowedDatabaseTypes[clone.Type]; !isPresent {
+		*errors = append(*errors, field.Invalid(clonePath.Child("type"), clone.Type,
+			fmt.Sprintf("A valid database type must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedDatabaseTypes).MapKeys()),
+		))
+	}
+
+	if err := util.ValidateUUID(clone.SourceDatabaseId); err != nil {
 		*errors = append(*errors, field.Invalid(clonePath.Child("sourceDatabaseId"), clone.SourceDatabaseId, "sourceDatabaseId must be provided"))
 	}
 
-	if clone.SnapshotId == "" {
+	if err := util.ValidateUUID(clone.SnapshotId); err != nil {
 		*errors = append(*errors, field.Invalid(clonePath.Child("snapshotId"), clone.SnapshotId, "snapshotId must be provided"))
 	}
 
@@ -224,7 +231,7 @@ func (v *ProvisoningHandler) validateCreate(spec *DatabaseSpec, errors *field.Er
 		*errors = append(*errors, field.Invalid(instancePath.Child("name"), instance.Name, "A valid Database Instance Name must be specified"))
 	}
 
-	if instance.ClusterId == "" {
+	if err := util.ValidateUUID(instance.ClusterId); err != nil {
 		*errors = append(*errors, field.Invalid(instancePath.Child("clusterId"), instance.ClusterId, "ClusterId field must be a valid UUID"))
 	}
 
