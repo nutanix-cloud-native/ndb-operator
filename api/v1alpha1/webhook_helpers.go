@@ -39,34 +39,12 @@ type ProvisoningHandler struct{}
 func (v *CloningHandler) defaulter(spec *DatabaseSpec) {
 	databaselog.Info("Entering Clone defaulter logic...")
 
-	// Default Database
-	if spec.Instance == nil {
-		spec.Instance = &(Instance{})
-	}
-	spec.Instance.DatabaseNames = []string{}
-	spec.Instance.Profiles = &(Profiles{})
-	spec.Instance.TMInfo = &(DBTimeMachineInfo{})
-	spec.Instance.AdditionalArguments = map[string]string{}
-
-	// Default Clone
-	if spec.Clone == nil {
-		spec.Clone = &(Clone{})
-	}
+	initializeObjects(spec)
 
 	if spec.Clone.Description == "" {
 		description := "Clone created by ndb-operator: " + spec.Clone.Name
 		databaselog.Info(fmt.Sprintf("Initializing Description to: %s.", description))
 		spec.Clone.Description = description
-	}
-
-	if spec.Clone.Profiles == nil {
-		databaselog.Info(fmt.Sprintf("Initializing empty Profiles"))
-		spec.Clone.Profiles = &(Profiles{})
-	}
-
-	if spec.Clone.AdditionalArguments == nil {
-		databaselog.Info(fmt.Sprintf("Initializing Description to empty map."))
-		spec.Clone.AdditionalArguments = map[string]string{}
 	}
 
 	databaselog.Info("Exiting Clone defaulter logic!")
@@ -129,17 +107,7 @@ func (v *CloningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorL
 func (v *ProvisoningHandler) defaulter(spec *DatabaseSpec) {
 	databaselog.Info("Entering Database defaulter logic...")
 
-	// Default Clone
-	if spec.Clone == nil {
-		spec.Clone = &(Clone{})
-	}
-	spec.Clone.Profiles = &(Profiles{})
-	spec.Clone.AdditionalArguments = map[string]string{}
-
-	// Default Database
-	if spec.Instance == nil {
-		spec.Instance = &(Instance{})
-	}
+	initializeObjects(spec)
 
 	if spec.Instance.Description == "" {
 		description := "Database provisioned by ndb-operator: " + spec.Instance.Name
@@ -157,22 +125,10 @@ func (v *ProvisoningHandler) defaulter(spec *DatabaseSpec) {
 		spec.Instance.TimeZone = common.TIMEZONE_UTC
 	}
 
-	// Initialize Profiles field, if it's nil (mandatory)
-	if spec.Instance.Profiles == nil {
-		databaselog.Info("Initializing empty Profiles.")
-		spec.Instance.Profiles = &(Profiles{})
-	}
-
 	// Profiles defaulting logic
 	if spec.Instance.Profiles.Compute.Id == "" && spec.Instance.Profiles.Compute.Name == "" {
 		databaselog.Info(fmt.Sprintf("Initializing Profiles.Compute.Name to: %s", common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE))
 		spec.Instance.Profiles.Compute.Name = common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE
-	}
-
-	// Initialize TMInfo field, if it's nil (mandatory)
-	if spec.Instance.TMInfo == nil {
-		databaselog.Info("Initializing empty tmInfo.")
-		spec.Instance.TMInfo = &(DBTimeMachineInfo{})
 	}
 
 	// TMInfo defaulting logic
@@ -209,12 +165,6 @@ func (v *ProvisoningHandler) defaulter(spec *DatabaseSpec) {
 	if spec.Instance.TMInfo.QuarterlySnapshotMonth == "" {
 		databaselog.Info(fmt.Sprintf("Initializing TMInfo.QuarterlySnapshotMonth to: %s", "Jan"))
 		spec.Instance.TMInfo.QuarterlySnapshotMonth = "Jan"
-	}
-
-	// Initialize AdditionalArguments field, if it's nil (mandatory)
-	if spec.Instance.AdditionalArguments == nil {
-		databaselog.Info("Initializing empty AdditionalArguments...")
-		spec.Instance.AdditionalArguments = map[string]string{}
 	}
 
 	databaselog.Info("Exiting Database defaulter logic!")
@@ -292,4 +242,46 @@ func (v *ProvisoningHandler) validateCreate(spec *DatabaseSpec, errors *field.Er
 	}
 
 	databaselog.Info("Existing Database validateCreate logic!")
+}
+
+func initializeObjects(spec *DatabaseSpec) {
+	databaselog.Info(fmt.Sprintf("Entering initializeObjects logic..."))
+
+	// Initialize Database properties
+	if spec.Instance == nil {
+		databaselog.Info(fmt.Sprintf("Initializing Instance..."))
+		spec.Instance = &(Instance{})
+	}
+	if spec.Instance.DatabaseNames == nil {
+		databaselog.Info(fmt.Sprintf("Initializing Instance Profiles..."))
+		spec.Instance.DatabaseNames = []string{}
+	}
+	if spec.Instance.Profiles == nil {
+		databaselog.Info(fmt.Sprintf("Initializing Instance Profiles..."))
+		spec.Instance.Profiles = &(Profiles{})
+	}
+	if spec.Instance.TMInfo == nil {
+		databaselog.Info(fmt.Sprintf("Initializing Instance TMInfo..."))
+		spec.Instance.TMInfo = &(DBTimeMachineInfo{})
+	}
+	if spec.Instance.AdditionalArguments == nil {
+		databaselog.Info(fmt.Sprintf("Initializing Instance AdditionalArguments..."))
+		spec.Instance.AdditionalArguments = map[string]string{}
+	}
+
+	// Initialize Clone properties
+	if spec.Clone == nil {
+		databaselog.Info(fmt.Sprintf("Initializing Clone..."))
+		spec.Clone = &(Clone{})
+	}
+	if spec.Clone.Profiles == nil {
+		databaselog.Info(fmt.Sprintf("Initializing Clone Profiles..."))
+		spec.Clone.Profiles = &(Profiles{})
+	}
+	if spec.Clone.AdditionalArguments == nil {
+		databaselog.Info(fmt.Sprintf("Initializing Clone AdditionalArguments..."))
+		spec.Clone.AdditionalArguments = map[string]string{}
+	}
+
+	databaselog.Info(fmt.Sprintf("Exiting initializeObjects logic!"))
 }
