@@ -90,7 +90,7 @@ func (v *CloningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorL
 	}
 
 	if clone.TimeZone == "" {
-		*errors = append(*errors, field.Invalid(clonePath.Child("timeZone"), clone.CredentialSecret, "CredentialSecret must be provided in Clone Spec"))
+		*errors = append(*errors, field.Invalid(clonePath.Child("timeZone"), clone.CredentialSecret, "TimeZone must be provided in Clone Spec"))
 	}
 
 	if clone.SourceDatabaseId == "" {
