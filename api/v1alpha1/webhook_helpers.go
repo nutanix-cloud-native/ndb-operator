@@ -72,12 +72,6 @@ func (v *CloningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorL
 		*errors = append(*errors, field.Invalid(clonePath.Child("timeZone"), clone.TimeZone, "TimeZone must be provided in Clone Spec"))
 	}
 
-	if _, isPresent := api.AllowedDatabaseTypes[clone.Type]; !isPresent {
-		*errors = append(*errors, field.Invalid(clonePath.Child("type"), clone.Type,
-			fmt.Sprintf("A valid database type must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedDatabaseTypes).MapKeys()),
-		))
-	}
-
 	if err := util.ValidateUUID(clone.SourceDatabaseId); err != nil {
 		*errors = append(*errors, field.Invalid(clonePath.Child("sourceDatabaseId"), clone.SourceDatabaseId, "sourceDatabaseId must be provided"))
 	}
