@@ -73,11 +73,11 @@ func (v *CloningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorL
 	}
 
 	if err := util.ValidateUUID(clone.SourceDatabaseId); err != nil {
-		*errors = append(*errors, field.Invalid(clonePath.Child("sourceDatabaseId"), clone.SourceDatabaseId, "sourceDatabaseId must be provided"))
+		*errors = append(*errors, field.Invalid(clonePath.Child("sourceDatabaseId"), clone.SourceDatabaseId, "sourceDatabaseId must be a valid UUID"))
 	}
 
 	if err := util.ValidateUUID(clone.SnapshotId); err != nil {
-		*errors = append(*errors, field.Invalid(clonePath.Child("snapshotId"), clone.SnapshotId, "snapshotId must be provided"))
+		*errors = append(*errors, field.Invalid(clonePath.Child("snapshotId"), clone.SnapshotId, "snapshotId must be a valid UUID"))
 	}
 
 	if _, isPresent := api.AllowedDatabaseTypes[clone.Type]; !isPresent {
