@@ -403,7 +403,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), clone)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("A valid database type must be specified. Valid values are:"))
+			Expect(errMsg).To(ContainSubstring("A valid clone type must be specified. Valid values are:"))
 		})
 
 		It("Should check for sourceDatabaseId", func() {
