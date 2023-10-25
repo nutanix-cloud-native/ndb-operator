@@ -1,4 +1,4 @@
-package postgressi
+package postgres_si_provisoning
 
 // Basic imports
 import (
