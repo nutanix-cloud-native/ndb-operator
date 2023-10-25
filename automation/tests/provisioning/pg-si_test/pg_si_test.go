@@ -44,6 +44,12 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	logger.Println("SetupSuite() starting...")
 	errBaseMsg := "Error: SetupSuite() ended"
 
+	// Setup env
+	if err = util.LoadEnv(ctx); err != nil {
+		logger.Printf("%s! %s\n", errBaseMsg, err)
+		suite.T().FailNow()
+	}
+
 	// Setup kubeconfig
 	config, err = util.SetupKubeconfig(ctx)
 	if err != nil {

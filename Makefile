@@ -267,7 +267,7 @@ else
 	touch ndb_api/$(api)_response_types.go && cp hack/boilerplate.go.txt ndb_api/$(api)_response_types.go && echo -e "\n" >> ndb_api/$(api)_response_types.go && echo "package ndb_api" >> ndb_api/$(api)_response_types.go
 endif
 
-# Usage: Export the environment variables before running the target
+# Usage: Create the following variables in the .env folder of automation/tests before running the target
 # KUBECONFIG='...' 
 # DB_SECRET_PASSWORD='...'
 # NDB_SECRET_USERNAME='...'
