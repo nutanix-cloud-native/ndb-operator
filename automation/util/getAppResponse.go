@@ -2,7 +2,6 @@ package util
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -50,12 +49,12 @@ func GetAppResponse(ctx context.Context, clientset *kubernetes.Clientset, pod *c
 	// Read and print the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return http.Response{}, errors.New(fmt.Sprintf("GetAppResponse() ended! Error while reading response body: %s", err))
+		return http.Response{}, fmt.Errorf("GetAppResponse() ended! Error while reading response body: %s", err)
 	} else {
 		logger.Println("Response: ", string(body))
 	}
 
-	logger.Println(fmt.Sprintf("%s!", errBaseMsg))
+	logger.Printf("%s!", errBaseMsg)
 
 	return *resp, nil
 }

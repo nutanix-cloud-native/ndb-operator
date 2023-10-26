@@ -72,19 +72,6 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 		logger.Printf("Error while fetching ndb secret type %s. Ndb Secret is nil.\n", st.DbSecret.Name)
 	}
 
-	// Create Database
-	if st.Database != nil {
-		st.Database.Spec.Instance.ClusterId = os.Getenv("CLUSTER_ID")
-		st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Create(st.Database)
-		if err != nil {
-			logger.Printf("Error while creating Database %s: %s\n", st.Database.Name, err)
-		} else {
-			logger.Printf("Database %s created.\n", st.Database.Name)
-		}
-	} else {
-		logger.Printf("Error while fetching database type %s. Database is nil.\n", st.DbSecret.Name)
-	}
-
 	// Create NDBServer
 	if st.NdbServer != nil {
 		st.NdbServer.Spec.Server = os.Getenv("NDB_SERVER")
@@ -95,7 +82,20 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 			logger.Printf("NDBServer %s created.\n", st.Database.Name)
 		}
 	} else {
-		logger.Printf("Error while fetching NDBServer type %s. NDBServer is nil.\n", st.DbSecret.Name)
+		logger.Printf("Error while fetching NDBServer type %s. NDBServer is nil.\n", st.NdbServer.Name)
+	}
+
+	// Create Database
+	if st.Database != nil {
+		st.Database.Spec.Instance.ClusterId = os.Getenv("CLUSTER_ID")
+		st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Create(st.Database)
+		if err != nil {
+			logger.Printf("Error while creating Database %s: %s\n", st.Database.Name, err)
+		} else {
+			logger.Printf("Database %s created.\n", st.Database.Name)
+		}
+	} else {
+		logger.Printf("Error while fetching database type %s. Database is nil.\n", st.Database.Name)
 	}
 
 	// Create Application
@@ -107,7 +107,7 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 			logger.Printf("Pod %s created.\n", st.AppPod.Name)
 		}
 	} else {
-		logger.Printf("Error while fetching app pod type %s. AppPod is nil.\n", st.DbSecret.Name)
+		logger.Printf("Error while fetching app pod type %s. AppPod is nil.\n", st.AppPod.Name)
 	}
 
 	// Wait for DB to get Ready
@@ -271,7 +271,7 @@ func GetDatabaseResponse(ctx context.Context, clientset *kubernetes.Clientset, v
 	// Get NDBServer CR
 	ndbServer, err := v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Get(st.NdbServer.Name, metav1.GetOptions{})
 	if err != nil {
-		return ndb_api.DatabaseResponse{}, fmt.Errorf("%s! Could not fetch ndbServer '%s' CR! %s\n", errBaseMsg, ndbServer.Name, err)
+		return ndb_api.DatabaseResponse{}, fmt.Errorf("%s! Could not fetch ndbServer '%s' CR! %s", errBaseMsg, ndbServer.Name, err)
 	} else {
 		logger.Printf("Retrieved ndbServer '%s' CR from v1alpha1ClientSet", ndbServer.Name)
 	}
@@ -279,7 +279,7 @@ func GetDatabaseResponse(ctx context.Context, clientset *kubernetes.Clientset, v
 	// Get Database CR
 	database, err := v1alpha1ClientSet.Databases(st.Database.Namespace).Get(st.Database.Name, metav1.GetOptions{})
 	if err != nil {
-		return ndb_api.DatabaseResponse{}, fmt.Errorf("%s! Could not fetch database '%s' CR! %s\n", errBaseMsg, database.Name, err)
+		return ndb_api.DatabaseResponse{}, fmt.Errorf("%s! Could not fetch database '%s' CR! %s", errBaseMsg, database.Name, err)
 	} else {
 		logger.Printf("Retrieved database '%s' CR from v1alpha1ClientSet", database.Name)
 	}
@@ -289,14 +289,14 @@ func GetDatabaseResponse(ctx context.Context, clientset *kubernetes.Clientset, v
 	secret, err := clientset.CoreV1().Secrets(database.Namespace).Get(context.TODO(), ndb_secret_name, metav1.GetOptions{})
 	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
 	if err != nil || username == "" || password == "" {
-		return ndb_api.DatabaseResponse{}, fmt.Errorf("%s! Could not fetch data from secret! %s\n", errBaseMsg, err)
+		return ndb_api.DatabaseResponse{}, fmt.Errorf("%s! Could not fetch data from secret! %s", errBaseMsg, err)
 	}
 
 	// Create ndbClient and getting databaseResponse
 	ndbClient := ndb_client.NewNDBClient(username, password, ndbServer.Spec.Server, "", true)
 	databaseResponse, err = ndb_api.GetDatabaseById(context.TODO(), ndbClient, database.Status.Id)
 	if err != nil {
-		return ndb_api.DatabaseResponse{}, fmt.Errorf("%s! Database response from ndb_api failed! %s\n", errBaseMsg, err)
+		return ndb_api.DatabaseResponse{}, fmt.Errorf("%s! Database response from ndb_api failed! %s", errBaseMsg, err)
 	}
 
 	logger.Printf("Database response.status: %s.\n", databaseResponse.Status)
