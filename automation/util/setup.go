@@ -77,7 +77,7 @@ func LoadEnv(ctx context.Context) (err error) {
 		automation.NDB_SECRET_USERNAME_ENV,
 		automation.NDB_SECRET_PASSWORD_ENV,
 		automation.NDB_SERVER_ENV,
-		automation.NDB_CLUSTER_ID_ENV,
+		automation.CLUSTER_ID_ENV,
 	}
 	missingRequiredEnvs := []string{}
 	for _, env := range requiredEnvs {
@@ -102,7 +102,7 @@ func SetupKubeconfig(ctx context.Context) (config *rest.Config, err error) {
 	logger.Println("SetupKubeconfig() started...")
 
 	logger.Println("Looking up environment variable 'KUBECONFIG'...")
-	kubeconfig, ok := os.LookupEnv("KUBECONFIG")
+	kubeconfig, ok := os.LookupEnv(automation.KUBECONFIG_ENV)
 	if ok {
 		logger.Printf("Using configuration from '%s'\n", kubeconfig)
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)

@@ -12,7 +12,7 @@ spec:
       - database_three
     clusterId: <cluster-id>
     credentialSecret: db-secret-pg-si
-    size: 100
+    size: 10
     timezone: "UTC"
     type: postgres
     profiles: 
@@ -33,7 +33,7 @@ spec:
         name: ""
         id: ""
     timeMachine:
-      sla : "NONE"
+      sla : "DEFAULT_OOB_GOLD_SLA"
       dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
       snapshotsPerDay:     4            # Number of snapshots per day
       logCatchUpFrequency: 90           # Frequency (in minutes)

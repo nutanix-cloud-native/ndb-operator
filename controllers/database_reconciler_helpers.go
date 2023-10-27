@@ -60,7 +60,7 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 		log.Info("Added finalizer " + finalizer)
 	}
 	//Not requeuing as a successful update automatically triggers a reconcile.
-	return doNotRequeue()
+	return requeueWithTimeout(15)
 }
 
 // handleDelete function handles the deletion of

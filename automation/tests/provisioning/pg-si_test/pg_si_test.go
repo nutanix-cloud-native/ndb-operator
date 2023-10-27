@@ -149,6 +149,35 @@ func (suite *PostgresqlSingleInstanceTestSuite) TestAppConnectivity() {
 	assert.Equal(200, resp.StatusCode, "The response status should be 200.")
 }
 
+// Tests if creation of time machine is succesful
+func (suite *PostgresqlSingleInstanceTestSuite) TestTimeMachineSuccess() {
+	logger := util.GetLogger(suite.ctx)
+	assert := assert.New(suite.T())
+
+	if suite.setupTypes.Database.Spec.Instance.TMInfo.SLAName == "" || suite.setupTypes.Database.Spec.Instance.TMInfo.SLAName == "NONE" {
+		logger.Println("No time machine specified, test automatically passing.")
+		return
+	}
+
+	tm, err := util.GetTimemachineResponseByDatabaseId(suite.ctx, suite.clientset, suite.v1alpha1ClientSet, suite.setupTypes)
+	if err != nil {
+		logger.Printf("Error: TestTimeMachineSuccess() failed! %v", err)
+		assert.FailNow("Error: TestTimeMachineSuccess() failed! %v", err)
+	} else {
+		logger.Println("Timemachine response retrieved.")
+	}
+
+	err = util.CheckTmInfo(suite.ctx, suite.setupTypes.Database, &tm)
+	if err != nil {
+		logger.Printf("Error: TestTimeMachineSuccess() failed! %v", err)
+		assert.FailNow("Error: TestTimeMachineSuccess() failed! %v", err)
+	} else {
+		logger.Println("CheckTmInfo succesful")
+	}
+
+	assert.Equal(common.DATABASE_CR_STATUS_READY, tm.Status, "The tm status should be ready.")
+}
+
 // In order for 'go test' to run this suite, we need to create
 // a normal test function and pass our suite to suite.Run
 func TestPostgresqlSingleInstanceTestSuite(t *testing.T) {

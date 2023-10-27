@@ -9,6 +9,7 @@ import (
 	"time"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/automation"
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
@@ -48,7 +49,7 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 
 	// Create Secrets
 	if st.DbSecret != nil {
-		st.DbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv("DB_SECRET_PASSWORD")
+		st.DbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv(automation.DB_SECRET_PASSWORD_ENV)
 		_, err = clientset.CoreV1().Secrets(ns).Create(ctx, st.DbSecret, metav1.CreateOptions{})
 		if err != nil {
 			logger.Printf("Error while creating db secret %s: %s\n", st.DbSecret.Name, err)
@@ -60,8 +61,8 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 	}
 
 	if st.NdbSecret != nil {
-		st.NdbSecret.StringData[common.SECRET_DATA_KEY_USERNAME] = os.Getenv("NDB_SECRET_USERNAME")
-		st.NdbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv("NDB_SECRET_PASSWORD")
+		st.NdbSecret.StringData[common.SECRET_DATA_KEY_USERNAME] = os.Getenv(automation.NDB_SECRET_USERNAME_ENV)
+		st.NdbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv(automation.NDB_SECRET_PASSWORD_ENV)
 		_, err = clientset.CoreV1().Secrets(ns).Create(context.TODO(), st.NdbSecret, metav1.CreateOptions{})
 		if err != nil {
 			logger.Printf("Error while creating ndb secret %s: %s\n", st.NdbSecret.Name, err)
@@ -72,9 +73,22 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 		logger.Printf("Error while fetching ndb secret type %s. Ndb Secret is nil.\n", st.DbSecret.Name)
 	}
 
+	// Create NDBServer
+	if st.NdbServer != nil {
+		st.NdbServer.Spec.Server = os.Getenv(automation.NDB_SERVER_ENV)
+		st.NdbServer, err = v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Create(st.NdbServer)
+		if err != nil {
+			logger.Printf("Error while creating NDBServer %s: %s\n", st.NdbServer.Name, err)
+		} else {
+			logger.Printf("NDBServer %s created.\n", st.NdbServer.Name)
+		}
+	} else {
+		logger.Printf("Error while fetching NDBServer type %s. NDBServer is nil.\n", st.DbSecret.Name)
+	}
+
 	// Create Database
 	if st.Database != nil {
-		st.Database.Spec.Instance.ClusterId = os.Getenv("CLUSTER_ID")
+		st.Database.Spec.Instance.ClusterId = os.Getenv(automation.CLUSTER_ID_ENV)
 		st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Create(st.Database)
 		if err != nil {
 			logger.Printf("Error while creating Database %s: %s\n", st.Database.Name, err)
@@ -83,19 +97,6 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 		}
 	} else {
 		logger.Printf("Error while fetching database type %s. Database is nil.\n", st.DbSecret.Name)
-	}
-
-	// Create NDBServer
-	if st.NdbServer != nil {
-		st.NdbServer.Spec.Server = os.Getenv("NDB_SERVER")
-		st.NdbServer, err = v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Create(st.NdbServer)
-		if err != nil {
-			logger.Printf("Error while creating NDBServer %s: %s\n", st.Database.Name, err)
-		} else {
-			logger.Printf("NDBServer %s created.\n", st.Database.Name)
-		}
-	} else {
-		logger.Printf("Error while fetching NDBServer type %s. NDBServer is nil.\n", st.DbSecret.Name)
 	}
 
 	// Create Application
