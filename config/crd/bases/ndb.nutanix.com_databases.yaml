@@ -51,6 +51,11 @@ spec:
               databaseInstance:
                 description: Database instance specific details
                 properties:
+                  additionalArguments:
+                    additionalProperties:
+                      type: string
+                    description: Additional database engine specific arguments
+                    type: object
                   clusterId:
                     description: Id of the cluster to provision the database on
                     type: string
@@ -165,23 +170,26 @@ spec:
           status:
             description: DatabaseStatus defines the observed state of Database
             properties:
+              creationOperationId:
+                type: string
               dbServerId:
+                type: string
+              deregistrationOperationId:
                 type: string
               id:
                 type: string
               ipAddress:
-                type: string
-              provisioningOperationId:
                 type: string
               status:
                 type: string
               type:
                 type: string
             required:
+            - creationOperationId
             - dbServerId
+            - deregistrationOperationId
             - id
             - ipAddress
-            - provisioningOperationId
             - status
             - type
             type: object

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -106,6 +107,11 @@ func instanceSpecDefaulterForCreate(instance *Instance) {
 		instance.TMInfo.QuarterlySnapshotMonth = "Jan"
 	}
 
+	// additional arguments defaulting logic
+	if instance.AdditionalArguments == nil {
+		databaselog.Info("Initializing empty additional db arguments...")
+		instance.AdditionalArguments = map[string]string{}
+	}
 }
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
@@ -188,8 +194,45 @@ func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList,
 		))
 	}
 
+	if err := additionalArgumentsValidationCheck(instance.Type, instance.AdditionalArguments); err != nil {
+		allErrs = append(allErrs, field.Invalid(instancePath.Child("additionalArguments"), instance.AdditionalArguments, err.Error()))
+	}
+
 	databaselog.Info("Exiting instanceSpecValidatorForCreate...")
 	return allErrs
+}
+
+/* Checks if configured additional arguments are valid or not and returns the corresponding additional arguments. If error is nil valid, else invalid */
+func additionalArgumentsValidationCheck(dbType string, specifiedAdditionalArguments map[string]string) error {
+	// Empty additionalArguments is always valid
+	if specifiedAdditionalArguments == nil {
+		return nil
+	}
+
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(dbType)
+
+	// Invalid type returns error
+	if err != nil {
+		return err
+	}
+
+	// Checking if arguments are valid
+	invalidArgs := []string{}
+	for name, _ := range specifiedAdditionalArguments {
+		if _, isPresent := allowedAdditionalArguments[name]; !isPresent {
+			invalidArgs = append(invalidArgs, name)
+		}
+	}
+
+	if len(invalidArgs) == 0 {
+		return nil
+	} else {
+		return fmt.Errorf(
+			"Additional Arguments validation for database type: %s failed! The following args are invalid: %s. These are the allowed args: %s",
+			dbType,
+			strings.Join(invalidArgs, ", "),
+			reflect.ValueOf(allowedAdditionalArguments).MapKeys())
+	}
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type

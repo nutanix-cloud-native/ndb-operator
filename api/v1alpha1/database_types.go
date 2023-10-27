@@ -34,12 +34,13 @@ type DatabaseSpec struct {
 
 // DatabaseStatus defines the observed state of Database
 type DatabaseStatus struct {
-	IPAddress               string `json:"ipAddress"`
-	Id                      string `json:"id"`
-	Status                  string `json:"status"`
-	DatabaseServerId        string `json:"dbServerId"`
-	Type                    string `json:"type"`
-	ProvisioningOperationId string `json:"provisioningOperationId"`
+	IPAddress                 string `json:"ipAddress"`
+	Id                        string `json:"id"`
+	Status                    string `json:"status"`
+	DatabaseServerId          string `json:"dbServerId"`
+	Type                      string `json:"type"`
+	CreationOperationId       string `json:"creationOperationId"`
+	DeregistrationOperationId string `json:"deregistrationOperationId"`
 }
 
 // Database is the Schema for the databases API
@@ -98,6 +99,9 @@ type Instance struct {
 	// +optional
 	// Information related to time machine that is to be associated with this database
 	TMInfo *DBTimeMachineInfo `json:"timeMachine"`
+	// +optional
+	// Additional database engine specific arguments
+	AdditionalArguments map[string]string `json:"additionalArguments"`
 }
 
 // Time Machine details
