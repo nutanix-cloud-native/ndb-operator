@@ -3,8 +3,10 @@ package postgres_si_provisoning
 // Basic imports
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/nutanix-cloud-native/ndb-operator/automation"
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
 	util "github.com/nutanix-cloud-native/ndb-operator/automation/util"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -35,7 +37,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	var clientset *kubernetes.Clientset
 
 	// Setup logger and context
-	logger, err := util.SetupLogger("./pg-si_test.log")
+	logger, err := util.SetupLogger(fmt.Sprintf("%s/pg-si_test.log", automation.PROVISIONING_LOG_PATH))
 	if err != nil {
 		suite.T().FailNow()
 	}
