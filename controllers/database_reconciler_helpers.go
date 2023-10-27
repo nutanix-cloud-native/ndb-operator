@@ -131,7 +131,7 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 		return doNotRequeue()
 	}
 	// Requeue the request while waiting for the database instance to be deleted from NDB.
-	return requeueWithTimeout(15)
+	return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
 }
 
 // The handleSync function synchronizes the database CR with the database info object in the
