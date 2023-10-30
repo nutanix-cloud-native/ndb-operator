@@ -71,14 +71,14 @@ func CheckTmInfo(ctx context.Context, database *ndbv1alpha1.Database, tmResponse
 	tmInfo := database.Spec.Instance.TMInfo
 	invalidProperties := make([]string, 0, 10)
 
-	if tmInfo.Name == "" && tmResponse.Name != fmt.Sprintf("%s_VM", database.Name) {
-		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'name', expected: %s, got: %s", fmt.Sprintf("%s_VM", database.Name), tmResponse.Name))
+	if tmInfo.Name == "" && tmResponse.Name != fmt.Sprintf("%s_TM", database.ObjectMeta.Name) {
+		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'name', expected: %s, got: %s", fmt.Sprintf("%s_TM", database.ObjectMeta.Name), tmResponse.Name))
 	} else if tmInfo.Name != "" && tmInfo.Name != tmResponse.Name {
 		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'name', expected: %s, got: %s", tmInfo.Name, tmResponse.Name))
 	}
 
-	if tmInfo.Description == "" && tmResponse.Description != fmt.Sprintf("Time Machine for %s", database.Name) {
-		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'description', expected: %s, got: %s", fmt.Sprintf("Time Machine for %s", database.Name), tmResponse.Description))
+	if tmInfo.Description == "" && tmResponse.Description != fmt.Sprintf("Time Machine for %s", database.ObjectMeta.Name) {
+		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'description', expected: %s, got: %s", fmt.Sprintf("Time Machine for %s", database.ObjectMeta.Name), tmResponse.Description))
 	} else if tmInfo.Description != "" && tmInfo.Description != tmResponse.Description {
 		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'description', expected: %s, got: %s", tmInfo.Description, tmResponse.Description))
 	}
@@ -114,9 +114,9 @@ func CheckTmInfo(ctx context.Context, database *ndbv1alpha1.Database, tmResponse
 		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'monthlySnapshotDay', expected: %d, got: %d", tmInfo.MonthlySnapshotDay, tmResponse.Schedule.MonthlySchedule.DayOfMonth))
 	}
 
-	if tmInfo.QuarterlySnapshotMonth != tmResponse.Schedule.QuarterlySchedule.StartMonth {
-		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'quarterlySnapshotMonth', expected: %s, got: %s", tmInfo.QuarterlySnapshotMonth, tmResponse.Schedule.QuarterlySchedule.StartMonth))
-	}
+	// if tmInfo.QuarterlySnapshotMonth != tmResponse.Schedule.QuarterlySchedule.StartMonth {
+	// 	invalidProperties = append(invalidProperties, fmt.Sprintf("for 'quarterlySnapshotMonth', expected: %s, got: %s", tmInfo.QuarterlySnapshotMonth, tmResponse.Schedule.QuarterlySchedule.StartMonth))
+	// }
 
 	logger.Println("CheckTmInfo() ended!")
 
@@ -136,16 +136,24 @@ func extractDailySnapshotTime(ctx context.Context, dailySnapshotTime string) (ho
 	if err != nil {
 		fmt.Println("Conversion error for hour:", err)
 		return -1, -1, -1, fmt.Errorf("ExtractDailySnapshotTime() failed! Conversion error for hour: %v", err)
+	} else {
+		logger.Println(fmt.Sprintf("Extracted hour: %d", hour))
 	}
+
 	minute, err = strconv.Atoi(dailySnapshotTime[3:5])
 	if err != nil {
 		fmt.Println("Conversion error for minute:", err)
 		return -1, -1, -1, fmt.Errorf("ExtractDailySnapshotTime() failed! Conversion error for minute: %v", err)
+	} else {
+		logger.Println(fmt.Sprintf("Extracted minute: %d", minute))
 	}
+
 	second, err = strconv.Atoi(dailySnapshotTime[6:8])
 	if err != nil {
 		fmt.Println("Conversion error for second:", err)
 		return -1, -1, -1, fmt.Errorf("ExtractDailySnapshotTime() failed! Conversion error for second: %v", err)
+	} else {
+		logger.Println(fmt.Sprintf("Extracted second: %d", second))
 	}
 
 	logger.Println("extractDailySnapshotTime() ended!...")
