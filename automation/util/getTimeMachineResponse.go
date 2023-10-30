@@ -71,15 +71,11 @@ func CheckTmInfo(ctx context.Context, database *ndbv1alpha1.Database, tmResponse
 	tmInfo := database.Spec.Instance.TMInfo
 	invalidProperties := make([]string, 0, 10)
 
-	if tmInfo.Name == "" && tmResponse.Name != fmt.Sprintf("%s_TM", database.ObjectMeta.Name) {
-		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'name', expected: %s, got: %s", fmt.Sprintf("%s_TM", database.ObjectMeta.Name), tmResponse.Name))
-	} else if tmInfo.Name != "" && tmInfo.Name != tmResponse.Name {
+	if tmInfo.Name != tmResponse.Name {
 		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'name', expected: %s, got: %s", tmInfo.Name, tmResponse.Name))
 	}
 
-	if tmInfo.Description == "" && tmResponse.Description != fmt.Sprintf("Time Machine for %s", database.ObjectMeta.Name) {
-		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'description', expected: %s, got: %s", fmt.Sprintf("Time Machine for %s", database.ObjectMeta.Name), tmResponse.Description))
-	} else if tmInfo.Description != "" && tmInfo.Description != tmResponse.Description {
+	if tmInfo.Description != tmResponse.Description {
 		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'description', expected: %s, got: %s", tmInfo.Description, tmResponse.Description))
 	}
 
@@ -87,10 +83,11 @@ func CheckTmInfo(ctx context.Context, database *ndbv1alpha1.Database, tmResponse
 		invalidProperties = append(invalidProperties, fmt.Sprintf("for 'slaName', expected: %s, got: %s", tmInfo.Name, tmResponse.Sla.Name))
 	}
 
-	expectedSnapHour := tmResponse.Schedule.SnapshotTimeOfDay.Hours
-	expectedSnapMinute := tmResponse.Schedule.SnapshotTimeOfDay.Minutes
-	expectedSnapSecond := tmResponse.Schedule.SnapshotTimeOfDay.Seconds
-	if gotSnapHour, gotSnapMinute, gotSnapSecond, err := extractDailySnapshotTime(ctx, tmInfo.DailySnapshotTime); err != nil {
+	gotSnapHour := tmResponse.Schedule.SnapshotTimeOfDay.Hours
+	gotSnapMinute := tmResponse.Schedule.SnapshotTimeOfDay.Minutes
+	gotSnapSecond := tmResponse.Schedule.SnapshotTimeOfDay.Seconds
+	expectedSnapHour, expectedSnapMinute, expectedSnapSecond, err := extractDailySnapshotTime(ctx, tmInfo.DailySnapshotTime)
+	if err != nil {
 		invalidProperties = append(invalidProperties, fmt.Sprintf("failed to convert dailySnapshotTime: %s", err))
 	} else {
 		if gotSnapHour != expectedSnapHour || gotSnapMinute != expectedSnapMinute || gotSnapSecond != expectedSnapSecond {
