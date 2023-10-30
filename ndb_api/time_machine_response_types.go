@@ -150,7 +150,7 @@ type TimeMachineSchedule struct {
 
 type TimeMachineSnapshotTimeOfDay struct {
 	Hours                   int  `json:"hours"`
-	Minutes                 int  `json:"name"`
+	Minutes                 int  `json:"minutes"`
 	Seconds                 int  `json:"seconds"`
 	Extra                   bool `json:"extra"`
 	ValidScheduleTime       bool `json:"validScheduleTime"`
