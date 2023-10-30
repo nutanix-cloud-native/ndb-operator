@@ -1,7 +1,7 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: NDBServer
 metadata:
-  name: ndb
+  name: ndb-pg
 spec:
   credentialSecret: ndb-secret-pg-si
   server: <https://<ip-for-ndb>:8443/era/v0.9>
