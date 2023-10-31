@@ -12,7 +12,7 @@ The NDB operator brings automated and simplified database administration, provis
 ![Proudly written in Golang](https://img.shields.io/badge/written%20in-Golang-92d1e7.svg)
 
 ---
-## <p style="text-align: center;">Running the NDB Operator</p>
+## Running the NDB Operator
 ### Pre-requisites
 1. Access to an NDB Server.
 2. A Kubernetes cluster to run against, which should have network connectivity to the NDB server. The operator will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
@@ -62,7 +62,7 @@ The container and bundle image creation steps can be skipped in case of existing
 
 ---
 
-## <p style="text-align: center;">Using the Operator</p>
+## Using the Operator
 ###  Creating secrets to be used by the NDBServer and Database resources:
 
 ```yaml
@@ -338,7 +338,8 @@ MySQL:
   refreshDateTimezone  
 ```
 ---
-## <p style="text-align: center;">Developement</p>
+
+## Developement
 
 ### Modifying the API definitions
 If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
@@ -389,9 +390,10 @@ To remove the controller from the cluster:
 ```sh
 make undeploy
 ```
+
 ---
 
-## <p style="text-align: center;">How it works</p>
+## How it works
 
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/). It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/)
 which provides a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster.
@@ -406,18 +408,18 @@ Pods can specify an initContainer to wait for the service (and hence the databas
     command: ['sh', '-c', "until nslookup <<Database CR Name>>-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for database service; sleep 2; done"]
 ```
 ---
-## <p style="text-align: center;">Contributing</p>
+
+## Contributing
 See the [contributing docs](CONTRIBUTING.md)
 
 ---
-## <p style="text-align: center;">Support</p>
 
-
+## Support
 This code is developed in the open with input from the community through issues and PRs. A Nutanix engineering team serves as the maintainer. Documentation is available in the project repository. Issues and enhancement requests can be submitted in the [Issues tab of this repository](../../issues). Please search for and review the existing open issues before submitting a new issue.
 
 ---
-## <p style="text-align: center;">License</p>
 
+## License
 Copyright 2022-2023 Nutanix, Inc.
 
 The project is released under version 2.0 of the [Apache license](http://www.apache.org/licenses/LICENSE-2.0).
