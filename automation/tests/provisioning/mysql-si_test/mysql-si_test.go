@@ -89,26 +89,26 @@ func (suite *MysqlSingleInstanceTestSuite) SetupSuite() {
 
 // TearDownSuite is called once after running the tests in the suite
 func (suite *MysqlSingleInstanceTestSuite) TearDownSuite() {
-	// var err error
+	var err error
 
-	// logger := util.GetLogger(suite.ctx)
-	// logger.Println("TearDownSuite() starting...")
-	// errBaseMsg := "Error: SetupSuite() ended"
+	logger := util.GetLogger(suite.ctx)
+	logger.Println("TearDownSuite() starting...")
+	errBaseMsg := "Error: SetupSuite() ended"
 
-	// // Setup yaml types
-	// setupTypes, err := util.SetupTypeTemplates(suite.ctx)
-	// if err != nil {
-	// 	logger.Printf("%s! %s\n", errBaseMsg, err)
-	// 	suite.T().FailNow()
-	// }
+	// Setup yaml types
+	setupTypes, err := util.SetupTypeTemplates(suite.ctx)
+	if err != nil {
+		logger.Printf("%s! %s\n", errBaseMsg, err)
+		suite.T().FailNow()
+	}
 
-	// // Delete resources and de-provision database
-	// if err = util.ProvisioningTestTeardown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
-	// 	logger.Printf("%s! %s\n", errBaseMsg, err)
-	// 	suite.T().FailNow()
-	// }
+	// Delete resources and de-provision database
+	if err = util.ProvisioningTestTeardown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
+		logger.Printf("%s! %s\n", errBaseMsg, err)
+		suite.T().FailNow()
+	}
 
-	// logger.Println("TearDownSuite() ended!")
+	logger.Println("TearDownSuite() ended!")
 }
 
 // This will run right before the test starts and receives the suite and test names as input
