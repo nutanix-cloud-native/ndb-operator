@@ -211,7 +211,7 @@ func ProvisioningTestTeardown(ctx context.Context, st *SetupTypes, clientset *ku
 	// Delete NDB Server
 	if st.NdbServer != nil {
 		logger.Printf("Attempting to delete ndb server: %s...", st.NdbServer.Name)
-		err = clientset.CoreV1().Secrets(ns).Delete(context.TODO(), st.NdbServer.Name, metav1.DeleteOptions{})
+		err := v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Delete(st.NdbServer.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			logger.Printf("Error while deleting ndb server %s: %s!\n", st.NdbServer.Name, err)
 		} else {

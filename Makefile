@@ -276,4 +276,4 @@ endif
 # CLUSTER_ID='...'
 .PHONY: run-automation
 run-automation: install
-	go test ./automation/tests/... -v -timeout 90m
+	go test ./automation/tests/... -v -timeout 120m

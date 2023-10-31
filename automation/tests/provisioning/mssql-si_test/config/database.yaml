@@ -1,26 +1,26 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db-mysql-si
+  name: db-mssql-si
 spec:
-  ndbRef: ndb-mysql
+  ndbRef: ndb-mssql
   databaseInstance:
-    name: db-mysql-si
+    name: db-mssql-si
     databaseNames:
       - database_one
     clusterId: <cluster-id>
-    credentialSecret: db-secret-mysql-si
+    credentialSecret: db-secret-mssql-si
     size: 10
     timezone: "UTC"
-    type: mysql
+    type: mssql
     profiles: 
       compute:
         name: ""
         id: ""
       # A Software profile is a mandatory input for proprietary (closed-source) engines such as SQL Server & Oracle
       software:
-        name: ""
-        id: ""
+        name: "MSSQL-MAZIN2"
+        # id: "7281c9a9-1639-4cbd-a9cc-f0b0422ba90a"
       network:
         name: ""
         id: ""
@@ -31,7 +31,7 @@ spec:
         name: ""
         id: ""
     timeMachine:
-      name: db-mysql-si_TM
+      name: db-mssql-si_TM
       description: "TM provisioned by operator"
       sla : "DEFAULT_OOB_GOLD_SLA"
       dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
@@ -41,3 +41,5 @@ spec:
       monthlySnapshotDay:  24           # Day of the month for monthly snapshot
       quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
     additionalArguments:
+      authentication_mode: "mixed"
+      sql_user_password: "Nutanix.1"
