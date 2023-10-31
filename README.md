@@ -57,7 +57,7 @@ make bundle bundle-build bundle-push
 operator-sdk run bundle $BUNDLE_IMG
 
 NOTE: 
-The container and bundle image creation steps can be skipped in case of existing images the container registry.
+The container and bundle image creation steps can be skipped if existing images are present in the container registry.
 ```
 
 ---
