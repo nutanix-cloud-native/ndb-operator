@@ -12,25 +12,58 @@ The NDB operator brings automated and simplified database administration, provis
 ![Proudly written in Golang](https://img.shields.io/badge/written%20in-Golang-92d1e7.svg)
 
 ---
-## Getting Started
+## <p style="text-align: center;">Running the NDB Operator</p>
 ### Pre-requisites
-1. NDB [installation](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-NDB-User-Guide-v2_5:Nutanix-NDB-User-Guide-v2_5).
-2. A Kubernetes cluster to run against, which should have network connectivity to the NDB installation. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
-**Note:** The operator will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
-3. The operator-sdk installed.
+1. Access to an NDB Server.
+2. A Kubernetes cluster to run against, which should have network connectivity to the NDB server. The operator will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
+3. The [operator-sdk installed](https://sdk.operatorframework.io/docs/installation/).
 4. A clone of the source code ([this](https://github.com/nutanix-cloud-native/ndb-operator) repository).
-5. Installing the cert-manager. Please follow the instructions [here](https://cert-manager.io/docs/installation/)
+5. Installing the cert-manager (only when running within non OpenShift clusters). Follow the instructions [here](https://cert-manager.io/docs/installation/).
 
-### Installation and Running on the cluster
-Deploy the controller on the cluster:
+With the pre-requisites completed, the NDB Operator can be deployed in one of the following ways: 
+
+### Outside Kubernetes
+Runs the controller outside the Kubernetes cluster as a process, generally used while development (without running webhooks):
+```sh
+make install run
+```
+
+### Within Kubernetes 
+Runs the controller, installs the CRDs, services and RBAC entities within the Kubernetes cluster. Used to run the operator from the container image defined in the Makefile. Make sure that the cert-manager is installed if not using OpenShift.
 
 ```sh
 make deploy
 ```
 
-### Using the Operator
+### As Helm Charts
+The Helm charts for the NDB Operator project are available on artifacthub.io and can be installed by following the instructions [here](https://artifacthub.io/packages/helm/nutanix/ndb-operator?modal=install).
 
-1. Create the secrets that will be used by the NDBServer and Database resources:
+### On OpenShift
+To deploy the operator from this repository on an OpenShift cluster, we need to create a bundle and then install the operator via the operator-sdk.
+```sh
+# Export these environment variables to overwrite the variables set in the Makefile
+export DOCKER_USERNAME=dockerhub-username
+export VERSION=x.y.z
+export IMG=docker.io/$DOCKER_USERNAME/ndb-operator:v$VERSION
+export BUNDLE_IMG=docker.io/$DOCKER_USERNAME/ndb-operator-bundle:v$VERSION
+
+# Build and push the container image to the container registry
+make docker-build docker-push
+
+# Build the bundle following the prompts for input, build and push the bundle image to the container registry
+make bundle bundle-build bundle-push
+
+# Install the operator (run on the OpenShift cluster)
+operator-sdk run bundle $BUNDLE_IMG
+
+NOTE: 
+The container and bundle image creation steps can be skipped in case of existing images the container registry.
+```
+
+---
+
+## <p style="text-align: center;">Using the Operator</p>
+###  Creating secrets to be used by the NDBServer and Database resources:
 
 ```yaml
 apiVersion: v1
@@ -62,13 +95,8 @@ Apply the secrets:
 ```
 kubectl apply -f <path/to/secrets-manifest.yaml>
 ```
-You can optionally verify that they have been created:
 
-```sh
-kubectl get secrets
-```
-
-2. To create a NDBServer resource manifest that holds the information about the NDB setup, the fields in the `spec` section of the sample manifest [ndb_v1alpha1_ndbserver.yaml](config/samples/ndb_v1alpha1_ndbserver.yaml) should be updated. The file is described as follows:
+###  Creating the NDBServer resource. The [sample manifest](config/samples/ndb_v1alpha1_ndbserver.yaml) for NDBServer is described as follows:
 
 ```yaml
 apiVersion: ndb.nutanix.com/v1alpha1
@@ -90,14 +118,14 @@ spec:
     skipCertificateVerification: true
 
 ```
-
-3. Run this command to create the NDBServer resource:
+Create the NDBServer resource using:
 ```sh
-kubectl apply -f config/samples/ndb_v1alpha1_ndbserver.yaml
+kubectl apply -f <path/to/NDBServer-manifest.yaml>
 ```
 
-4. To create a Database resource manifest that holds the information about the Database, the fields in the `spec` section of the sample manifest [ndb_v1alpha1_database.yaml](config/samples/ndb_v1alpha1_database.yaml) should be updated. The file is described as follows:
+### Creating a Database Resource. A database can either be provisioned or cloned on NDB based on the inputs specified in the database manifest.
 
+#### Provisioning
 ```yaml
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
@@ -105,15 +133,16 @@ metadata:
   # This name that will be used within the kubernetes cluster
   name: db
 spec:
-  # Name of the NDBServer resource created in step 3
+  # Name of the NDBServer resource created earlier
   ndbRef: ndb
+  isClone: false
   # Database instance specific details (that is to be provisioned)
   databaseInstance:
     # Cluster id of the cluster where the Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
     clusterId: "Nutanix Cluster Id"
     # The database instance name on NDB
-    Name: "Database-Instance-Name"
+    name: "Database-Instance-Name"
     # The description of the database instance
     description: Database Description
     # Names of the databases on that instance
@@ -158,28 +187,88 @@ spec:
       weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
       monthlySnapshotDay:  24           # Day of the month for monthly snapshot
       quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
-    additionalArguments:                # Optional black, can specify additional arguments that are unique to database engines.
+    additionalArguments:                # Optional block, can specify additional arguments that are unique to database engines.
       listener_port: 8080
 
 ```
 
-5. Run this command to create the Database resource:
+#### Cloning
+```yaml
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  # This name that will be used within the kubernetes cluster
+  name: db
+spec:
+  # Name of the NDBServer resource created earlier
+  ndbRef: ndb
+  isClone: true
+  # Clone specific details (that is to be provisioned)
+  clone:
+    # Type of the database to be cloned
+    type: postgres
+    # The clone instance name on NDB
+    name: "Clone-Instance-Name"
+    # The description of the clone instance
+    description: Database Description
+    # Cluster id of the cluster where the Database has to be provisioned
+    # Can be fetched from the GET /clusters endpoint
+    clusterId: "Nutanix Cluster Id"
+    # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
+    # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
+    # Name is case-sensitive. ID is the UUID of the profile. Profile should be in the "READY" state
+    # "id" & "name" are optional. If none provided, OOB may be resolved to any profile of that type
+    profiles:
+      compute:
+        id: ""
+        name: ""
+      # A Software profile is a mandatory input for closed-source engines: SQL Server & Oracle
+      software:
+        name: ""
+        id: ""
+      network:
+        id: ""
+        name: ""
+      dbParam:
+        name: ""
+        id: ""
+      # Only applicable for MSSQL databases
+      dbParamInstance:
+        name: ""
+        id: ""
+    # Name of the secret with the
+    # data: password, ssh_public_key
+    credentialSecret: clone-instance-secret-name
+    timezone: "UTC"
+    # ID of the database to clone from, can be fetched from NDB REST API Explorer
+    sourceDatabaseId: source-database-id
+    # ID of the snapshot to clone from, can be fetched from NDB REST API Explorer
+    snapshotId: snapshot-id
+    additionalArguments:                # Optional block, can specify additional arguments that are unique to database engines.
+      expireInDays: 3
 
-```sh
-kubectl apply -f config/samples/ndb_v1alpha1_database.yaml
 ```
-6. To delete the Database resource (deprovision database) run:
 
+Run this command to create the Database resource:
 ```sh
-kubectl delete -f config/samples/ndb_v1alpha1_database.yaml
+kubectl apply -f <path/to/database-manifest.yaml>
 ```
-7. To delete the NDBServer resource run:
 
+### Deleting the Database resource
+To deregister the database and delete the VM run:
 ```sh
-kubectl delete -f config/samples/ndb_v1alpha1_ndbserver.yaml
+kubectl delete -f <path/to/database-manifest.yaml>
 ```
+
+### Deleting the NDBServer resource
+To deregister the database and delete the VM run:
+```sh
+kubectl delete -f <path/to/NDBServer-manifest.yaml>
+```
+### Additional Arguments for Databases
 Below are the various optional addtionalArguments you can specify along with examples of their corresponding values. Arguments that have defaults will be indicated.
 
+Provisioning Additional Arguments: 
 ```yaml
 # PostGres
 additionalArguments:
@@ -209,22 +298,47 @@ additionalArguments:
   vm_win_license_key: <licenseKey>                 # NO Default.
 ```
 
-## Developement
+Cloning Additional Arguments: 
+```yaml
+MSSQL:
+  windows_domain_profile_id   
+  era_worker_service_user      
+  sql_service_startup_account  
+  vm_win_license_key           
+  target_mountpoints_location  
+  expireInDays                 
+  expiryDateTimezone           
+  deleteDatabase               
+  refreshInDays                
+  refreshTime                  
+  refreshDateTimezone          
 
-### Installation and Running the controller locally
-1. Install the CRDs into the cluster:
+MongoDB:
+  expireInDays                 
+  expiryDateTimezone           
+  deleteDatabase               
+  refreshInDays                
+  refreshTime                  
+  refreshDateTimezone    
 
-```sh
-make install
+Postgres:
+  expireInDays                 
+  expiryDateTimezone           
+  deleteDatabase               
+  refreshInDays                
+  refreshTime                  
+  refreshDateTimezone  
+
+MySQL:
+  expireInDays                 
+  expiryDateTimezone           
+  deleteDatabase               
+  refreshInDays                
+  refreshTime                  
+  refreshDateTimezone  
 ```
-
-2. Run your controller locally (this will run in the foreground, so switch to a new terminal if you want to leave it running):
-
-```sh
-make run
-```
-
-**NOTE:** You can also run this in one step by running: `make install run`
+---
+## <p style="text-align: center;">Developement</p>
 
 ### Modifying the API definitions
 If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
@@ -232,8 +346,19 @@ If you are editing the API definitions, generate the manifests such as CRs or CR
 ```sh
 make generate manifests
 ```
+Add the CRDs to the Kubernetes cluster
+```sh
+make install
+```
+Run your controller locally (this will run in the foreground, so switch to a new terminal if you want to leave it running):
 
-**NOTE:** Run `make --help` for more information on all potential `make` targets
+```sh
+make run
+```
+
+**NOTES:** 
+1. You can also run this in one step by running: `make install run`
+2. Run `make --help` for more information on all potential `make` targets
 
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
@@ -264,12 +389,11 @@ To remove the controller from the cluster:
 ```sh
 make undeploy
 ```
+---
 
-## How it works
+## <p style="text-align: center;">How it works</p>
 
-This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
-
-It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/)
+This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/). It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/)
 which provides a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster.
 
 A custom resource of the kind Database is created by the reconciler, followed by a Service and an Endpoint that maps to the IP address of the database instance provisioned. Application pods/deployments can use this service to interact with the databases provisioned on NDB through the native Kubernetes service.
@@ -281,18 +405,18 @@ Pods can specify an initContainer to wait for the service (and hence the databas
     image: busybox:1.28
     command: ['sh', '-c', "until nslookup <<Database CR Name>>-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for database service; sleep 2; done"]
 ```
+---
+## <p style="text-align: center;">Contributing</p>
+See the [contributing docs](CONTRIBUTING.md)
 
-## Contributing
-See the [contributing docs](CONTRIBUTING.md).
+---
+## <p style="text-align: center;">Support</p>
 
-## Support
-### Community Plus
 
-This code is developed in the open with input from the community through issues and PRs. A Nutanix engineering team serves as the maintainer. Documentation is available in the project repository.
+This code is developed in the open with input from the community through issues and PRs. A Nutanix engineering team serves as the maintainer. Documentation is available in the project repository. Issues and enhancement requests can be submitted in the [Issues tab of this repository](../../issues). Please search for and review the existing open issues before submitting a new issue.
 
-Issues and enhancement requests can be submitted in the [Issues tab of this repository](../../issues). Please search for and review the existing open issues before submitting a new issue.
-
-## License
+---
+## <p style="text-align: center;">License</p>
 
 Copyright 2022-2023 Nutanix, Inc.
 
