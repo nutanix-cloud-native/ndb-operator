@@ -12,34 +12,34 @@ The NDB operator brings automated and simplified database administration, provis
 ![Proudly written in Golang](https://img.shields.io/badge/written%20in-Golang-92d1e7.svg)
 
 ---
-## Running the NDB Operator
+## Installation / Deployment
 ### Pre-requisites
 1. Access to an NDB Server.
 2. A Kubernetes cluster to run against, which should have network connectivity to the NDB server. The operator will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
 3. The [operator-sdk installed](https://sdk.operatorframework.io/docs/installation/).
 4. A clone of the source code ([this](https://github.com/nutanix-cloud-native/ndb-operator) repository).
-5. Installing the cert-manager (only when running within non OpenShift clusters). Follow the instructions [here](https://cert-manager.io/docs/installation/).
+5. Cert-manager (only when running in non OpenShift clusters). Follow the instructions [here](https://cert-manager.io/docs/installation/).
 
 With the pre-requisites completed, the NDB Operator can be deployed in one of the following ways: 
 
 ### Outside Kubernetes
-Runs the controller outside the Kubernetes cluster as a process, generally used while development (without running webhooks):
+Runs the controller outside the Kubernetes cluster as a process, but installs the CRDs, services and RBAC entities within the Kubernetes cluster. Generally used while development (without running webhooks):
 ```sh
 make install run
 ```
 
 ### Within Kubernetes 
-Runs the controller, installs the CRDs, services and RBAC entities within the Kubernetes cluster. Used to run the operator from the container image defined in the Makefile. Make sure that the cert-manager is installed if not using OpenShift.
+Runs the controller pod, installs the CRDs, services and RBAC entities within the Kubernetes cluster. Used to run the operator from the container image defined in the Makefile. Make sure that the cert-manager is installed if not using OpenShift.
 
 ```sh
 make deploy
 ```
 
-### As Helm Charts
+### Using Helm Charts
 The Helm charts for the NDB Operator project are available on artifacthub.io and can be installed by following the instructions [here](https://artifacthub.io/packages/helm/nutanix/ndb-operator?modal=install).
 
 ### On OpenShift
-To deploy the operator from this repository on an OpenShift cluster, we need to create a bundle and then install the operator via the operator-sdk.
+To deploy the operator from this repository on an OpenShift cluster, create a bundle and then install the operator via the operator-sdk.
 ```sh
 # Export these environment variables to overwrite the variables set in the Makefile
 export DOCKER_USERNAME=dockerhub-username
@@ -62,8 +62,8 @@ The container and bundle image creation steps can be skipped if existing images 
 
 ---
 
-## Using the Operator
-###  Creating secrets to be used by the NDBServer and Database resources:
+## Usage
+###  Create secrets to be used by the NDBServer and Database resources using the manifest:
 
 ```yaml
 apiVersion: v1
@@ -90,13 +90,13 @@ stringData:
 
 ```
 
-Apply the secrets:
+Create the secrets:
 
 ```
 kubectl apply -f <path/to/secrets-manifest.yaml>
 ```
 
-###  Creating the NDBServer resource. The [sample manifest](config/samples/ndb_v1alpha1_ndbserver.yaml) for NDBServer is described as follows:
+###  Create the NDBServer resource. The manifest for NDBServer is described as follows:
 
 ```yaml
 apiVersion: ndb.nutanix.com/v1alpha1
@@ -110,7 +110,7 @@ metadata:
     app.kubernetes.io/created-by: ndb-operator
   name: ndb
 spec:
-    # Name of the secret that holds the credentials for NDB: username, password and ca_certificate (created in step 1) 
+    # Name of the secret that holds the credentials for NDB: username, password and ca_certificate created earlier
     credentialSecret: ndb-secret-name
     # NDB Server's API URL
     server: https://[NDB IP]:8443/era/v0.9
@@ -123,9 +123,9 @@ Create the NDBServer resource using:
 kubectl apply -f <path/to/NDBServer-manifest.yaml>
 ```
 
-### Creating a Database Resource. A database can either be provisioned or cloned on NDB based on the inputs specified in the database manifest.
+### Create a Database Resource. A database can either be provisioned or cloned on NDB based on the inputs specified in the database manifest.
 
-#### Provisioning
+#### Provisioning manifest
 ```yaml
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
@@ -188,11 +188,11 @@ spec:
       monthlySnapshotDay:  24           # Day of the month for monthly snapshot
       quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
     additionalArguments:                # Optional block, can specify additional arguments that are unique to database engines.
-      listener_port: 8080
+      listener_port: "8080"
 
 ```
 
-#### Cloning
+#### Cloning manifest
 ```yaml
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
@@ -249,22 +249,11 @@ spec:
 
 ```
 
-Run this command to create the Database resource:
+Create the Database resource:
 ```sh
 kubectl apply -f <path/to/database-manifest.yaml>
 ```
 
-### Deleting the Database resource
-To deregister the database and delete the VM run:
-```sh
-kubectl delete -f <path/to/database-manifest.yaml>
-```
-
-### Deleting the NDBServer resource
-To deregister the database and delete the VM run:
-```sh
-kubectl delete -f <path/to/NDBServer-manifest.yaml>
-```
 ### Additional Arguments for Databases
 Below are the various optional addtionalArguments you can specify along with examples of their corresponding values. Arguments that have defaults will be indicated.
 
@@ -337,6 +326,20 @@ MySQL:
   refreshTime                  
   refreshDateTimezone  
 ```
+
+
+### Deleting the Database resource
+To deregister the database and delete the VM run:
+```sh
+kubectl delete -f <path/to/database-manifest.yaml>
+```
+
+### Deleting the NDBServer resource
+To deregister the database and delete the VM run:
+```sh
+kubectl delete -f <path/to/NDBServer-manifest.yaml>
+```
+
 ---
 
 ## Developement
@@ -376,19 +379,33 @@ Deploy the controller to the cluster with the image specified by `IMG`:
 ```sh
 make deploy IMG=<some-registry>/ndb-operator:tag
 ```
+---
+## Uninstallation / Cleanup
+Uninstall the operator based on the installation/deployment  environment
 
-### Uninstall CRDs
-To delete the CRDs from the cluster:
-
+### Running outside the cluster
 ```sh
+# Stops the controller process
+ctrl + c
+# Uninstalls the CRDs
 make uninstall
 ```
 
-### Undeploy controller
-To remove the controller from the cluster:
-
+### Running inside the cluster
 ```sh
+# Removes the deployment, crds, services and rbac entities
 make undeploy
+```
+
+### Running using Helm charts
+```sh
+# NAME: name of the release created during installation
+helm uninstall NAME
+```
+
+### Running on Openshift
+```sh
+operator-sdk cleanup ndb-operator --delete-all
 ```
 
 ---
