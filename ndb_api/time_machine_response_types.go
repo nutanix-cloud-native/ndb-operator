@@ -208,7 +208,7 @@ type TimeMachineDatabase struct {
 	EraCreated               bool                  `json:"eraCreated"`
 	Placeholder              bool                  `json:"placeHolder"`
 	DatabaseName             string                `json:"databaseName"`
-	Type                     string                `json:"tyoe"`
+	Type                     string                `json:"type"`
 	DatabaseClusterType      string                `json:"databaseClusterType"`
 	Status                   string                `json:"status"`
 	DatabaseStatus           string                `json:"databaseStatus"`
