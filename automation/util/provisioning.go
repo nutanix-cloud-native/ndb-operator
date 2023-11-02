@@ -164,7 +164,7 @@ func ProvisioningTestTeardown(ctx context.Context, st *SetupTypes, clientset *ku
 	logger := GetLogger(ctx)
 	logger.Println("ProvisioningTestTeardown() starting...")
 
-	ns := namespace_default
+	ns := automation.NAMESPACE_DEFAULT
 	if st.Database != nil && st.Database.Namespace != "" {
 		ns = st.Database.Namespace
 	}
