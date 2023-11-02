@@ -71,19 +71,6 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 		logger.Printf("Error while fetching ndb secret type %s. Ndb Secret is nil.\n", st.DbSecret.Name)
 	}
 
-	// Create Database
-	if st.Database != nil {
-		st.Database.Spec.Instance.ClusterId = os.Getenv("CLUSTER_ID")
-		st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Create(st.Database)
-		if err != nil {
-			logger.Printf("Error while creating Database %s: %s\n", st.Database.Name, err)
-		} else {
-			logger.Printf("Database %s created.\n", st.Database.Name)
-		}
-	} else {
-		logger.Printf("Error while fetching database type %s. Database is nil.\n", st.DbSecret.Name)
-	}
-
 	// Create NDBServer
 	if st.NdbServer != nil {
 		st.NdbServer.Spec.Server = os.Getenv("NDB_SERVER")
@@ -95,6 +82,19 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 		}
 	} else {
 		logger.Printf("Error while fetching NDBServer type %s. NDBServer is nil.\n", st.DbSecret.Name)
+	}
+
+	// Create Database
+	if st.Database != nil {
+		st.Database.Spec.Instance.ClusterId = os.Getenv("CLUSTER_ID")
+		st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Create(st.Database)
+		if err != nil {
+			logger.Printf("Error while creating Database %s: %s\n", st.Database.Name, err)
+		} else {
+			logger.Printf("Database %s created.\n", st.Database.Name)
+		}
+	} else {
+		logger.Printf("Error while fetching database type %s. Database is nil.\n", st.DbSecret.Name)
 	}
 
 	// Create Application
