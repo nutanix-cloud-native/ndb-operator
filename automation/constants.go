@@ -16,4 +16,7 @@ const (
 	NDB_SECRET_PASSWORD_ENV = "NDB_SECRET_PASSWORD"
 	NDB_SERVER_ENV          = "NDB_SERVER"
 	NDB_CLUSTER_ID_ENV      = "NDB_CLUSTER_ID"
+
+	PROVISIONING_LOG_PATH = "../../logs/provisioning"
+	CLONING_LOG_PATH      = "../../logs/cloning"
 )
