@@ -9,6 +9,7 @@ import (
 	"time"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/automation"
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
@@ -16,8 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
-
-const namespace_default = "default"
 
 // This function is called from the SetupSuite() function of all testsuites.
 // It loads environment variables, instantiate resources, waits for db to be ready, and pod to start.
@@ -41,7 +40,7 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 		return errors.New(errMsg)
 	}
 
-	ns := namespace_default
+	ns := automation.NAMESPACE_DEFAULT
 	if st.Database != nil && st.Database.Namespace != "" {
 		ns = st.Database.Namespace
 	}
