@@ -51,11 +51,24 @@ type DatabaseLCMConfig struct {
 type ExpiryDetails struct {
 	ExpireInDays       string `json:"expireInDays"`
 	ExpiryDateTimezone string `json:"expiryDateTimezone"`
-	DeleteDatabase     string `json:"deleteDatabase"`
+	DeleteDatabase     string `json:"deleteDatabase,omitempty"`
 }
 
 type RefreshDetails struct {
 	RefreshInDays       string `json:"refreshInDays"`
 	RefreshTime         string `json:"refreshTime"`
 	RefreshDateTimezone string `json:"refreshDateTimezone"`
+}
+
+type SnapshotRequest struct {
+	Name              string            `json:"name"`
+	SnapshotLcmConfig SnapshotLcmConfig `json:"lcmConfig"`
+}
+
+type SnapshotLcmConfig struct {
+	SnapshotLCMConfigDetailed SnapshotLcmConfigDetailed `json:"snapshotLCMConfig"`
+}
+
+type SnapshotLcmConfigDetailed struct {
+	ExpiryDetails ExpiryDetails `json:"expiryDetails"`
 }
