@@ -26,10 +26,10 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 		log.Error(err, "NDB API error while fetching clones")
 		return
 	}
-	dbs := append(databasesResponse, clonesResponse...)
+	allDbs := append(databasesResponse, clonesResponse...)
 
-	databases = make([]ndbv1alpha1.NDBServerDatabaseInfo, len(dbs))
-	for i, db := range dbs {
+	databases = make([]ndbv1alpha1.NDBServerDatabaseInfo, len(allDbs))
+	for i, db := range allDbs {
 		databaseInfo := ndbv1alpha1.NDBServerDatabaseInfo{
 			Name:          db.Name,
 			Id:            db.Id,
