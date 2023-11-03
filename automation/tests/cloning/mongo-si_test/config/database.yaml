@@ -1,0 +1,18 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: clone-mongo-si
+spec:
+  ndbRef: clone-ndb-mongo-si
+  isClone: true
+  clone:
+    name: "mazin-clone-mongo1"
+    type: "mongodb"
+    description: "operator testing"
+    clusterId: 600d54a1-af63-4af3-b252-51b4d5cba64f
+    profiles: {}
+    credentialSecret: clone-db-secret-mongo-si
+    timezone: "America/Los_Angeles"
+    sourceDatabaseId: 42109f6c-87da-4f77-abad-4d287b73cc47
+    snapshotId: e3b6583e-9440-4906-bf09-9432dddc500a
+    additionalArguments:
