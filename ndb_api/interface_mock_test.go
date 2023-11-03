@@ -82,8 +82,8 @@ func (m *MockDatabaseInterface) GetInstanceTMDetails() (string, string, string) 
 	return args.String(0), args.String(1), args.String(2)
 }
 
-// GetInstanceTMSchedule is a mock implementation of the GetInstanceTMSchedule method in the Database interface
-func (m *MockDatabaseInterface) GetInstanceTMSchedule() (Schedule, error) {
+// GetTMScheduleForInstance is a mock implementation of the GetTMScheduleForInstance method in the Database interface
+func (m *MockDatabaseInterface) GetTMScheduleForInstance() (Schedule, error) {
 	args := m.Called()
 	return args.Get(0).(Schedule), args.Error(1)
 }

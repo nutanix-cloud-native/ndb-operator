@@ -43,7 +43,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		return
 	}
 
-	schedule, err := database.GetInstanceTMSchedule()
+	schedule, err := database.GetTMScheduleForInstance()
 	if err != nil {
 		log.Error(err, "Error occurred while generating the Time Machine Schedule")
 		return
