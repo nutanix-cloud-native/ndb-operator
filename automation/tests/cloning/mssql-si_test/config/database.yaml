@@ -1,0 +1,22 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: clone-mssql-si
+spec:
+  ndbRef: clone-ndb-mssql-si
+  isClone: true
+  clone:
+    name: clone-mssql-si
+    type: "mssql"
+    description: "operator testing"
+    clusterId: 600d54a1-af63-4af3-b252-51b4d5cba64f
+    profiles: 
+      software:
+        name: MSSQL-MAZIN2
+    credentialSecret: clone-db-secret-mssql-si
+    timezone: "UTC"
+    sourceDatabaseId: "897a9173-74e2-4d6a-b77e-44128aea1853"
+    snapshotId: "56f4e1dd-ac0c-424e-970e-c619cf116c2b"
+    additionalArguments:
+      "authentication_mode": "mixed"
+    
