@@ -47,7 +47,7 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 
 	// Create Secrets
 	if st.DbSecret != nil {
-		st.DbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv("DB_SECRET_PASSWORD")
+		st.DbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv(automation.DB_SECRET_PASSWORD_ENV)
 		_, err = clientset.CoreV1().Secrets(ns).Create(ctx, st.DbSecret, metav1.CreateOptions{})
 		if err != nil {
 			logger.Printf("Error while creating db secret %s: %s\n", st.DbSecret.Name, err)
@@ -59,8 +59,8 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 	}
 
 	if st.NdbSecret != nil {
-		st.NdbSecret.StringData[common.SECRET_DATA_KEY_USERNAME] = os.Getenv("NDB_SECRET_USERNAME")
-		st.NdbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv("NDB_SECRET_PASSWORD")
+		st.NdbSecret.StringData[common.SECRET_DATA_KEY_USERNAME] = os.Getenv(automation.NDB_SECRET_USERNAME_ENV)
+		st.NdbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv(automation.NDB_SECRET_PASSWORD_ENV)
 		_, err = clientset.CoreV1().Secrets(ns).Create(context.TODO(), st.NdbSecret, metav1.CreateOptions{})
 		if err != nil {
 			logger.Printf("Error while creating ndb secret %s: %s\n", st.NdbSecret.Name, err)
@@ -73,12 +73,12 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 
 	// Create NDBServer
 	if st.NdbServer != nil {
-		st.NdbServer.Spec.Server = os.Getenv("NDB_SERVER")
+		st.NdbServer.Spec.Server = os.Getenv(automation.NDB_SERVER_ENV)
 		st.NdbServer, err = v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Create(st.NdbServer)
 		if err != nil {
-			logger.Printf("Error while creating NDBServer %s: %s\n", st.Database.Name, err)
+			logger.Printf("Error while creating NDBServer %s: %s\n", st.NdbServer.Name, err)
 		} else {
-			logger.Printf("NDBServer %s created.\n", st.Database.Name)
+			logger.Printf("NDBServer %s created.\n", st.NdbServer.Name)
 		}
 	} else {
 		logger.Printf("Error while fetching NDBServer type %s. NDBServer is nil.\n", st.DbSecret.Name)
@@ -86,7 +86,7 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 
 	// Create Database
 	if st.Database != nil {
-		st.Database.Spec.Instance.ClusterId = os.Getenv("CLUSTER_ID")
+		st.Database.Spec.Instance.ClusterId = os.Getenv(automation.CLUSTER_ID_ENV)
 		st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Create(st.Database)
 		if err != nil {
 			logger.Printf("Error while creating Database %s: %s\n", st.Database.Name, err)
@@ -209,7 +209,7 @@ func ProvisioningTestTeardown(ctx context.Context, st *SetupTypes, clientset *ku
 	// Delete NDB Server
 	if st.NdbServer != nil {
 		logger.Printf("Attempting to delete ndb server: %s...", st.NdbServer.Name)
-		err = clientset.CoreV1().Secrets(ns).Delete(context.TODO(), st.NdbServer.Name, metav1.DeleteOptions{})
+		err := v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Delete(st.NdbServer.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			logger.Printf("Error while deleting ndb server %s: %s!\n", st.NdbServer.Name, err)
 		} else {

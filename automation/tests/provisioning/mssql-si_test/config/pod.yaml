@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-mssql-si
+  labels:
+    app: app-mssql-si
+spec:
+  containers:
+  - name: app-mssql-container
+    image: mazins/ndb-operator-mssql:latest
+    env:
+    - name: DBHOST 
+      value: db-mssql-si-svc      # CHANGE
+    - name: USERNAME
+      value: sa                   # CHANGE
+    - name: DATABASE
+      value: database_one         # CHANGE
+    - name: DBPORT
+      value: "80"
+    - name: MSSQL_INSTANCE_NAME
+      value: CDMINSTANCE
+    - name: PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: db-secret-mssql-si
+          key: password 
+    ports:
+    - containerPort: 3000
+  initContainers:
+    - name: init-db
+      image: busybox:1.28
+      command: ['sh', '-c', "until nslookup $(DB_HOST).$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for $(DB_HOST); sleep 2; done"]
+      env:
+      - name: DB_HOST 
+        value: db-mssql-si-svc      # CHANGE

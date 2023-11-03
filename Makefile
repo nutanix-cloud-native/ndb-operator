@@ -267,13 +267,13 @@ else
 	touch ndb_api/$(api)_response_types.go && cp hack/boilerplate.go.txt ndb_api/$(api)_response_types.go && echo -e "\n" >> ndb_api/$(api)_response_types.go && echo "package ndb_api" >> ndb_api/$(api)_response_types.go
 endif
 
-# Usage: Create the following variables in the .env folder of automation/tests before running the target
+# Usage: Create the following variables in the automation/tests/.env before running the target
 # KUBECONFIG='...' 
 # DB_SECRET_PASSWORD='...'
 # NDB_SECRET_USERNAME='...'
 # NDB_SECRET_PASSWORD='...'
 # NDB_SERVER='https://...:8443/era/v0.9'
-# NDB_CLUSTER_ID='...'
+# CLUSTER_ID='...'
 .PHONY: run-automation
 run-automation: install run-automation-cloning
 
