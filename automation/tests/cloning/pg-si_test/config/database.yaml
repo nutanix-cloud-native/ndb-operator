@@ -1,12 +1,12 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: clone-db-pg-si
+  name: clone-pg-si
 spec:
   ndbRef: clone-ndb-pg-si
   isClone: true
   clone:
-    name: "mazin-clone-pg10"
+    name: "clone-pg-si"
     type: "postgres"
     description: "operator testing"
     clusterId: 600d54a1-af63-4af3-b252-51b4d5cba64f
