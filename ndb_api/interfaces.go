@@ -45,7 +45,7 @@ type DatabaseInterface interface {
 	GetInstanceDatabaseNames() string
 	GetInstanceSize() int
 	GetInstanceTMDetails() (string, string, string)
-	GetInstanceTMSchedule() (Schedule, error)
+	GetTMScheduleForInstance() (Schedule, error)
 	GetCloneSourceDBId() string
 	GetCloneSnapshotId() string
 	GetAdditionalArguments() map[string]string

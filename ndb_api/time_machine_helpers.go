@@ -237,7 +237,7 @@ func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArgume
 			},
 		}
 	} else if databaseLcmConfigCount != 0 {
-		return fmt.Errorf("%s. Ensure expireInDays, expiryDateTimezone, and deleteDatabase are all specified. You only have %d/3 specified.", errMsg, databaseLcmConfigCount)
+		return fmt.Errorf("%s. Ensure expireInDays, expiryDateTimezone, and deleteDatabase are all specified. You only have %d/3 specified", errMsg, databaseLcmConfigCount)
 	}
 
 	// refreshDetails appender
@@ -255,7 +255,7 @@ func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArgume
 			RefreshDateTimezone: additionalArguments["refreshDateTimezone"],
 		}
 	} else if databaseLcmConfigCount != 0 {
-		return fmt.Errorf("%s. Ensure refreshInDay, refreshTime, refreshDateTimezone are all specified. You only have %d/3 specified.", errMsg, refreshDetailsCount)
+		return fmt.Errorf("%s. Ensure refreshInDay, refreshTime, refreshDateTimezone are all specified. You only have %d/3 specified", errMsg, refreshDetailsCount)
 	}
 
 	return nil

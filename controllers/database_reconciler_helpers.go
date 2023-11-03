@@ -113,15 +113,15 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 			}
 		}
 
-	} else if controllerutil.ContainsFinalizer(database, common.FINALIZER_VM) {
-		instanceManager.deleteVM(ctx, r, ndbClient, database)
+	} else if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
+		instanceManager.deleteDatabaseServer(ctx, r, ndbClient, database)
 		// remove our finalizer from the list and update it.
-		log.Info("Removing Finalizer " + common.FINALIZER_VM)
-		controllerutil.RemoveFinalizer(database, common.FINALIZER_VM)
+		log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_SERVER)
+		controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_SERVER)
 		if err := r.Update(ctx, database); err != nil {
 			return requeueOnErr(err)
 		}
-		log.Info("Removed Finalizer " + common.FINALIZER_VM)
+		log.Info("Removed Finalizer " + common.FINALIZER_DATABASE_SERVER)
 		r.recorder.Event(database, "Normal", EVENT_CR_DELETED, "Database Custom Resource has been deleted from the k8s cluster")
 		return requeue()
 
@@ -226,8 +226,8 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_INSTANCE) {
 				return r.addFinalizer(ctx, req, common.FINALIZER_INSTANCE, database)
 			}
-			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_VM) {
-				return r.addFinalizer(ctx, req, common.FINALIZER_VM, database)
+			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
+				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_SERVER, database)
 			}
 		}
 		if databaseStatus.IPAddress != "" {

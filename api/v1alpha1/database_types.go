@@ -82,8 +82,8 @@ func init() {
 type Instance struct {
 	// Name of the database instance
 	Name string `json:"name"`
-	// Description of the database instance
 	// +optional
+	// Description of the database instance
 	Description string `json:"description"`
 	// Id of the cluster to provision the database on
 	ClusterId string `json:"clusterId"`
@@ -91,12 +91,12 @@ type Instance struct {
 	Profiles *Profiles `json:"profiles"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
 	CredentialSecret string `json:"credentialSecret"`
-	// default UTC
 	// +optional
+	// default UTC
 	TimeZone string `json:"timezone"`
+	// +optional
 	// Name(s) of the database(s) to be provisiond inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
-	// +optional
 	DatabaseNames []string `json:"databaseNames"`
 	// Size of the database instance, minimum 10 (GBs)
 	Size int    `json:"size"`

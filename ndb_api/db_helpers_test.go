@@ -1036,7 +1036,7 @@ func TestGenerateProvisioningRequest_WithoutValidTMDetails_ReturnsError(t *testi
 		mockDatabase.On("GetName").Return("db_instance_name")
 		mockDatabase.On("GetInstanceType").Return("db_instance_type")
 		mockDatabase.On("GetInstanceTMDetails").Return("tm_name", "rm_description", tc.slaName)
-		mockDatabase.On("GetInstanceTMSchedule").Return(tc.tmSchedule, tc.tmScheduleErr)
+		mockDatabase.On("GetTMScheduleForInstance").Return(tc.tmSchedule, tc.tmScheduleErr)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 
 		// Test
@@ -1153,7 +1153,7 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 		mockDatabase.On("GetName").Return("db_instance_name")
 		mockDatabase.On("GetInstanceType").Return(instanceType)
 		mockDatabase.On("GetInstanceTMDetails").Return("tm_name", "rm_description", "SLA 1")
-		mockDatabase.On("GetInstanceTMSchedule").Return(Schedule{}, nil)
+		mockDatabase.On("GetTMScheduleForInstance").Return(Schedule{}, nil)
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 
@@ -1281,7 +1281,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetInstanceType").Return(instanceType)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 		mockDatabase.On("GetInstanceTMDetails").Return("tm_name", "rm_description", "SLA 1")
-		mockDatabase.On("GetInstanceTMSchedule").Return(Schedule{}, nil)
+		mockDatabase.On("GetTMScheduleForInstance").Return(Schedule{}, nil)
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
 		mockDatabase.On("GetTimeZone").Return(TEST_TIMEZONE)
 		mockDatabase.On("GetClusterId").Return(TEST_CLUSTER_ID)

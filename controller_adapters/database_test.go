@@ -254,14 +254,14 @@ func TestDatabase_GetClusterId(t *testing.T) {
 	})
 }
 
-// Tests the GetInstanceTMSchedule() function against the following:
+// Tests the GetTMScheduleForInstance() function against the following:
 // 1. All inputs are valid, no error is returned
 // 2. DailySnapshotTime has incorrect values for hour, returns an error
 // 3. DailySnapshotTime has incorrect values for minutes, returns an error
 // 4. DailySnapshotTime has incorrect values for seconds, returns an error
 // 5. DailySnapshotTime has incorrect values (all), returns an error
 // 6. DailySnapshotTime has incorrect format, returns an error
-func TestDatabase_GetInstanceTMSchedule(t *testing.T) {
+func TestDatabase_GetTMScheduleForInstance(t *testing.T) {
 
 	tests := []struct {
 		name         string
@@ -364,13 +364,13 @@ func TestDatabase_GetInstanceTMSchedule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			gotSchedule, err := tt.database.GetInstanceTMSchedule()
+			gotSchedule, err := tt.database.GetTMScheduleForInstance()
 
 			if tt.wantErr {
 				assert.Error(t, err)
 			}
 			if !reflect.DeepEqual(gotSchedule, tt.wantSchedule) {
-				t.Errorf("Database.GetInstanceTMSchedule() = %v, want %v", gotSchedule, tt.wantSchedule)
+				t.Errorf("Database.GetTMScheduleForInstance() = %v, want %v", gotSchedule, tt.wantSchedule)
 			}
 		})
 	}

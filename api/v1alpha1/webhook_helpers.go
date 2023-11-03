@@ -29,15 +29,15 @@ type DatabaseWebhookHandler interface {
 }
 
 // +kubebuilder:object:generate:=false
-// Implements Validator
+// Implements webhook.Validator, webhook.Defaulter
 type CloningHandler struct{}
 
 // +kubebuilder:object:generate:=false
-// Implements Validator
+// Implements webhook.Validator, webhook.Defaulter
 type ProvisoningHandler struct{}
 
 func (v *CloningHandler) defaulter(spec *DatabaseSpec) {
-	databaselog.Info("Entering Clone defaulter logic...")
+	databaselog.Info("Entering defaulter for clone")
 
 	initializeObjects(spec)
 
@@ -47,12 +47,11 @@ func (v *CloningHandler) defaulter(spec *DatabaseSpec) {
 		spec.Clone.Description = description
 	}
 
-	databaselog.Info("Exiting Clone defaulter logic!")
+	databaselog.Info("Exiting defaulter for clone")
 }
 
 func (v *CloningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, clonePath *field.Path) {
-	databaselog.Info("Entering Clone defaulter logic...")
-	databaselog.Info("Exiting Clone defaulter logic!")
+	databaselog.Info("Entering validateCreate for clone")
 
 	clone := spec.Clone
 
@@ -95,11 +94,11 @@ func (v *CloningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorL
 	if err := additionalArgumentsValidationCheck(spec.IsClone, clone.Type, clone.AdditionalArguments); err != nil {
 		*errors = append(*errors, field.Invalid(clonePath.Child("additionalArguments"), clone.AdditionalArguments, err.Error()))
 	}
-
+	databaselog.Info("Exiting validateCreate for clone")
 }
 
 func (v *ProvisoningHandler) defaulter(spec *DatabaseSpec) {
-	databaselog.Info("Entering Database defaulter logic...")
+	databaselog.Info("Entering defaulter for provisioning")
 
 	initializeObjects(spec)
 
@@ -161,11 +160,11 @@ func (v *ProvisoningHandler) defaulter(spec *DatabaseSpec) {
 		spec.Instance.TMInfo.QuarterlySnapshotMonth = "Jan"
 	}
 
-	databaselog.Info("Exiting Database defaulter logic!")
+	databaselog.Info("Exiting defaulter for provisioning")
 }
 
 func (v *ProvisoningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path) {
-	databaselog.Info("Entering Database validateCreate logic...")
+	databaselog.Info("Entering validateCreate for provisioning")
 
 	instance := spec.Instance
 	tmInfo := instance.TMInfo
@@ -235,47 +234,47 @@ func (v *ProvisoningHandler) validateCreate(spec *DatabaseSpec, errors *field.Er
 		*errors = append(*errors, field.Invalid(instancePath.Child("additionalArguments"), instance.AdditionalArguments, err.Error()))
 	}
 
-	databaselog.Info("Existing Database validateCreate logic!")
+	databaselog.Info("Exiting validateCreate for provisioning")
 }
 
 func initializeObjects(spec *DatabaseSpec) {
-	databaselog.Info(fmt.Sprintf("Entering initializeObjects logic..."))
+	databaselog.Info("Entering initializeObjects logic")
 
 	// Initialize Database properties
 	if spec.Instance == nil {
-		databaselog.Info(fmt.Sprintf("Initializing Instance..."))
+		databaselog.Info("Initializing Instance")
 		spec.Instance = &(Instance{})
 	}
 	if spec.Instance.DatabaseNames == nil {
-		databaselog.Info(fmt.Sprintf("Initializing Instance Profiles..."))
+		databaselog.Info("Initializing Instance Profiles")
 		spec.Instance.DatabaseNames = []string{}
 	}
 	if spec.Instance.Profiles == nil {
-		databaselog.Info(fmt.Sprintf("Initializing Instance Profiles..."))
+		databaselog.Info("Initializing Instance Profiles")
 		spec.Instance.Profiles = &(Profiles{})
 	}
 	if spec.Instance.TMInfo == nil {
-		databaselog.Info(fmt.Sprintf("Initializing Instance TMInfo..."))
+		databaselog.Info("Initializing Instance TMInfo")
 		spec.Instance.TMInfo = &(DBTimeMachineInfo{})
 	}
 	if spec.Instance.AdditionalArguments == nil {
-		databaselog.Info(fmt.Sprintf("Initializing Instance AdditionalArguments..."))
+		databaselog.Info("Initializing Instance AdditionalArguments")
 		spec.Instance.AdditionalArguments = map[string]string{}
 	}
 
 	// Initialize Clone properties
 	if spec.Clone == nil {
-		databaselog.Info(fmt.Sprintf("Initializing Clone..."))
+		databaselog.Info("Initializing Clone")
 		spec.Clone = &(Clone{})
 	}
 	if spec.Clone.Profiles == nil {
-		databaselog.Info(fmt.Sprintf("Initializing Clone Profiles..."))
+		databaselog.Info("Initializing Clone Profiles")
 		spec.Clone.Profiles = &(Profiles{})
 	}
 	if spec.Clone.AdditionalArguments == nil {
-		databaselog.Info(fmt.Sprintf("Initializing Clone AdditionalArguments..."))
+		databaselog.Info("Initializing Clone AdditionalArguments")
 		spec.Clone.AdditionalArguments = map[string]string{}
 	}
 
-	databaselog.Info(fmt.Sprintf("Exiting initializeObjects logic!"))
+	databaselog.Info("Exiting initializeObjects logic!")
 }

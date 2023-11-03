@@ -82,8 +82,8 @@ func (m *MockDatabaseInterface) GetInstanceTMDetails() (string, string, string) 
 	return args.String(0), args.String(1), args.String(2)
 }
 
-// GetInstanceTMSchedule is a mock implementation of the GetInstanceTMSchedule method in the Database interface
-func (m *MockDatabaseInterface) GetInstanceTMSchedule() (Schedule, error) {
+// GetTMScheduleForInstance is a mock implementation of the GetTMScheduleForInstance method in the Database interface
+func (m *MockDatabaseInterface) GetTMScheduleForInstance() (Schedule, error) {
 	args := m.Called()
 	return args.Get(0).(Schedule), args.Error(1)
 }
@@ -124,7 +124,7 @@ func (m *MockProfileResolverInterface) Resolve(ctx context.Context, allProfiles 
 	return args.Get(0).(ProfileResponse), args.Error(1)
 }
 
-// GetAdditionalArguments is a mock implementation of the GetInstanceTypeDetails method in the Database interface
+// GetAdditionalArguments is a mock implementation of the GetAdditionalArguments method in the Database interface
 func (m *MockDatabaseInterface) GetAdditionalArguments() map[string]string {
 	args := m.Called()
 

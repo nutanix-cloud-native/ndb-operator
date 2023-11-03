@@ -171,7 +171,7 @@ func (d *Database) GetInstanceTMDetails() (tmName, tmDescription, slaName string
 }
 
 // Returns a schedule struct for the time machine.
-func (d *Database) GetInstanceTMSchedule() (schedule ndb_api.Schedule, err error) {
+func (d *Database) GetTMScheduleForInstance() (schedule ndb_api.Schedule, err error) {
 	tmInfo := d.Spec.Instance.TMInfo
 
 	hhmmss, err := time.Parse(time.TimeOnly, tmInfo.DailySnapshotTime)

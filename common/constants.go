@@ -48,8 +48,8 @@ const (
 	DATABASE_TYPE_POSTGRES = "postgres"
 	DATABASE_TYPES         = "mssql, mysql, postgres, mongodb"
 
-	FINALIZER_INSTANCE = "ndb.nutanix.com/finalizerinstance"
-	FINALIZER_VM       = "ndb.nutanix.com/finalizerserver"
+	FINALIZER_DATABASE_SERVER = "ndb.nutanix.com/finalizerserver"
+	FINALIZER_INSTANCE        = "ndb.nutanix.com/finalizerinstance"
 
 	NDB_CR_STATUS_AUTHENTICATION_ERROR = "Authentication Error"
 	NDB_CR_STATUS_CREDENTIAL_ERROR     = "Credential Error"
