@@ -275,7 +275,7 @@ endif
 # NDB_SERVER='https://...:8443/era/v0.9'
 # CLUSTER_ID='...'
 .PHONY: run-automation
-run-automation: install run-automation-cloning
+run-automation: install run-automation-cloning run-automation-provisioning
 
 .PHONY: run-automation-cloning
 DEFAULT_CLONING_ROOT := ./automation/tests/cloning/
@@ -287,4 +287,13 @@ run-automation-cloning:
 	fi; \
 	go test $(DEFAULT_CLONING_ROOT)$$folders -v -timeout 90m
 
+.PHONY: run-automation-provisioning
+DEFAULT_PROVISIONING_ROOT := ./automation/tests/provisioning/
+PROVISIONING_FOLDERS := ...
+run-automation-provisioning:
+	@read -p "Enter the test folders (default: mongo-si_test mssql-si_test mysql-si_test pg-si_test): " folders; \
+	if [ -z "$$folders" ]; then \
+		folders="$(PROVISIONING_FOLDERS)"; \
+	fi; \
+	go test $(DEFAULT_PROVISIONING_ROOT)$$folders -v -timeout 90m
 
