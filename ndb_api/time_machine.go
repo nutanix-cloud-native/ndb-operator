@@ -27,6 +27,8 @@ import (
 
 // Provisions a clone based on the clone provisioning request
 // Returns the task info summary response for the operation
+// Although, a clone is provisioned via the TimeMachine API,
+// it is deprovisioned via clone APIs.
 func ProvisionClone(ctx context.Context, ndbClient *ndb_client.NDBClient, req *DatabaseCloneRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.ProvisionClone")

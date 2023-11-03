@@ -24,7 +24,7 @@ func getInstanceManager(database ndbv1alpha1.Database) (instanceManager Instance
 type InstanceManager interface {
 	create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (task ndb_api.TaskInfoSummaryResponse, err error)
 	deregister(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error)
-	deleteVM(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error)
+	deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error)
 }
 
 type DatabaseManager struct{}
@@ -87,8 +87,8 @@ func (dm *DatabaseManager) deregister(ctx context.Context, r *DatabaseReconciler
 	return
 }
 
-func (dm *DatabaseManager) deleteVM(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error) {
-	return deleteVM(ctx, r, ndbClient, database)
+func (dm *DatabaseManager) deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error) {
+	return deleteDatabaseServer(ctx, r, ndbClient, database)
 }
 
 func (cm *CloneManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse ndb_api.TaskInfoSummaryResponse, err error) {
@@ -147,11 +147,11 @@ func (cm *CloneManager) deregister(ctx context.Context, r *DatabaseReconciler, n
 	return
 }
 
-func (cm *CloneManager) deleteVM(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error) {
-	return deleteVM(ctx, r, ndbClient, database)
+func (cm *CloneManager) deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error) {
+	return deleteDatabaseServer(ctx, r, ndbClient, database)
 }
 
-func deleteVM(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error) {
+func deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	databaseServerId := database.Status.DatabaseServerId
 	// Make a dbserver deprovisioning request to NDB only if the serverId is present in status

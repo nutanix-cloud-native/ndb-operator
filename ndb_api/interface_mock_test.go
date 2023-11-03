@@ -124,7 +124,7 @@ func (m *MockProfileResolverInterface) Resolve(ctx context.Context, allProfiles 
 	return args.Get(0).(ProfileResponse), args.Error(1)
 }
 
-// GetAdditionalArguments is a mock implementation of the GetInstanceTypeDetails method in the Database interface
+// GetAdditionalArguments is a mock implementation of the GetAdditionalArguments method in the Database interface
 func (m *MockDatabaseInterface) GetAdditionalArguments() map[string]string {
 	args := m.Called()
 
