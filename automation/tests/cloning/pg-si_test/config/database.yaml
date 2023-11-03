@@ -6,29 +6,13 @@ spec:
   ndbRef: clone-ndb-pg-si
   isClone: true
   clone:
-    name: "clone-pg-si"
-    type: "postgres"
-    description: "operator testing"
+    name: clone-pg-si
+    type: postgres
+    description: Cloning pg single instance testing 
     clusterId: 600d54a1-af63-4af3-b252-51b4d5cba64f
-    profiles: 
-      compute:
-        name: "DEFAULT_OOB_COMPUTE"
-        id: ""
-      # A Software profile is a mandatory input for proprietary (closed-source) engines such as SQL Server & Oracle
-      software:
-        name: ""
-        id: ""
-      network:
-        name: ""
-        id: ""
-      dbParam:
-        name: ""
-        id: ""
-      dbParamInstance:
-        name: ""
-        id: ""
+    profiles: {}
     credentialSecret: clone-db-secret-pg-si
-    timezone: "UTC"
-    sourceDatabaseId: "37c4c8fb-313e-4d12-b489-915d2623347c"
-    snapshotId: "e93e4797-b9af-46c0-ae10-841877f7c0e9"
-    additionalArguments:
+    timezone: UTC
+    sourceDatabaseId: 37c4c8fb-313e-4d12-b489-915d2623347c
+    snapshotId: e93e4797-b9af-46c0-ae10-841877f7c0e9
+    additionalArguments: {}

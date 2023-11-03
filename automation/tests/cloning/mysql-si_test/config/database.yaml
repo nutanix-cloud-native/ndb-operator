@@ -8,11 +8,11 @@ spec:
   clone:
     name: clone-mysql-si
     type: mysql
-    description: operator testing
+    description: Cloning mysql single instance testing 
     clusterId: 600d54a1-af63-4af3-b252-51b4d5cba64f
     profiles: {}
     credentialSecret: clone-db-secret-mysql-si
-    timezone: "UTC"
+    timezone: UTC
     sourceDatabaseId: 72e31885-5faa-4675-8911-f090768cb999
     snapshotId: 8b2124b6-0ec5-4ed0-a78b-d85127c723c4
     additionalArguments:
