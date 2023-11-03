@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -14,15 +17,16 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-// This function is called from the SetupSuite() function of all testsuites.
-// It loads environment variables, instantiate resources, waits for db to be ready, and pod to start.
-func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+// This function is called by TestSuiteManager.Setup in all Setup test suites.
+// It loads environment variables, instantiate resources, waits for db/clone to be ready, and pod to start.
+func ProvisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	logger := GetLogger(ctx)
-	logger.Println("ProvisioningTestSetup() starting. Attempting to initialize properties...")
+	logger.Println("ProvisionOrClone() starting. Attempting to initialize properties...")
 
 	// Checking if setupTypes, clientSet, or v1alpha1ClientSet is nil
 	if st == nil || clientset == nil || v1alpha1ClientSet == nil {
@@ -84,9 +88,14 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 		logger.Printf("Error while fetching NDBServer type %s. NDBServer is nil.\n", st.DbSecret.Name)
 	}
 
-	// Create Database
+	// Create Database or Clone
 	if st.Database != nil {
-		st.Database.Spec.Instance.ClusterId = os.Getenv(automation.CLUSTER_ID_ENV)
+		clusterId := os.Getenv(automation.CLUSTER_ID_ENV)
+		if st.Database.Spec.IsClone {
+			st.Database.Spec.Clone.ClusterId = clusterId
+		} else {
+			st.Database.Spec.Instance.ClusterId = clusterId
+		}
 		st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Create(st.Database)
 		if err != nil {
 			logger.Printf("Error while creating Database %s: %s\n", st.Database.Name, err)
@@ -158,9 +167,9 @@ func ProvisioningTestSetup(ctx context.Context, st *SetupTypes, clientset *kuber
 	return
 }
 
-// This function is called from the TeardownSuite() function of all testsuites.
-// Delete resources and de-provision database.
-func ProvisioningTestTeardown(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+// This function is called by TestSuiteManager.TearDown in all TearDown test suites.
+// Delete resources and de-provision database/clone.
+func DeprovisionOrDeclone(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	logger := GetLogger(ctx)
 	logger.Println("ProvisioningTestTeardown() starting...")
 
@@ -261,11 +270,12 @@ func ProvisioningTestTeardown(ctx context.Context, st *SetupTypes, clientset *ku
 	return
 }
 
-// Wrapper function called in all TestSuite TestProvisioningSuccess methods. Returns a DatabaseResponse which indicates if provison was succesful
-func GetDatabaseResponse(ctx context.Context, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, st *SetupTypes) (databaseResponse ndb_api.DatabaseResponse, err error) {
+// This function is called by TestSuiteManager.GetDatabaseOrCloneResponse in all GetDatabase/GetCloneResponse test suites
+// Returns a DatabaseResponse indicating if provisoning or cloning was succesful
+func GetDatabaseOrCloneResponse(ctx context.Context, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, st *SetupTypes) (databaseOrCloneResponse ndb_api.DatabaseResponse, err error) {
 	logger := GetLogger(ctx)
-	logger.Println("GetDatabaseResponse() starting...")
-	errBaseMsg := "Error: GetDatabaseResponse() ended"
+	logger.Println("GetDatabaseOrCloneResponse() starting...")
+	errBaseMsg := "Error: GetDatabaseOrCloneResponse() ended"
 
 	// Get NDBServer CR
 	ndbServer, err := v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Get(st.NdbServer.Name, metav1.GetOptions{})
@@ -291,39 +301,67 @@ func GetDatabaseResponse(ctx context.Context, clientset *kubernetes.Clientset, v
 		return ndb_api.DatabaseResponse{}, fmt.Errorf("%s! Could not fetch data from secret! %s\n", errBaseMsg, err)
 	}
 
-	// Create ndbClient and getting databaseResponse
+	// Create ndbClient and getting databaseOrCloneResponse
 	ndbClient := ndb_client.NewNDBClient(username, password, ndbServer.Spec.Server, "", true)
-	databaseResponse, err = ndb_api.GetDatabaseById(context.TODO(), ndbClient, database.Status.Id)
+	if st.Database.Spec.IsClone {
+		databaseOrCloneResponse, err = ndb_api.GetCloneById(context.TODO(), ndbClient, database.Status.Id)
+	} else {
+		databaseOrCloneResponse, err = ndb_api.GetDatabaseById(context.TODO(), ndbClient, database.Status.Id)
+	}
+
 	if err != nil {
 		return ndb_api.DatabaseResponse{}, fmt.Errorf("%s! Database response from ndb_api failed! %s\n", errBaseMsg, err)
 	}
 
-	logger.Printf("Database response.status: %s.\n", databaseResponse.Status)
-	logger.Println("GetDatabaseResponse() ended!")
+	logger.Printf("Database response.status: %s.\n", databaseOrCloneResponse.Status)
+	logger.Println("GetDatabaseOrCloneResponse() ended!")
 
-	return databaseResponse, nil
+	return databaseOrCloneResponse, nil
 }
 
-// Performs an operation a certain number of times with a given interval
-func waitAndRetryOperation(ctx context.Context, interval time.Duration, retries int, operation func() error) (err error) {
+// Tests if pod is able to connect to database
+func GetAppResponse(ctx context.Context, clientset *kubernetes.Clientset, pod *corev1.Pod, localPort string) (res http.Response, err error) {
 	logger := GetLogger(ctx)
-	logger.Println("waitAndRetryOperation() starting...")
+	logger.Println("GetAppResponse() started...")
+	errBaseMsg := "GetAppResponse() ended"
 
-	for i := 0; i < retries; i++ {
-		if i != 0 {
-			logger.Printf("Retrying, attempt # %d\n", i)
-		}
-		err = operation()
-		if err == nil {
-			return nil
-		} else {
-			logger.Printf("Error: %s\n", err)
-		}
-		time.Sleep(interval)
+	// Retrieve the pod name and targetPort
+	podName := pod.Name
+	podTargetPort := pod.Spec.Containers[0].Ports[0].ContainerPort
+
+	// Run port-forward command using kubectl
+	cmd := exec.Command("kubectl", "port-forward", podName, fmt.Sprintf("%s:%d", localPort, podTargetPort))
+	err = cmd.Start()
+	if err != nil {
+		return http.Response{}, fmt.Errorf("%s! kubectl port-forward %s %s:%d failed! %v. ", errBaseMsg, podName, localPort, podTargetPort, err)
+	} else {
+		logger.Printf("kubectl port-forward %s %s:%d succesful.", podName, localPort, podTargetPort)
 	}
 
-	logger.Println("waitAndRetryOperation() ended!")
+	// Wait for a brief period to let port-forwarding start
+	time.Sleep(2 * time.Second)
 
-	// Operation failed after all retries, return the last error received
-	return err
+	// Verify the forwarded port by making an HTTP request
+	url := fmt.Sprintf("http://localhost:%s", localPort)
+	resp, err := http.Get(url)
+
+	if err != nil {
+		return http.Response{}, fmt.Errorf("http://localhost:%s failed! %v,", localPort, err)
+	} else {
+		logger.Printf("http://localhost:%s succesful.", localPort)
+	}
+
+	defer resp.Body.Close()
+
+	// Read and print the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return http.Response{}, errors.New(fmt.Sprintf("GetAppResponse() ended! Error while reading response body: %s", err))
+	} else {
+		logger.Println("Response: ", string(body))
+	}
+
+	logger.Println(fmt.Sprintf("%s!", errBaseMsg))
+
+	return *resp, nil
 }

@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/joho/godotenv"
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
@@ -155,7 +156,7 @@ func SetupTypeTemplates(ctx context.Context) (setupTypes *SetupTypes, err error)
 
 	// Create ndbServer template from automation.NDBSERVER_PATH
 	ndbServer := &ndbv1alpha1.NDBServer{}
-	if err := automation.CreateTypeFromPath(ndbServer, automation.NDBSERVER_PATH); err != nil {
+	if err := CreateTypeFromPath(ndbServer, automation.NDBSERVER_PATH); err != nil {
 		errMsg += fmt.Sprintf("NdbServer with path %s failed! %v. ", automation.NDBSERVER_PATH, err)
 	} else {
 		logMsg += fmt.Sprintf("NdbServer with path %s created. ", automation.NDBSERVER_PATH)
@@ -226,12 +227,12 @@ type SetupTypes struct {
 // Ensure that theType is a pointer.
 func CreateTypeFromPath(theType any, path string) (err error) {
 	if theType == nil {
-		return errors.New("theType is nil! Ensure you are passing in a non-nil value!")
+		return errors.New("theType is nil")
 	}
 
 	// Check if theType is not a pointer
 	if reflect.ValueOf(theType).Kind() != reflect.Ptr {
-		return errors.New("theTyper is not a pointer! Ensure you are passing in a pointer for unmarshalling to work correctly!")
+		return errors.New("theType is not a pointer")
 	}
 
 	// Reads file path
@@ -253,4 +254,28 @@ func CreateTypeFromPath(theType any, path string) (err error) {
 	}
 
 	return nil
+}
+
+// Performs an operation a certain number of times with a given interval
+func waitAndRetryOperation(ctx context.Context, interval time.Duration, retries int, operation func() error) (err error) {
+	logger := GetLogger(ctx)
+	logger.Println("waitAndRetryOperation() starting...")
+
+	for i := 0; i < retries; i++ {
+		if i != 0 {
+			logger.Printf("Retrying, attempt # %d\n", i)
+		}
+		err = operation()
+		if err == nil {
+			return nil
+		} else {
+			logger.Printf("Error: %s\n", err)
+		}
+		time.Sleep(interval)
+	}
+
+	logger.Println("waitAndRetryOperation() ended!")
+
+	// Operation failed after all retries, return the last error received
+	return err
 }

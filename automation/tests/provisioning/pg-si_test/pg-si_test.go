@@ -73,7 +73,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) SetupSuite() {
 	}
 
 	// Provision database and wait for database and pod to be ready
-	if err := util.ProvisioningTestSetup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
+	if err := util.ProvisionOrClone(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -103,7 +103,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) TearDownSuite() {
 	}
 
 	// Delete resources and de-provision database
-	if err = util.ProvisioningTestTeardown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
+	if err = util.DeprovisionOrDeclone(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -125,7 +125,7 @@ func (suite *PostgresqlSingleInstanceTestSuite) AfterTest(suiteName, testName st
 func (suite *PostgresqlSingleInstanceTestSuite) TestProvisioningSuccess() {
 	logger := util.GetLogger(suite.ctx)
 
-	databaseResponse, err := util.GetDatabaseResponse(suite.ctx, suite.clientset, suite.v1alpha1ClientSet, suite.setupTypes)
+	databaseResponse, err := util.GetDatabaseOrCloneResponse(suite.ctx, suite.clientset, suite.v1alpha1ClientSet, suite.setupTypes)
 	if err != nil {
 		logger.Printf("Error: TestProvisioningSuccess() failed! %v", err)
 	} else {

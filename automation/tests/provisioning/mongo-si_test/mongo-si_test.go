@@ -25,6 +25,7 @@ type MongoSingleInstanceTestSuite struct {
 	setupTypes        *util.SetupTypes
 	v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
 	clientset         *kubernetes.Clientset
+	testManager       util.TestSuiteManager
 }
 
 // SetupSuite is called once before running the tests in the suite
@@ -35,6 +36,7 @@ func (suite *MongoSingleInstanceTestSuite) SetupSuite() {
 	var ctx context.Context
 	var v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
 	var clientset *kubernetes.Clientset
+	testManager := util.GetTestSuiteManager(*suite.setupTypes.Database)
 
 	// Setup logger and context
 	logger, err := util.SetupLogger(fmt.Sprintf("%s/mongo-si_test.log", automation.PROVISIONING_LOG_PATH))
@@ -73,7 +75,7 @@ func (suite *MongoSingleInstanceTestSuite) SetupSuite() {
 	}
 
 	// Provision database and wait for database and pod to be ready
-	if err := util.ProvisioningTestSetup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
+	if err := testManager.Setup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -83,6 +85,7 @@ func (suite *MongoSingleInstanceTestSuite) SetupSuite() {
 	suite.setupTypes = setupTypes
 	suite.v1alpha1ClientSet = v1alpha1ClientSet
 	suite.clientset = clientset
+	suite.testManager = testManager
 
 	logger.Println("SetupSuite() ended!")
 }
@@ -103,7 +106,7 @@ func (suite *MongoSingleInstanceTestSuite) TearDownSuite() {
 	}
 
 	// Delete resources and de-provision database
-	if err = util.ProvisioningTestTeardown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
+	if err = suite.testManager.TearDown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -125,7 +128,7 @@ func (suite *MongoSingleInstanceTestSuite) AfterTest(suiteName, testName string)
 func (suite *MongoSingleInstanceTestSuite) TestProvisioningSuccess() {
 	logger := util.GetLogger(suite.ctx)
 
-	databaseResponse, err := util.GetDatabaseResponse(suite.ctx, suite.clientset, suite.v1alpha1ClientSet, suite.setupTypes)
+	databaseResponse, err := suite.testManager.GetDatabaseOrCloneResponse(suite.ctx, suite.clientset, suite.v1alpha1ClientSet, suite.setupTypes)
 	if err != nil {
 		logger.Printf("Error: TestProvisioningSuccess() failed! %v", err)
 	} else {
@@ -161,7 +164,7 @@ func (suite *MongoSingleInstanceTestSuite) TestTimeMachineSuccess() {
 		return
 	}
 
-	tm, err := util.GetTimemachineResponseByDatabaseId(suite.ctx, suite.clientset, suite.v1alpha1ClientSet, suite.setupTypes)
+	tm, err := GetTimemachineResponseByDatabaseId(suite.ctx, suite.clientset, suite.v1alpha1ClientSet, suite.setupTypes) //TODO
 	if err != nil {
 		logger.Printf("Error: TestTimeMachineSuccess() failed! %v", err)
 		assert.FailNow("Error: TestTimeMachineSuccess() failed! %v", err)

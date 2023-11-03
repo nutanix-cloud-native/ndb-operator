@@ -103,7 +103,7 @@ func (suite *PostgresCloneSingleInstanceTestSuite) TearDownSuite() {
 	}
 
 	// Delete resources and de-provision database
-	if err = util.ProvisioningTestTeardown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
+	if err = util.DeprovisionOrDeclone(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
