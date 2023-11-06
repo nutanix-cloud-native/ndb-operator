@@ -7,4 +7,11 @@ const (
 	NDB_SECRET_PATH = "./config/ndb-secret.yaml"
 	APP_POD_PATH    = "./config/pod.yaml"
 	APP_SVC_PATH    = "./config/service.yaml"
+
+	KUBECONFIG_ENV          = "KUBECONFIG"
+	DB_SECRET_PASSWORD_ENV  = "DB_SECRET_PASSWORD"
+	NDB_SECRET_USERNAME_ENV = "NDB_SECRET_USERNAME"
+	NDB_SECRET_PASSWORD_ENV = "NDB_SECRET_PASSWORD"
+	NDB_SERVER_ENV          = "NDB_SERVER"
+	NDB_CLUSTER_ID_ENV      = "NDB_CLUSTER_ID"
 )

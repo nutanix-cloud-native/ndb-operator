@@ -16,18 +16,26 @@ import (
 func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBClient) (databases []ndbv1alpha1.NDBServerDatabaseInfo, err error) {
 	log := log.FromContext(ctx)
 	log.Info("Fetching and converting databases from NDB")
-
-	dbs, err := ndb_api.GetAllDatabases(ctx, ndbClient)
+	databasesResponse, err := ndb_api.GetAllDatabases(ctx, ndbClient)
 	if err != nil {
 		log.Error(err, "NDB API error while fetching databases")
 		return
 	}
-	databases = make([]ndbv1alpha1.NDBServerDatabaseInfo, len(dbs))
-	for i, db := range dbs {
+	clonesResponse, err := ndb_api.GetAllClones(ctx, ndbClient)
+	if err != nil {
+		log.Error(err, "NDB API error while fetching clones")
+		return
+	}
+	allDbs := append(databasesResponse, clonesResponse...)
+
+	databases = make([]ndbv1alpha1.NDBServerDatabaseInfo, len(allDbs))
+	for i, db := range allDbs {
 		databaseInfo := ndbv1alpha1.NDBServerDatabaseInfo{
-			Name:   db.Name,
-			Id:     db.Id,
-			Status: db.Status,
+			Name:          db.Name,
+			Id:            db.Id,
+			Status:        db.Status,
+			TimeMachineId: db.TimeMachineId,
+			Type:          db.Type,
 		}
 		if len(db.DatabaseNodes) > 0 {
 			databaseInfo.DBServerId = db.DatabaseNodes[0].DatabaseServerId
