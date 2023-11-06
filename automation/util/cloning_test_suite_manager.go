@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func (cm *CloneTestSuiteManager) Setup(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func (cm *CloningTestSuiteManager) Setup(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.Setup() starting...")
 
@@ -21,7 +21,7 @@ func (cm *CloneTestSuiteManager) Setup(ctx context.Context, st *SetupTypes, clie
 	return
 }
 
-func (cm *CloneTestSuiteManager) TearDown(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func (cm *CloningTestSuiteManager) TearDown(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.TearDown() starting...")
 
@@ -32,7 +32,7 @@ func (cm *CloneTestSuiteManager) TearDown(ctx context.Context, st *SetupTypes, c
 	return
 }
 
-func (cm *CloneTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse ndb_api.DatabaseResponse, err error) {
+func (cm *CloningTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse ndb_api.DatabaseResponse, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.GetDatabaseResponse() starting...")
 
@@ -43,7 +43,7 @@ func (cm *CloneTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context,
 	return
 }
 
-func (cm *CloneTestSuiteManager) GetAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, localPort string) (res http.Response, err error) {
+func (cm *CloningTestSuiteManager) GetAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, localPort string) (res http.Response, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.GetAppResponse() starting...")
 
@@ -55,6 +55,6 @@ func (cm *CloneTestSuiteManager) GetAppResponse(ctx context.Context, st *SetupTy
 }
 
 // EMPTY STUB
-func (dm *CloneTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (timemachineResponse ndb_api.TimeMachineResponse, err error) {
+func (dm *CloningTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (timemachineResponse ndb_api.TimeMachineResponse, err error) {
 	return ndb_api.TimeMachineResponse{}, nil
 }

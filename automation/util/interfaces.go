@@ -16,10 +16,10 @@ func GetTestSuiteManager(ctx context.Context, st SetupTypes) (manager TestSuiteM
 
 	if st.Database.Spec.IsClone {
 		logger.Println("CloneTestSuiteManage() retrieved!")
-		manager = &CloneTestSuiteManager{}
+		manager = &CloningTestSuiteManager{}
 	} else {
 		logger.Println("DatabaseTestSuiteManager() retrieved!")
-		manager = &DatabaseTestSuiteManager{}
+		manager = &ProvisioningTestSuiteManager{}
 	}
 	return
 }
@@ -54,6 +54,6 @@ type TestSuiteManager interface {
 		v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (timemachineResponse ndb_api.TimeMachineResponse, err error)
 }
 
-type CloneTestSuiteManager struct{}
+type CloningTestSuiteManager struct{}
 
-type DatabaseTestSuiteManager struct{}
+type ProvisioningTestSuiteManager struct{}

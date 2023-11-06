@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func (dm *DatabaseTestSuiteManager) Setup(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func (pm *ProvisioningTestSuiteManager) Setup(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.Setup() starting...")
 
@@ -25,7 +25,7 @@ func (dm *DatabaseTestSuiteManager) Setup(ctx context.Context, st *SetupTypes, c
 	return
 }
 
-func (dm *DatabaseTestSuiteManager) TearDown(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func (pm *ProvisioningTestSuiteManager) TearDown(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.TearDown() starting...")
 
@@ -36,7 +36,7 @@ func (dm *DatabaseTestSuiteManager) TearDown(ctx context.Context, st *SetupTypes
 	return
 }
 
-func (dm *DatabaseTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse ndb_api.DatabaseResponse, err error) {
+func (pm *ProvisioningTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse ndb_api.DatabaseResponse, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.GetDatabaseResponse() starting...")
 
@@ -47,7 +47,7 @@ func (dm *DatabaseTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Conte
 	return
 }
 
-func (dm *DatabaseTestSuiteManager) GetAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, localPort string) (res http.Response, err error) {
+func (pm *ProvisioningTestSuiteManager) GetAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, localPort string) (res http.Response, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.GetAppResponse() starting...")
 
@@ -59,7 +59,7 @@ func (dm *DatabaseTestSuiteManager) GetAppResponse(ctx context.Context, st *Setu
 }
 
 // Tests TM Response
-func (dm *DatabaseTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (timemachineResponse ndb_api.TimeMachineResponse, err error) {
+func (pm *ProvisioningTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (timemachineResponse ndb_api.TimeMachineResponse, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("GetTimemachineResponse() starting...")
 	errBaseMsg := "Error: GetTimemachineResponse() ended"
