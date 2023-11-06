@@ -1,4 +1,4 @@
-package mssql_si_cloning
+package mssql_cloning_si
 
 // Basic imports
 import (
@@ -18,23 +18,25 @@ import (
 
 // A test suite is a collection of related test cases that are grouped together for testing a specific package or functionality.
 // The testify package builds on top of Go's built-in testing package and enhances it with additional features like assertions and test suite management.
-// MSSQLCloneSingleInstanceTestSuite is a test suite struct that embeds testify's suite.Suite
-type MSSQLCloneSingleInstanceTestSuite struct {
+// MSSQLCloningSingleInstanceTestSuite is a test suite struct that embeds testify's suite.Suite
+type MSSQLCloningSingleInstanceTestSuite struct {
 	suite.Suite
 	ctx               context.Context
 	setupTypes        *util.SetupTypes
 	v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
 	clientset         *kubernetes.Clientset
+	tms               util.TestSuiteManager
 }
 
 // SetupSuite is called once before running the tests in the suite
-func (suite *MSSQLCloneSingleInstanceTestSuite) SetupSuite() {
+func (suite *MSSQLCloningSingleInstanceTestSuite) SetupSuite() {
 	var err error
 	var config *rest.Config
 
 	var ctx context.Context
 	var v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
 	var clientset *kubernetes.Clientset
+	var tms util.TestSuiteManager
 
 	// Setup logger and context
 	logger, err := util.SetupLogger(fmt.Sprintf("%s/mssql-si_test.log", automation.CLONING_LOG_PATH))
@@ -72,8 +74,11 @@ func (suite *MSSQLCloneSingleInstanceTestSuite) SetupSuite() {
 		suite.T().FailNow()
 	}
 
+	// Getting Test suite manager
+	tms = util.GetTestSuiteManager(ctx, *setupTypes)
+
 	// Provision database and wait for database and pod to be ready
-	if err := util.CloningTestSetup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
+	if err := tms.Setup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -83,12 +88,13 @@ func (suite *MSSQLCloneSingleInstanceTestSuite) SetupSuite() {
 	suite.setupTypes = setupTypes
 	suite.v1alpha1ClientSet = v1alpha1ClientSet
 	suite.clientset = clientset
+	suite.tms = tms
 
 	logger.Println("SetupSuite() ended!")
 }
 
 // TearDownSuite is called once after running the tests in the suite
-func (suite *MSSQLCloneSingleInstanceTestSuite) TearDownSuite() {
+func (suite *MSSQLCloningSingleInstanceTestSuite) TearDownSuite() {
 	var err error
 
 	logger := util.GetLogger(suite.ctx)
@@ -103,7 +109,7 @@ func (suite *MSSQLCloneSingleInstanceTestSuite) TearDownSuite() {
 	}
 
 	// Delete resources and de-provision database
-	if err = util.ProvisioningTestTeardown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
+	if err = suite.tms.TearDown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -112,20 +118,20 @@ func (suite *MSSQLCloneSingleInstanceTestSuite) TearDownSuite() {
 }
 
 // This will run right before the test starts and receives the suite and test names as input
-func (suite *MSSQLCloneSingleInstanceTestSuite) BeforeTest(suiteName, testName string) {
+func (suite *MSSQLCloningSingleInstanceTestSuite) BeforeTest(suiteName, testName string) {
 	util.GetLogger(suite.ctx).Printf("******************** RUNNING TEST %s %s ********************\n", suiteName, testName)
 }
 
 // This will run after test finishes and receives the suite and test names as input
-func (suite *MSSQLCloneSingleInstanceTestSuite) AfterTest(suiteName, testName string) {
+func (suite *MSSQLCloningSingleInstanceTestSuite) AfterTest(suiteName, testName string) {
 	util.GetLogger(suite.ctx).Printf("******************** END TEST %s %s ********************\n", suiteName, testName)
 }
 
 // Tests if provisioning is succesful by checking if database status is 'READY'
-func (suite *MSSQLCloneSingleInstanceTestSuite) TestProvisioningSuccess() {
+func (suite *MSSQLCloningSingleInstanceTestSuite) TestProvisioningSuccess() {
 	logger := util.GetLogger(suite.ctx)
 
-	databaseResponse, err := util.GetCloneResponse(suite.ctx, suite.clientset, suite.v1alpha1ClientSet, suite.setupTypes)
+	cloneResponse, err := suite.tms.GetDatabaseOrCloneResponse(suite.ctx, suite.setupTypes, suite.clientset, suite.v1alpha1ClientSet)
 	if err != nil {
 		logger.Printf("Error: TestProvisioningSuccess() failed! %v", err)
 	} else {
@@ -133,14 +139,14 @@ func (suite *MSSQLCloneSingleInstanceTestSuite) TestProvisioningSuccess() {
 	}
 
 	assert := assert.New(suite.T())
-	assert.Equal(common.DATABASE_CR_STATUS_READY, databaseResponse.Status, "The database status should be ready.")
+	assert.Equal(common.DATABASE_CR_STATUS_READY, cloneResponse.Status, "The database status should be ready.")
 }
 
 // Tests if app is able to connect to database via GET request
-func (suite *MSSQLCloneSingleInstanceTestSuite) TestAppConnectivity() {
+func (suite *MSSQLCloningSingleInstanceTestSuite) TestAppConnectivity() {
 	logger := util.GetLogger(suite.ctx)
 
-	resp, err := util.GetAppResponse(suite.ctx, suite.clientset, suite.setupTypes.AppPod, "3014")
+	resp, err := suite.tms.GetAppResponse(suite.ctx, suite.setupTypes, suite.clientset, automation.MSSQL_SI_PROVISONING_LOCAL_PORT)
 	if err != nil {
 		logger.Printf("Error: TestAppConnectivity failed! %v", err)
 	} else {
@@ -153,6 +159,6 @@ func (suite *MSSQLCloneSingleInstanceTestSuite) TestAppConnectivity() {
 
 // In order for 'go test' to run this suite, we need to create
 // a normal test function and pass our suite to suite.Run
-func TestMSSQLCloneSingleInstanceTestSuite(t *testing.T) {
-	suite.Run(t, new(MSSQLCloneSingleInstanceTestSuite))
+func TestMSSQLCloningSingleInstanceTestSuite(t *testing.T) {
+	suite.Run(t, new(MSSQLCloningSingleInstanceTestSuite))
 }

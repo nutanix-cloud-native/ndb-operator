@@ -5,16 +5,20 @@ import (
 	"net/http"
 	"testing"
 
-	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"k8s.io/client-go/kubernetes"
 )
 
-func GetTestSuiteManager(database ndbv1alpha1.Database) (manager TestSuiteManager) {
-	if database.Spec.IsClone {
+func GetTestSuiteManager(ctx context.Context, st SetupTypes) (manager TestSuiteManager) {
+	logger := GetLogger(ctx)
+	logger.Println("GetTestSuiteManager() starting...")
+
+	if st.Database.Spec.IsClone {
+		logger.Println("CloneTestSuiteManage() retrieved!")
 		manager = &CloneTestSuiteManager{}
 	} else {
+		logger.Println("DatabaseTestSuiteManager() retrieved!")
 		manager = &DatabaseTestSuiteManager{}
 	}
 	return

@@ -40,7 +40,7 @@ func (dm *DatabaseTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Conte
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.GetDatabaseResponse() starting...")
 
-	databaseResponse, err = GetDatabaseOrCloneResponse(ctx, clientset, v1alpha1ClientSet, st)
+	databaseResponse, err = GetDatabaseOrCloneResponse(ctx, st, clientset, v1alpha1ClientSet)
 
 	logger.Println("DatabaseTestSuiteManager.GetDatabaseResponse() ended!")
 
@@ -51,7 +51,7 @@ func (dm *DatabaseTestSuiteManager) GetAppResponse(ctx context.Context, st *Setu
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.GetAppResponse() starting...")
 
-	res, err = GetAppResponse(ctx, clientset, pod, localPort)
+	res, err = GetAppResponse(ctx, st, clientset, localPort)
 
 	logger.Println("DatabaseTestSuiteManager.GetAppResponse() ended!")
 

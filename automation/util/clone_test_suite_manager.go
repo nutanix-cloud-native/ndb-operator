@@ -36,7 +36,7 @@ func (cm *CloneTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context,
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.GetDatabaseResponse() starting...")
 
-	databaseResponse, err = GetDatabaseOrCloneResponse(ctx, clientset, v1alpha1ClientSet, st)
+	databaseResponse, err = GetDatabaseOrCloneResponse(ctx, st, clientset, v1alpha1ClientSet)
 
 	logger.Println("CloneTestSuiteManager.GetDatabaseResponse() ended!")
 
