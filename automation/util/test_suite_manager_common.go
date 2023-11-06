@@ -17,7 +17,6 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -272,7 +271,7 @@ func DeprovisionOrDeclone(ctx context.Context, st *SetupTypes, clientset *kubern
 
 // This function is called by TestSuiteManager.GetDatabaseOrCloneResponse in all GetDatabase/GetCloneResponse test suites
 // Returns a DatabaseResponse indicating if provisoning or cloning was succesful
-func GetDatabaseOrCloneResponse(ctx context.Context, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, st *SetupTypes) (databaseOrCloneResponse ndb_api.DatabaseResponse, err error) {
+func GetDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseOrCloneResponse ndb_api.DatabaseResponse, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("GetDatabaseOrCloneResponse() starting...")
 	errBaseMsg := "Error: GetDatabaseOrCloneResponse() ended"
@@ -320,14 +319,14 @@ func GetDatabaseOrCloneResponse(ctx context.Context, clientset *kubernetes.Clien
 }
 
 // Tests if pod is able to connect to database
-func GetAppResponse(ctx context.Context, clientset *kubernetes.Clientset, pod *corev1.Pod, localPort string) (res http.Response, err error) {
+func GetAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, localPort string) (res http.Response, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("GetAppResponse() started...")
 	errBaseMsg := "GetAppResponse() ended"
 
 	// Retrieve the pod name and targetPort
-	podName := pod.Name
-	podTargetPort := pod.Spec.Containers[0].Ports[0].ContainerPort
+	podName := st.AppPod.Name
+	podTargetPort := st.AppPod.Spec.Containers[0].Ports[0].ContainerPort
 
 	// Run port-forward command using kubectl
 	cmd := exec.Command("kubectl", "port-forward", podName, fmt.Sprintf("%s:%d", localPort, podTargetPort))

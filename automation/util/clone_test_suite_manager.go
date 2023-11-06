@@ -7,7 +7,6 @@ import (
 
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -33,7 +32,7 @@ func (cm *CloneTestSuiteManager) TearDown(ctx context.Context, st *SetupTypes, c
 	return
 }
 
-func (cm *CloneTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, st *SetupTypes) (databaseResponse ndb_api.DatabaseResponse, err error) {
+func (cm *CloneTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse ndb_api.DatabaseResponse, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.GetDatabaseResponse() starting...")
 
@@ -44,11 +43,11 @@ func (cm *CloneTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context,
 	return
 }
 
-func (cm *CloneTestSuiteManager) GetAppResponse(ctx context.Context, clientset *kubernetes.Clientset, pod *corev1.Pod, localPort string) (res http.Response, err error) {
+func (cm *CloneTestSuiteManager) GetAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, localPort string) (res http.Response, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.GetAppResponse() starting...")
 
-	res, err = GetAppResponse(ctx, clientset, pod, localPort)
+	res, err = GetAppResponse(ctx, st, clientset, localPort)
 
 	logger.Println("CloneTestSuiteManager.GetAppResponse() ended!")
 
@@ -56,6 +55,6 @@ func (cm *CloneTestSuiteManager) GetAppResponse(ctx context.Context, clientset *
 }
 
 // EMPTY STUB
-func (dm *CloneTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx context.Context, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, st *SetupTypes) (timemachineResponse ndb_api.TimeMachineResponse, err error) {
+func (dm *CloneTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (timemachineResponse ndb_api.TimeMachineResponse, err error) {
 	return ndb_api.TimeMachineResponse{}, nil
 }

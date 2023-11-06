@@ -10,7 +10,6 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -37,7 +36,7 @@ func (dm *DatabaseTestSuiteManager) TearDown(ctx context.Context, st *SetupTypes
 	return
 }
 
-func (dm *DatabaseTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, st *SetupTypes) (databaseResponse ndb_api.DatabaseResponse, err error) {
+func (dm *DatabaseTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse ndb_api.DatabaseResponse, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.GetDatabaseResponse() starting...")
 
@@ -48,7 +47,7 @@ func (dm *DatabaseTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Conte
 	return
 }
 
-func (dm *DatabaseTestSuiteManager) GetAppResponse(ctx context.Context, clientset *kubernetes.Clientset, pod *corev1.Pod, localPort string) (res http.Response, err error) {
+func (dm *DatabaseTestSuiteManager) GetAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, localPort string) (res http.Response, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.GetAppResponse() starting...")
 
@@ -60,7 +59,7 @@ func (dm *DatabaseTestSuiteManager) GetAppResponse(ctx context.Context, clientse
 }
 
 // Tests TM Response
-func (dm *DatabaseTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx context.Context, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, st *SetupTypes) (timemachineResponse ndb_api.TimeMachineResponse, err error) {
+func (dm *DatabaseTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (timemachineResponse ndb_api.TimeMachineResponse, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("GetTimemachineResponse() starting...")
 	errBaseMsg := "Error: GetTimemachineResponse() ended"
