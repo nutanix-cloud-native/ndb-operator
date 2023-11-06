@@ -110,7 +110,7 @@ func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClien
 func (a *MSSQLRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
 	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	vmName := req.Name
-	dbName := "DATABASE_NAME" // TODO
+	dbName := string(database.GetInstanceDatabaseNames())
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 
 	// Default action arguments
