@@ -40,8 +40,8 @@ type TimeMachineResponse struct {
 	LogDrive                  TimeMachineLogDrive   `json:"logDrive"`
 	Sla                       TimeMachineSLA        `json:"sla"`
 	Schedule                  TimeMachineSchedule   `json:"schedule"`
-	Database                  TimeMachineDatabase   `json:"database"` // TODO
-	Clones                    []interface{}         `json:"clones"`   // TODO
+	Database                  TimeMachineDatabase   `json:"database"`
+	Clones                    []interface{}         `json:"clones"`
 	ZeroSla                   bool                  `json:"zeroSla"`
 	SlaSet                    bool                  `json:"slaSet"`
 	ContinuousRecoveryEnabled bool                  `json:"continuousRecoveryEnabled"`

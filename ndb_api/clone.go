@@ -106,7 +106,7 @@ func ProvisionClone(ctx context.Context, ndbClient *ndb_client.NDBClient, req *D
 	return
 }
 
-// Fetches all cloens by id
+// Fetches clone by id
 func GetCloneById(ctx context.Context, ndbClient *ndb_client.NDBClient, id string) (clone DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetCloneById")
