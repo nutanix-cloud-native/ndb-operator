@@ -5,7 +5,7 @@ metadata:
 spec:
   ndbRef: ndb-pg
   databaseInstance:
-    Name: db-pg-si
+    Name: db-pg-si45
     databaseNames:
       - database_one
       - database_two
@@ -33,7 +33,7 @@ spec:
         name: ""
         id: ""
     timeMachine:
-      name: db-pg-si41_TM
+      name: db-pg-si45_TM
       description: "TM provisioned by operator"
       sla : "DEFAULT_OOB_GOLD_SLA"
       dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format

@@ -33,7 +33,7 @@ func SetupContext(ctx context.Context, logger *log.Logger) context.Context {
 }
 
 // Setup a logger with a unique file path
-func SetupLogger(path string) (*log.Logger, error) {
+func SetupLogger(path string, rootName string) (*log.Logger, error) {
 
 	// Deletes the old logging file if it exists
 	if _, err := os.Stat(path); err == nil {
@@ -47,7 +47,7 @@ func SetupLogger(path string) (*log.Logger, error) {
 	}
 
 	// Links the logger to the file and returns the logger
-	return log.New(file, "pg-si: ", log.Ldate|log.Ltime|log.Lshortfile), nil
+	return log.New(file, rootName, log.Ldate|log.Ltime|log.Lshortfile), nil
 }
 
 // Gets logger from context

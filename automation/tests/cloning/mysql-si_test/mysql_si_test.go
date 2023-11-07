@@ -39,7 +39,7 @@ func (suite *MySQLCloningSingleInstanceTestSuite) SetupSuite() {
 	var tms util.TestSuiteManager
 
 	// Setup logger and context
-	logger, err := util.SetupLogger(fmt.Sprintf("%s/mysql-si_test.log", automation.CLONING_LOG_PATH))
+	logger, err := util.SetupLogger(fmt.Sprintf("%s/mysql-cloning-si_test.log", automation.CLONING_LOG_PATH), "mysql-cloning-si")
 	if err != nil {
 		suite.T().FailNow()
 	}

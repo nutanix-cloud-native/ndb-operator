@@ -39,7 +39,7 @@ func (suite *PostgresCloningSingleInstanceTestSuite) SetupSuite() {
 	var tms util.TestSuiteManager
 
 	// Setup logger and context
-	logger, err := util.SetupLogger(fmt.Sprintf("%s/pg-si_test.log", automation.CLONING_LOG_PATH))
+	logger, err := util.SetupLogger(fmt.Sprintf("%s/pg-cloning-si_test.log", automation.CLONING_LOG_PATH), "pg-cloning-si")
 	if err != nil {
 		suite.T().FailNow()
 	}

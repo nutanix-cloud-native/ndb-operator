@@ -38,7 +38,7 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) SetupSuite() {
 	var tms util.TestSuiteManager
 
 	// Setup logger and context
-	logger, err := util.SetupLogger(fmt.Sprintf("%s/mssql-si_test.log", automation.PROVISIONING_LOG_PATH))
+	logger, err := util.SetupLogger(fmt.Sprintf("%s/mssql-provisioning-si_test.log", automation.PROVISIONING_LOG_PATH), "mssql-provisioning-si")
 	if err != nil {
 		suite.T().FailNow()
 	}

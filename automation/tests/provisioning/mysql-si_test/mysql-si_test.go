@@ -39,7 +39,7 @@ func (suite *MySQLProvisioningSingleInstanceTestSuite) SetupSuite() {
 	var tms util.TestSuiteManager
 
 	// Setup logger and context
-	logger, err := util.SetupLogger(fmt.Sprintf("%s/mysql-si_test.log", automation.PROVISIONING_LOG_PATH))
+	logger, err := util.SetupLogger(fmt.Sprintf("%s/mysql-provisioning-si_test.log", automation.PROVISIONING_LOG_PATH), "mysql-provisioning-si")
 	if err != nil {
 		suite.T().FailNow()
 	}
