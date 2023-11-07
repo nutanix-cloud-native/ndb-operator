@@ -5,7 +5,7 @@ metadata:
 spec:
   ndbRef: ndb-pg
   databaseInstance:
-    name:  db-pg-si41
+    Name: db-pg-si
     databaseNames:
       - database_one
       - database_two

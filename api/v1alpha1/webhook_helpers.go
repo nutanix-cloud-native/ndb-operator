@@ -14,9 +14,9 @@ import (
 // Get specific implementation of the DBProvisionRequestAppender interface based on the provided databaseType
 func getDatabaseWebhookHandler(database *Database) DatabaseWebhookHandler {
 	if database.Spec.IsClone {
-		return &CloningHandler{}
+		return &CloningWebhookHandler{}
 	} else {
-		return &ProvisoningHandler{}
+		return &ProvisioningWebhookHandler{}
 	}
 }
 
@@ -30,13 +30,13 @@ type DatabaseWebhookHandler interface {
 
 // +kubebuilder:object:generate:=false
 // Implements webhook.Validator, webhook.Defaulter
-type CloningHandler struct{}
+type CloningWebhookHandler struct{}
 
 // +kubebuilder:object:generate:=false
 // Implements webhook.Validator, webhook.Defaulter
-type ProvisoningHandler struct{}
+type ProvisioningWebhookHandler struct{}
 
-func (v *CloningHandler) defaulter(spec *DatabaseSpec) {
+func (v *CloningWebhookHandler) defaulter(spec *DatabaseSpec) {
 	databaselog.Info("Entering defaulter for clone")
 
 	initializeObjects(spec)
@@ -50,7 +50,7 @@ func (v *CloningHandler) defaulter(spec *DatabaseSpec) {
 	databaselog.Info("Exiting defaulter for clone")
 }
 
-func (v *CloningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, clonePath *field.Path) {
+func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, clonePath *field.Path) {
 	databaselog.Info("Entering validateCreate for clone")
 
 	clone := spec.Clone
@@ -97,7 +97,7 @@ func (v *CloningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorL
 	databaselog.Info("Exiting validateCreate for clone")
 }
 
-func (v *ProvisoningHandler) defaulter(spec *DatabaseSpec) {
+func (v *ProvisioningWebhookHandler) defaulter(spec *DatabaseSpec) {
 	databaselog.Info("Entering defaulter for provisioning")
 
 	initializeObjects(spec)
@@ -163,7 +163,7 @@ func (v *ProvisoningHandler) defaulter(spec *DatabaseSpec) {
 	databaselog.Info("Exiting defaulter for provisioning")
 }
 
-func (v *ProvisoningHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path) {
+func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path) {
 	databaselog.Info("Entering validateCreate for provisioning")
 
 	instance := spec.Instance
