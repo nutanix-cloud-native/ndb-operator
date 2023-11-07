@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:automation/tests/cloning/mongo-si_test/mongo_si_test.go
 package mongo_cloning_si
-========
-package postgres_si_provisoning
->>>>>>>> main:automation/tests/provisioning/pg-si_test/pg_si_test.go
 
 // Basic imports
 import (
