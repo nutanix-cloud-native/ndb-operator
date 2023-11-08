@@ -5,7 +5,7 @@ metadata:
 spec:
   ndbRef: ndb-mongo
   databaseInstance:
-    name: db-mongo-si46
+    name: db-mongo-si
     databaseNames:
       - database_one
     clusterId: <cluster-id>
@@ -31,7 +31,7 @@ spec:
         name: ""
         id: ""
     timeMachine:
-      name: db-mongo-si46_TM
+      name: db-mongo-si_TM
       description: "TM provisioned by operator"
       sla : "DEFAULT_OOB_GOLD_SLA"
       dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
