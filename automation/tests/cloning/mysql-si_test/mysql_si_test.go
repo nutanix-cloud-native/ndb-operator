@@ -74,10 +74,10 @@ func (suite *MySQLCloningSingleInstanceTestSuite) SetupSuite() {
 		suite.T().FailNow()
 	}
 
-	// Getting Test suite manager
+	// Get test suite manager
 	tms = util.GetTestSuiteManager(ctx, *setupTypes)
 
-	// Provision database and wait for database and pod to be ready
+	// Clone database and wait for clone and pod to be ready
 	if err := tms.Setup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
@@ -108,7 +108,7 @@ func (suite *MySQLCloningSingleInstanceTestSuite) TearDownSuite() {
 		suite.T().FailNow()
 	}
 
-	// Delete resources and de-provision database
+	// Delete resources and de-clone database
 	if err = suite.tms.TearDown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
@@ -127,13 +127,13 @@ func (suite *MySQLCloningSingleInstanceTestSuite) AfterTest(suiteName, testName 
 	util.GetLogger(suite.ctx).Printf("******************** END TEST %s %s ********************\n", suiteName, testName)
 }
 
-// Tests if provisioning is succesful by checking if database status is 'READY'
-func (suite *MySQLCloningSingleInstanceTestSuite) TestProvisioningSuccess() {
+// Tests if cloning is succesful by checking if clone status is 'READY'
+func (suite *MySQLCloningSingleInstanceTestSuite) TestCloningSuccess() {
 	logger := util.GetLogger(suite.ctx)
 
 	cloneResponse, err := suite.tms.GetDatabaseOrCloneResponse(suite.ctx, suite.setupTypes, suite.clientset, suite.v1alpha1ClientSet)
 	if err != nil {
-		logger.Printf("Error: TestProvisioningSuccess() failed! %v", err)
+		logger.Printf("Error: TestCloningSuccess() failed! %v", err)
 	} else {
 		logger.Println("Database response retrieved.")
 	}
@@ -142,7 +142,7 @@ func (suite *MySQLCloningSingleInstanceTestSuite) TestProvisioningSuccess() {
 	assert.Equal(common.DATABASE_CR_STATUS_READY, cloneResponse.Status, "The database status should be ready.")
 }
 
-// Tests if app is able to connect to database via GET request
+// Tests if app is able to connect to clone via GET request
 func (suite *MySQLCloningSingleInstanceTestSuite) TestAppConnectivity() {
 	logger := util.GetLogger(suite.ctx)
 
