@@ -3,9 +3,12 @@ package util
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/automation"
+	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 )
 
@@ -101,4 +104,39 @@ func extractDailySnapshotTime(ctx context.Context, dailySnapshotTime string) (ho
 
 	logger.Println("extractDailySnapshotTime() ended!...")
 	return
+}
+
+func getCloneName(database *ndbv1alpha1.Database) (string, error) {
+	switch database.Spec.Clone.Type {
+	case common.DATABASE_TYPE_MONGODB:
+		name, ok := os.LookupEnv(automation.MONGO_SI_CLONING_NAME_ENV)
+		if ok {
+			return name, nil
+		} else {
+			return automation.MONGO_SI_CLONING_NAME_DEFAULT, nil
+		}
+	case common.DATABASE_TYPE_MSSQL:
+		name, ok := os.LookupEnv(automation.MSSQL_SI_CLONING_NAME_ENV)
+		if ok {
+			return name, nil
+		} else {
+			return automation.MSSQL_SI_CLONING_NAME_DEFAULT, nil
+		}
+	case common.DATABASE_TYPE_MYSQL:
+		name, ok := os.LookupEnv(automation.MYSQL_SI_CLONING_NAME_ENV)
+		if ok {
+			return name, nil
+		} else {
+			return automation.MYSQL_SI_CLONING_NAME_DEFAULT, nil
+		}
+	case common.DATABASE_TYPE_POSTGRES:
+		name, ok := os.LookupEnv(automation.POSTGRES_SI_CLONING_NAME_ENV)
+		if ok {
+			return name, nil
+		} else {
+			return automation.POSTGRES_SI_CLONING_NAME_DEFAULT, nil
+		}
+	default:
+		return "", fmt.Errorf("Invalid database type: %s. Valid database types are: %s", database.Spec.Clone.Type, common.DATABASE_TYPES)
+	}
 }
