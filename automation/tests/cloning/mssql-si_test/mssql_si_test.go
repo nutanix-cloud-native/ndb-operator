@@ -49,7 +49,7 @@ func (suite *MSSQLCloningSingleInstanceTestSuite) SetupSuite() {
 	errBaseMsg := "Error: SetupSuite() ended"
 
 	// Setup env
-	if err = util.LoadEnv(ctx); err != nil {
+	if err = util.CheckRequiredEnv(ctx); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}

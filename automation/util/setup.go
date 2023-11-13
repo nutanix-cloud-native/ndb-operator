@@ -59,10 +59,10 @@ func GetLogger(ctx context.Context) *log.Logger {
 	return logger
 }
 
-// Load Environment Variables
-func LoadEnv(ctx context.Context) (err error) {
+// Check if required environment variables are present
+func CheckRequiredEnv(ctx context.Context) (err error) {
 	logger := GetLogger(ctx)
-	logger.Println("loadEnv() started...")
+	logger.Println("CheckRequiredEnv() started...")
 
 	// Loading env variables
 	err = godotenv.Load("../../.env")
@@ -87,12 +87,12 @@ func LoadEnv(ctx context.Context) (err error) {
 		}
 	}
 	if len(missingRequiredEnvs) != 0 {
-		return fmt.Errorf("Error: loadEnv() ended! Missing the following required env variables: %s", missingRequiredEnvs)
+		return fmt.Errorf("Error: CheckRequiredEnv() ended! Missing the following required env variables: %s", missingRequiredEnvs)
 	} else {
 		logger.Print("Found no missing required env variables!")
 	}
 
-	logger.Println("loadEnv() exited!")
+	logger.Println("CheckRequiredEnv() exited!")
 
 	return nil
 }
