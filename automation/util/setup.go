@@ -78,7 +78,7 @@ func LoadEnv(ctx context.Context) (err error) {
 		automation.NDB_SECRET_USERNAME_ENV,
 		automation.NDB_SECRET_PASSWORD_ENV,
 		automation.NDB_SERVER_ENV,
-		automation.CLUSTER_ID_ENV,
+		automation.NX_CLUSTER_ID_ENV,
 	}
 	missingRequiredEnvs := []string{}
 	for _, env := range requiredEnvs {

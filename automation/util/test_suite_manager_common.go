@@ -89,7 +89,7 @@ func ProvisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 
 	// Create Database or Clone
 	if st.Database != nil {
-		clusterId := os.Getenv(automation.CLUSTER_ID_ENV)
+		clusterId := os.Getenv(automation.NX_CLUSTER_ID_ENV)
 		if st.Database.Spec.IsClone {
 			st.Database.Spec.Clone.ClusterId = clusterId
 		} else {

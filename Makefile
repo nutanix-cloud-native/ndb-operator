@@ -273,7 +273,7 @@ endif
 # NDB_SECRET_USERNAME='...'
 # NDB_SECRET_PASSWORD='...'
 # NDB_SERVER='https://...:8443/era/v0.9'
-# CLUSTER_ID='...'
+# NX_CLUSTER_ID='...'
 .PHONY: run-automation
 run-automation: install run-automation-cloning run-automation-provisioning
 
