@@ -267,7 +267,7 @@ else
 	touch ndb_api/$(api)_response_types.go && cp hack/boilerplate.go.txt ndb_api/$(api)_response_types.go && echo -e "\n" >> ndb_api/$(api)_response_types.go && echo "package ndb_api" >> ndb_api/$(api)_response_types.go
 endif
 
-# Usage: Create the following variables in the automation/tests/.env before running the target
+# Usage: Create the following variables in the automation/tests/.env before running the run-automation, run-automation-cloning, and run-automation-provisioning targets
 # KUBECONFIG='...' 
 # DB_SECRET_PASSWORD='...'
 # NDB_SECRET_USERNAME='...'
@@ -281,7 +281,7 @@ run-automation: install run-automation-cloning run-automation-provisioning
 DEFAULT_CLONING_ROOT := ./automation/tests/cloning/
 CLONING_FOLDERS := ...
 run-automation-cloning:
-	@read -p "Enter the test folders (default: mongo-si_test mssql-si_test mysql-si_test pg-si_test): " folders; \
+	@read -p "Enter the test folders with spacing that you wish to run (mongo-si_test mssql-si_test mysql-si_test pg-si_test). Else all folders will be run: " folders; \
 	if [ -z "$$folders" ]; then \
 		folders="$(CLONING_FOLDERS)"; \
 	fi; \
@@ -291,7 +291,7 @@ run-automation-cloning:
 DEFAULT_PROVISIONING_ROOT := ./automation/tests/provisioning/
 PROVISIONING_FOLDERS := ...
 run-automation-provisioning:
-	@read -p "Enter the test folders (default: mongo-si_test mssql-si_test mysql-si_test pg-si_test): " folders; \
+	@read -p "Enter the test folders with spacing that you wish to run (mongo-si_test mssql-si_test mysql-si_test pg-si_test). Else all folders will be run: " folders; \
 	if [ -z "$$folders" ]; then \
 		folders="$(PROVISIONING_FOLDERS)"; \
 	fi; \
