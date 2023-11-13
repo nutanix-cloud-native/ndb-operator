@@ -14,32 +14,18 @@ spec:
     timezone: "UTC"
     type: mssql
     profiles: 
-      compute:
-        name: ""
-        id: ""
-      # A Software profile is a mandatory input for proprietary (closed-source) engines such as SQL Server & Oracle
       software:
         name: "MSSQL-MAZIN2"
-        # id: "7281c9a9-1639-4cbd-a9cc-f0b0422ba90a"
-      network:
-        name: ""
-        id: ""
-      dbParam:
-        name: ""
-        id: ""
-      dbParamInstance:
-        name: ""
-        id: ""
     timeMachine:
       name: db-mssql-si_TM
       description: "TM provisioned by operator"
       sla : "DEFAULT_OOB_GOLD_SLA"
-      dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
-      snapshotsPerDay:     4            # Number of snapshots per day
-      logCatchUpFrequency: 90           # Frequency (in minutes)
-      weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
-      monthlySnapshotDay:  24           # Day of the month for monthly snapshot
-      quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
+      dailySnapshotTime:   "12:34:56"
+      snapshotsPerDay:     4           
+      logCatchUpFrequency: 90           
+      weeklySnapshotDay:   "WEDNESDAY"  
+      monthlySnapshotDay:  24           
+      quarterlySnapshotMonth: "Jan"     
     additionalArguments:
       authentication_mode: "mixed"
       sql_user_password: "Nutanix.1"

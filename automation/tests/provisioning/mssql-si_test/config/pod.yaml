@@ -10,11 +10,11 @@ spec:
     image: mazins/ndb-operator-mssql:latest
     env:
     - name: DBHOST 
-      value: db-mssql-si-svc      # CHANGE
+      value: db-mssql-si-svc    
     - name: USERNAME
-      value: sa                   # CHANGE
+      value: sa                  
     - name: DATABASE
-      value: database_one         # CHANGE
+      value: database_one       
     - name: DBPORT
       value: "80"
     - name: MSSQL_INSTANCE_NAME
@@ -32,4 +32,4 @@ spec:
       command: ['sh', '-c', "until nslookup $(DB_HOST).$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for $(DB_HOST); sleep 2; done"]
       env:
       - name: DB_HOST 
-        value: db-mssql-si-svc      # CHANGE
+        value: db-mssql-si-svc  
