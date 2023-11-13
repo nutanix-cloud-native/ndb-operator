@@ -78,7 +78,7 @@ func (suite *PostgresProvisioningSingleInstanceTestSuite) SetupSuite() {
 	tms = util.GetTestSuiteManager(ctx, *setupTypes)
 
 	// Provision database and wait for database and pod to be ready
-	if err := util.ProvisionOrClone(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
+	if err := tms.Setup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
