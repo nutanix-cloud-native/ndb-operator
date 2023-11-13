@@ -291,7 +291,7 @@ run-automation-cloning:
 DEFAULT_PROVISIONING_ROOT := ./automation/tests/provisioning/
 PROVISIONING_FOLDERS := ...
 run-automation-provisioning:
-	@read -p "Enter the test directories with spacing to run (mongo-si_test mssql-si_test mysql-si_test pg-si_test). Else all folders will be run: " folders; \
+	@read -p "Enter the test directories with spacing to run (mongo-si_test mssql-si_test mysql-si_test pg-si_test). Else all directories will be run: " folders; \
 	if [ -z "$$folders" ]; then \
 		folders="$(PROVISIONING_FOLDERS)"; \
 	fi; \
