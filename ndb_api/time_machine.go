@@ -25,18 +25,18 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// Takes a snapshot for a time machine
+// Creates a snapshot for a time machine
 // Returns the task info summary response for the operation TODO
-func TakeSnapshotForTM(
+func CreateSnapshotForTM(
 	ctx context.Context,
 	ndbClient *ndb_client.NDBClient,
 	tmName string,
 	snapshotName string,
 	expiryDateTimezone string,
-	ExpireInDays string) (snapshotRequest SnapshotRequest, err error) {
+	ExpireInDays string) (task TaskInfoSummaryResponse, err error) {
 
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.TakeSnapshotForTM")
+	log.Info("Entered ndb_api.CreateSnapshotForTM")
 	if ndbClient == nil {
 		err = errors.New("nil reference")
 		log.Error(err, "Received nil ndbClient reference")
@@ -69,7 +69,7 @@ func TakeSnapshotForTM(
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
 	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in TakeSnapshotForTM")
+		log.Error(err, "Error occurred reading response.Body in CreateSnapshotForTM")
 		return
 	}
 	err = json.Unmarshal(body, &task)
@@ -77,7 +77,7 @@ func TakeSnapshotForTM(
 		log.Error(err, "Error occurred trying to unmarshal.")
 		return
 	}
-	log.Info("Returning from ndb_api.TakeSnapshotForTM")
+	log.Info("Returning from ndb_api.CreateSnapshotForTM")
 	return
 }
 
