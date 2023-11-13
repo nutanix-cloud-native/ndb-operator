@@ -27,7 +27,14 @@ import (
 
 // Takes a snapshot for a time machine
 // Returns the task info summary response for the operation TODO
-func TakeSnapshotForTM(ctx context.Context, ndbClient *ndb_client.NDBClient, tmName string) (task TaskInfoSummaryResponse, err error) {
+func TakeSnapshotForTM(
+	ctx context.Context,
+	ndbClient *ndb_client.NDBClient,
+	tmName string,
+	snapshotName string,
+	expiryDateTimezone string,
+	ExpireInDays string) (snapshotRequest SnapshotRequest, err error) {
+
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.TakeSnapshotForTM")
 	if ndbClient == nil {
@@ -42,17 +49,7 @@ func TakeSnapshotForTM(ctx context.Context, ndbClient *ndb_client.NDBClient, tmN
 		return
 	}
 	takeSnapshotPath := fmt.Sprintf("tms/%s/snapshots", tmName)
-	requestBody := &SnapshotRequest{
-		Name: "snapshot2",
-		SnapshotLcmConfig: SnapshotLcmConfig{
-			SnapshotLCMConfigDetailed: SnapshotLcmConfigDetailed{
-				ExpiryDetails: ExpiryDetails{
-					ExpiryDateTimezone: "Asia/Calcutta",
-					ExpireInDays:       "10",
-				},
-			},
-		},
-	}
+	requestBody := GenerateSnapshotRequest(snapshotName, expiryDateTimezone, ExpireInDays)
 
 	res, err := ndbClient.Post(takeSnapshotPath, requestBody)
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
