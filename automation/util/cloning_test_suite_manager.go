@@ -14,7 +14,7 @@ func (cm *CloningTestSuiteManager) Setup(ctx context.Context, st *SetupTypes, cl
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.Setup() starting...")
 
-	err = ProvisionOrClone(ctx, st, clientset, v1alpha1ClientSet, t)
+	err = provisionOrClone(ctx, st, clientset, v1alpha1ClientSet, t)
 
 	logger.Println("CloneTestSuiteManager.Setup() ended!")
 
@@ -25,7 +25,7 @@ func (cm *CloningTestSuiteManager) TearDown(ctx context.Context, st *SetupTypes,
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.TearDown() starting...")
 
-	err = DeprovisionOrDeclone(ctx, st, clientset, v1alpha1ClientSet, t)
+	err = deprovisionOrDeclone(ctx, st, clientset, v1alpha1ClientSet, t)
 
 	logger.Println("CloneTestSuiteManager.TearDown() ended!")
 
@@ -36,7 +36,7 @@ func (cm *CloningTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Contex
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.GetDatabaseResponse() starting...")
 
-	databaseResponse, err = GetDatabaseOrCloneResponse(ctx, st, clientset, v1alpha1ClientSet)
+	databaseResponse, err = getDatabaseOrCloneResponse(ctx, st, clientset, v1alpha1ClientSet)
 
 	logger.Println("CloneTestSuiteManager.GetDatabaseResponse() ended!")
 
@@ -47,7 +47,7 @@ func (cm *CloningTestSuiteManager) GetAppResponse(ctx context.Context, st *Setup
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.GetAppResponse() starting...")
 
-	res, err = GetAppResponse(ctx, st, clientset, localPort)
+	res, err = getAppResponse(ctx, st, clientset, localPort)
 
 	logger.Println("CloneTestSuiteManager.GetAppResponse() ended!")
 

@@ -18,7 +18,7 @@ func (pm *ProvisioningTestSuiteManager) Setup(ctx context.Context, st *SetupType
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.Setup() starting...")
 
-	err = ProvisionOrClone(ctx, st, clientset, v1alpha1ClientSet, t)
+	err = provisionOrClone(ctx, st, clientset, v1alpha1ClientSet, t)
 
 	logger.Println("DatabaseTestSuiteManager.Setup() ended!")
 
@@ -29,7 +29,7 @@ func (pm *ProvisioningTestSuiteManager) TearDown(ctx context.Context, st *SetupT
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.TearDown() starting...")
 
-	err = DeprovisionOrDeclone(ctx, st, clientset, v1alpha1ClientSet, t)
+	err = deprovisionOrDeclone(ctx, st, clientset, v1alpha1ClientSet, t)
 
 	logger.Println("DatabaseTestSuiteManager.TearDown() ended!")
 
@@ -40,7 +40,7 @@ func (pm *ProvisioningTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.C
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.GetDatabaseResponse() starting...")
 
-	databaseResponse, err = GetDatabaseOrCloneResponse(ctx, st, clientset, v1alpha1ClientSet)
+	databaseResponse, err = getDatabaseOrCloneResponse(ctx, st, clientset, v1alpha1ClientSet)
 
 	logger.Println("DatabaseTestSuiteManager.GetDatabaseResponse() ended!")
 
@@ -51,7 +51,7 @@ func (pm *ProvisioningTestSuiteManager) GetAppResponse(ctx context.Context, st *
 	logger := GetLogger(ctx)
 	logger.Println("DatabaseTestSuiteManager.GetAppResponse() starting...")
 
-	res, err = GetAppResponse(ctx, st, clientset, localPort)
+	res, err = getAppResponse(ctx, st, clientset, localPort)
 
 	logger.Println("DatabaseTestSuiteManager.GetAppResponse() ended!")
 

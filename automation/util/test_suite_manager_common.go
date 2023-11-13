@@ -23,13 +23,13 @@ import (
 
 // This function is called by TestSuiteManager.Setup in all Setup test suites.
 // It loads environment variables, instantiate resources, waits for db/clone to be ready, and pod to start.
-func ProvisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	logger := GetLogger(ctx)
-	logger.Println("ProvisionOrClone() starting. Attempting to initialize properties...")
+	logger.Println("provisionOrClone() starting. Attempting to initialize properties...")
 
 	// Checking if setupTypes, clientSet, or v1alpha1ClientSet is nil
 	if st == nil || clientset == nil || v1alpha1ClientSet == nil {
-		errMsg := "Error: ProvisioningTestSetup() ended! Initialization Failed! "
+		errMsg := "Error: provisionOrClone() ended! Initialization Failed! "
 		if st == nil {
 			errMsg += "st is nil! "
 		}
@@ -161,16 +161,16 @@ func ProvisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 		}
 	}
 
-	logger.Println("ProvisioningTestSetup() ended. Initialization complete.")
+	logger.Println("provisionOrClone() ended. Initialization complete.")
 
 	return
 }
 
 // This function is called by TestSuiteManager.TearDown in all TearDown test suites.
 // Delete resources and de-provision database/clone.
-func DeprovisionOrDeclone(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
+func deprovisionOrDeclone(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client, t *testing.T) (err error) {
 	logger := GetLogger(ctx)
-	logger.Println("ProvisioningTestTeardown() starting...")
+	logger.Println("deprovisionOrDeclone() starting...")
 
 	ns := automation.NAMESPACE_DEFAULT
 	if st.Database != nil && st.Database.Namespace != "" {
@@ -264,17 +264,17 @@ func DeprovisionOrDeclone(ctx context.Context, st *SetupTypes, clientset *kubern
 		logger.Printf("Error while fetching app pod type %s. AppPod is nil.\n", st.DbSecret.Name)
 	}
 
-	logger.Println("ProvisioningTestTeardown() ended. Initialization complete.")
+	logger.Println("deprovisionOrDeclone() ended. Initialization complete.")
 
 	return
 }
 
-// This function is called by TestSuiteManager.GetDatabaseOrCloneResponse in all GetDatabase/GetCloneResponse test suites
+// This function is called by TestSuiteManager.getDatabaseOrCloneResponse in all GetDatabase/GetCloneResponse test suites
 // Returns a DatabaseResponse indicating if provisoning or cloning was succesful
-func GetDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseOrCloneResponse ndb_api.DatabaseResponse, err error) {
+func getDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseOrCloneResponse ndb_api.DatabaseResponse, err error) {
 	logger := GetLogger(ctx)
-	logger.Println("GetDatabaseOrCloneResponse() starting...")
-	errBaseMsg := "Error: GetDatabaseOrCloneResponse() ended"
+	logger.Println("getDatabaseOrCloneResponse() starting...")
+	errBaseMsg := "Error: getDatabaseOrCloneResponse() ended"
 
 	// Get NDBServer CR
 	ndbServer, err := v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Get(st.NdbServer.Name, metav1.GetOptions{})
@@ -313,16 +313,16 @@ func GetDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *
 	}
 
 	logger.Printf("Database response.status: %s.\n", databaseOrCloneResponse.Status)
-	logger.Println("GetDatabaseOrCloneResponse() ended!")
+	logger.Println("getDatabaseOrCloneResponse() ended!")
 
 	return databaseOrCloneResponse, nil
 }
 
 // Tests if pod is able to connect to database
-func GetAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, localPort string) (res http.Response, err error) {
+func getAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, localPort string) (res http.Response, err error) {
 	logger := GetLogger(ctx)
-	logger.Println("GetAppResponse() started...")
-	errBaseMsg := "GetAppResponse() ended"
+	logger.Println("getAppResponse() started...")
+	errBaseMsg := "getAppResponse() ended"
 
 	// Retrieve the pod name and targetPort
 	podName := st.AppPod.Name
@@ -355,7 +355,7 @@ func GetAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.C
 	// Read and print the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return http.Response{}, errors.New(fmt.Sprintf("GetAppResponse() ended! Error while reading response body: %s", err))
+		return http.Response{}, errors.New(fmt.Sprintf("getAppResponse() ended! Error while reading response body: %s", err))
 	} else {
 		logger.Println("Response: ", string(body))
 	}
