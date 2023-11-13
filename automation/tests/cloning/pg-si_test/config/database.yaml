@@ -13,6 +13,6 @@ spec:
     profiles: {}
     credentialSecret: clone-db-secret-pg-si
     timezone: UTC
-    sourceDatabaseId: 37c4c8fb-313e-4d12-b489-915d2623347c
-    snapshotId: e93e4797-b9af-46c0-ae10-841877f7c0e9
+    sourceDatabaseId: <source-database-id>
+    snapshotId: <snapshot-id>
     additionalArguments: {}

@@ -15,8 +15,8 @@ spec:
         name: MSSQL-MAZIN2
     credentialSecret: clone-db-secret-mssql-si
     timezone: UTC
-    sourceDatabaseId: 897a9173-74e2-4d6a-b77e-44128aea1853
-    snapshotId: 56f4e1dd-ac0c-424e-970e-c619cf116c2b
+    sourceDatabaseId: <source-database-id>
+    snapshotId: <snapshot-id>
     additionalArguments:
       "authentication_mode": "mixed"
     

@@ -13,6 +13,6 @@ spec:
     profiles: {}
     credentialSecret: clone-db-secret-mongo-si
     timezone: America/Los_Angeles
-    sourceDatabaseId: 42109f6c-87da-4f77-abad-4d287b73cc47
-    snapshotId: e3b6583e-9440-4906-bf09-9432dddc500a
+    sourceDatabaseId: <source-database-id>
+    snapshotId: <snapshot-id>
     additionalArguments: {}
