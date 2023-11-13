@@ -9,7 +9,7 @@ spec:
     name: clone-pg-si
     type: postgres
     description: Cloning pg single instance testing 
-    clusterId: 600d54a1-af63-4af3-b252-51b4d5cba64f
+    clusterId: <cluster-id>
     profiles: {}
     credentialSecret: clone-db-secret-pg-si
     timezone: UTC

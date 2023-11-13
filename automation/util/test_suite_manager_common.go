@@ -89,11 +89,11 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 
 	// Create Database or Clone
 	if st.Database != nil {
-		clusterId := os.Getenv(automation.NX_CLUSTER_ID_ENV)
+		nxClusterId := os.Getenv(automation.NX_CLUSTER_ID_ENV)
 		if st.Database.Spec.IsClone {
-			st.Database.Spec.Clone.ClusterId = clusterId
+			st.Database.Spec.Clone.ClusterId = nxClusterId
 		} else {
-			st.Database.Spec.Instance.ClusterId = clusterId
+			st.Database.Spec.Instance.ClusterId = nxClusterId
 		}
 		st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Create(st.Database)
 		if err != nil {
