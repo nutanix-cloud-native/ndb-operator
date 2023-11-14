@@ -78,7 +78,7 @@ func (dm *DatabaseManager) deregister(ctx context.Context, r *DatabaseReconciler
 	infoStatement := "Deregistering Database Instance from NDB."
 	log.Info(infoStatement)
 	r.recorder.Event(database, "Normal", EVENT_DEREGISTRATION_STARTED, infoStatement)
-	task, err = ndb_api.DeprovisionDatabase(ctx, ndbClient, database.Status.Id, *ndb_api.GenerateDeprovisionDatabaseRequest())
+	task, err = ndb_api.DeprovisionDatabase(ctx, ndbClient, database.Status.Id, ndb_api.GenerateDeprovisionDatabaseRequest())
 	if err != nil {
 		errStatement := "Deregistering instance API call failed."
 		log.Error(err, errStatement)
@@ -138,7 +138,7 @@ func (cm *CloneManager) deregister(ctx context.Context, r *DatabaseReconciler, n
 	infoStatement := "Deregistering Clone Instance from NDB."
 	log.Info(infoStatement)
 	r.recorder.Event(database, "Normal", EVENT_DEREGISTRATION_STARTED, infoStatement)
-	task, err = ndb_api.DeprovisionClone(ctx, ndbClient, database.Status.Id, *ndb_api.GenerateDeprovisionCloneRequest())
+	task, err = ndb_api.DeprovisionClone(ctx, ndbClient, database.Status.Id, ndb_api.GenerateDeprovisionCloneRequest())
 	if err != nil {
 		errStatement := "Deregistering instance API call failed."
 		log.Error(err, errStatement)
@@ -157,7 +157,7 @@ func deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient 
 	// Make a dbserver deprovisioning request to NDB only if the serverId is present in status
 	if databaseServerId != "" {
 		r.recorder.Eventf(database, "Normal", EVENT_DEREGISTRATION_STARTED, "Deprovisioning database server from NDB.")
-		task, err = ndb_api.DeprovisionDatabaseServer(ctx, ndbClient, databaseServerId, *ndb_api.GenerateDeprovisionDatabaseServerRequest())
+		task, err = ndb_api.DeprovisionDatabaseServer(ctx, ndbClient, databaseServerId, ndb_api.GenerateDeprovisionDatabaseServerRequest())
 		if err != nil {
 			errStament := fmt.Sprintf("Deprovisioning database server request failed for id: %s", databaseServerId)
 			log.Error(err, errStament)

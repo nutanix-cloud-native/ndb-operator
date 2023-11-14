@@ -51,43 +51,6 @@ func NewNDBClient(username, password, url, caCert string, skipVerify bool) *NDBC
 	return &NDBClient{username, password, url, client}
 }
 
-func (ndbClient *NDBClient) Get(path string) (*http.Response, error) {
-	url := ndbClient.url + "/" + path
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		// fmt.Println(err)
-		return nil, err
-	}
-	req.SetBasicAuth(ndbClient.username, ndbClient.password)
-	return ndbClient.client.Do(req)
-}
-
-func (ndbClient *NDBClient) Post(path string, body interface{}) (*http.Response, error) {
-	url := ndbClient.url + "/" + path
-	payload, _ := json.Marshal(body)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
-	if err != nil {
-		// fmt.Println(err)
-		return nil, err
-	}
-	req.SetBasicAuth(ndbClient.username, ndbClient.password)
-	req.Header.Add("Content-Type", "application/json; charset=utf-8")
-	return ndbClient.client.Do(req)
-}
-
-func (ndbClient *NDBClient) Delete(path string, body interface{}) (*http.Response, error) {
-	url := ndbClient.url + "/" + path
-	payload, _ := json.Marshal(body)
-	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(payload))
-	if err != nil {
-		// fmt.Println(err)
-		return nil, err
-	}
-	req.SetBasicAuth(ndbClient.username, ndbClient.password)
-	req.Header.Add("Content-Type", "application/json; charset=utf-8")
-	return ndbClient.client.Do(req)
-}
-
 func (ndbClient *NDBClient) NewRequest(method, endpoint string, requestBody interface{}) (*http.Request, error) {
 
 	url := ndbClient.url + "/" + endpoint

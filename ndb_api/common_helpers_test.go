@@ -162,7 +162,7 @@ func Test_sendRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := sendRequest(tt.args.ctx, tt.args.ndbClient, tt.args.method, tt.args.endpoint, tt.args.payload, tt.args.responseBody); (err != nil) != tt.wantErr {
+			if _, err := sendRequest(tt.args.ctx, tt.args.ndbClient, tt.args.method, tt.args.endpoint, tt.args.payload, tt.args.responseBody); (err != nil) != tt.wantErr {
 				t.Errorf("sendRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

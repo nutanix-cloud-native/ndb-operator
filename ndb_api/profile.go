@@ -18,10 +18,6 @@ package ndb_api
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
@@ -31,35 +27,9 @@ import (
 // Fetches and returns all the available profiles as a profile slice
 func GetAllProfiles(ctx context.Context, ndbClient *ndb_client.NDBClient) (profiles []ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.GetAllProfiles")
-	if ndbClient == nil {
-		err = errors.New("nil reference: received nil reference for ndbClient")
-		log.Error(err, "Received nil ndbClient reference")
+	if _, err = sendRequest(ctx, ndbClient, http.MethodGet, "profiles", nil, &profiles); err != nil {
+		log.Error(err, "Error in GetAllProfiles")
 		return
 	}
-	res, err := ndbClient.Get("profiles")
-	if err != nil || res == nil || res.StatusCode != http.StatusOK {
-		if err == nil {
-			if res != nil {
-				err = fmt.Errorf("GET /profiles responded with %d", res.StatusCode)
-			} else {
-				err = fmt.Errorf("GET /profiles responded with nil response")
-			}
-		}
-		log.Error(err, "Error occurred while fetching profiles")
-		return
-	}
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in GetAllProfiles")
-		return
-	}
-	err = json.Unmarshal(body, &profiles)
-	if err != nil {
-		log.Error(err, "Error occurred trying to unmarshal.")
-		return
-	}
-	log.Info("Returning from ndb_api.GetAllProfiles")
 	return
 }
