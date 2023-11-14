@@ -17,10 +17,74 @@ limitations under the License.
 package ndb_api
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+// Makes the request via the ndb http client to ndb.
+// Used by functions in the ndb_api package.
+func sendRequest(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, method, endpoint string, payload interface{}, responseBody interface{}) error {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered ndb_api.sendRequest", "Method", method, "Endpoint", endpoint)
+
+	if ndbClient == nil {
+		return errors.New("nil reference: received nil reference for ndbClient")
+	}
+
+	if responseBody == nil {
+		return errors.New("nil reference: received nil reference for responseBody, expected an initialized/non-nil variable")
+	}
+
+	req, err := ndbClient.NewRequest(method, endpoint, payload)
+	if err != nil {
+		log.Error(err, "An error occurred while creating the HTTP request")
+		return err
+	}
+
+	res, err := ndbClient.Do(req)
+	if err != nil {
+		log.Error(err, "An error occurred while calling the HTTP endpoint")
+		return err
+	}
+
+	// Read the NDB API response.
+	// Perform error checks.
+	// Unmarshal into the response body passed by the caller.
+	if res != nil {
+		body, readErr := io.ReadAll(res.Body)
+		defer res.Body.Close()
+		if readErr != nil {
+			log.Error(readErr, "Error occurred reading response.Body")
+			return readErr
+		}
+		// Considering any status >= 400 to be an error.
+		if res.StatusCode >= http.StatusBadRequest {
+			err = fmt.Errorf("%s %s error", method, endpoint)
+			if body != nil {
+				err = errors.Join(err, fmt.Errorf("ndb api error response status: %d, response body: %s", res.StatusCode, body))
+			}
+			log.Error(err, "NDB API error")
+			return err
+		}
+		err = json.Unmarshal(body, responseBody)
+		if err != nil {
+			log.Error(err, "Error occurred while unmarshalling the response body")
+			return err
+		}
+	} else {
+		log.Info("Received an empty/nil response")
+	}
+	log.Info("Returning from ndb_api.sendRequest")
+	return nil
+}
 
 func GetDatabaseEngineName(dbType string) string {
 	switch dbType {
