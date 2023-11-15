@@ -63,3 +63,15 @@ type TimeMachineMonthlySchedule struct {
 type TimeMachineQuarterlySchedule struct {
 	StartMonth string `json:"startMonth"`
 }
+
+type TimeMachineGetSnapshotsResponse struct {
+	SnapshotsPerNxCluster map[string][]SnapshotsParentInfoPerCluster `json:"snapshotsPerNxCluster"`
+}
+
+type SnapshotsParentInfoPerCluster struct {
+	Snapshots []Snapshot `json:"snapshots"`
+}
+
+type Snapshot struct {
+	Id string `json:"id"`
+}
