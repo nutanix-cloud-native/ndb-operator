@@ -1,7 +1,6 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -76,7 +75,7 @@ func GetAllowedAdditionalArgumentsForClone(dbType string) (map[string]bool, erro
 			"refreshDateTimezone": false, // In lcmConfig.refreshDetails.refreshDetails
 		}, nil
 	default:
-		return map[string]bool{}, errors.New(fmt.Sprintf("Could not find allowed additional arguments for clone of type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES))
+		return map[string]bool{}, fmt.Errorf("could not find allowed additional arguments for clone of type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES)
 	}
 }
 
@@ -114,6 +113,6 @@ func GetAllowedAdditionalArgumentsForDatabase(dbType string) (map[string]bool, e
 			"listener_port": true,
 		}, nil
 	default:
-		return map[string]bool{}, errors.New(fmt.Sprintf("Could not find allowed additional arguments for database of type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES))
+		return map[string]bool{}, fmt.Errorf("could not find allowed additional arguments for database of type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES)
 	}
 }

@@ -27,7 +27,7 @@ import (
 
 // Deprovisions a database server vm given a server id
 // Returns the task info summary response for the operation
-func DeprovisionDatabaseServer(ctx context.Context, ndbClient *ndb_client.NDBClient, id string, req *DatabaseServerDeprovisionRequest) (task *TaskInfoSummaryResponse, err error) {
+func DeprovisionDatabaseServer(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, id string, req *DatabaseServerDeprovisionRequest) (task *TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	if id == "" {
 		err = fmt.Errorf("id is empty")

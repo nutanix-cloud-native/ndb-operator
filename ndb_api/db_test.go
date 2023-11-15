@@ -168,13 +168,47 @@ func TestProvisionDatabase(t *testing.T) {
 		ndbClient ndb_client.NDBClientHTTPInterface
 		req       *DatabaseProvisionRequest
 	}
+	// Mocks of the NDB Client interface
+	mockNDBClient := &MockNDBClientHTTPInterface{}
+
+	mockNDBClient.On("NewRequest", http.MethodPost, "databases/provision", &DatabaseProvisionRequest{}).Once().Return(nil, errors.New("mock-error-new-request"))
+
+	req := &http.Request{}
+	res := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewBufferString(`{"name":"test-name", "entityId":"test-id"}`)),
+	}
+	mockNDBClient.On("NewRequest", http.MethodPost, "databases/provision", &DatabaseProvisionRequest{}).Once().Return(req, nil)
+	mockNDBClient.On("Do", req).Once().Return(res, nil)
 	tests := []struct {
 		name     string
 		args     args
 		wantTask *TaskInfoSummaryResponse
 		wantErr  bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Test 1: ProvisionDatabase returns an error when sendRequest returns an error",
+			args: args{
+				ctx:       context.TODO(),
+				ndbClient: mockNDBClient,
+				req:       &DatabaseProvisionRequest{},
+			},
+			wantTask: nil,
+			wantErr:  true,
+		},
+		{
+			name: "Test 2: ProvisionDatabase returns a TaskInfoSummary response when sendRequest returns a response without error",
+			args: args{
+				ctx:       context.TODO(),
+				ndbClient: mockNDBClient,
+				req:       &DatabaseProvisionRequest{},
+			},
+			wantTask: &TaskInfoSummaryResponse{
+				Name:     "test-name",
+				EntityId: "test-id",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -185,6 +219,82 @@ func TestProvisionDatabase(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotTask, tt.wantTask) {
 				t.Errorf("ProvisionDatabase() = %v, want %v", gotTask, tt.wantTask)
+			}
+		})
+	}
+}
+
+func TestDeprovisionDatabase(t *testing.T) {
+	type args struct {
+		ctx       context.Context
+		ndbClient ndb_client.NDBClientHTTPInterface
+		id        string
+		req       *DatabaseDeprovisionRequest
+	}
+	// Mocks of the NDB Client interface
+	mockNDBClient := &MockNDBClientHTTPInterface{}
+
+	mockNDBClient.On("NewRequest", http.MethodDelete, "databases/databaseid", GenerateDeprovisionDatabaseRequest()).Once().Return(nil, errors.New("mock-error-new-request"))
+
+	req := &http.Request{}
+	res := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewBufferString(`{"name":"test-name", "entityId":"test-id"}`)),
+	}
+	mockNDBClient.On("NewRequest", http.MethodDelete, "databases/databaseid", GenerateDeprovisionDatabaseRequest()).Once().Return(req, nil)
+	mockNDBClient.On("Do", req).Once().Return(res, nil)
+	tests := []struct {
+		name     string
+		args     args
+		wantTask *TaskInfoSummaryResponse
+		wantErr  bool
+	}{
+		{
+			name: "Test 1: DeprovisionDatabase returns an error when a request with empty id is passed to it",
+			args: args{
+				ctx:       context.TODO(),
+				ndbClient: mockNDBClient,
+				id:        "",
+				req:       nil,
+			},
+			wantTask: nil,
+			wantErr:  true,
+		},
+		{
+			name: "Test 2: DeprovisionDatabase returns an error when sendRequest returns an error",
+			args: args{
+				ctx:       context.TODO(),
+				ndbClient: mockNDBClient,
+				id:        "databaseid",
+				req:       GenerateDeprovisionDatabaseRequest(),
+			},
+			wantTask: nil,
+			wantErr:  true,
+		},
+		{
+			name: "Test 3: DeprovisionDatabase returns a TaskInfoSummary response when sendRequest returns a response without error",
+			args: args{
+				ctx:       context.TODO(),
+				ndbClient: mockNDBClient,
+				id:        "databaseid",
+				req:       GenerateDeprovisionDatabaseRequest(),
+			},
+			wantTask: &TaskInfoSummaryResponse{
+				Name:     "test-name",
+				EntityId: "test-id",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotTask, err := DeprovisionDatabase(tt.args.ctx, tt.args.ndbClient, tt.args.id, tt.args.req)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DeprovisionDatabase() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotTask, tt.wantTask) {
+				t.Errorf("DeprovisionDatabase() = %v, want %v", gotTask, tt.wantTask)
 			}
 		})
 	}

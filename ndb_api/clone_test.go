@@ -100,7 +100,7 @@ func TestProvisionClone(t *testing.T) {
 	// Mocks of the NDB Client interface
 	mockNDBClient := &MockNDBClientHTTPInterface{}
 
-	mockNDBClient.On("NewRequest", http.MethodPost, "tm/tmid/clones", &DatabaseCloneRequest{}).Once().Return(nil, errors.New("mock-error-new-request"))
+	mockNDBClient.On("NewRequest", http.MethodPost, "tms/tmid/clones", &DatabaseCloneRequest{TimeMachineId: "tmid"}).Once().Return(nil, errors.New("mock-error-new-request"))
 
 	req := &http.Request{}
 	res := &http.Response{
@@ -132,7 +132,7 @@ func TestProvisionClone(t *testing.T) {
 			args: args{
 				ctx:       context.TODO(),
 				ndbClient: mockNDBClient,
-				req:       &DatabaseCloneRequest{},
+				req:       &DatabaseCloneRequest{TimeMachineId: "tmid"},
 			},
 			wantTask: nil,
 			wantErr:  true,
