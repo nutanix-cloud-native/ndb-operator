@@ -273,7 +273,11 @@ endif
 # NDB_SECRET_USERNAME='...'
 # NDB_SECRET_PASSWORD='...'
 # NDB_SERVER='https://...:8443/era/v0.9'
-# NX_CLUSTER_ID='...'
+# NX_CLUSTER_ID='...
+# MONGO_SI_CLONING_NAME=mazin-mongo 					#Optional
+# MSSQL_SI_CLONING_NAME=mazin-mssql 					#Optional
+# MYSQL_SI_CLONING_NAME=mazin-mysql 					#Optional
+# POSTGRES_SI_CLONING_NAME=pritika_ft_nov15 	#Optional
 .PHONY: run-automation
 run-automation: install run-automation-cloning run-automation-provisioning
 
