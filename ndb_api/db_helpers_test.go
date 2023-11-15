@@ -106,7 +106,7 @@ func TestGetRequestAppenderByType(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		got, _ := GetRequestAppender(tc.databaseType)
+		got, _ := GetRequestAppender(tc.databaseType, false)
 		if !reflect.DeepEqual(tc.expected, got) {
 			t.Fatalf("expected: %v, got: %v", tc.expected, got)
 		}
@@ -166,7 +166,7 @@ func TestPostgresProvisionRequestAppender_withoutAdditionalArguments_positiveWor
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
@@ -248,7 +248,7 @@ func TestPostgresProvisionRequestAppender_withAdditionalArguments_positiveWorkfl
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
@@ -294,7 +294,7 @@ func TestPostgresProvisionRequestAppender_withAdditionalArguments_negativeWorkfl
 	})
 	mockDatabase.On("IsClone").Return(false)
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
@@ -400,7 +400,7 @@ func TestMSSQLProvisionRequestAppender_withoutAdditionalArguments_positiveWorklo
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MSSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MSSQL, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
@@ -531,7 +531,7 @@ func TestMSSQLProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MSSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MSSQL, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
@@ -593,7 +593,7 @@ func TestMSSQLProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(
 	})
 	mockDatabase.On("IsClone").Return(false)
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MSSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MSSQL, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
@@ -669,7 +669,7 @@ func TestMongoDbProvisionRequestAppender_withoutAdditionalArguments_positiveWork
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
@@ -756,7 +756,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_positiveWorkflo
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
@@ -802,7 +802,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_negativeWorkflo
 	})
 	mockDatabase.On("IsClone").Return(false)
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
@@ -857,7 +857,7 @@ func TestMySqlProvisionRequestAppender_withoutAdditionalArguments_positiveWorkfl
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
@@ -922,7 +922,7 @@ func TestMySqlProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(
 	}
 
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
@@ -968,7 +968,7 @@ func TestMySqlProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(
 	})
 	mockDatabase.On("IsClone").Return(false)
 	// Get specific implementation of RequestAppender
-	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL)
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL, false)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)

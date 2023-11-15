@@ -72,3 +72,6 @@ type PostgresRequestAppender struct{}
 
 // Implements RequestAppender
 type MySqlRequestAppender struct{}
+
+// Implements RequestAppender
+type PostgresHARequestAppender struct{}

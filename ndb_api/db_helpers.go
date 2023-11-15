@@ -108,8 +108,11 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		},
 	}
 
+	// boolean for high availability
+	isHighAvailability := false
+
 	// Appending request body based on database type
-	appender, err := GetRequestAppender(database.GetInstanceType())
+	appender, err := GetRequestAppender(database.GetInstanceType(), isHighAvailability)
 	if err != nil {
 		log.Error(err, "Error while appending provisioning request")
 		return
@@ -291,6 +294,47 @@ func (a *PostgresRequestAppender) appendProvisioningRequest(req *DatabaseProvisi
 		"backup_policy":           "primary_only",
 		"db_password":             dbPassword,
 		"database_names":          databaseNames,
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
+}
+
+func (a *PostgresHARequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+	databaseNames := database.GetInstanceDatabaseNames()
+	clusterName := reqData[common.NDB_PARAM_CLUSTER_NAME].(string)
+	patroniClusterName := reqData[common.NDB_PARAM_PATRONI_CLUSTER_NAME].(string)
+	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		/* Non-Configurable from additionalArguments*/
+		"proxy_read_port":         "5001",
+		"listener_port":           "5432",
+		"proxy_write_port":        "5000",
+		"enable_synchronous_mode": "true",
+		"auto_tune_staging_drive": "true",
+		"backup_policy":           "primary_only",
+		"db_password":             dbPassword,
+		"database_names":          databaseNames,
+		"provision_virtual_ip":    "true",
+		"deploy_haproxy":          "true",
+		"failover_mode":           "Automatic",
+		"node_type":               "database",
+		"allocate_pg_hugepage":    "false",
+		"cluster_database":        "false",
+		"archive_wal_expire_days": "-1",
+		"enable_peer_auth":        "false",
+		"cluster_name":            clusterName,
+		"patroni_cluster_name":    patroniClusterName,
 	}
 
 	// Appending/overwriting database actionArguments to actionArguments
