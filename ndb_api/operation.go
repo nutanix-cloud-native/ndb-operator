@@ -26,7 +26,7 @@ import (
 )
 
 // Fetches and returns a operation by an Id
-func GetOperationById(ctx context.Context, ndbClient *ndb_client.NDBClient, id string) (operation OperationResponse, err error) {
+func GetOperationById(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, id string) (operation *OperationResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	// Checking if id is empty, this is necessary otherwise the request becomes a call to get all operations (/operations)
 	if id == "" {

@@ -24,7 +24,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_sendRequest(t *testing.T) {
@@ -166,5 +168,87 @@ func Test_sendRequest(t *testing.T) {
 				t.Errorf("sendRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestGetDatabaseEngineName(t *testing.T) {
+	// Test cases for GetDatabaseEngineName
+	testCases := []struct {
+		dbType         string
+		expectedEngine string
+	}{
+		{common.DATABASE_TYPE_POSTGRES, common.DATABASE_ENGINE_TYPE_POSTGRES},
+		{common.DATABASE_TYPE_MYSQL, common.DATABASE_ENGINE_TYPE_MYSQL},
+		{common.DATABASE_TYPE_MONGODB, common.DATABASE_ENGINE_TYPE_MONGODB},
+		{common.DATABASE_TYPE_MSSQL, common.DATABASE_ENGINE_TYPE_MSSQL},
+		{"invalidType", ""},
+	}
+
+	for _, tc := range testCases {
+		result := GetDatabaseEngineName(tc.dbType)
+		assert.Equal(t, tc.expectedEngine, result)
+	}
+}
+
+func TestGetDatabaseTypeFromEngine(t *testing.T) {
+	// Test cases for GetDatabaseTypeFromEngine
+	testCases := []struct {
+		engine         string
+		expectedDbType string
+	}{
+		{common.DATABASE_ENGINE_TYPE_POSTGRES, common.DATABASE_TYPE_POSTGRES},
+		{common.DATABASE_ENGINE_TYPE_MYSQL, common.DATABASE_TYPE_MYSQL},
+		{common.DATABASE_ENGINE_TYPE_MONGODB, common.DATABASE_TYPE_MONGODB},
+		{common.DATABASE_ENGINE_TYPE_MSSQL, common.DATABASE_TYPE_MSSQL},
+		{"invalidEngine", ""},
+	}
+
+	for _, tc := range testCases {
+		result := GetDatabaseTypeFromEngine(tc.engine)
+		assert.Equal(t, tc.expectedDbType, result)
+	}
+}
+
+func TestGetDatabasePortByType(t *testing.T) {
+	// Test cases for GetDatabasePortByType
+	testCases := []struct {
+		dbType       string
+		expectedPort int32
+	}{
+		{common.DATABASE_TYPE_POSTGRES, common.DATABASE_DEFAULT_PORT_POSTGRES},
+		{common.DATABASE_TYPE_MYSQL, common.DATABASE_DEFAULT_PORT_MYSQL},
+		{common.DATABASE_TYPE_MONGODB, common.DATABASE_DEFAULT_PORT_MONGODB},
+		{common.DATABASE_TYPE_MSSQL, common.DATABASE_DEFAULT_PORT_MSSQL},
+		{"invalidType", -1},
+	}
+
+	for _, tc := range testCases {
+		result := GetDatabasePortByType(tc.dbType)
+		assert.Equal(t, tc.expectedPort, result)
+	}
+}
+
+func TestGetRequestAppender(t *testing.T) {
+	// Test cases for GetRequestAppender
+	testCases := []struct {
+		databaseType   string
+		expectedResult bool
+	}{
+		{common.DATABASE_TYPE_POSTGRES, true},
+		{common.DATABASE_TYPE_MYSQL, true},
+		{common.DATABASE_TYPE_MONGODB, true},
+		{common.DATABASE_TYPE_MSSQL, true},
+		{"invalidType", false},
+	}
+
+	for _, tc := range testCases {
+		result, err := GetRequestAppender(tc.databaseType)
+		if tc.expectedResult {
+			assert.NotNil(t, result)
+			assert.NoError(t, err)
+		} else {
+			assert.Nil(t, result)
+			assert.Error(t, err)
+		}
 	}
 }

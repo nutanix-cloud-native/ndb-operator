@@ -25,7 +25,7 @@ import (
 )
 
 // Fetches and returns all the SLAs as a sla slice
-func GetAllSLAs(ctx context.Context, ndbClient *ndb_client.NDBClient) (slas []SLAResponse, err error) {
+func GetAllSLAs(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface) (slas []SLAResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	if _, err = sendRequest(ctx, ndbClient, http.MethodGet, "slas", nil, &slas); err != nil {
 		log.Error(err, "Error in GetAllSLAs")
