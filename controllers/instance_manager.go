@@ -22,16 +22,16 @@ func getInstanceManager(database ndbv1alpha1.Database) (instanceManager Instance
 }
 
 type InstanceManager interface {
-	create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (task ndb_api.TaskInfoSummaryResponse, err error)
-	deregister(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error)
-	deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error)
+	create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (task *ndb_api.TaskInfoSummaryResponse, err error)
+	deregister(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error)
+	deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error)
 }
 
 type DatabaseManager struct{}
 
 type CloneManager struct{}
 
-func (dm *DatabaseManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse ndb_api.TaskInfoSummaryResponse, err error) {
+func (dm *DatabaseManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse *ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Provisioning a database on NDB")
 	dbPassword, sshPublicKey, err := r.getDatabaseCredentials(ctx, database.Spec.Instance.CredentialSecret, namespace)
@@ -73,7 +73,7 @@ func (dm *DatabaseManager) create(ctx context.Context, r *DatabaseReconciler, nd
 	return
 }
 
-func (dm *DatabaseManager) deregister(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error) {
+func (dm *DatabaseManager) deregister(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	infoStatement := "Deregistering Database Instance from NDB."
 	log.Info(infoStatement)
@@ -87,11 +87,11 @@ func (dm *DatabaseManager) deregister(ctx context.Context, r *DatabaseReconciler
 	return
 }
 
-func (dm *DatabaseManager) deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error) {
+func (dm *DatabaseManager) deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error) {
 	return deleteDatabaseServer(ctx, r, ndbClient, database)
 }
 
-func (cm *CloneManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse ndb_api.TaskInfoSummaryResponse, err error) {
+func (cm *CloneManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse *ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Cloning a database on NDB")
 	databaseAdapter := &controller_adapters.Database{Database: *database}
@@ -133,7 +133,7 @@ func (cm *CloneManager) create(ctx context.Context, r *DatabaseReconciler, ndbCl
 	return
 }
 
-func (cm *CloneManager) deregister(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error) {
+func (cm *CloneManager) deregister(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	infoStatement := "Deregistering Clone Instance from NDB."
 	log.Info(infoStatement)
@@ -147,11 +147,11 @@ func (cm *CloneManager) deregister(ctx context.Context, r *DatabaseReconciler, n
 	return
 }
 
-func (cm *CloneManager) deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error) {
+func (cm *CloneManager) deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error) {
 	return deleteDatabaseServer(ctx, r, ndbClient, database)
 }
 
-func deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task ndb_api.TaskInfoSummaryResponse, err error) {
+func deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	databaseServerId := database.Status.DatabaseServerId
 	// Make a dbserver deprovisioning request to NDB only if the serverId is present in status

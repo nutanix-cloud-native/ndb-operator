@@ -24,7 +24,7 @@ import (
 )
 
 // Fetches all the clones on the NDB instance and retutns a slice of the databases
-func GetAllClones(ctx context.Context, ndbClient *ndb_client.NDBClient) (clones []DatabaseResponse, err error) {
+func GetAllClones(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface) (clones []DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	if _, err = sendRequest(ctx, ndbClient, http.MethodGet, "clones?detailed=true", nil, &clones); err != nil {
 		log.Error(err, "Error in GetAllClones")
@@ -35,7 +35,7 @@ func GetAllClones(ctx context.Context, ndbClient *ndb_client.NDBClient) (clones 
 
 // Provisions a clone based on the clone provisioning request
 // Returns the task info summary response for the operation
-func ProvisionClone(ctx context.Context, ndbClient *ndb_client.NDBClient, req *DatabaseCloneRequest) (task TaskInfoSummaryResponse, err error) {
+func ProvisionClone(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, req *DatabaseCloneRequest) (task *TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	if req.TimeMachineId == "" {
 		err = errors.New("empty timeMachineId")
@@ -52,7 +52,7 @@ func ProvisionClone(ctx context.Context, ndbClient *ndb_client.NDBClient, req *D
 
 // Deprovisions a clone instance given a clone id
 // Returns the task info summary response for the operation
-func DeprovisionClone(ctx context.Context, ndbClient *ndb_client.NDBClient, id string, req *CloneDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
+func DeprovisionClone(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, id string, req *CloneDeprovisionRequest) (task *TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	if id == "" {
 		err = fmt.Errorf("id is empty")

@@ -26,7 +26,7 @@ import (
 )
 
 // Fetches all the databases on the NDB instance and retutns a slice of the databases
-func GetAllDatabases(ctx context.Context, ndbClient *ndb_client.NDBClient) (databases []DatabaseResponse, err error) {
+func GetAllDatabases(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface) (databases []DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	if _, err = sendRequest(ctx, ndbClient, http.MethodGet, "databases?detailed=true", nil, &databases); err != nil {
 		log.Error(err, "Error in GetAllDatabases")
@@ -36,7 +36,7 @@ func GetAllDatabases(ctx context.Context, ndbClient *ndb_client.NDBClient) (data
 }
 
 // Fetches and returns a database by an Id
-func GetDatabaseById(ctx context.Context, ndbClient *ndb_client.NDBClient, id string) (database DatabaseResponse, err error) {
+func GetDatabaseById(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, id string) (database *DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	// Checking if id is empty, this is necessary otherwise the request becomes a call to get all databases (/databases)
 	if id == "" {
@@ -54,7 +54,7 @@ func GetDatabaseById(ctx context.Context, ndbClient *ndb_client.NDBClient, id st
 
 // Provisions a database instance based on the database provisioning request
 // Returns the task info summary response for the operation
-func ProvisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, req *DatabaseProvisionRequest) (task TaskInfoSummaryResponse, err error) {
+func ProvisionDatabase(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, req *DatabaseProvisionRequest) (task *TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	if _, err = sendRequest(ctx, ndbClient, http.MethodPost, "databases/provision", req, &task); err != nil {
 		log.Error(err, "Error in ProvisionDatabase")
@@ -65,7 +65,7 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, req
 
 // Deprovisions a database instance given a database id
 // Returns the task info summary response for the operation
-func DeprovisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, id string, req *DatabaseDeprovisionRequest) (task TaskInfoSummaryResponse, err error) {
+func DeprovisionDatabase(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, id string, req *DatabaseDeprovisionRequest) (task *TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	if id == "" {
 		err = fmt.Errorf("id is empty")
