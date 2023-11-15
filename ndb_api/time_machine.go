@@ -81,6 +81,54 @@ func CreateSnapshotForTM(
 	return
 }
 
+// Gets snapshots for a time machine
+// Returns the task info summary response for the operation TODO
+func GetSnapshotsForTM(ctx context.Context, ndbClient *ndb_client.NDBClient, tmId string) (response TimeMachineGetSnapshotsResponse, err error) {
+
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered ndb_api.GetSnapshotsForTM")
+	if ndbClient == nil {
+		err = errors.New("nil reference")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
+	// Checking if id is empty, this is necessary to create a snapshot for the timemachine (/tms/{timemachine_id}/snapshots)
+	if tmId == "" {
+		err = fmt.Errorf("snapshot id is empty")
+		log.Error(err, "no snapshot id provided")
+		return
+	}
+	getTmSnapshotsPath := fmt.Sprintf("tms/%s/snapshots", tmId)
+	res, err := ndbClient.Get(getTmSnapshotsPath)
+	if err != nil || res == nil || res.StatusCode != http.StatusOK {
+		if err == nil {
+			if res != nil {
+				err = fmt.Errorf("GET %s responded with %d", getTmSnapshotsPath, res.StatusCode)
+			} else {
+				err = fmt.Errorf("GET %s responded with nil response", getTmSnapshotsPath)
+			}
+		}
+
+		log.Error(err, "Error occurred taking TM snapshot")
+		return
+	}
+
+	log.Info(fmt.Sprintf("GET %s", getTmSnapshotsPath), "HTTP status code", res.StatusCode)
+	body, err := io.ReadAll(res.Body)
+	defer res.Body.Close()
+	if err != nil {
+		log.Error(err, "Error occurred reading response.Body in GetSnapshotsForTM")
+		return
+	}
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		log.Error(err, "Error occurred trying to unmarshal.")
+		return
+	}
+	log.Info("Returning from ndb_api.GetSnapshotsForTM")
+	return
+}
+
 // Gets TimeMachine by id
 func GetTimeMachineById(ctx context.Context, ndbClient *ndb_client.NDBClient, id string) (timeMachine TimeMachineResponse, err error) {
 	log := ctrllog.FromContext(ctx)
