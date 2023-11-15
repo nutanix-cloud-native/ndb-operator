@@ -91,7 +91,9 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 	if st.Database != nil {
 		nxClusterId := os.Getenv(automation.NX_CLUSTER_ID_ENV)
 		if st.Database.Spec.IsClone {
-			st.Database.Spec.Clone.ClusterId = nxClusterId
+			if err = updateClone(ctx, st.Database, st.NdbServer, st.NdbSecret); err != nil {
+				return
+			}
 		} else {
 			st.Database.Spec.Instance.ClusterId = nxClusterId
 		}
