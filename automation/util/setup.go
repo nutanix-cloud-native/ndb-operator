@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/joho/godotenv"
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	automation "github.com/nutanix-cloud-native/ndb-operator/automation"
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
@@ -55,6 +56,44 @@ func GetLogger(ctx context.Context) *log.Logger {
 		return log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	}
 	return logger
+}
+
+// Load Environment Variables
+func LoadEnv(ctx context.Context) (err error) {
+	logger := GetLogger(ctx)
+	logger.Println("loadEnv() started...")
+
+	// Loading env variables
+	err = godotenv.Load("../../.env")
+	if err != nil {
+		return fmt.Errorf("Error: loadEnv() ended! %s", err)
+	} else {
+		logger.Print("Loaded .env file!")
+	}
+
+	logger.Print("Checking for missing required env variables...")
+	requiredEnvs := []string{
+		automation.DB_SECRET_PASSWORD_ENV,
+		automation.NDB_SECRET_USERNAME_ENV,
+		automation.NDB_SECRET_PASSWORD_ENV,
+		automation.NDB_SERVER_ENV,
+		automation.NDB_CLUSTER_ID_ENV,
+	}
+	missingRequiredEnvs := []string{}
+	for _, env := range requiredEnvs {
+		if _, ok := os.LookupEnv(env); !ok {
+			missingRequiredEnvs = append(missingRequiredEnvs, env)
+		}
+	}
+	if len(missingRequiredEnvs) != 0 {
+		return fmt.Errorf("Error: loadEnv() ended! Missing the following required env variables: %s", missingRequiredEnvs)
+	} else {
+		logger.Print("Found no missing required env variables!")
+	}
+
+	logger.Println("loadEnv() exited!")
+
+	return nil
 }
 
 // Setup kubeconfig

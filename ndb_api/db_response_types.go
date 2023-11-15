@@ -22,4 +22,6 @@ type DatabaseResponse struct {
 	Status        string         `json:"status"`
 	DatabaseNodes []DatabaseNode `json:"databaseNodes"`
 	Properties    []Property     `json:"properties"`
+	TimeMachineId string         `json:"timeMachineId"`
+	Type          string         `json:"type"`
 }

@@ -19,11 +19,8 @@ package v1alpha1
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 
-	"github.com/nutanix-cloud-native/ndb-operator/api"
-	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -42,210 +39,43 @@ func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-//+kubebuilder:webhook:path=/mutate-ndb-nutanix-com-v1alpha1-database,mutating=true,failurePolicy=fail,sideEffects=None,groups=ndb.nutanix.com,resources=databases,verbs=create;update,versions=v1alpha1,name=mdatabase.kb.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/mutate-ndb-nutanix-com-v1alpha1-database,mutating=true,failurePolicy=fail,sideEffects=None,groups=ndb.nutanix.com,resources=databases,verbs=create;update,versions=v1alpha1,name=mdatabase.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Defaulter = &Database{}
 
-func instanceSpecDefaulterForCreate(instance *Instance) {
-
-	if instance.Description == "" {
-		instance.Description = "Database provisioned by ndb-operator: " + instance.DatabaseInstanceName
-	}
-
-	if len(instance.DatabaseNames) == 0 {
-		instance.DatabaseNames = api.DefaultDatabaseNames
-	}
-
-	if instance.TimeZone == "" {
-		instance.TimeZone = common.TIMEZONE_UTC
-	}
-
-	// initialize Profiles field, if it's nil
-
-	if instance.Profiles == nil {
-		databaselog.Info("Initialzing empty Profiles ...")
-		instance.Profiles = &(Profiles{})
-	}
-
-	// Profiles defaulting logic
-	if instance.Profiles.Compute.Id == "" && instance.Profiles.Compute.Name == "" {
-		instance.Profiles.Compute.Name = common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE
-	}
-
-	// initialize TM field, if it's nil
-	if instance.TMInfo == nil {
-		databaselog.Info("Initialzing empty TMInfo...")
-		instance.TMInfo = &(DBTimeMachineInfo{})
-	}
-
-	// TM defaulting logic
-	if instance.TMInfo.SnapshotsPerDay == 0 {
-		instance.TMInfo.SnapshotsPerDay = 1
-	}
-
-	if instance.TMInfo.SLAName == "" {
-		instance.TMInfo.SLAName = common.SLA_NAME_NONE
-	}
-
-	if instance.TMInfo.DailySnapshotTime == "" {
-		instance.TMInfo.DailySnapshotTime = "04:00:00"
-	}
-
-	if instance.TMInfo.LogCatchUpFrequency == 0 {
-		instance.TMInfo.LogCatchUpFrequency = 30
-	}
-
-	if instance.TMInfo.WeeklySnapshotDay == "" {
-		instance.TMInfo.WeeklySnapshotDay = "FRIDAY"
-	}
-
-	if instance.TMInfo.MonthlySnapshotDay == 0 {
-		instance.TMInfo.MonthlySnapshotDay = 15
-	}
-
-	if instance.TMInfo.QuarterlySnapshotMonth == "" {
-		instance.TMInfo.QuarterlySnapshotMonth = "Jan"
-	}
-
-	// additional arguments defaulting logic
-	if instance.AdditionalArguments == nil {
-		databaselog.Info("Initializing empty additional db arguments...")
-		instance.AdditionalArguments = map[string]string{}
-	}
-}
-
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Database) Default() {
-	databaselog.Info("Entering Defaulter logic...")
-	instanceSpecDefaulterForCreate(&r.Spec.Instance)
-	databaselog.Info("Exiting Defaulter logic...")
+	databaselog.Info("Entering Default()...")
+
+	getDatabaseWebhookHandler(r).defaulter(&r.Spec)
+
+	databaselog.Info("Exiting Default()!")
 }
 
-// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-//+kubebuilder:webhook:path=/validate-ndb-nutanix-com-v1alpha1-database,mutating=false,failurePolicy=fail,sideEffects=None,groups=ndb.nutanix.com,resources=databases,verbs=create;update,versions=v1alpha1,name=vdatabase.kb.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-ndb-nutanix-com-v1alpha1-database,mutating=false,failurePolicy=fail,sideEffects=None,groups=ndb.nutanix.com,resources=databases,verbs=create;update,versions=v1alpha1,name=vdatabase.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &Database{}
-
-func instanceSpecValidatorForCreate(instance *Instance, allErrs field.ErrorList, instancePath *field.Path) field.ErrorList {
-	databaselog.Info("Entering instanceSpecValidatorForCreate...")
-
-	databaselog.Info("Logging the Instance details inside validator method", "databaseInstance", instance)
-
-	// need to assert using a regex
-	if instance.DatabaseInstanceName == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("databaseInstanceName"), instance.DatabaseInstanceName, "A valid Database Instance Name must be specified"))
-	}
-
-	if instance.ClusterId == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("clusterId"), instance.ClusterId, "ClusterId field must be a valid UUID"))
-	}
-
-	if instance.Size < 10 {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
-	}
-
-	if instance.CredentialSecret == "" {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("credentialSecret"), instance.CredentialSecret, "CredentialSecret must be provided in the Instance Spec"))
-	}
-
-	if _, isPresent := api.AllowedDatabaseTypes[instance.Type]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("type"), instance.Type,
-			fmt.Sprintf("A valid database type must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedDatabaseTypes).MapKeys()),
-		))
-	}
-
-	if _, isPresent := api.ClosedSourceDatabaseTypes[instance.Type]; isPresent {
-		if instance.Profiles == &(Profiles{}) || instance.Profiles.Software == (Profile{}) {
-			allErrs = append(allErrs, field.Invalid(instancePath.Child("profiles").Child("software"), instance.Profiles.Software, "Software Profile must be provided for the closed-source database engines"))
-		}
-	}
-
-	// validating time machine info
-	tmPath := instancePath.Child("timeMachine")
-
-	dailySnapshotTimeRegex := regexp.MustCompile(`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`)
-	if isMatch := dailySnapshotTimeRegex.MatchString(instance.TMInfo.DailySnapshotTime); !isMatch {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("dailySnapshotTime"), instance.TMInfo.DailySnapshotTime, "Invalid time format for the daily snapshot time. Use the 24-hour format (HH:MM:SS)."))
-	}
-
-	if instance.TMInfo.SnapshotsPerDay < 1 || instance.TMInfo.SnapshotsPerDay > 6 {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("snapshotsPerDay"), instance.TMInfo.SnapshotsPerDay, "Number of snapshots per day should be within 1 to 6"))
-	}
-
-	if _, isPresent := api.AllowedLogCatchupFrequencyInMinutes[instance.TMInfo.LogCatchUpFrequency]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("logCatchUpFrequency"), instance.TMInfo.LogCatchUpFrequency,
-			fmt.Sprintf("Log catchup frequency must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedLogCatchupFrequencyInMinutes).MapKeys()),
-		))
-	}
-
-	if _, isPresent := api.AllowedWeeklySnapshotDays[instance.TMInfo.WeeklySnapshotDay]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("weeklySnapshotDay"), instance.TMInfo.WeeklySnapshotDay,
-			fmt.Sprintf("Weekly Snapshot day must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedWeeklySnapshotDays).MapKeys()),
-		))
-	}
-
-	if instance.TMInfo.MonthlySnapshotDay < 1 || instance.TMInfo.MonthlySnapshotDay > 28 {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("monthlySnapshotDay"), instance.TMInfo.MonthlySnapshotDay, "Monthly snapshot day value must be between 1 and 28"))
-	}
-
-	if _, isPresent := api.AllowedQuarterlySnapshotMonths[instance.TMInfo.QuarterlySnapshotMonth]; !isPresent {
-		allErrs = append(allErrs, field.Invalid(tmPath.Child("quarterlySnapshotMonth"), instance.TMInfo.QuarterlySnapshotMonth,
-			fmt.Sprintf("Quarterly snapshot month must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedQuarterlySnapshotMonths).MapKeys()),
-		))
-	}
-
-	if err := additionalArgumentsValidationCheck(instance.Type, instance.AdditionalArguments); err != nil {
-		allErrs = append(allErrs, field.Invalid(instancePath.Child("additionalArguments"), instance.AdditionalArguments, err.Error()))
-	}
-
-	databaselog.Info("Exiting instanceSpecValidatorForCreate...")
-	return allErrs
-}
-
-/* Checks if configured additional arguments are valid or not and returns the corresponding additional arguments. If error is nil valid, else invalid */
-func additionalArgumentsValidationCheck(dbType string, specifiedAdditionalArguments map[string]string) error {
-	// Empty additionalArguments is always valid
-	if specifiedAdditionalArguments == nil {
-		return nil
-	}
-
-	allowedAdditionalArguments, err := util.GetAllowedAdditionalArgumentsForType(dbType)
-
-	// Invalid type returns error
-	if err != nil {
-		return err
-	}
-
-	// Checking if arguments are valid
-	invalidArgs := []string{}
-	for name, _ := range specifiedAdditionalArguments {
-		if _, isPresent := allowedAdditionalArguments[name]; !isPresent {
-			invalidArgs = append(invalidArgs, name)
-		}
-	}
-
-	if len(invalidArgs) == 0 {
-		return nil
-	} else {
-		return fmt.Errorf(
-			"Additional Arguments validation for database type: %s failed! The following args are invalid: %s. These are the allowed args: %s",
-			dbType,
-			strings.Join(invalidArgs, ", "),
-			reflect.ValueOf(allowedAdditionalArguments).MapKeys())
-	}
-}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *Database) ValidateCreate() (admission.Warnings, error) {
 	databaselog.Info("Entering ValidateCreate...")
 
-	dbSpecErrors := instanceSpecValidatorForCreate(&r.Spec.Instance, field.ErrorList{}, field.NewPath("spec").Child("databaseInstance"))
+	errors := &field.ErrorList{}
+	var path string
+	if r.Spec.IsClone {
+		path = "Clone"
+	} else {
+		path = "Instance"
+	}
 
-	combined_err := util.CombineFieldErrors(dbSpecErrors)
+	getDatabaseWebhookHandler(r).validateCreate(&r.Spec, errors, field.NewPath("spec").Child(path))
 
-	databaselog.Info("validate create database webhook response...", "combined_err", combined_err)
+	combined_err := util.CombineFieldErrors(*errors)
 
-	databaselog.Info("Exiting ValidateCreate...")
+	databaselog.Info("ValidateCreate webhook response...", "combined_err", combined_err)
+
+	databaselog.Info("Exiting ValidateCreate!")
+
 	return nil, combined_err
 }
 
@@ -264,4 +94,37 @@ func (r *Database) ValidateDelete() (admission.Warnings, error) {
 
 	// TODO(user): fill in your validation logic upon object deletion.
 	return nil, nil
+}
+
+/* Checks if configured additional arguments are valid or not and returns the corresponding additional arguments. If error is nil valid, else invalid */
+func additionalArgumentsValidationCheck(isClone bool, dbType string, specifiedAdditionalArguments map[string]string) error {
+	// Empty additionalArguments is always valid
+	if specifiedAdditionalArguments == nil {
+		return nil
+	}
+
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArguments(isClone, dbType)
+
+	// Invalid type returns error
+	if err != nil {
+		return err
+	}
+
+	// Checking if arguments are valid
+	invalidArgs := []string{}
+	for name := range specifiedAdditionalArguments {
+		if _, isPresent := allowedAdditionalArguments[name]; !isPresent {
+			invalidArgs = append(invalidArgs, name)
+		}
+	}
+
+	if len(invalidArgs) == 0 {
+		return nil
+	} else {
+		return fmt.Errorf(
+			"additional arguments validation for type: %s failed! The following args are invalid: %s. These are the allowed args: %s",
+			dbType,
+			strings.Join(invalidArgs, ", "),
+			reflect.ValueOf(allowedAdditionalArguments).MapKeys())
+	}
 }

@@ -31,6 +31,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
@@ -111,6 +112,7 @@ func (r *DatabaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor("database-controller")
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ndbv1alpha1.Database{}).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		Owns(&corev1.Service{}).
 		Owns(&corev1.Endpoints{}).
 		Complete(r)

@@ -32,4 +32,5 @@ config/samples/ndb.yaml
 
 test/__debug_bin
 automation/sandbox
-automation/tests/*/*.log
+automation/tests/**/*.log
+*.env
