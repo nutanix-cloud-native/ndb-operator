@@ -23,6 +23,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -64,9 +65,21 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+
+	// Set the log file path
+	logFilePath := "./test1_logging.txt"
+
+	// Create a file for logging
+	logFile, err := os.Create(logFilePath)
+	if err != nil {
+		log.Fatalf("Error creating log file: %v", err)
+	}
+	defer logFile.Close()
+
 	opts := zap.Options{
 		Development: true,
 		TimeEncoder: zapcore.RFC3339TimeEncoder,
+		DestWriter:  logFile, // Configure Zap options to write to the logFile
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
