@@ -23,6 +23,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"os"
 
@@ -67,7 +68,7 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 
 	// Set the log file path
-	logFilePath := "./test1_logging.txt"
+	logFilePath := "/var/log/ndb_test1_logging.txt"
 
 	// Create a file for logging
 	logFile, err := os.Create(logFilePath)
@@ -76,10 +77,12 @@ func main() {
 	}
 	defer logFile.Close()
 
+	mwriter := io.MultiWriter(logFile, os.Stderr)
+
 	opts := zap.Options{
 		Development: true,
 		TimeEncoder: zapcore.RFC3339TimeEncoder,
-		DestWriter:  logFile, // Configure Zap options to write to the logFile
+		DestWriter:  mwriter, // Configure Zap options to write into a multiwriter
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
