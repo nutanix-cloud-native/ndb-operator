@@ -1,22 +1,21 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db
+  name: db-pg-si
 spec:
-  ndbRef: "Name of the NDBServer Resource"
+  ndbRef: ndb
   databaseInstance:
-    clusterId: "Nutanix Cluster Id"
-    databaseInstanceName: "Database Instance Name"
-    description: "Database Description"
+    Name: db-pg-si
     databaseNames:
       - database_one
       - database_two
       - database_three
-    credentialSecret: db-instance-secret-name
-    size: 10
+    clusterId: <cluster-id>
+    credentialSecret: db-secret-pg-si
+    size: 100
     timezone: "UTC"
     type: postgres
-    profiles:
+    profiles: 
       compute:
         name: ""
         id: ""
@@ -34,12 +33,11 @@ spec:
         name: ""
         id: ""
     timeMachine:
-      sla : "NAME OF THE SLA"
+      sla : "NONE"
       dailySnapshotTime:   "12:34:56"   # Time for daily snapshot in hh:mm:ss format
       snapshotsPerDay:     4            # Number of snapshots per day
       logCatchUpFrequency: 90           # Frequency (in minutes)
       weeklySnapshotDay:   "WEDNESDAY"  # Day of the week for weekly snapshot
       monthlySnapshotDay:  24           # Day of the month for monthly snapshot
       quarterlySnapshotMonth: "Jan"     # Start month of the quarterly snapshot
-    additionalArguments:                # Optional black, can specify additional arguments that are unique to database engines.
-      listener_port: "8080"
+    additionalArguments:
