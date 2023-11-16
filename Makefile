@@ -1,9 +1,9 @@
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
-# - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.7)
-# - use environment variables to overwrite this value (e.g export VERSION=0.0.7)
-VERSION ?= 0.0.7
+# - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.8)
+# - use environment variables to overwrite this value (e.g export VERSION=0.0.8)
+VERSION ?= 0.5.0
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -267,7 +267,7 @@ else
 	touch ndb_api/$(api)_response_types.go && cp hack/boilerplate.go.txt ndb_api/$(api)_response_types.go && echo -e "\n" >> ndb_api/$(api)_response_types.go && echo "package ndb_api" >> ndb_api/$(api)_response_types.go
 endif
 
-# Usage: Export the environment variables before running the target
+# Usage: Create the following variables in the .env folder of automation/tests before running the target
 # KUBECONFIG='...' 
 # DB_SECRET_PASSWORD='...'
 # NDB_SECRET_USERNAME='...'
