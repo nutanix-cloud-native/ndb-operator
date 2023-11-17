@@ -146,7 +146,7 @@ func (suite *PostgresCloningSingleInstanceTestSuite) TestCloningSuccess() {
 func (suite *PostgresCloningSingleInstanceTestSuite) TestAppConnectivity() {
 	logger := util.GetLogger(suite.ctx)
 
-	resp, err := suite.tms.GetAppResponse(suite.ctx, suite.setupTypes, suite.clientset, automation.POSTGRES_SI_PROVISONING_LOCAL_PORT)
+	resp, err := suite.tms.GetAppResponse(suite.ctx, suite.setupTypes, suite.clientset, automation.POSTGRES_SI_CLONING_LOCAL_PORT)
 	if err != nil {
 		logger.Printf("Error: TestAppConnectivity failed! %v", err)
 	} else {
