@@ -1,3 +1,14 @@
+package util
+
+import (
+	"context"
+	"fmt"
+	"strconv"
+
+	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
+)
+
 // Checking that TM info that was specified in yaml is returned in TM response
 func CheckTmInfo(ctx context.Context, database *ndbv1alpha1.Database, tmResponse *ndb_api.TimeMachineResponse) (err error) {
 	logger := GetLogger(ctx)
