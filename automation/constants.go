@@ -41,8 +41,8 @@ const (
 	POSTGRES_SI_CLONING_LOCAL_PORT = "3007"
 
 	// Clone source database names
-	MONGO_SI_CLONING_NAME_DEFAULT    = "mazin-mongo"
-	MSSQL_SI_CLONING_NAME_DEFAULT    = "mazin-mssql"
-	MYSQL_SI_CLONING_NAME_DEFAULT    = "mazin-mysql"
-	POSTGRES_SI_CLONING_NAME_DEFAULT = "mazin-postgres"
+	MONGO_SI_CLONING_NAME_DEFAULT    = "operator-mongo"
+	MSSQL_SI_CLONING_NAME_DEFAULT    = "operator-mssql"
+	MYSQL_SI_CLONING_NAME_DEFAULT    = "operator-mysql"
+	POSTGRES_SI_CLONING_NAME_DEFAULT = "operator-postgres"
 )
