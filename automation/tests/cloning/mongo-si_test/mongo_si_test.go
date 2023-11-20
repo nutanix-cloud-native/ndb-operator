@@ -25,7 +25,7 @@ type MongoCloningSingleInstanceTestSuite struct {
 	setupTypes        *util.SetupTypes
 	v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
 	clientset         *kubernetes.Clientset
-	tms               util.TestSuiteManager
+	tsm               util.TestSuiteManager
 }
 
 // SetupSuite is called once before running the tests in the suite
@@ -36,7 +36,7 @@ func (suite *MongoCloningSingleInstanceTestSuite) SetupSuite() {
 	var ctx context.Context
 	var v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
 	var clientset *kubernetes.Clientset
-	var tms util.TestSuiteManager
+	var tsm util.TestSuiteManager
 
 	// Setup logger and context
 	logger, err := util.SetupLogger(fmt.Sprintf("%s/mongo-cloning-si_test.log", automation.CLONING_LOG_PATH), "mongo-cloning-si: ")
@@ -75,10 +75,10 @@ func (suite *MongoCloningSingleInstanceTestSuite) SetupSuite() {
 	}
 
 	// Get test suite manager
-	tms = util.GetTestSuiteManager(ctx, *setupTypes)
+	tsm = util.GetTestSuiteManager(ctx, *setupTypes)
 
 	// Clone database and wait for clone and pod to be ready
-	if err := tms.Setup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
+	if err := tsm.Setup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -88,7 +88,7 @@ func (suite *MongoCloningSingleInstanceTestSuite) SetupSuite() {
 	suite.setupTypes = setupTypes
 	suite.v1alpha1ClientSet = v1alpha1ClientSet
 	suite.clientset = clientset
-	suite.tms = tms
+	suite.tsm = tsm
 
 	logger.Println("SetupSuite() ended!")
 }
@@ -109,7 +109,7 @@ func (suite *MongoCloningSingleInstanceTestSuite) TearDownSuite() {
 	}
 
 	// Delete resources and de-clone database
-	if err = suite.tms.TearDown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
+	if err = suite.tsm.TearDown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -131,7 +131,7 @@ func (suite *MongoCloningSingleInstanceTestSuite) AfterTest(suiteName, testName 
 func (suite *MongoCloningSingleInstanceTestSuite) TestCloningSuccess() {
 	logger := util.GetLogger(suite.ctx)
 
-	cloneResponse, err := suite.tms.GetDatabaseOrCloneResponse(suite.ctx, suite.setupTypes, suite.clientset, suite.v1alpha1ClientSet)
+	cloneResponse, err := suite.tsm.GetDatabaseOrCloneResponse(suite.ctx, suite.setupTypes, suite.clientset, suite.v1alpha1ClientSet)
 	if err != nil {
 		logger.Printf("Error: TestCloningSuccess() failed! %v", err)
 	} else {
@@ -146,7 +146,7 @@ func (suite *MongoCloningSingleInstanceTestSuite) TestCloningSuccess() {
 func (suite *MongoCloningSingleInstanceTestSuite) TestAppConnectivity() {
 	logger := util.GetLogger(suite.ctx)
 
-	resp, err := suite.tms.GetAppResponse(suite.ctx, suite.setupTypes, suite.clientset, automation.MONGO_SI_CLONING_LOCAL_PORT)
+	resp, err := suite.tsm.GetAppResponse(suite.ctx, suite.setupTypes, suite.clientset, automation.MONGO_SI_CLONING_LOCAL_PORT)
 	if err != nil {
 		logger.Printf("Error: TestAppConnectivity failed! %v", err)
 	} else {

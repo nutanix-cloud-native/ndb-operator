@@ -25,7 +25,7 @@ type MSSQLCloningSingleInstanceTestSuite struct {
 	setupTypes        *util.SetupTypes
 	v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
 	clientset         *kubernetes.Clientset
-	tms               util.TestSuiteManager
+	tsm               util.TestSuiteManager
 }
 
 // SetupSuite is called once before running the tests in the suite
@@ -36,7 +36,7 @@ func (suite *MSSQLCloningSingleInstanceTestSuite) SetupSuite() {
 	var ctx context.Context
 	var v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
 	var clientset *kubernetes.Clientset
-	var tms util.TestSuiteManager
+	var tsm util.TestSuiteManager
 
 	// Setup logger and context
 	logger, err := util.SetupLogger(fmt.Sprintf("%s/mssql-cloning-si_test.log", automation.CLONING_LOG_PATH), "mssql-cloning-si: ")
@@ -74,11 +74,11 @@ func (suite *MSSQLCloningSingleInstanceTestSuite) SetupSuite() {
 		suite.T().FailNow()
 	}
 
-	// Getting test suite manager
-	tms = util.GetTestSuiteManager(ctx, *setupTypes)
+	// Get test suite manager
+	tsm = util.GetTestSuiteManager(ctx, *setupTypes)
 
 	// Clone database and wait for clone and pod to be ready
-	if err := tms.Setup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
+	if err := tsm.Setup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -88,7 +88,7 @@ func (suite *MSSQLCloningSingleInstanceTestSuite) SetupSuite() {
 	suite.setupTypes = setupTypes
 	suite.v1alpha1ClientSet = v1alpha1ClientSet
 	suite.clientset = clientset
-	suite.tms = tms
+	suite.tsm = tsm
 
 	logger.Println("SetupSuite() ended!")
 }
@@ -109,7 +109,7 @@ func (suite *MSSQLCloningSingleInstanceTestSuite) TearDownSuite() {
 	}
 
 	// Delete resources and de-clone database
-	if err = suite.tms.TearDown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
+	if err = suite.tsm.TearDown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -131,7 +131,7 @@ func (suite *MSSQLCloningSingleInstanceTestSuite) AfterTest(suiteName, testName 
 func (suite *MSSQLCloningSingleInstanceTestSuite) TestCloningSuccess() {
 	logger := util.GetLogger(suite.ctx)
 
-	cloneResponse, err := suite.tms.GetDatabaseOrCloneResponse(suite.ctx, suite.setupTypes, suite.clientset, suite.v1alpha1ClientSet)
+	cloneResponse, err := suite.tsm.GetDatabaseOrCloneResponse(suite.ctx, suite.setupTypes, suite.clientset, suite.v1alpha1ClientSet)
 	if err != nil {
 		logger.Printf("Error: TestProvisioningSuccess() failed! %v", err)
 	} else {
@@ -146,7 +146,7 @@ func (suite *MSSQLCloningSingleInstanceTestSuite) TestCloningSuccess() {
 func (suite *MSSQLCloningSingleInstanceTestSuite) TestAppConnectivity() {
 	logger := util.GetLogger(suite.ctx)
 
-	resp, err := suite.tms.GetAppResponse(suite.ctx, suite.setupTypes, suite.clientset, automation.MSSQL_SI_CLONING_LOCAL_PORT)
+	resp, err := suite.tsm.GetAppResponse(suite.ctx, suite.setupTypes, suite.clientset, automation.MSSQL_SI_CLONING_LOCAL_PORT)
 	if err != nil {
 		logger.Printf("Error: TestAppConnectivity failed! %v", err)
 	} else {

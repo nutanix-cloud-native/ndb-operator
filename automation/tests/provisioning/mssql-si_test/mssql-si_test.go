@@ -24,7 +24,7 @@ type MSSQLProvisioningSingleInstanceTestSuite struct {
 	setupTypes        *util.SetupTypes
 	v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
 	clientset         *kubernetes.Clientset
-	tms               util.TestSuiteManager
+	tsm               util.TestSuiteManager
 }
 
 // SetupSuite is called once before running the tests in the suite
@@ -35,7 +35,7 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) SetupSuite() {
 	var ctx context.Context
 	var v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client
 	var clientset *kubernetes.Clientset
-	var tms util.TestSuiteManager
+	var tsm util.TestSuiteManager
 
 	// Setup logger and context
 	logger, err := util.SetupLogger(fmt.Sprintf("%s/mssql-provisioning-si_test.log", automation.PROVISIONING_LOG_PATH), "mssql-provisioning-si: ")
@@ -73,11 +73,11 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) SetupSuite() {
 		suite.T().FailNow()
 	}
 
-	// Getting Test suite manager
-	tms = util.GetTestSuiteManager(ctx, *setupTypes)
+	// Get Test suite manager
+	tsm = util.GetTestSuiteManager(ctx, *setupTypes)
 
 	// Provision database and wait for database and pod to be ready
-	if err := tms.Setup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
+	if err := tsm.Setup(ctx, setupTypes, clientset, v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -87,7 +87,7 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) SetupSuite() {
 	suite.setupTypes = setupTypes
 	suite.v1alpha1ClientSet = v1alpha1ClientSet
 	suite.clientset = clientset
-	suite.tms = tms
+	suite.tsm = tsm
 
 	logger.Println("SetupSuite() ended!")
 }
@@ -108,7 +108,7 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) TearDownSuite() {
 	}
 
 	// Delete resources and de-provision database
-	if err = suite.tms.TearDown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
+	if err = suite.tsm.TearDown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
 		logger.Printf("%s! %s\n", errBaseMsg, err)
 		suite.T().FailNow()
 	}
@@ -130,7 +130,7 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) AfterTest(suiteName, test
 func (suite *MSSQLProvisioningSingleInstanceTestSuite) TestProvisioningSuccess() {
 	logger := util.GetLogger(suite.ctx)
 
-	databaseResponse, err := suite.tms.GetDatabaseOrCloneResponse(suite.ctx, suite.setupTypes, suite.clientset, suite.v1alpha1ClientSet)
+	databaseResponse, err := suite.tsm.GetDatabaseOrCloneResponse(suite.ctx, suite.setupTypes, suite.clientset, suite.v1alpha1ClientSet)
 	if err != nil {
 		logger.Printf("Error: TestProvisioningSuccess() failed! %v", err)
 	} else {
@@ -145,7 +145,7 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) TestProvisioningSuccess()
 func (suite *MSSQLProvisioningSingleInstanceTestSuite) TestAppConnectivity() {
 	logger := util.GetLogger(suite.ctx)
 
-	resp, err := suite.tms.GetAppResponse(suite.ctx, suite.setupTypes, suite.clientset, automation.MSSQL_SI_PROVISONING_LOCAL_PORT)
+	resp, err := suite.tsm.GetAppResponse(suite.ctx, suite.setupTypes, suite.clientset, automation.MSSQL_SI_PROVISONING_LOCAL_PORT)
 	if err != nil {
 		logger.Printf("Error: TestAppConnectivity failed! %v", err)
 	} else {
@@ -166,7 +166,7 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) TestTimeMachineSuccess() 
 		return
 	}
 
-	tm, err := suite.tms.GetTimemachineResponseByDatabaseId(suite.ctx, suite.setupTypes, suite.clientset, suite.v1alpha1ClientSet)
+	tm, err := suite.tsm.GetTimemachineResponseByDatabaseId(suite.ctx, suite.setupTypes, suite.clientset, suite.v1alpha1ClientSet)
 	if err != nil {
 		logger.Printf("Error: TestTimeMachineSuccess() failed! %v", err)
 		assert.FailNow("Error: TestTimeMachineSuccess() failed! %v", err)
