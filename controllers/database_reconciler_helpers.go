@@ -70,7 +70,6 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Database CR is being deleted")
-	// log.Info(database.ResourceVersion)
 	instanceManager := getInstanceManager(*database)
 	if controllerutil.ContainsFinalizer(database, common.FINALIZER_INSTANCE) {
 		// Check if the deregistration operation id (database.Status.DeregistrationOperationId) is empty

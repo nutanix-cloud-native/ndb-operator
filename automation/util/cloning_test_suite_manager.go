@@ -32,7 +32,7 @@ func (cm *CloningTestSuiteManager) TearDown(ctx context.Context, st *SetupTypes,
 	return
 }
 
-func (cm *CloningTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse ndb_api.DatabaseResponse, err error) {
+func (cm *CloningTestSuiteManager) GetDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse *ndb_api.DatabaseResponse, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("CloneTestSuiteManager.GetDatabaseResponse() starting...")
 
@@ -55,6 +55,6 @@ func (cm *CloningTestSuiteManager) GetAppResponse(ctx context.Context, st *Setup
 }
 
 // EMPTY STUB
-func (dm *CloningTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (timemachineResponse ndb_api.TimeMachineResponse, err error) {
-	return ndb_api.TimeMachineResponse{}, nil
+func (dm *CloningTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (timemachineResponse *ndb_api.TimeMachineResponse, err error) {
+	return nil, nil
 }

@@ -51,46 +51,19 @@ func ProvisionClone(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInter
 }
 
 // Fetches clone by id
-func GetCloneById(ctx context.Context, ndbClient *ndb_client.NDBClient, id string) (clone DatabaseResponse, err error) {
+func GetCloneById(ctx context.Context, ndbClient *ndb_client.NDBClient, id string) (clone *DatabaseResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.GetCloneById")
-	if ndbClient == nil {
-		err = errors.New("nil reference: received nil reference for ndbClient")
-		log.Error(err, "Received nil ndbClient reference")
-		return
-	}
-	// Checking if id is empty, this is necessary otherwise the request becomes a call to get all databases (/databases)
+	// Checking if id is empty, this is necessary otherwise the request becomes a call to get all clones (/clones)
 	if id == "" {
 		err = fmt.Errorf("clone id is empty")
 		log.Error(err, "no clone id provided")
 		return
 	}
 	getCloneIdPath := fmt.Sprintf("clones/%s", id)
-	res, err := ndbClient.Get(getCloneIdPath)
-	if err != nil || res == nil || res.StatusCode != http.StatusOK {
-		if err == nil {
-			if res != nil {
-				err = fmt.Errorf("GET /%s responded with %d", getCloneIdPath, res.StatusCode)
-			} else {
-				err = fmt.Errorf("GET /%s responded with a nil response", getCloneIdPath)
-			}
-		}
-		log.Error(err, "Error occurred fetching all snapshots")
+	if _, err = sendRequest(ctx, ndbClient, http.MethodGet, getCloneIdPath, nil, &clone); err != nil {
+		log.Error(err, "Error in GetCloneById")
 		return
 	}
-	log.Info("GET /%s", "HTTP status code", getCloneIdPath, res.StatusCode)
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in GetCloneById")
-		return
-	}
-	err = json.Unmarshal(body, &clone)
-	if err != nil {
-		log.Error(err, "Error occurred trying to unmarshal.")
-		return
-	}
-	log.Info("Returning from ndb_api.GetCloneById")
 	return
 }
 
