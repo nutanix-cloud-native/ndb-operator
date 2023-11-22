@@ -52,6 +52,50 @@ func GetDatabaseById(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInte
 	return
 }
 
+// Fetches and returns a database by name
+func GetDatabaseByName(ctx context.Context, ndbClient *ndb_client.NDBClient, name string) (database *DatabaseResponse, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered ndb_api.GetDatabaseByName", "name", name)
+	if ndbClient == nil {
+		err = errors.New("nil reference")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
+	// Checking if id is empty, this is necessary otherwise the request becomes a call to get all databases (/databases)
+	if name == "" {
+		err = fmt.Errorf("database name is empty")
+		log.Error(err, "no database name provided")
+		return
+	}
+	getDbDetailedPath := fmt.Sprintf("databases/%s?value-type=name&detailed=true", name)
+	res, err := ndbClient.Get(getDbDetailedPath)
+	if err != nil || res == nil || res.StatusCode != http.StatusOK {
+		if err == nil {
+			if res != nil {
+				err = fmt.Errorf("GET %s responded with %d", getDbDetailedPath, res.StatusCode)
+			} else {
+				err = fmt.Errorf("GET %s responded with a nil response", getDbDetailedPath)
+			}
+		}
+		log.Error(err, "Error occurred fetching database")
+		return
+	}
+	log.Info(getDbDetailedPath, "HTTP status code", res.StatusCode)
+	body, err := io.ReadAll(res.Body)
+	defer res.Body.Close()
+	if err != nil {
+		log.Error(err, "Error occurred reading response.Body in Get Database by name")
+		return
+	}
+	err = json.Unmarshal(body, &database)
+	if err != nil {
+		log.Error(err, "Error occurred trying to unmarshal.")
+		return
+	}
+	log.Info("Returning from ndb_api.GetDatabaseByName")
+	return
+}
+
 // Provisions a database instance based on the database provisioning request
 // Returns the task info summary response for the operation
 func ProvisionDatabase(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, req *DatabaseProvisionRequest) (task *TaskInfoSummaryResponse, err error) {

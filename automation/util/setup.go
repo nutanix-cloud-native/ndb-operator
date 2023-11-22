@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/joho/godotenv"
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
@@ -31,7 +32,7 @@ func SetupContext(ctx context.Context, logger *log.Logger) context.Context {
 }
 
 // Setup a logger with a unique file path
-func SetupLogger(path string) (*log.Logger, error) {
+func SetupLogger(path string, rootName string) (*log.Logger, error) {
 
 	// Deletes the old logging file if it exists
 	if _, err := os.Stat(path); err == nil {
@@ -45,7 +46,7 @@ func SetupLogger(path string) (*log.Logger, error) {
 	}
 
 	// Links the logger to the file and returns the logger
-	return log.New(file, "pg-si: ", log.Ldate|log.Ltime|log.Lshortfile), nil
+	return log.New(file, rootName, log.Ldate|log.Ltime|log.Lshortfile), nil
 }
 
 // Gets logger from context
@@ -57,10 +58,10 @@ func GetLogger(ctx context.Context) *log.Logger {
 	return logger
 }
 
-// Load Environment Variables
-func LoadEnv(ctx context.Context) (err error) {
+// Check if required environment variables are present
+func CheckRequiredEnv(ctx context.Context) (err error) {
 	logger := GetLogger(ctx)
-	logger.Println("loadEnv() started...")
+	logger.Println("CheckRequiredEnv() started...")
 
 	// Loading env variables
 	err = godotenv.Load("../../.env")
@@ -76,7 +77,7 @@ func LoadEnv(ctx context.Context) (err error) {
 		automation.NDB_SECRET_USERNAME_ENV,
 		automation.NDB_SECRET_PASSWORD_ENV,
 		automation.NDB_SERVER_ENV,
-		automation.NDB_CLUSTER_ID_ENV,
+		automation.NX_CLUSTER_ID_ENV,
 	}
 	missingRequiredEnvs := []string{}
 	for _, env := range requiredEnvs {
@@ -90,7 +91,7 @@ func LoadEnv(ctx context.Context) (err error) {
 		logger.Print("Found no missing required env variables!")
 	}
 
-	logger.Println("loadEnv() exited!")
+	logger.Println("CheckRequiredEnv() exited!")
 
 	return nil
 }
@@ -101,7 +102,7 @@ func SetupKubeconfig(ctx context.Context) (config *rest.Config, err error) {
 	logger.Println("SetupKubeconfig() started...")
 
 	logger.Println("Looking up environment variable 'KUBECONFIG'...")
-	kubeconfig, ok := os.LookupEnv("KUBECONFIG")
+	kubeconfig, ok := os.LookupEnv(automation.KUBECONFIG_ENV)
 	if ok {
 		logger.Printf("Using configuration from '%s'\n", kubeconfig)
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
@@ -154,7 +155,7 @@ func SetupTypeTemplates(ctx context.Context) (setupTypes *SetupTypes, err error)
 
 	// Create ndbServer template from automation.NDBSERVER_PATH
 	ndbServer := &ndbv1alpha1.NDBServer{}
-	if err := automation.CreateTypeFromPath(ndbServer, automation.NDBSERVER_PATH); err != nil {
+	if err := CreateTypeFromPath(ndbServer, automation.NDBSERVER_PATH); err != nil {
 		errMsg += fmt.Sprintf("NdbServer with path %s failed! %v. ", automation.NDBSERVER_PATH, err)
 	} else {
 		logMsg += fmt.Sprintf("NdbServer with path %s created. ", automation.NDBSERVER_PATH)
@@ -225,12 +226,12 @@ type SetupTypes struct {
 // Ensure that theType is a pointer.
 func CreateTypeFromPath(theType any, path string) (err error) {
 	if theType == nil {
-		return errors.New("theType is nil! Ensure you are passing in a non-nil value")
+		return errors.New("theType is nil")
 	}
 
 	// Check if theType is not a pointer
 	if reflect.ValueOf(theType).Kind() != reflect.Ptr {
-		return errors.New("theTyper is not a pointer! Ensure you are passing in a pointer for unmarshalling to work correctly")
+		return errors.New("theType is not a pointer")
 	}
 
 	// Reads file path
@@ -252,4 +253,28 @@ func CreateTypeFromPath(theType any, path string) (err error) {
 	}
 
 	return nil
+}
+
+// Performs an operation a certain number of times with a given interval
+func waitAndRetryOperation(ctx context.Context, interval time.Duration, retries int, operation func() error) (err error) {
+	logger := GetLogger(ctx)
+	logger.Println("waitAndRetryOperation() starting...")
+
+	for i := 0; i < retries; i++ {
+		if i != 0 {
+			logger.Printf("Retrying, attempt # %d\n", i)
+		}
+		err = operation()
+		if err == nil {
+			return nil
+		} else {
+			logger.Printf("Error: %s\n", err)
+		}
+		time.Sleep(interval)
+	}
+
+	logger.Println("waitAndRetryOperation() ended!")
+
+	// Operation failed after all retries, return the last error received
+	return err
 }
