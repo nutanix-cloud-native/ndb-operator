@@ -13,13 +13,15 @@ import (
 
 // Test constants
 const (
-	TEST_PASSWORD      = "testPassword"
-	TEST_SSHKEY        = "testSSHKey"
-	TEST_DB_NAMES      = "testDB"
-	TEST_INSTANCE_TYPE = "testInstance"
-	TEST_TIMEZONE      = "test-timezone"
-	TEST_CLUSTER_ID    = "test-cluster-id"
-	TEST_INSTANCE_SIZE = 100
+	TEST_PASSWORD             = "testPassword"
+	TEST_SSHKEY               = "testSSHKey"
+	TEST_DB_NAMES             = "testDB"
+	TEST_INSTANCE_TYPE        = "testInstance"
+	TEST_TIMEZONE             = "test-timezone"
+	TEST_CLUSTER_ID           = "test-cluster-id"
+	TEST_INSTANCE_SIZE        = 100
+	TEST_CLUSTER_NAME         = "test-cluster-name"
+	TEST_PATRONI_CLUSTER_NAME = "test-patroni-cluster-name"
 )
 
 // Tests the validateReqData() function with different values of password and sshkey
@@ -85,28 +87,38 @@ func TestGetRequestAppenderByType(t *testing.T) {
 
 	// test data map
 	tests := []struct {
-		databaseType string
-		expected     interface{}
+		databaseType       string
+		isHighAvailability bool
+		expected           interface{}
 	}{
 		{databaseType: common.DATABASE_TYPE_POSTGRES,
-			expected: &PostgresRequestAppender{},
+			isHighAvailability: false,
+			expected:           &PostgresRequestAppender{},
+		},
+		{databaseType: common.DATABASE_TYPE_POSTGRES,
+			isHighAvailability: true,
+			expected:           &PostgresHARequestAppender{},
 		},
 		{databaseType: common.DATABASE_TYPE_MYSQL,
-			expected: &MySqlRequestAppender{},
+			isHighAvailability: false,
+			expected:           &MySqlRequestAppender{},
 		},
 		{databaseType: common.DATABASE_TYPE_MSSQL,
-			expected: &MSSQLRequestAppender{},
+			isHighAvailability: false,
+			expected:           &MSSQLRequestAppender{},
 		},
 		{databaseType: common.DATABASE_TYPE_MONGODB,
-			expected: &MongoDbRequestAppender{},
+			isHighAvailability: false,
+			expected:           &MongoDbRequestAppender{},
 		},
 		{databaseType: "test",
-			expected: nil,
+			isHighAvailability: false,
+			expected:           nil,
 		},
 	}
 
 	for _, tc := range tests {
-		got, _ := GetRequestAppender(tc.databaseType, false)
+		got, _ := GetRequestAppender(tc.databaseType, tc.isHighAvailability)
 		if !reflect.DeepEqual(tc.expected, got) {
 			t.Fatalf("expected: %v, got: %v", tc.expected, got)
 		}
@@ -295,6 +307,285 @@ func TestPostgresProvisionRequestAppender_withAdditionalArguments_negativeWorkfl
 	mockDatabase.On("IsClone").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES, false)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
+
+	// Checks if error was returned
+	if err == nil {
+		t.Errorf("Should have errored. Expected: Setting configured action arguments failed! invalid-key is not an allowed additional argument, Got: %v", err)
+	}
+	// Checks if resultRequestIsNil
+	if resultRequest != nil {
+		t.Errorf("Should have errored. Expected: resultRequest to be nil, Got: %v", resultRequest)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
+}
+
+// Tests PostgresHAProvisionRequestAppender(), without additional arguments, positive workflow
+func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_positiveWorkflow(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+	mockDatabase.On("IsClone").Return(false)
+	expectedActionArgs := []ActionArgument{
+		{
+			Name:  "proxy_read_port",
+			Value: "5001",
+		},
+		{
+			Name:  "listener_port",
+			Value: "5432",
+		},
+		{
+			Name:  "proxy_write_port",
+			Value: "5000",
+		},
+		{
+			Name:  "enable_synchronous_mode",
+			Value: "true",
+		},
+		{
+			Name:  "auto_tune_staging_drive",
+			Value: "true",
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
+		},
+		{
+			Name:  "db_password",
+			Value: TEST_PASSWORD,
+		},
+		{
+			Name:  "database_names",
+			Value: TEST_DB_NAMES,
+		},
+		{
+			Name:  "provision_virtual_ip",
+			Value: "true",
+		},
+		{
+			Name:  "deploy_haproxy",
+			Value: "true",
+		},
+		{
+			Name:  "failover_mode",
+			Value: "Automatic",
+		},
+		{
+			Name:  "node_type",
+			Value: "database",
+		},
+		{
+			Name:  "allocate_pg_hugepage",
+			Value: "false",
+		},
+		{
+			Name:  "cluster_database",
+			Value: "false",
+		},
+		{
+			Name:  "archive_wal_expire_days",
+			Value: "-1",
+		},
+		{
+			Name:  "enable_peer_auth",
+			Value: "false",
+		},
+		{
+			Name:  "cluster_name",
+			Value: TEST_CLUSTER_NAME,
+		},
+		{
+			Name:  "patroni_cluster_name",
+			Value: TEST_PATRONI_CLUSTER_NAME,
+		},
+	}
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES, true)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
+	// Assert expected results
+	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
+		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
+	}
+
+	// Checks if expected and retrieved action arguments are equal
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
+
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+
+	// Checks requestAppender.appendProvisioningRequest return type has no error and resultRequest.ActionArguments correctly configured
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
+}
+
+// Test PostgresHAProvisionRequestAppender(), with additional arguments, positive workflow
+func TestPostgresHAProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
+		"listener_port": "0000",
+	})
+	mockDatabase.On("IsClone").Return(false)
+
+	expectedActionArgs := []ActionArgument{
+		{
+			Name:  "listener_port",
+			Value: "0000",
+		},
+		{
+			Name:  "proxy_read_port",
+			Value: "5001",
+		},
+		{
+			Name:  "proxy_write_port",
+			Value: "5000",
+		},
+		{
+			Name:  "enable_synchronous_mode",
+			Value: "true",
+		},
+		{
+			Name:  "auto_tune_staging_drive",
+			Value: "true",
+		},
+		{
+			Name:  "backup_policy",
+			Value: "primary_only",
+		},
+		{
+			Name:  "db_password",
+			Value: TEST_PASSWORD,
+		},
+		{
+			Name:  "database_names",
+			Value: TEST_DB_NAMES,
+		},
+		{
+			Name:  "provision_virtual_ip",
+			Value: "true",
+		},
+		{
+			Name:  "deploy_haproxy",
+			Value: "true",
+		},
+		{
+			Name:  "failover_mode",
+			Value: "Automatic",
+		},
+		{
+			Name:  "node_type",
+			Value: "database",
+		},
+		{
+			Name:  "allocate_pg_hugepage",
+			Value: "false",
+		},
+		{
+			Name:  "cluster_database",
+			Value: "false",
+		},
+		{
+			Name:  "archive_wal_expire_days",
+			Value: "-1",
+		},
+		{
+			Name:  "enable_peer_auth",
+			Value: "false",
+		},
+		{
+			Name:  "cluster_name",
+			Value: TEST_CLUSTER_NAME,
+		},
+		{
+			Name:  "patroni_cluster_name",
+			Value: TEST_PATRONI_CLUSTER_NAME,
+		},
+	}
+
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES, true)
+
+	// Call function being tested
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
+
+	// Assert expected results
+	if resultRequest.SSHPublicKey != reqData[common.NDB_PARAM_SSH_PUBLIC_KEY] {
+		t.Errorf("Unexpected SSHPublicKey value. Expected: %s, Got: %s", reqData[common.NDB_PARAM_SSH_PUBLIC_KEY], resultRequest.SSHPublicKey)
+	}
+
+	// Sort expected and retrieved action arguments
+	sortWantAndGotActionArgsByName(expectedActionArgs, resultRequest.ActionArguments)
+
+	// Checks if no error was returned
+	if err != nil {
+		t.Errorf("Unexpected error. Expected: %v, Got: %v", nil, err)
+	}
+	// Check if the lengths of expected and retrieved action arguments are equal
+	if !reflect.DeepEqual(expectedActionArgs, resultRequest.ActionArguments) {
+		t.Errorf("Unexpected ActionArguments. Expected: %v, Got: %v", expectedActionArgs, resultRequest.ActionArguments)
+	}
+
+	// Verify that the mock method was called with the expected arguments
+	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
+}
+
+// Test PostgresHAProvisionRequestAppender(), with additional arguments, negative workflow
+func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_negativeWorkflow(t *testing.T) {
+
+	baseRequest := &DatabaseProvisionRequest{}
+	// Create a mock implementation of DatabaseInterface
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	// Mock required Mock Database Interface methods
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
+		"invalid-key": "invalid-value",
+	})
+	mockDatabase.On("IsClone").Return(false)
+	// Get specific implementation of RequestAppender
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES, true)
 
 	// Call function being tested
 	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
