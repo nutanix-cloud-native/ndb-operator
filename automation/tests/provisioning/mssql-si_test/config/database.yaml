@@ -1,0 +1,31 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: db-mssql-si
+spec:
+  ndbRef: ndb-mssql
+  databaseInstance:
+    name: db-mssql-si
+    databaseNames:
+      - database_one
+    clusterId: <cluster-id>
+    credentialSecret: db-secret-mssql-si
+    size: 10
+    timezone: "UTC"
+    type: mssql
+    profiles: 
+      software:
+        name: "MSSQL-MAZIN2"
+    timeMachine:
+      name: db-mssql-si_TM
+      description: "TM provisioned by operator"
+      sla : "DEFAULT_OOB_GOLD_SLA"
+      dailySnapshotTime:   "12:34:56"
+      snapshotsPerDay:     4           
+      logCatchUpFrequency: 90           
+      weeklySnapshotDay:   "WEDNESDAY"  
+      monthlySnapshotDay:  24           
+      quarterlySnapshotMonth: "Jan"     
+    additionalArguments:
+      authentication_mode: "mixed"
+      sql_user_password: "Nutanix.1"

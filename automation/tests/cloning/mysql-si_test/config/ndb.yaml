@@ -1,8 +1,8 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: NDBServer
 metadata:
-  name: ndb-pg
+  name: clone-ndb-mysql-si
 spec:
-  credentialSecret: ndb-secret-pg-si
+  credentialSecret: clone-ndb-secret-mysql-si
   server: <https://<ip-for-ndb>:8443/era/v0.9>
   skipCertificateVerification: true
