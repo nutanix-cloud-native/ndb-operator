@@ -111,7 +111,7 @@ func GetSnapshotById(ctx context.Context, ndbClient *ndb_client.NDBClient, id st
 
 // Takes a snapshot of the database upon request
 // Returns the task info summary response for the operation
-func TakeSnapshot(ctx context.Context, ndbClient *ndb_client.NDBClient, req *TakeSnapshotRequest) (task TaskInfoSummaryResponse, err error) {
+func TakeSnapshot(ctx context.Context, ndbClient *ndb_client.NDBClient, req *SnapshotRequest) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.TakeSnapshot")
 	if ndbClient == nil {
