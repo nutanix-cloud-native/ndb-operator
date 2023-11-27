@@ -34,3 +34,6 @@ test/__debug_bin
 automation/sandbox
 automation/tests/**/*.log
 *.env
+kubectl
+.gitignore
+ndb-operator.code-workspace
