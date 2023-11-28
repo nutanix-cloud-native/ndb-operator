@@ -332,8 +332,10 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_positiveW
 	mockDatabase := &MockDatabaseInterface{}
 
 	reqData := map[string]interface{}{
-		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
-		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+		common.NDB_PARAM_SSH_PUBLIC_KEY:       TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:             TEST_PASSWORD,
+		common.NDB_PARAM_CLUSTER_NAME:         TEST_CLUSTER_NAME,
+		common.NDB_PARAM_PATRONI_CLUSTER_NAME: TEST_PATRONI_CLUSTER_NAME,
 	}
 
 	// Mock required Mock Database Interface methods
@@ -451,8 +453,10 @@ func TestPostgresHAProvisionRequestAppender_withAdditionalArguments_positiveWork
 	mockDatabase := &MockDatabaseInterface{}
 
 	reqData := map[string]interface{}{
-		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
-		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+		common.NDB_PARAM_SSH_PUBLIC_KEY:       TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:             TEST_PASSWORD,
+		common.NDB_PARAM_CLUSTER_NAME:         TEST_CLUSTER_NAME,
+		common.NDB_PARAM_PATRONI_CLUSTER_NAME: TEST_PATRONI_CLUSTER_NAME,
 	}
 
 	// Mock required Mock Database Interface methods
@@ -573,8 +577,10 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_negativeW
 	mockDatabase := &MockDatabaseInterface{}
 
 	reqData := map[string]interface{}{
-		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
-		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+		common.NDB_PARAM_SSH_PUBLIC_KEY:       TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:             TEST_PASSWORD,
+		common.NDB_PARAM_CLUSTER_NAME:         TEST_CLUSTER_NAME,
+		common.NDB_PARAM_PATRONI_CLUSTER_NAME: TEST_PATRONI_CLUSTER_NAME,
 	}
 
 	// Mock required Mock Database Interface methods
