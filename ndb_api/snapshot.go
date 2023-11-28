@@ -31,7 +31,7 @@ import (
 // Fetches all snapshots on the NDB instance and returns a slice of the snapshots
 func GetAllSnapshots(ctx context.Context, ndbClient *ndb_client.NDBClient) (snapshots []SnapshotResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.GetAllDatabases")
+	log.Info("Entered ndb_api.GetAllSnapshots")
 	if ndbClient == nil {
 		err = errors.New("nil reference: received nil reference for ndbClient")
 		log.Error(err, "Received nil ndbClient reference")
@@ -74,7 +74,7 @@ func GetSnapshotById(ctx context.Context, ndbClient *ndb_client.NDBClient, id st
 		log.Error(err, "Received nil ndbClient reference")
 		return
 	}
-	// Checking if id is empty, this is necessary otherwise the request becomes a call to get all databases (/databases)
+	// Checking if id is empty, this is necessary otherwise the request becomes a call to get all snapshots (/snapshots)
 	if id == "" {
 		err = fmt.Errorf("snapshot id is empty")
 		log.Error(err, "no snapshot id provided")
@@ -90,7 +90,7 @@ func GetSnapshotById(ctx context.Context, ndbClient *ndb_client.NDBClient, id st
 				err = fmt.Errorf("GET %s responded with a nil response", getSnapshotPath)
 			}
 		}
-		log.Error(err, "Error occurred fetching database")
+		log.Error(err, "Error occurred fetching snapshot")
 		return
 	}
 	log.Info(getSnapshotPath, "HTTP status code", res.StatusCode)
