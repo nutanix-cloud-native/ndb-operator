@@ -1,23 +1,21 @@
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: db-pg-si
+  name: db-mongo-si
 spec:
-  ndbRef: ndb-pg
+  ndbRef: ndb-mongo
   databaseInstance:
-    Name: db-pg-si
+    name: db-mongo-si
     databaseNames:
       - database_one
-      - database_two
-      - database_three
     clusterId: <cluster-id>
-    credentialSecret: db-secret-pg-si
+    credentialSecret: db-secret-mongo-si
     size: 10
     timezone: "UTC"
-    type: postgres
+    type: mongodb
     profiles: {}
     timeMachine:
-      name: db-pg-si_TM
+      name: db-mongo-si_TM
       description: "TM provisioned by operator"
       sla : "DEFAULT_OOB_GOLD_SLA"
       dailySnapshotTime:   "12:34:56"  
@@ -25,5 +23,5 @@ spec:
       logCatchUpFrequency: 90           
       weeklySnapshotDay:   "WEDNESDAY"  
       monthlySnapshotDay:  24          
-      quarterlySnapshotMonth: "Jan"  
+      quarterlySnapshotMonth: "Jan"    
     additionalArguments: {}
