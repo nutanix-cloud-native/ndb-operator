@@ -41,11 +41,7 @@ spec:
                 type: string
               name:
                 type: string
-              password:
-                type: string
               timemachineid:
-                type: string
-              username:
                 type: string
             type: object
           status:
