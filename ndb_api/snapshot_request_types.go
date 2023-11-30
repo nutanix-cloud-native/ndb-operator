@@ -3,7 +3,7 @@ package ndb_api
 type SnapshotRequest struct {
 	Name              string            `json:"name"`
 	SnapshotLcmConfig SnapshotLcmConfig `json:"lcmConfig"`
-	TimeMachineId     string            `json:'timemachine_id'`
+	TimeMachineId     string            `json:"timemachineId"`
 }
 
 type SnapshotLcmConfig struct {

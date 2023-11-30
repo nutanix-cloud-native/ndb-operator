@@ -168,7 +168,7 @@ func DeleteSnapshot(ctx context.Context, ndbClient *ndb_client.NDBClient, id str
 		log.Error(err, "no snapshot id provided")
 		return
 	}
-	res, err := ndbClient.Delete("snapshots/" + id)
+	res, err := ndbClient.Delete("snapshots/"+id, nil)
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {
 			if res != nil {

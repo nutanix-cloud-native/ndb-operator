@@ -1,1 +1,82 @@
 package controllers
+
+import (
+	"context"
+	"fmt"
+	"reflect"
+
+	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/common"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
+	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
+	ctrl "sigs.k8s.io/controller-runtime"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+)
+
+// The handleSync function synchronizes the database CR with the database info object in the
+// NDBServer CR (which fetches it from NDB). It handles the transition from EMPTY (initial state) => WAITING => PROVISIONING => RUNNING
+// and updates the status accordingly. The update() triggers an implicit requeue of the reconcile request.
+func (r *SnapshotReconciler) handleSync(ctx context.Context, snapshot *ndbv1alpha1.Snapshot, ndbClient *ndb_client.NDBClient, req ctrl.Request, ndbServer *ndbv1alpha1.NDBServer) (ctrl.Result, error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered snapshot_controller_helper.handleSync")
+
+	snapshotStatus := snapshot.Status.DeepCopy()
+
+	// Take a snapshot
+	if snapshotStatus.Status == "" {
+		// DB Status.Status is empty => Provision a DB
+		req := ndb_api.GenerateTakeSnapshotRequest(snapshot.Spec.TimeMachineID)
+		taskResponse, err := ndb_api.TakeSnapshot(ctx, ndbClient, req)
+		if err != nil {
+			errStatement := "Failed to create snapshot of database"
+			log.Error(err, errStatement)
+			r.recorder.Eventf(snapshot, "Warning", EVENT_NDB_REQUEST_FAILED, "Error: %s. %s", errStatement, err.Error())
+			return requeueOnErr(err)
+		}
+		log.Info(fmt.Sprintf("Updating Snapshot CR to Status: CREATING, id: %s and creationOperationId: %s", taskResponse.EntityId, taskResponse.OperationId))
+
+		snapshotStatus.Status = common.DATABASE_CR_STATUS_CREATING
+		snapshotStatus.OperationID = taskResponse.OperationId
+		r.recorder.Event(snapshot, "Normal", EVENT_CREATION_STARTED, "Snapshot creation initiated")
+	}
+
+	isUnderDeletion := !snapshot.ObjectMeta.DeletionTimestamp.IsZero()
+	if isUnderDeletion {
+		snapshotStatus.Status = common.DATABASE_CR_STATUS_DELETING
+	} else if snapshotStatus.Status == common.DATABASE_CR_STATUS_CREATING {
+		creationOp, err := ndb_api.GetOperationById(ctx, ndbClient, snapshotStatus.OperationID)
+		if err != nil {
+			message := fmt.Sprintf("NDB API to fetch operation by id failed. OperationId: %s:, error: %s", creationOp.Id, err.Error())
+			r.recorder.Event(snapshot, "Warning", EVENT_NDB_REQUEST_FAILED, message)
+		} else {
+			switch ndb_api.GetOperationStatus(creationOp) {
+			case ndb_api.OPERATION_STATUS_FAILED:
+				snapshotStatus.Status = common.DATABASE_CR_STATUS_CREATION_ERROR
+				err = fmt.Errorf("creation operation terminated. status: %s, message: %s, operationId: %s", creationOp.Status, creationOp.Message, creationOp.Id)
+				log.Error(err, "Database Creation Failed")
+				r.recorder.Event(snapshot, "Warning", EVENT_CREATION_FAILED, "Take Snapshot operation failed with error: "+err.Error())
+			case ndb_api.OPERATION_STATUS_PASSED:
+				snapshotStatus.Status = common.DATABASE_CR_STATUS_READY
+				r.recorder.Event(snapshot, "Normal", EVENT_CREATION_COMPLETED, "Take Snapshot operation passed")
+			default:
+				// Do nothing, we do not care about other statuses
+			}
+		}
+	} else {
+		log.Info("Snapshot missing from NDB CR")
+		snapshotStatus.Status = common.DATABASE_CR_STATUS_NOT_FOUND
+	}
+
+	if !reflect.DeepEqual(snapshot.Status, *snapshotStatus) {
+		snapshot.Status = *snapshotStatus
+		err := r.Status().Update(ctx, snapshot)
+		if err != nil {
+			errStatement := "Failed to update status of snapshot custom resource"
+			log.Error(err, errStatement)
+			r.recorder.Eventf(snapshot, "Warning", EVENT_CR_STATUS_UPDATE_FAILED, "Error: %s. %s.", err.Error())
+			return requeueOnErr(err)
+		}
+	}
+
+	return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
+}

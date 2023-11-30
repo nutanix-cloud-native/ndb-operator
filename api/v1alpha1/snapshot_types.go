@@ -30,8 +30,6 @@ type SnapshotSpec struct {
 
 	// Foo is an example field of Snapshot. Edit snapshot_types.go to remove/update
 	IP            string `json:"ip,omitempty"`
-	Username      string `json:"username,omitempty"`
-	Password      string `json:"password,omitempty"`
 	TimeMachineID string `json:"timemachineid,omitempty"`
 	Name          string `json:"name,omitempty"`
 }

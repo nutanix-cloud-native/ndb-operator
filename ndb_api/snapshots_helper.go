@@ -14,6 +14,9 @@ limitations under the License.
 package ndb_api
 
 // Returns a request to delete a snapshot instance
-func GenerateDeprovisionCloneRequest() (req *CloneDeprovisionRequest) {
-
+func GenerateTakeSnapshotRequest(timeMachineId string) (req *SnapshotRequest) {
+	req = &SnapshotRequest{
+		TimeMachineId: timeMachineId,
+	}
+	return
 }

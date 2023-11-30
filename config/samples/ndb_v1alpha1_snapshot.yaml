@@ -9,4 +9,6 @@ metadata:
     app.kubernetes.io/created-by: ndb-operator
   name: snapshot-sample
 spec:
-  # TODO(user): Add fields here
+  ip: "ndb-snapshot.free.beeceptor.com"
+  timemachineid: "123"
+  name: "test-snapshot"
