@@ -23,7 +23,7 @@ func GenerateTakeSnapshotRequest(snapshot *ndbv1alpha1.Snapshot) (req *SnapshotR
 		Name: snapshot.Spec.Name,
 		SnapshotLcmConfig: SnapshotLcmConfig{
 			SnapshotLCMConfigDetailed: SnapshotLcmConfigDetailed{
-				ExpiryDetails: ExpiryDetails{
+				ExpiryDetails: SnapshotExpiryDetails{
 					ExpiryDateTimezone: snapshot.Spec.ExpiryDateTimezone,
 					ExpireInDays:       snapshot.Spec.ExpireInDays,
 				},

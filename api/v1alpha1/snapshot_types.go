@@ -33,7 +33,7 @@ type SnapshotSpec struct {
 	TimeMachineID      string `json:"timemachineid,omitempty"`
 	Name               string `json:"name,omitempty"`
 	ExpiryDateTimezone string `json:"expirydatetimezone,omitempty"`
-	ExpireInDays       string `json:"expireindays,omitempty"`
+	ExpireInDays       int    `json:"expireindays,omitempty"`
 }
 
 // SnapshotStatus defines the observed state of Snapshot

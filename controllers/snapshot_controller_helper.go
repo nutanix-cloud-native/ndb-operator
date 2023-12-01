@@ -10,7 +10,6 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -81,27 +80,9 @@ func (r *SnapshotReconciler) handleSync(ctx context.Context, snapshot *ndbv1alph
 	}
 
 	switch snapshotStatus.Status {
-	case common.DATABASE_CR_STATUS_READY:
-		if !isUnderDeletion {
-			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_INSTANCE) {
-				return r.addFinalizer(ctx, req, common.FINALIZER_INSTANCE, database)
-			}
-			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
-				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_SERVER, database)
-			}
-		}
-		if databaseStatus.IPAddress != "" {
-			r.setupConnectivity(ctx, database, req)
-		} else {
-			// The database is in "READY" state on NDB, but the API responses sometimes do not have
-			// an IP address in the response right after reaching the READY state. We only setup connectivity
-			// once we have a non-empty IP Address. Just logging and raising an event to notify the user.
-			message := fmt.Sprintf("Empty IP Address for Database %s, will setup connectivity once the IP address is assigned", database.Name)
-			log.Info(message)
-			r.recorder.Event(database, "Warning", EVENT_WAITING_FOR_IP_ADDRESS, message)
-		}
+
 	case common.DATABASE_CR_STATUS_DELETING:
-		snapshotStatus.operationId = ""
+		snapshotStatus.OperationID = ""
 		return r.handleDelete(ctx, snapshot, ndbClient)
 	case common.DATABASE_CR_STATUS_NOT_FOUND:
 		r.recorder.Eventf(snapshot, "Warning", EVENT_EXTERNAL_DELETE, "Error: Resource not found on NDB")
@@ -125,7 +106,7 @@ func (r *SnapshotReconciler) handleDelete(ctx context.Context, snapshot *ndbv1al
 			// Not logging here, already done in the deregister function
 			return requeueOnErr(err)
 		}
-		snapshot.Status.OperationId = deleteOp.OperationId
+		snapshot.Status.OperationID = deleteOp.OperationId
 		if err := r.Status().Update(ctx, snapshot); err != nil {
 			log.Error(err, "An error occurred while updating the CR.")
 			return requeueOnErr(err)
@@ -133,7 +114,7 @@ func (r *SnapshotReconciler) handleDelete(ctx context.Context, snapshot *ndbv1al
 	} else {
 		deleteOp, err := ndb_api.GetOperationById(ctx, ndbClient, deleteOperationId)
 		if err != nil {
-			message := fmt.Sprintf("NDB API to fetch operation by id failed. OperationId: %s:, error: %s", &deleteOperationId, err.Error())
+			message := fmt.Sprintf("NDB API to fetch operation by id failed. OperationId: %s:, error: %s", deleteOperationId, err.Error())
 			r.recorder.Event(snapshot, "Warning", EVENT_NDB_REQUEST_FAILED, message)
 		} else {
 			switch ndb_api.GetOperationStatus(deleteOp) {
