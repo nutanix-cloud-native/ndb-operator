@@ -27,6 +27,7 @@ type DatabaseServer struct {
 	Id          string   `json:"id"`
 	Name        string   `json:"name"`
 	IPAddresses []string `json:"ipAddresses"`
+	NxClusterId string   `json:"nxClusterId"`
 }
 
 type TimeMachineInfo struct {

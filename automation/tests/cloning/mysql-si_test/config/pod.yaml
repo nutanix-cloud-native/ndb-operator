@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: clone-app-mysql-si
+  labels:
+    app: clone-app-mysql-si
+spec:
+  containers:
+  - name: app-mysql-container
+    image: mazins/ndb-operator-mysql:latest
+    env:
+    - name: DBHOST 
+      value: clone-mysql-si-svc        
+    - name: DATABASE
+      value: database_one         
+    - name: DBPORT
+      value: '3306'
+    - name: USERNAME
+      value: root     
+    - name: PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: clone-db-secret-mysql-si
+          key: password 
+    ports:
+    - containerPort: 3000
+  initContainers:
+    - name: init-db
+      image: busybox:1.28
+      command: ['sh', '-c', "until nslookup $(DB_HOST).$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for $(DB_HOST); sleep 2; done"]
+      env:
+      - name: DB_HOST 
+        value: clone-mysql-si-svc

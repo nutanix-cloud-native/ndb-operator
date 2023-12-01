@@ -231,6 +231,30 @@ func TestDatabase_GetInstanceSize(t *testing.T) {
 	})
 }
 
+// Tests the GetInstanceIsHighAvailibility() function retrieves Size correctly:
+func TestDatabase_GetInstanceIsHighAvailibility(t *testing.T) {
+
+	name := "Contains IsHighAvailibility"
+	database := Database{
+		Database: v1alpha1.Database{
+			Spec: v1alpha1.DatabaseSpec{
+				Instance: &v1alpha1.Instance{
+					IsHighAvailibility: true,
+				},
+			},
+		},
+	}
+	wantIsHighAvailibility := true
+
+	t.Run(name, func(t *testing.T) {
+
+		gotIsHighAvailibility := database.GetInstanceIsHighAvailability()
+		if gotIsHighAvailibility != wantIsHighAvailibility {
+			t.Errorf("Database.GetInstanceIsHighAvailibility() gotIsHighAvailibility= %v, want %v", gotIsHighAvailibility, wantIsHighAvailibility)
+		}
+	})
+}
+
 // Tests the GetClusterId() function retrieves ClusterId correctly:
 func TestDatabase_GetClusterId(t *testing.T) {
 

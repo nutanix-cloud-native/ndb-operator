@@ -1,0 +1,8 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: NDBServer
+metadata:
+  name: ndb-mssql
+spec:
+  credentialSecret: ndb-secret-mssql-si
+  server: <https://<ip-for-ndb>:8443/era/v0.9>
+  skipCertificateVerification: true

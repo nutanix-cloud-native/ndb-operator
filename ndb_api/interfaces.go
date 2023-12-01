@@ -49,6 +49,7 @@ type DatabaseInterface interface {
 	GetCloneSourceDBId() string
 	GetCloneSnapshotId() string
 	GetAdditionalArguments() map[string]string
+	GetInstanceIsHighAvailability() bool
 }
 
 // Internal Interfaces
