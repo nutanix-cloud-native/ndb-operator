@@ -13,10 +13,22 @@ limitations under the License.
 
 package ndb_api
 
+import (
+	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+)
+
 // Returns a request to delete a snapshot instance
-func GenerateTakeSnapshotRequest(timeMachineId string) (req *SnapshotRequest) {
+func GenerateTakeSnapshotRequest(snapshot *ndbv1alpha1.Snapshot) (req *SnapshotRequest) {
 	req = &SnapshotRequest{
-		TimeMachineId: timeMachineId,
+		Name: snapshot.Spec.Name,
+		SnapshotLcmConfig: SnapshotLcmConfig{
+			SnapshotLCMConfigDetailed: SnapshotLcmConfigDetailed{
+				ExpiryDetails: ExpiryDetails{
+					ExpiryDateTimezone: snapshot.Spec.ExpiryDateTimezone,
+					ExpireInDays:       snapshot.Spec.ExpireInDays,
+				},
+			},
+		},
 	}
 	return
 }

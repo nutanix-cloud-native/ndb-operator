@@ -10,6 +10,7 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -18,15 +19,15 @@ import (
 // and updates the status accordingly. The update() triggers an implicit requeue of the reconcile request.
 func (r *SnapshotReconciler) handleSync(ctx context.Context, snapshot *ndbv1alpha1.Snapshot, ndbClient *ndb_client.NDBClient, req ctrl.Request, ndbServer *ndbv1alpha1.NDBServer) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered snapshot_controller_helper.handleSync")
+	log.Info("Entered snapshot_conxtroller_helper.handleSync")
 
 	snapshotStatus := snapshot.Status.DeepCopy()
 
 	// Take a snapshot
 	if snapshotStatus.Status == "" {
 		// DB Status.Status is empty => Provision a DB
-		req := ndb_api.GenerateTakeSnapshotRequest(snapshot.Spec.TimeMachineID)
-		taskResponse, err := ndb_api.TakeSnapshot(ctx, ndbClient, req)
+		requestBody := ndb_api.GenerateTakeSnapshotRequest(snapshot)
+		taskResponse, err := ndb_api.TakeSnapshot(ctx, ndbClient, requestBody, snapshot.Spec.TimeMachineID)
 		if err != nil {
 			errStatement := "Failed to create snapshot of database"
 			log.Error(err, errStatement)
@@ -37,6 +38,7 @@ func (r *SnapshotReconciler) handleSync(ctx context.Context, snapshot *ndbv1alph
 
 		snapshotStatus.Status = common.DATABASE_CR_STATUS_CREATING
 		snapshotStatus.OperationID = taskResponse.OperationId
+		snapshotStatus.Id = taskResponse.EntityId
 		r.recorder.Event(snapshot, "Normal", EVENT_CREATION_STARTED, "Snapshot creation initiated")
 	}
 
@@ -78,5 +80,77 @@ func (r *SnapshotReconciler) handleSync(ctx context.Context, snapshot *ndbv1alph
 		}
 	}
 
+	switch snapshotStatus.Status {
+	case common.DATABASE_CR_STATUS_READY:
+		if !isUnderDeletion {
+			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_INSTANCE) {
+				return r.addFinalizer(ctx, req, common.FINALIZER_INSTANCE, database)
+			}
+			if !controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
+				return r.addFinalizer(ctx, req, common.FINALIZER_DATABASE_SERVER, database)
+			}
+		}
+		if databaseStatus.IPAddress != "" {
+			r.setupConnectivity(ctx, database, req)
+		} else {
+			// The database is in "READY" state on NDB, but the API responses sometimes do not have
+			// an IP address in the response right after reaching the READY state. We only setup connectivity
+			// once we have a non-empty IP Address. Just logging and raising an event to notify the user.
+			message := fmt.Sprintf("Empty IP Address for Database %s, will setup connectivity once the IP address is assigned", database.Name)
+			log.Info(message)
+			r.recorder.Event(database, "Warning", EVENT_WAITING_FOR_IP_ADDRESS, message)
+		}
+	case common.DATABASE_CR_STATUS_DELETING:
+		snapshotStatus.operationId = ""
+		return r.handleDelete(ctx, snapshot, ndbClient)
+	case common.DATABASE_CR_STATUS_NOT_FOUND:
+		r.recorder.Eventf(snapshot, "Warning", EVENT_EXTERNAL_DELETE, "Error: Resource not found on NDB")
+	case common.DATABASE_CR_STATUS_CREATION_ERROR:
+		return doNotRequeue()
+	default:
+		// No-Op
+	}
+
+	return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
+}
+
+func (r *SnapshotReconciler) handleDelete(ctx context.Context, snapshot *ndbv1alpha1.Snapshot, ndbClient *ndb_client.NDBClient) (ctrl.Result, error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Snapshot CR is being deleted")
+	log.Info(snapshot.ResourceVersion)
+	deleteOperationId := snapshot.Status.OperationID
+	if deleteOperationId == "" {
+		deleteOp, err := ndb_api.DeleteSnapshot(ctx, ndbClient, snapshot.Status.Id)
+		if err != nil {
+			// Not logging here, already done in the deregister function
+			return requeueOnErr(err)
+		}
+		snapshot.Status.OperationId = deleteOp.OperationId
+		if err := r.Status().Update(ctx, snapshot); err != nil {
+			log.Error(err, "An error occurred while updating the CR.")
+			return requeueOnErr(err)
+		}
+	} else {
+		deleteOp, err := ndb_api.GetOperationById(ctx, ndbClient, deleteOperationId)
+		if err != nil {
+			message := fmt.Sprintf("NDB API to fetch operation by id failed. OperationId: %s:, error: %s", &deleteOperationId, err.Error())
+			r.recorder.Event(snapshot, "Warning", EVENT_NDB_REQUEST_FAILED, message)
+		} else {
+			switch ndb_api.GetOperationStatus(deleteOp) {
+			case ndb_api.OPERATION_STATUS_FAILED:
+				err := fmt.Errorf("Delete operation terminated. status: %s, message: %s, operationId: %s", deleteOp.Status, deleteOp.Message, deleteOperationId)
+				log.Error(err, "Deletion Failed")
+				r.recorder.Event(snapshot, "Warning", "OPERATION FAILED", "Snapshot deletion operation failed with error: "+err.Error())
+			case ndb_api.OPERATION_STATUS_PASSED:
+				r.recorder.Eventf(snapshot, "Normal", EVENT_DEREGISTRATION_COMPLETED, "Snapshot deleted from NDB.")
+				if err := r.Update(ctx, snapshot); err != nil {
+					return requeueOnErr(err)
+				}
+			default:
+				// Do nothing, we do not care about other statuses
+			}
+		}
+	}
+	// Requeue the request while waiting for the database instance to be deleted from NDB.
 	return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
 }

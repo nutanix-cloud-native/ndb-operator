@@ -35,6 +35,10 @@ spec:
           spec:
             description: SnapshotSpec defines the desired state of Snapshot
             properties:
+              expireindays:
+                type: string
+              expirydatetimezone:
+                type: string
               ip:
                 description: Foo is an example field of Snapshot. Edit snapshot_types.go
                   to remove/update

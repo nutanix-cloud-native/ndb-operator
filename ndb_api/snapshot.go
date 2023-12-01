@@ -111,7 +111,7 @@ func GetSnapshotById(ctx context.Context, ndbClient *ndb_client.NDBClient, id st
 
 // Takes a snapshot of the database upon request
 // Returns the task info summary response for the operation
-func TakeSnapshot(ctx context.Context, ndbClient *ndb_client.NDBClient, req *SnapshotRequest) (task TaskInfoSummaryResponse, err error) {
+func TakeSnapshot(ctx context.Context, ndbClient *ndb_client.NDBClient, req *SnapshotRequest, timeMachineId string) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.TakeSnapshot")
 	if ndbClient == nil {
@@ -119,12 +119,12 @@ func TakeSnapshot(ctx context.Context, ndbClient *ndb_client.NDBClient, req *Sna
 		log.Error(err, "Received nil ndbClient reference")
 		return
 	}
-	if req.TimeMachineId == "" {
+	if timeMachineId == "" {
 		err = errors.New("empty timeMachineId")
 		log.Error(err, "Received empty timeMachineId in request")
 		return
 	}
-	snapshotEndPoint := "tms/" + req.TimeMachineId + "/snapshots"
+	snapshotEndPoint := "tms/" + timeMachineId + "/snapshots"
 	res, err := ndbClient.Post(snapshotEndPoint, req)
 	if err != nil || res == nil || res.StatusCode != http.StatusOK {
 		if err == nil {

@@ -75,7 +75,9 @@ func (r *SnapshotReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	// Fetch the NDBServer resource from the namespace
 	ndbServer := &ndbv1alpha1.NDBServer{}
-	err = r.Get(ctx, req.NamespacedName, ndbServer)
+	ndbNamespacedName := req.NamespacedName
+	ndbNamespacedName.Name = "ndb"
+	err = r.Get(ctx, ndbNamespacedName, ndbServer)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.

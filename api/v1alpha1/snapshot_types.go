@@ -29,9 +29,11 @@ type SnapshotSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Snapshot. Edit snapshot_types.go to remove/update
-	IP            string `json:"ip,omitempty"`
-	TimeMachineID string `json:"timemachineid,omitempty"`
-	Name          string `json:"name,omitempty"`
+	IP                 string `json:"ip,omitempty"`
+	TimeMachineID      string `json:"timemachineid,omitempty"`
+	Name               string `json:"name,omitempty"`
+	ExpiryDateTimezone string `json:"expirydatetimezone,omitempty"`
+	ExpireInDays       string `json:"expireindays,omitempty"`
 }
 
 // SnapshotStatus defines the observed state of Snapshot
@@ -40,6 +42,7 @@ type SnapshotStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	OperationID string `json:"operationid,omitempty"`
 	Status      string `json:"status,omitempty"`
+	Id          string `json:"id,omitempty"`
 }
 
 //+kubebuilder:object:root=true
