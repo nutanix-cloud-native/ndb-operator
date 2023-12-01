@@ -248,7 +248,7 @@ func TestDatabase_GetInstanceIsHighAvailibility(t *testing.T) {
 
 	t.Run(name, func(t *testing.T) {
 
-		gotIsHighAvailibility := database.GetInstanceIsHighAvailibility()
+		gotIsHighAvailibility := database.GetInstanceIsHighAvailability()
 		if gotIsHighAvailibility != wantIsHighAvailibility {
 			t.Errorf("Database.GetInstanceIsHighAvailibility() gotIsHighAvailibility= %v, want %v", gotIsHighAvailibility, wantIsHighAvailibility)
 		}

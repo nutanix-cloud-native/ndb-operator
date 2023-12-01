@@ -145,7 +145,7 @@ func (d *Database) GetInstanceSize() int {
 	return d.Spec.Instance.Size
 }
 
-func (d *Database) GetInstanceIsHighAvailibility() bool {
+func (d *Database) GetInstanceIsHighAvailability() bool {
 	return d.Spec.Instance.IsHighAvailibility
 }
 
