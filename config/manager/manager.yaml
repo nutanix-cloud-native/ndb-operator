@@ -38,6 +38,9 @@ spec:
             - --leader-elect
           image: controller:latest
           name: manager
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
           securityContext:
             allowPrivilegeEscalation: false
           # TODO(user): uncomment for common cases that do not require escalating privileges
@@ -63,5 +66,19 @@ spec:
             requests:
               cpu: 10m
               memory: 64Mi
+        - name: count
+          image: busybox
+          args:
+          - /bin/sh
+          - -c
+          - sleep 4800    
+          securityContext:
+            runAsUser: 1000
+          volumeMounts:
+          - name: varlog
+            mountPath: /var/log
+      volumes:
+        - name: varlog
+          emptyDir: {}
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
