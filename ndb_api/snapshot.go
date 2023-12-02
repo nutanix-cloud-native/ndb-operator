@@ -65,6 +65,43 @@ func GetAllSnapshots(ctx context.Context, ndbClient *ndb_client.NDBClient) (snap
 	return
 }
 
+// Fetches all snapshots for a timemachineID on the NDB instance and returns a slice of the snapshots
+func GetAllSnapshotsByTM(ctx context.Context, ndbClient *ndb_client.NDBClient, timemachineId string) (snapshots []SnapshotResponse, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered ndb_api.GetAllSnapshotsByTM")
+	if ndbClient == nil {
+		err = errors.New("nil reference: received nil reference for ndbClient")
+		log.Error(err, "Received nil ndbClient reference")
+		return
+	}
+	res, err := ndbClient.Get("tms/" + timemachineId + "/snapshots")
+	if err != nil || res == nil || res.StatusCode != http.StatusOK {
+		if err == nil {
+			if res != nil {
+				err = fmt.Errorf("GET /tms/%s/snapshots responded with %d", timemachineId, res.StatusCode)
+			} else {
+				err = fmt.Errorf("GET /tms/%s/snapshots responded with a nil response", timemachineId)
+			}
+		}
+		log.Error(err, "Error occurred fetching snapshots by time machine id %s", timemachineId)
+		return
+	}
+	log.Info("GET /tms/", timemachineId, "snapshots", "HTTP status code", res.StatusCode)
+	body, err := io.ReadAll(res.Body)
+	defer res.Body.Close()
+	if err != nil {
+		log.Error(err, "Error occurred reading response.Body in GetAllSnapshotsByTM")
+		return
+	}
+	err = json.Unmarshal(body, &snapshots)
+	if err != nil {
+		log.Error(err, "Error occurred trying to unmarshal.")
+		return
+	}
+	log.Info("Returning from ndb_api.GetAllSnapshotsByTM")
+	return
+}
+
 // Fetches and returns a snapshot by an Id
 func GetSnapshotById(ctx context.Context, ndbClient *ndb_client.NDBClient, id string) (snapshot SnapshotResponse, err error) {
 	log := ctrllog.FromContext(ctx)
@@ -157,7 +194,7 @@ func TakeSnapshot(ctx context.Context, ndbClient *ndb_client.NDBClient, req *Sna
 // Returns the task info summary response for the operation
 func DeleteSnapshot(ctx context.Context, ndbClient *ndb_client.NDBClient, id string) (task TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.DeleteSnapshot", "SnapshotId", id)
+	log.Info("Entered ndb_api.DeleteSnapshot")
 	if ndbClient == nil {
 		err = errors.New("nil reference")
 		log.Error(err, "Received nil ndbClient reference")

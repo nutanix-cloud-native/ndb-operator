@@ -62,7 +62,6 @@ func (ndbClient *NDBClient) Post(path string, body interface{}) (*http.Response,
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
 	req.Header.Add("Cookie", "eraAuth=eyJhbGciOiJSUzUxMiJ9")
 	if err != nil {
-		// fmt.Println(err)
 		return nil, err
 	}
 	req.SetBasicAuth(ndbClient.username, ndbClient.password)
@@ -72,6 +71,25 @@ func (ndbClient *NDBClient) Post(path string, body interface{}) (*http.Response,
 
 func (ndbClient *NDBClient) Delete(path string, body interface{}) (*http.Response, error) {
 	url := ndbClient.url + "/" + path
+	req, err := getDeleteHttpRequest(url, body, ndbClient)
+	if err != nil {
+		return nil, err
+	}
+	return ndbClient.client.Do(req)
+}
+
+func getDeleteHttpRequest(url string, body interface{}, ndbClient *NDBClient) (*http.Request, error) {
+	if body == nil {
+		req, err := http.NewRequest(http.MethodDelete, url, nil)
+		req.Header.Add("Cookie", "eraAuth=eyJhbGciOiJSUzUxMiJ9")
+		if err != nil {
+			// fmt.Println(err)
+			return nil, err
+		}
+		req.SetBasicAuth(ndbClient.username, ndbClient.password)
+		req.Header.Add("Content-Type", "application/json; charset=utf-8")
+		return req, nil
+	}
 	payload, _ := json.Marshal(body)
 	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(payload))
 	req.Header.Add("Cookie", "eraAuth=eyJhbGciOiJSUzUxMiJ9")
@@ -81,5 +99,5 @@ func (ndbClient *NDBClient) Delete(path string, body interface{}) (*http.Respons
 	}
 	req.SetBasicAuth(ndbClient.username, ndbClient.password)
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
-	return ndbClient.client.Do(req)
+	return req, nil
 }

@@ -40,9 +40,10 @@ type SnapshotSpec struct {
 type SnapshotStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	OperationID string `json:"operationid,omitempty"`
-	Status      string `json:"status,omitempty"`
-	Id          string `json:"id,omitempty"`
+	OperationID         string `json:"operationid,omitempty"`
+	DeletionOperationID string `json:"deletionoperationid,omitempty"`
+	Status              string `json:"status,omitempty"`
+	Id                  string `json:"id,omitempty"`
 }
 
 //+kubebuilder:object:root=true
