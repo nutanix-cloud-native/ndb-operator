@@ -66,17 +66,6 @@ spec:
             requests:
               cpu: 10m
               memory: 64Mi
-        - name: count
-          image: busybox
-          args:
-          - /bin/sh
-          - -c
-          - sleep 4800    
-          securityContext:
-            runAsUser: 1000
-          volumeMounts:
-          - name: varlog
-            mountPath: /var/log
         - name: filebeat
           image: elastic/filebeat:7.16.3
           args:
@@ -85,7 +74,6 @@ spec:
             - -e
           securityContext:
             runAsUser: 9999
-            allowPrivilegeEscalation: true
           volumeMounts:
             - name: filebeat-config
               mountPath: /etc/filebeat
