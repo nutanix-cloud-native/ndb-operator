@@ -24,8 +24,10 @@ package main
 import (
 	"flag"
 	"io"
-	"log"
 	"os"
+	"time"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -68,14 +70,31 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 
 	// Set the log file path
-	logFilePath := "/var/log/ndb_test1_logging.txt"
+	logFilePath := "var/log/test1.log"
 
-	// Create a file for logging
-	logFile, err := os.Create(logFilePath)
-	if err != nil {
-		log.Fatalf("Error creating log file: %v", err)
+	// Create a file for logging with log rotation
+	logFile := &lumberjack.Logger{
+		Filename:   logFilePath,
+		MaxSize:    10,    // Max size in megabytes before log rolling (change as needed)
+		MaxBackups: 5,     // Max number of old log files to keep
+		MaxAge:     0,     // Max number of days to retain old log files
+		Compress:   false, // Whether to compress old log files
 	}
-	defer logFile.Close()
+
+	// Use a ticker to trigger log rotation every 2 minutes
+	ticker := time.NewTicker(1 * time.Minute)
+	go func() {
+		for range ticker.C {
+			logFile.Rotate()
+		}
+	}()
+
+	// // Create a file for logging
+	// logFile, err := os.Create(logFilePath)
+	// if err != nil {
+	// 	log.Fatalf("Error creating log file: %v", err)
+	// }
+	// defer logFile.Close()
 
 	mwriter := io.MultiWriter(logFile, os.Stderr)
 
