@@ -70,9 +70,16 @@ func (d *Database) GetDescription() string {
 
 func (d *Database) GetClusterId() string {
 	if d.IsClone() {
-		return d.Spec.Clone.ClusterId
+				return d.Spec.Clone.ClusterId
 	}
-	return d.Spec.Instance.ClusterId
+		return d.Spec.Instance.ClusterId
+}
+
+func (d *Database) GetClusterName() string {
+	if d.IsClone() {
+		return d.Spec.Clone.ClusterName
+	}
+	return d.Spec.Instance.ClusterName
 }
 
 func (d *Database) GetProfileResolvers() ndb_api.ProfileResolvers {

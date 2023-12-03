@@ -18,8 +18,10 @@ package ndb_api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -31,6 +33,11 @@ import (
 // This function generates and returns a request for provisioning a database (and a dbserver vm) on NDB
 // The database provisioned has a NONE time machine SLA attached to it, and uses the default OOB profiles
 func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDBClient, database DatabaseInterface, reqData map[string]interface{}) (requestBody *DatabaseProvisionRequest, err error) {
+	var localClusterId string
+	var localURL string
+	var httpResponse *http.Response
+	var result map[string]interface{}
+
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GenerateProvisioningRequest", "database name", database.GetName(), "database type", database.GetInstanceType())
 
@@ -65,6 +72,35 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		return
 	}
 
+	if database.GetClusterId() != "" {
+		localClusterId = database.GetClusterId()
+	} else {
+		localURL = "clusters/name/" + database.GetClusterName()
+		httpResponse, err = ndb_client.Get(localURL)
+		if err != nil {
+			fmt.Println("Error sending request:", err)
+			return
+		}
+		if httpResponse.StatusCode != http.StatusOK {
+			fmt.Println("Error: Unexpected status code", httpResponse.Status)
+			return
+		}
+
+		err = json.NewDecoder(httpResponse.Body).Decode(&result)
+		if err != nil {
+			fmt.Println("Error decoding JSON:", err)
+			return
+		}
+
+		id, ok := result["id"].(string)
+		if !ok {
+			fmt.Println("Error: 'id' field not found or not a string")
+			return
+		}
+		localClusterId = id
+		fmt.Println("Cluster ID Obtained : " + localClusterId)
+	}
+
 	// Creating a provisioning request based on the database type
 	requestBody = &DatabaseProvisionRequest{
 		DatabaseType:             GetDatabaseEngineName(database.GetInstanceType()),
@@ -78,7 +114,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		NewDbServerTimeZone:      database.GetTimeZone(),
 		CreateDbServer:           true,
 		NodeCount:                1,
-		NxClusterId:              database.GetClusterId(),
+		NxClusterId:              localClusterId, //database.GetClusterId(),
 		Clustered:                false,
 		AutoTuneStagingDrive:     true,
 

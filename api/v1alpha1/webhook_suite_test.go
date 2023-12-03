@@ -172,8 +172,19 @@ var _ = Describe("Webhook Tests", func() {
 			Expect(errMsg).To(ContainSubstring("ClusterId field must be a valid UUID"))
 		})
 
-		It("Should check for missing CredentialSecret", func() {
+		It("Should check for missing ClusterId and ClusterName", func() {
 			database := createDefaultDatabase("db3")
+			database.Spec.Instance.ClusterId = ""
+			database.Spec.Instance.ClusterName = ""
+
+			err := k8sClient.Create(context.Background(), database)
+			Expect(err).To(HaveOccurred())
+			errMsg := err.(*errors.StatusError).ErrStatus.Message
+			Expect(errMsg).To(ContainSubstring("ClusterId and ClusterName field cannot be blank"))
+		})
+
+		It("Should check for missing CredentialSecret", func() {
+			database := createDefaultDatabase("db4")
 			database.Spec.Instance.CredentialSecret = ""
 
 			err := k8sClient.Create(context.Background(), database)
@@ -183,7 +194,7 @@ var _ = Describe("Webhook Tests", func() {
 		})
 
 		It("Should check for size < 10'", func() {
-			database := createDefaultDatabase("db4")
+			database := createDefaultDatabase("db5")
 			database.Spec.Instance.Size = 1
 
 			err := k8sClient.Create(context.Background(), database)
@@ -193,7 +204,7 @@ var _ = Describe("Webhook Tests", func() {
 		})
 
 		It("Should check for missing Type", func() {
-			database := createDefaultDatabase("db5")
+			database := createDefaultDatabase("db6")
 			database.Spec.Instance.Type = ""
 
 			err := k8sClient.Create(context.Background(), database)
@@ -203,7 +214,7 @@ var _ = Describe("Webhook Tests", func() {
 		})
 
 		It("Should check for invalid Type'", func() {
-			database := createDefaultDatabase("db6")
+			database := createDefaultDatabase("db7")
 			database.Spec.Instance.Type = "invalid"
 
 			err := k8sClient.Create(context.Background(), database)
@@ -214,13 +225,13 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("Profiles missing", func() {
 			It("Should not error out for missing Profiles: Open-source engines", func() {
-				database := createDefaultDatabase("db7")
+				database := createDefaultDatabase("db8")
 
 				err := k8sClient.Create(context.Background(), database)
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("Should error out for missing Profiles: Closed-source engines", func() {
-				database := createDefaultDatabase("db8")
+				database := createDefaultDatabase("db9")
 				database.Spec.Instance.Type = common.DATABASE_TYPE_MSSQL
 
 				err := k8sClient.Create(context.Background(), database)
@@ -232,7 +243,7 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("AdditionalArguments for MYSQL specified", func() {
 			It("Should not error for valid MYSQL additionalArguments", func() {
-				database := createDefaultDatabase("db9")
+				database := createDefaultDatabase("db10")
 				database.Spec.Instance.Type = common.DATABASE_TYPE_MYSQL
 				database.Spec.Instance.AdditionalArguments = map[string]string{
 					"listener_port": "3306",
@@ -242,7 +253,7 @@ var _ = Describe("Webhook Tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("Should error out for invalid MYSQL additionalArguments", func() {
-				database := createDefaultDatabase("db10")
+				database := createDefaultDatabase("db11")
 				database.Spec.Instance.Type = common.DATABASE_TYPE_MYSQL
 				database.Spec.Instance.AdditionalArguments = map[string]string{
 					"invalid": "invalid",
@@ -257,7 +268,7 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("AdditionalArguments for PostGres specified", func() {
 			It("Should not error for valid Postgres additionalArguments", func() {
-				database := createDefaultDatabase("db11")
+				database := createDefaultDatabase("db12")
 				database.Spec.Instance.AdditionalArguments = map[string]string{
 					"listener_port": "5432",
 				}
@@ -267,7 +278,7 @@ var _ = Describe("Webhook Tests", func() {
 			})
 
 			It("Should error out for invalid Postgres additionalArguments", func() {
-				database := createDefaultDatabase("db12")
+				database := createDefaultDatabase("db13")
 				database.Spec.Instance.AdditionalArguments = map[string]string{
 					"listener_port": "5432",
 					"invalid":       "invalid",
@@ -282,7 +293,7 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("AdditionalArguments for MongoDB specified", func() {
 			It("Should not error for valid MongoDB additionalArguments", func() {
-				database := createDefaultDatabase("db13")
+				database := createDefaultDatabase("db14")
 				database.Spec.Instance.Type = common.DATABASE_TYPE_MONGODB
 				database.Spec.Instance.AdditionalArguments = map[string]string{
 					"listener_port": "5432",
@@ -295,7 +306,7 @@ var _ = Describe("Webhook Tests", func() {
 			})
 
 			It("Should error out for invalid MongoDB additionalArguments", func() {
-				database := createDefaultDatabase("db14")
+				database := createDefaultDatabase("db15")
 				database.Spec.Instance.Type = common.DATABASE_TYPE_MONGODB
 				database.Spec.Instance.AdditionalArguments = map[string]string{
 					"listener_port": "5432",
@@ -312,7 +323,7 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("AdditionalArguments for MSSQL specified", func() {
 			It("Should not error for valid MSSQL additionalArguments", func() {
-				database := createDefaultDatabase("db15")
+				database := createDefaultDatabase("db16")
 				database.Spec.Instance.Type = common.DATABASE_TYPE_MSSQL
 				database.Spec.Instance.Profiles = &Profiles{
 					Software: Profile{
@@ -335,7 +346,7 @@ var _ = Describe("Webhook Tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("Should error out for invalid MSSQL additionalArguments", func() {
-				database := createDefaultDatabase("db16")
+				database := createDefaultDatabase("db17")
 				database.Spec.Instance.Type = common.DATABASE_TYPE_MSSQL
 				database.Spec.Instance.AdditionalArguments = map[string]string{
 					"invalid":  "invalid",
@@ -376,8 +387,19 @@ var _ = Describe("Webhook Tests", func() {
 			Expect(errMsg).To(ContainSubstring("ClusterId field must be a valid UUID"))
 		})
 
+		It("Should check for missing ClusterId and ClusterName", func() {
+			database := createDefaultDatabase("clone3")
+			database.Spec.Instance.ClusterId = ""
+			database.Spec.Instance.ClusterName = ""
+
+			err := k8sClient.Create(context.Background(), database)
+			Expect(err).To(HaveOccurred())
+			errMsg := err.(*errors.StatusError).ErrStatus.Message
+			Expect(errMsg).To(ContainSubstring("ClusterId and ClusterName field cannot be blank"))
+		})
+
 		It("Should check for missing CredentialSecret", func() {
-			clone := createDefaultClone("clone3")
+			clone := createDefaultClone("clone4")
 			clone.Spec.Clone.CredentialSecret = ""
 
 			err := k8sClient.Create(context.Background(), clone)
@@ -387,7 +409,7 @@ var _ = Describe("Webhook Tests", func() {
 		})
 
 		It("Should check for missing TimeZone", func() {
-			clone := createDefaultClone("clone4")
+			clone := createDefaultClone("clone5")
 			clone.Spec.Clone.TimeZone = ""
 
 			err := k8sClient.Create(context.Background(), clone)
@@ -397,7 +419,7 @@ var _ = Describe("Webhook Tests", func() {
 		})
 
 		It("Should check for missing/invalid Type", func() {
-			clone := createDefaultClone("clone5")
+			clone := createDefaultClone("clone6")
 			clone.Spec.Clone.Type = ""
 
 			err := k8sClient.Create(context.Background(), clone)
@@ -407,7 +429,7 @@ var _ = Describe("Webhook Tests", func() {
 		})
 
 		It("Should check for sourceDatabaseId", func() {
-			clone := createDefaultClone("clone6")
+			clone := createDefaultClone("clone7")
 			clone.Spec.Clone.SourceDatabaseId = ""
 
 			err := k8sClient.Create(context.Background(), clone)
@@ -417,7 +439,7 @@ var _ = Describe("Webhook Tests", func() {
 		})
 
 		It("Should check for snapshotId", func() {
-			clone := createDefaultClone("clone7")
+			clone := createDefaultClone("clone8")
 			clone.Spec.Clone.SnapshotId = ""
 
 			err := k8sClient.Create(context.Background(), clone)
@@ -427,7 +449,7 @@ var _ = Describe("Webhook Tests", func() {
 		})
 
 		It("Should check for invalid Type'", func() {
-			clone := createDefaultClone("clone8")
+			clone := createDefaultClone("clone9")
 			clone.Spec.Clone.Type = "invalid"
 
 			err := k8sClient.Create(context.Background(), clone)
@@ -438,13 +460,13 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("Profiles missing", func() {
 			It("Should not error out for missing Profiles: Open-source engines", func() {
-				clone := createDefaultClone("clone9")
+				clone := createDefaultClone("clone10")
 
 				err := k8sClient.Create(context.Background(), clone)
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("Should error out for missing Profiles: Closed-source engines", func() {
-				clone := createDefaultClone("clone10")
+				clone := createDefaultClone("clone11")
 				clone.Spec.Clone.Type = common.DATABASE_TYPE_MSSQL
 
 				err := k8sClient.Create(context.Background(), clone)
@@ -456,7 +478,7 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("AdditionalArguments for MYSQL specified", func() {
 			It("Should not error for valid MYSQL additionalArguments", func() {
-				clone := createDefaultClone("clone11")
+				clone := createDefaultClone("clone12")
 				clone.Spec.Clone.Type = common.DATABASE_TYPE_MYSQL
 				clone.Spec.Clone.AdditionalArguments = map[string]string{
 					"expireInDays":        "30",
@@ -471,7 +493,7 @@ var _ = Describe("Webhook Tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("Should error out for invalid MYSQL additionalArguments", func() {
-				clone := createDefaultClone("clone12")
+				clone := createDefaultClone("clone13")
 				clone.Spec.Clone.Type = common.DATABASE_TYPE_MYSQL
 				clone.Spec.Clone.AdditionalArguments = map[string]string{
 					"invalid": "invalid",
@@ -486,7 +508,7 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("AdditionalArguments for PostGres specified", func() {
 			It("Should not error for valid Postgres additionalArguments", func() {
-				clone := createDefaultClone("clone13")
+				clone := createDefaultClone("clone14")
 				clone.Spec.Clone.AdditionalArguments = map[string]string{
 					"expireInDays":        "30",
 					"expiryDateTimezone":  common.TIMEZONE_UTC,
@@ -501,7 +523,7 @@ var _ = Describe("Webhook Tests", func() {
 			})
 
 			It("Should error out for invalid Postgres additionalArguments", func() {
-				clone := createDefaultClone("clone14")
+				clone := createDefaultClone("clone15")
 				clone.Spec.Clone.AdditionalArguments = map[string]string{
 					"invalid": "invalid",
 				}
@@ -515,7 +537,7 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("AdditionalArguments for MongoDB specified", func() {
 			It("Should not error for valid MongoDB additionalArguments", func() {
-				clone := createDefaultClone("clone15")
+				clone := createDefaultClone("clone16")
 				clone.Spec.Clone.Type = common.DATABASE_TYPE_MONGODB
 				clone.Spec.Clone.AdditionalArguments = map[string]string{
 					"expireInDays":        "30",
@@ -531,7 +553,7 @@ var _ = Describe("Webhook Tests", func() {
 			})
 
 			It("Should error out for invalid MongoDB additionalArguments", func() {
-				clone := createDefaultClone("clone16")
+				clone := createDefaultClone("clone17")
 				clone.Spec.Clone.Type = common.DATABASE_TYPE_MONGODB
 				clone.Spec.Clone.AdditionalArguments = map[string]string{
 					"invalid": "invalid",
@@ -546,7 +568,7 @@ var _ = Describe("Webhook Tests", func() {
 
 		When("AdditionalArguments for MSSQL specified", func() {
 			It("Should not error for valid MSSQL additionalArguments", func() {
-				clone := createDefaultClone("clone17")
+				clone := createDefaultClone("clone18")
 				clone.Spec.Clone.Type = common.DATABASE_TYPE_MSSQL
 				clone.Spec.Clone.Profiles = &Profiles{
 					Software: Profile{
@@ -578,7 +600,7 @@ var _ = Describe("Webhook Tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("Should error out for invalid MSSQL additionalArguments", func() {
-				clone := createDefaultClone("clone18")
+				clone := createDefaultClone("clone19")
 				clone.Spec.Clone.Type = common.DATABASE_TYPE_MSSQL
 				clone.Spec.Clone.AdditionalArguments = map[string]string{
 					"invalid": "invalid",

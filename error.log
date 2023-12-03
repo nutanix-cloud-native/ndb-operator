@@ -1,0 +1,22 @@
+test -s /Users/swastikghosh/Documents/NCSU/ECE517/Program4/ndb-operator/bin/controller-gen || GOBIN=/Users/swastikghosh/Documents/NCSU/ECE517/Program4/ndb-operator/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.2
+/Users/swastikghosh/Documents/NCSU/ECE517/Program4/ndb-operator/bin/controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+/Users/swastikghosh/Documents/NCSU/ECE517/Program4/ndb-operator/bin/kustomize build config/crd | kubectl delete --ignore-not-found=false -f -
+customresourcedefinition.apiextensions.k8s.io "databases.ndb.nutanix.com" deleted
+customresourcedefinition.apiextensions.k8s.io "ndbservers.ndb.nutanix.com" deleted
+/Users/swastikghosh/Documents/NCSU/ECE517/Program4/ndb-operator/bin/kustomize build config/crd | kubectl apply -f -
+customresourcedefinition.apiextensions.k8s.io/databases.ndb.nutanix.com created
+customresourcedefinition.apiextensions.k8s.io/ndbservers.ndb.nutanix.com created
+/Users/swastikghosh/Documents/NCSU/ECE517/Program4/ndb-operator/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+go fmt ./...
+go vet ./...
+ENABLE_WEBHOOKS=false go run ./main.go
+
+Username : ntnx3
+Password : ntnx3
+caCert : 
+
+
+Username : ntnx3
+Password : ntnx3
+caCert : 
+
