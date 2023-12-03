@@ -60,8 +60,7 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 	}
 
 	if clone.ClusterId == "" && clone.ClusterName == "" {
-		*errors = append(*errors, field.Invalid(clonePath.Child("clusterId"), clone.ClusterId, "ClusterId field cannot be blank"))
-		*errors = append(*errors, field.Invalid(clonePath.Child("clusterName"), clone.ClusterId, "ClusterName field cannot be blank"))
+		*errors = append(*errors, field.Invalid(clonePath.Child("clusterName"), clone.ClusterId, "ClusterId and ClusterName field cannot be blank"))
 	}
 
 	if clone.ClusterId != "" {
@@ -182,8 +181,7 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 	}
 
 	if instance.ClusterId == "" && instance.ClusterName == "" {
-		*errors = append(*errors, field.Invalid(instancePath.Child("clusterId"), instance.ClusterId, "ClusterId field cannot be blank"))
-		*errors = append(*errors, field.Invalid(instancePath.Child("clusterName"), instance.ClusterId, "ClusterName field cannot be blank"))
+		*errors = append(*errors, field.Invalid(instancePath.Child("clusterName"), instance.ClusterId, "ClusterId and ClusterName field cannot be blank"))
 	}
 
 	if instance.ClusterId != "" {
