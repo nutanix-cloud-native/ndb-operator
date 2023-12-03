@@ -135,7 +135,7 @@ type Clone struct {
 	// +optional
 	// Additional database engine specific arguments
 	AdditionalArguments map[string]string `json:"additionalArguments"`
-
+	// +optional
 	IsHighAvailibility bool `json:"isHighAvailibility"`
 }
 

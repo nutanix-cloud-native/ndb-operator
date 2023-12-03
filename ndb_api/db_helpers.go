@@ -92,7 +92,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		},
 		Nodes: []Node{
 			{
-				Properties: make([]string, 0),
+				Properties: make([]map[string]string, 0),
 				VmName:     database.GetName() + "_VM",
 			},
 		},
@@ -108,11 +108,8 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		},
 	}
 
-	// boolean for high availability
-	isHighAvailability := false
-
 	// Appending request body based on database type
-	appender, err := GetRequestAppender(database.GetInstanceType(), isHighAvailability)
+	appender, err := GetRequestAppender(database.GetInstanceType(), database.GetInstanceIsHighAvailability())
 	if err != nil {
 		log.Error(err, "Error while appending provisioning request")
 		return
@@ -307,12 +304,67 @@ func (a *PostgresRequestAppender) appendProvisioningRequest(req *DatabaseProvisi
 	return req, nil
 }
 
+func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterface) {
+	// Clear the original req.Nodes array
+	req.Nodes = []Node{}
+
+	// Create node object for HA Proxy
+	for i := 0; i < 2; i++ {
+		// Hard coding the HA Proxy properties
+		props := make([]map[string]string, 1)
+		props[0] = map[string]string{
+			"name":  "node_type",
+			"value": "haproxy",
+		}
+		req.Nodes = append(req.Nodes, Node{
+			Properties:  props,
+			VmName:      database.GetName() + "_haproxy" + strconv.Itoa(i),
+			NxClusterId: database.GetClusterId(),
+		})
+	}
+
+	// Create node object for Database Instances
+	for i := 0; i < 3; i++ {
+		// Hard coding the DB properties
+		props := make([]map[string]string, 4)
+		props[0] = map[string]string{
+			"name":  "role",
+			"value": "Secondary",
+		}
+		// 1st node will be the primary node
+		if i == 0 {
+			props[0]["value"] = "Primary"
+		}
+		props[1] = map[string]string{
+			"name":  "failover_mode",
+			"value": "Automatic",
+		}
+		props[2] = map[string]string{
+			"name":  "node_type",
+			"value": "database",
+		}
+		props[3] = map[string]string{
+			"name":  "remote_archive_destination",
+			"value": "",
+		}
+		req.Nodes = append(req.Nodes, Node{
+			Properties:  props,
+			VmName:      database.GetName() + "-" + strconv.Itoa(i),
+			NxClusterId: database.GetClusterId(),
+		})
+	}
+}
+
 func (a *PostgresHARequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetInstanceDatabaseNames()
 	clusterName := reqData[common.NDB_PARAM_CLUSTER_NAME].(string)
 	patroniClusterName := reqData[common.NDB_PARAM_PATRONI_CLUSTER_NAME].(string)
 	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+
+	// Set the number of nodes to 5, 3 Postgres nodes + 2 HA Proxy nodes
+	req.NodeCount = 5
+	setNodesParameters(req, database)
 
 	// Default action arguments
 	actionArguments := map[string]string{

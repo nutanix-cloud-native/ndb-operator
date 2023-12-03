@@ -340,8 +340,10 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_positiveW
 
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetName").Return("TestPostgresHADB")
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+	mockDatabase.On("GetClusterId").Return(TEST_CLUSTER_ID)
 	mockDatabase.On("IsClone").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
@@ -461,10 +463,12 @@ func TestPostgresHAProvisionRequestAppender_withAdditionalArguments_positiveWork
 
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetName").Return("TestPostgresHADB")
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"listener_port": "0000",
 	})
+	mockDatabase.On("GetClusterId").Return(TEST_CLUSTER_ID)
 	mockDatabase.On("IsClone").Return(false)
 
 	expectedActionArgs := []ActionArgument{
@@ -585,10 +589,12 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_negativeW
 
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetName").Return("TestPostgresHADB")
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"invalid-key": "invalid-value",
 	})
+	mockDatabase.On("GetClusterId").Return(TEST_CLUSTER_ID)
 	mockDatabase.On("IsClone").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES, true)
@@ -1585,6 +1591,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetInstanceSize").Return(TEST_INSTANCE_SIZE)
 		mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 		mockDatabase.On("IsClone").Return(false)
 
 		// Test

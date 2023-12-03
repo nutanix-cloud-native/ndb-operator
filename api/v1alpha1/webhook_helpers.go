@@ -261,11 +261,6 @@ func initializeObjects(spec *DatabaseSpec) {
 		databaselog.Info("Initializing Instance AdditionalArguments")
 		spec.Instance.AdditionalArguments = map[string]string{}
 	}
-	// ask mazin
-	// if spec.Instance.IsHighAvailibility == false {
-	// 	databaselog.Info("Initializing Instance IsHighAvailibility")
-	// 	spec.Instance.IsHighAvailibility = false
-	// }
 
 	// Initialize Clone properties
 	if spec.Clone == nil {
@@ -280,10 +275,6 @@ func initializeObjects(spec *DatabaseSpec) {
 		databaselog.Info("Initializing Clone AdditionalArguments")
 		spec.Clone.AdditionalArguments = map[string]string{}
 	}
-	//if spec.Clone.IsHighAvailibility == false {
-	//	databaselog.Info("Initializing Clone IsHighAvailibility")
-	//	spec.Clone.IsHighAvailibility = false
-	//}
 
 	databaselog.Info("Exiting initializeObjects logic!")
 }
