@@ -58,6 +58,8 @@ spec:
                   clusterId:
                     description: Id of the cluster to clone the database on
                     type: string
+                  clusterName:
+                    type: string
                   credentialSecret:
                     description: Name of the secret holding the credentials for the
                       database instance (password and ssh key)
@@ -119,7 +121,6 @@ spec:
                     description: Type of parent clone
                     type: string
                 required:
-                - clusterId
                 - credentialSecret
                 - name
                 - snapshotId
@@ -136,6 +137,8 @@ spec:
                     type: object
                   clusterId:
                     description: Id of the cluster to provision the database on
+                    type: string
+                  clusterName:
                     type: string
                   credentialSecret:
                     description: Name of the secret holding the credentials for the
@@ -233,7 +236,6 @@ spec:
                   type:
                     type: string
                 required:
-                - clusterId
                 - credentialSecret
                 - name
                 - size

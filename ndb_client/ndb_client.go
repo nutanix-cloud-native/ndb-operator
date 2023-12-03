@@ -47,7 +47,7 @@ func NewNDBClient(username, password, url, caCert string, skipVerify bool) *NDBC
 func (ndbClient *NDBClient) Get(path string) (*http.Response, error) {
 	url := ndbClient.url + "/" + path
 	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
+		if err != nil {
 		// fmt.Println(err)
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (ndbClient *NDBClient) Post(path string, body interface{}) (*http.Response,
 	url := ndbClient.url + "/" + path
 	payload, _ := json.Marshal(body)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
-	if err != nil {
+		if err != nil {
 		// fmt.Println(err)
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (ndbClient *NDBClient) Delete(path string, body interface{}) (*http.Respons
 	url := ndbClient.url + "/" + path
 	payload, _ := json.Marshal(body)
 	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(payload))
-	if err != nil {
+		if err != nil {
 		// fmt.Println(err)
 		return nil, err
 	}

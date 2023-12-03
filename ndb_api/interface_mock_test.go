@@ -40,6 +40,12 @@ func (m *MockDatabaseInterface) GetClusterId() string {
 	return args.String(0)
 }
 
+// GetClusterName is a mock implementation of the GetClusterName method in the Database interface
+func (m *MockDatabaseInterface) GetClusterName() string {
+	args := m.Called()
+	return args.String(0)
+}
+
 // GetProfileResolvers is a mock implementation of the GetProfileResolvers method in the Database interface
 func (m *MockDatabaseInterface) GetProfileResolvers() ProfileResolvers {
 	args := m.Called()

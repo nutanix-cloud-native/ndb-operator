@@ -15,7 +15,9 @@ package ndb_api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
@@ -40,6 +42,11 @@ func GenerateDeprovisionCloneRequest() (req *CloneDeprovisionRequest) {
 
 // This function generates and returns a request for cloning a database on NDB
 func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClient, database DatabaseInterface, reqData map[string]interface{}) (requestBody *DatabaseCloneRequest, err error) {
+	var localClusterId string
+	var localURL string
+	var httpResponse *http.Response
+	var result map[string]interface{}
+
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GenerateCloningRequest", "database name", database.GetName())
 
@@ -55,13 +62,42 @@ func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClien
 	// Required for dbParameterProfileIdInstance in MSSQL action args
 	reqData[common.PROFILE_MAP_PARAM] = profilesMap
 
+	if database.GetClusterId() != "" {
+		localClusterId = database.GetClusterId()
+	} else {
+		localURL = "clusters/name/" + database.GetClusterName()
+		httpResponse, err = ndb_client.Get(localURL)
+		if err != nil {
+			fmt.Println("Error sending request:", err)
+			return
+		}
+		if httpResponse.StatusCode != http.StatusOK {
+			fmt.Println("Error: Unexpected status code", httpResponse.Status)
+			return
+		}
+
+		err = json.NewDecoder(httpResponse.Body).Decode(&result)
+		if err != nil {
+			fmt.Println("Error decoding JSON:", err)
+			return
+		}
+
+		id, ok := result["id"].(string)
+		if !ok {
+			fmt.Println("Error: 'id' field not found or not a string")
+			return
+		}
+		localClusterId = id
+		fmt.Println("Cluster ID Obtained : " + localClusterId)
+	}
+
 	// Creating a provisioning request based on the database type
 	requestBody = &DatabaseCloneRequest{
 		Name:           database.GetName(),
 		Description:    database.GetDescription(),
 		CreateDbServer: true,
 		Clustered:      false,
-		NxClusterId:    database.GetClusterId(),
+		NxClusterId:    localClusterId, //database.GetClusterId(),
 		// SSHPublicKey populated by request appenders for non mssql dbs
 		DbServerId:               "",
 		DbServerClusterId:        "",
@@ -78,7 +114,7 @@ func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClien
 				ComputeProfileId:    profilesMap[common.PROFILE_TYPE_COMPUTE].Id,
 				NetworkProfileId:    profilesMap[common.PROFILE_TYPE_NETWORK].Id,
 				NewDbServerTimeZone: "",
-				NxClusterId:         database.GetClusterId(),
+				NxClusterId:         localClusterId, //database.GetClusterId(),
 				Properties:          make([]string, 0),
 			},
 		},

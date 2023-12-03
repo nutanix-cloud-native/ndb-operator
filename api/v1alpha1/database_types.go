@@ -86,7 +86,10 @@ type Instance struct {
 	// Description of the database instance
 	Description string `json:"description"`
 	// Id of the cluster to provision the database on
+	// +optional
 	ClusterId string `json:"clusterId"`
+	// +optional
+	ClusterName string `json:"clusterName"`
 	// +optional
 	Profiles *Profiles `json:"profiles"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
@@ -118,7 +121,10 @@ type Clone struct {
 	// Type of parent clone
 	Type string `json:"type"`
 	// Id of the cluster to clone the database on
+	// +optional
 	ClusterId string `json:"clusterId"`
+	// +optional
+	ClusterName string `json:"clusterName"`
 	// +optional
 	Profiles *Profiles `json:"profiles"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
