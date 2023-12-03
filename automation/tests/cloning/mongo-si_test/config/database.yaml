@@ -1,0 +1,18 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: clone-mongo-si
+spec:
+  ndbRef: clone-ndb-mongo-si
+  isClone: true
+  clone:
+    name: clone-mongo-si
+    type: "mongodb"
+    description: Cloning mongoDB single instance testing 
+    clusterId: <cluster-id>
+    profiles: {}
+    credentialSecret: clone-db-secret-mongo-si
+    timezone: America/Los_Angeles
+    sourceDatabaseId: <source-database-id>
+    snapshotId: <snapshot-id>
+    additionalArguments: {}

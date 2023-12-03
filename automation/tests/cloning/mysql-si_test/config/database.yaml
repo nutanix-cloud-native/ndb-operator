@@ -1,0 +1,19 @@
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: clone-mysql-si
+spec:
+  ndbRef: clone-ndb-mysql-si
+  isClone: true
+  clone:
+    name: clone-mysql-si
+    type: mysql
+    description: Cloning mysql single instance testing 
+    clusterId: <cluster-id>
+    profiles: {}
+    credentialSecret: clone-db-secret-mysql-si
+    timezone: UTC
+    sourceDatabaseId: <source-database-id>
+    snapshotId: <snapshot-id>
+    additionalArguments: {}
+    
