@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -52,11 +53,20 @@ func (r *SnapshotReconciler) handleSync(ctx context.Context, snapshot *ndbv1alph
 				return requeueOnErr(err)
 			}
 			for _, snap := range snapshots {
-				if snap.Name == snapshot.Spec.Name {
-					snapshotStatus.Id = snap.Id
-					snapshotStatus.Status = common.DATABASE_CR_STATUS_DELETING
-					log.Info(fmt.Sprintf("Snap %s with id %s", snap.Name, snap.Id))
-					break
+				if snap.LcmConfig != nil {
+					var lcmConfig LcmConfig
+					err = json.Unmarshal(snap.LcmConfig, &lcmConfig)
+					if err != nil {
+						log.Error(err, "Unmarshalling error")
+						r.recorder.Eventf(snapshot, "Warning", EVENT_NDB_REQUEST_FAILED, "Error:", "Unmarshalling error", err.Error())
+						return requeueOnErr(err)
+					}
+					if snap.Name == snapshot.Spec.Name && lcmConfig.ExpiryDateTimezone == snapshot.ExpiryDateTimezone && lcmConfig.ExpiryInDays == snapshot.ExpiryInDays {
+						snapshotStatus.Id = snap.Id
+						snapshotStatus.Status = common.DATABASE_CR_STATUS_DELETING
+						log.Info(fmt.Sprintf("Snap %s with id %s", snap.Name, snap.Id))
+						break
+					}
 				}
 			}
 		}

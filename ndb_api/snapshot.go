@@ -29,7 +29,7 @@ import (
 )
 
 // Fetches all snapshots on the NDB instance and returns a slice of the snapshots
-func GetAllSnapshots(ctx context.Context, ndbClient *ndb_client.NDBClient) (snapshots []SnapshotResponse, err error) {
+func GetAllSnapshots(ctx context.Context, ndbClient *ndb_client.NDBClient) (snapshots []AllSnapshotResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GetAllSnapshots")
 	if ndbClient == nil {
