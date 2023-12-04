@@ -18,7 +18,7 @@ testbin/*
 
 !vendor/**/zz_generated.*
 
-# editor and IDE paraphernalia
+# editor and IDE paraphernalia 
 .idea
 *.swp
 *.swo
@@ -27,7 +27,7 @@ testbin/*
 
 
 sandbox
-config/samples/ndb.yaml
+config/samples/*
 .DS_Store
 
 test/__debug_bin
