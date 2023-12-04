@@ -162,13 +162,21 @@ func TestTakeSnapshot(t *testing.T) {
 	server := GetServerTestHelper(t)
 	defer server.Close()
 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-	exp := ndb_api.SnapshotExpiryDetails("timezone", 1)
-	detailedConfig := ndb_api.SnapshotLcmConfigDetailed(exp)
-	config := ndb_api.SnapshotLcmConfig(detailedConfig)
-	request := ndb_api.SnapshotRequest("name", config)
+
+	request := &ndb_api.SnapshotRequest{
+		Name: "name",
+		SnapshotLcmConfig: ndb_api.SnapshotLcmConfig{
+			SnapshotLCMConfigDetailed: ndb_api.SnapshotLcmConfigDetailed{
+				ExpiryDetails: ndb_api.SnapshotExpiryDetails{
+					ExpiryDateTimezone: "time",
+					ExpireInDays:       1,
+				},
+			},
+		},
+	}
 
 	//Test
-	value, _ := ndb_api.TakeSnapshot(context.Background(), ndb_client, request)
+	value, _ := ndb_api.TakeSnapshot(context.Background(), ndb_client, request, "Id")
 	t.Log(value)
 	if value.Name != "name" {
 		t.Error("Could not create Snapshot profiles")
@@ -186,13 +194,20 @@ func TestTakeSnapshotThrowsErrorWhenClientReturnsNon200(t *testing.T) {
 	}))
 	defer server.Close()
 	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
-	exp := ndb_api.SnapshotExpiryDetails("timezone", 1)
-	detailedConfig := ndb_api.SnapshotLcmConfigDetailed(exp)
-	config := ndb_api.SnapshotLcmConfig(detailedConfig)
-	request := ndb_api.SnapshotRequest("name", config)
+	request := &ndb_api.SnapshotRequest{
+		Name: "name",
+		SnapshotLcmConfig: ndb_api.SnapshotLcmConfig{
+			SnapshotLCMConfigDetailed: ndb_api.SnapshotLcmConfigDetailed{
+				ExpiryDetails: ndb_api.SnapshotExpiryDetails{
+					ExpiryDateTimezone: "time",
+					ExpireInDays:       1,
+				},
+			},
+		},
+	}
 
 	//Test
-	_, err := ndb_api.TakeSnapshot(context.Background(), ndb_client, request)
+	_, err := ndb_api.TakeSnapshot(context.Background(), ndb_client, request, "id")
 	if err == nil {
 		t.Error("GetAllSnapshots should return an error when client responds with non 200 status.")
 	}
