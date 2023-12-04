@@ -27,7 +27,7 @@ testbin/*
 
 
 sandbox
-config/samples/ndb.yaml
+config/samples/*
 .DS_Store
 
 test/__debug_bin
