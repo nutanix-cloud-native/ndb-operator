@@ -156,6 +156,8 @@ spec:
     size: 10
     timezone: "UTC"
     type: postgres
+    # Optional parameter. In case nothing is specified, isHighAvailability is set to false
+    isHighAvailability: false
 
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
@@ -214,6 +216,8 @@ spec:
     # Cluster id of the cluster where the Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
     clusterId: "Nutanix Cluster Id"
+    # Optional parameter. In case nothing is specified, isHighAvailability is set to false
+    isHighAvailability: false
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
     # Name is case-sensitive. ID is the UUID of the profile. Profile should be in the "READY" state
