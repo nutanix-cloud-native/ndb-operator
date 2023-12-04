@@ -90,3 +90,143 @@ func TestGetAllProfileThrowsErrorWhenClientReturnsNon200(t *testing.T) {
 		t.Error("TestGetAllProfiles should return an error when client responds with non 200 status.")
 	}
 }
+
+func TestGetAllSnapshots(t *testing.T) {
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	value, _ := ndb_api.GetAllSnapshots(context.Background(), ndb_client)
+	t.Log(len(value))
+	if len(value) == 0 {
+		t.Error("Could not fetch Snapshot profiles")
+	}
+}
+
+func TestGetAllSnapshotsThrowsErrorWhenClientReturnsNon200(t *testing.T) {
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	_, err := ndb_api.GetAllSnapshots(context.Background(), ndb_client)
+	if err == nil {
+		t.Error("GetAllSnapshots should return an error when client responds with non 200 status.")
+	}
+}
+
+func TestGetSnapshotById(t *testing.T) {
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	value, _ := ndb_api.GetSnapshotById(context.Background(), ndb_client, "id")
+	t.Log(value)
+	if value.Id != "id" {
+		t.Error("Could not fetch Snapshot profiles")
+	}
+}
+
+func TestGetSnapshotByIdThrowsErrorWhenClientReturnsNon200(t *testing.T) {
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	_, err := ndb_api.GetSnapshotById(context.Background(), ndb_client, "id")
+	if err == nil {
+		t.Error("GetAllSnapshots should return an error when client responds with non 200 status.")
+	}
+}
+
+func TestTakeSnapshot(t *testing.T) {
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+	exp := ndb_api.SnapshotExpiryDetails("timezone", 1)
+	detailedConfig := ndb_api.SnapshotLcmConfigDetailed(exp)
+	config := ndb_api.SnapshotLcmConfig(detailedConfig)
+	request := ndb_api.SnapshotRequest("name", config)
+
+	//Test
+	value, _ := ndb_api.TakeSnapshot(context.Background(), ndb_client, request)
+	t.Log(value)
+	if value.Name != "name" {
+		t.Error("Could not create Snapshot profiles")
+	}
+}
+
+func TestTakeSnapshotThrowsErrorWhenClientReturnsNon200(t *testing.T) {
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+	exp := ndb_api.SnapshotExpiryDetails("timezone", 1)
+	detailedConfig := ndb_api.SnapshotLcmConfigDetailed(exp)
+	config := ndb_api.SnapshotLcmConfig(detailedConfig)
+	request := ndb_api.SnapshotRequest("name", config)
+
+	//Test
+	_, err := ndb_api.TakeSnapshot(context.Background(), ndb_client, request)
+	if err == nil {
+		t.Error("GetAllSnapshots should return an error when client responds with non 200 status.")
+	}
+}
+
+func TestDeleteSnapshot(t *testing.T) {
+	//Set
+	server := GetServerTestHelper(t)
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	value, _ := ndb_api.DeleteSnapshot(context.Background(), ndb_client, "id")
+	t.Log(value)
+	if value.EntityId != "id" {
+		t.Error("Could not delete Snapshot profiles")
+	}
+}
+
+func TestDeleteSnapshotThrowsErrorWhenClientReturnsNon200(t *testing.T) {
+	//Set
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !checkAuthTestHelper(r) {
+			t.Errorf("Invalid Authentication Credentials")
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+	ndb_client := ndb_client.NewNDBClient("username", "password", server.URL, "", true)
+
+	//Test
+	_, err := ndb_api.DeleteSnapshot(context.Background(), ndb_client, "id")
+	if err == nil {
+		t.Error("DeleteSnapshot should return an error when client responds with non 200 status.")
+	}
+}
