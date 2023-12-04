@@ -101,7 +101,7 @@ type AllSnapshotResponse struct {
 	ParentSnapshot                 bool        `json:"parentSnapshot"`
 }
 
-type LcmConfig struct {
+type LcmConfigResponse struct {
 	ExpiryDetails struct {
 		RemindBeforeInDays int    `json:"remindBeforeInDays"`
 		EffectiveTimestamp string `json:"effectiveTimestamp"`
