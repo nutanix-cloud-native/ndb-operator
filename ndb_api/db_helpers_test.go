@@ -13,15 +13,13 @@ import (
 
 // Test constants
 const (
-	TEST_PASSWORD             = "testPassword"
-	TEST_SSHKEY               = "testSSHKey"
-	TEST_DB_NAMES             = "testDB"
-	TEST_INSTANCE_TYPE        = "testInstance"
-	TEST_TIMEZONE             = "test-timezone"
-	TEST_CLUSTER_ID           = "test-cluster-id"
-	TEST_INSTANCE_SIZE        = 100
-	TEST_CLUSTER_NAME         = "test-cluster-name"
-	TEST_PATRONI_CLUSTER_NAME = "test-patroni-cluster-name"
+	TEST_PASSWORD      = "testPassword"
+	TEST_SSHKEY        = "testSSHKey"
+	TEST_DB_NAMES      = "testDB"
+	TEST_INSTANCE_TYPE = "testInstance"
+	TEST_TIMEZONE      = "test-timezone"
+	TEST_CLUSTER_ID    = "test-cluster-id"
+	TEST_INSTANCE_SIZE = 100
 )
 
 // Tests the validateReqData() function with different values of password and sshkey
@@ -332,10 +330,8 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_positiveW
 	mockDatabase := &MockDatabaseInterface{}
 
 	reqData := map[string]interface{}{
-		common.NDB_PARAM_SSH_PUBLIC_KEY:       TEST_SSHKEY,
-		common.NDB_PARAM_PASSWORD:             TEST_PASSWORD,
-		common.NDB_PARAM_CLUSTER_NAME:         TEST_CLUSTER_NAME,
-		common.NDB_PARAM_PATRONI_CLUSTER_NAME: TEST_PATRONI_CLUSTER_NAME,
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
 	}
 
 	// Mock required Mock Database Interface methods
@@ -412,11 +408,11 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_positiveW
 		},
 		{
 			Name:  "cluster_name",
-			Value: TEST_CLUSTER_NAME,
+			Value: "psqlcluster",
 		},
 		{
 			Name:  "patroni_cluster_name",
-			Value: TEST_PATRONI_CLUSTER_NAME,
+			Value: "patroni",
 		},
 	}
 
@@ -455,10 +451,8 @@ func TestPostgresHAProvisionRequestAppender_withAdditionalArguments_positiveWork
 	mockDatabase := &MockDatabaseInterface{}
 
 	reqData := map[string]interface{}{
-		common.NDB_PARAM_SSH_PUBLIC_KEY:       TEST_SSHKEY,
-		common.NDB_PARAM_PASSWORD:             TEST_PASSWORD,
-		common.NDB_PARAM_CLUSTER_NAME:         TEST_CLUSTER_NAME,
-		common.NDB_PARAM_PATRONI_CLUSTER_NAME: TEST_PATRONI_CLUSTER_NAME,
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
 	}
 
 	// Mock required Mock Database Interface methods
@@ -538,11 +532,11 @@ func TestPostgresHAProvisionRequestAppender_withAdditionalArguments_positiveWork
 		},
 		{
 			Name:  "cluster_name",
-			Value: TEST_CLUSTER_NAME,
+			Value: "psqlcluster",
 		},
 		{
 			Name:  "patroni_cluster_name",
-			Value: TEST_PATRONI_CLUSTER_NAME,
+			Value: "patroni",
 		},
 	}
 
@@ -581,10 +575,8 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_negativeW
 	mockDatabase := &MockDatabaseInterface{}
 
 	reqData := map[string]interface{}{
-		common.NDB_PARAM_SSH_PUBLIC_KEY:       TEST_SSHKEY,
-		common.NDB_PARAM_PASSWORD:             TEST_PASSWORD,
-		common.NDB_PARAM_CLUSTER_NAME:         TEST_CLUSTER_NAME,
-		common.NDB_PARAM_PATRONI_CLUSTER_NAME: TEST_PATRONI_CLUSTER_NAME,
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
 	}
 
 	// Mock required Mock Database Interface methods

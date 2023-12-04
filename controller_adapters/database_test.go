@@ -231,26 +231,26 @@ func TestDatabase_GetInstanceSize(t *testing.T) {
 	})
 }
 
-// Tests the GetInstanceIsHighAvailibility() function retrieves Size correctly:
-func TestDatabase_GetInstanceIsHighAvailibility(t *testing.T) {
+// Tests the GetInstanceIsHighAvailability() function retrieves Size correctly:
+func TestDatabase_GetInstanceIsHighAvailability(t *testing.T) {
 
-	name := "Contains IsHighAvailibility"
+	name := "Contains IsHighAvailability"
 	database := Database{
 		Database: v1alpha1.Database{
 			Spec: v1alpha1.DatabaseSpec{
 				Instance: &v1alpha1.Instance{
-					IsHighAvailibility: true,
+					IsHighAvailability: true,
 				},
 			},
 		},
 	}
-	wantIsHighAvailibility := true
+	wantIsHighAvailability := true
 
 	t.Run(name, func(t *testing.T) {
 
-		gotIsHighAvailibility := database.GetInstanceIsHighAvailability()
-		if gotIsHighAvailibility != wantIsHighAvailibility {
-			t.Errorf("Database.GetInstanceIsHighAvailibility() gotIsHighAvailibility= %v, want %v", gotIsHighAvailibility, wantIsHighAvailibility)
+		gotIsHighAvailability := database.GetInstanceIsHighAvailability()
+		if gotIsHighAvailability != wantIsHighAvailability {
+			t.Errorf("Database.GetInstanceIsHighAvailability() gotIsHighAvailability= %v, want %v", gotIsHighAvailability, wantIsHighAvailability)
 		}
 	})
 }

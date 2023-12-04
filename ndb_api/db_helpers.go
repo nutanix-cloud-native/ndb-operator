@@ -318,7 +318,7 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 		}
 		req.Nodes = append(req.Nodes, Node{
 			Properties:  props,
-			VmName:      database.GetName() + "_haproxy" + strconv.Itoa(i),
+			VmName:      database.GetName() + "_haproxy" + strconv.Itoa(i+1),
 			NxClusterId: database.GetClusterId(),
 		})
 	}
@@ -348,9 +348,11 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 			"value": "",
 		}
 		req.Nodes = append(req.Nodes, Node{
-			Properties:  props,
-			VmName:      database.GetName() + "-" + strconv.Itoa(i),
-			NxClusterId: database.GetClusterId(),
+			Properties:       props,
+			VmName:           database.GetName() + "-" + strconv.Itoa(i+1),
+			NetworkProfileId: req.NetworkProfileId,
+			ComputeProfileId: req.ComputeProfileId,
+			NxClusterId:      database.GetClusterId(),
 		})
 	}
 }
@@ -358,13 +360,14 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 func (a *PostgresHARequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetInstanceDatabaseNames()
-	clusterName := reqData[common.NDB_PARAM_CLUSTER_NAME].(string)
-	patroniClusterName := reqData[common.NDB_PARAM_PATRONI_CLUSTER_NAME].(string)
 	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 
 	// Set the number of nodes to 5, 3 Postgres nodes + 2 HA Proxy nodes
 	req.NodeCount = 5
 	setNodesParameters(req, database)
+
+	// Set clustered to true
+	req.Clustered = true
 
 	// Default action arguments
 	actionArguments := map[string]string{
@@ -385,8 +388,8 @@ func (a *PostgresHARequestAppender) appendProvisioningRequest(req *DatabaseProvi
 		"cluster_database":        "false",
 		"archive_wal_expire_days": "-1",
 		"enable_peer_auth":        "false",
-		"cluster_name":            clusterName,
-		"patroni_cluster_name":    patroniClusterName,
+		"cluster_name":            "psqlcluster",
+		"patroni_cluster_name":    "patroni",
 	}
 
 	// Appending/overwriting database actionArguments to actionArguments

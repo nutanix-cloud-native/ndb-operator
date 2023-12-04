@@ -146,7 +146,7 @@ func (d *Database) GetInstanceSize() int {
 }
 
 func (d *Database) GetInstanceIsHighAvailability() bool {
-	return d.Spec.Instance.IsHighAvailibility
+	return d.Spec.Instance.IsHighAvailability
 }
 
 // Returns basic details about the Time Machine if provided in the

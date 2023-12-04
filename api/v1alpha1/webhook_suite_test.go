@@ -616,7 +616,7 @@ func createDefaultDatabase(metadataName string) *Database {
 				Type:                common.DATABASE_TYPE_POSTGRES,
 				Profiles:            &(Profiles{}),
 				AdditionalArguments: map[string]string{},
-				IsHighAvailibility:  HA,
+				IsHighAvailability:  HA,
 			},
 		},
 	}
@@ -641,7 +641,7 @@ func createDefaultClone(metadataName string) *Database {
 				SnapshotId:          DEFAULT_UUID,
 				Profiles:            &(Profiles{}),
 				AdditionalArguments: map[string]string{},
-				IsHighAvailibility:  HA,
+				IsHighAvailability:  HA,
 			},
 		},
 	}
