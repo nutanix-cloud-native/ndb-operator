@@ -53,14 +53,7 @@ func (r *SnapshotReconciler) handleSync(ctx context.Context, snapshot *ndbv1alph
 			}
 			for _, snap := range snapshots {
 				if snap.LcmConfig != nil {
-					// var lcmConfig ndb_api.LcmConfigResponse
-					lcmConfig, ok := snap.LcmConfig.(ndb_api.LcmConfigResponse)
-					if !ok {
-						// log.Error("", "Unmarshalling error")
-						r.recorder.Eventf(snapshot, "Warning", EVENT_NDB_REQUEST_FAILED, "Error:", "Unmarshalling error", "")
-						return requeueOnErr(err)
-					}
-					if snap.Name == snapshot.Spec.Name && lcmConfig.ExpiryDetails.ExpiryDateTimezone == snapshot.Spec.ExpiryDateTimezone && lcmConfig.ExpiryDetails.ExpireInDays == snapshot.Spec.ExpireInDays {
+					if snap.Name == snapshot.Spec.Name && snap.LcmConfig.ExpiryDetails.ExpiryDateTimezone == snapshot.Spec.ExpiryDateTimezone && snap.LcmConfig.ExpiryDetails.ExpireInDays == snapshot.Spec.ExpireInDays {
 						snapshotStatus.Id = snap.Id
 						snapshotStatus.Status = common.DATABASE_CR_STATUS_DELETING
 						log.Info(fmt.Sprintf("Snap %s with id %s", snap.Name, snap.Id))
