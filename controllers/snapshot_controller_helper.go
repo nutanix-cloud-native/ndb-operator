@@ -61,9 +61,9 @@ func (r *SnapshotReconciler) handleSync(ctx context.Context, snapshot *ndbv1alph
 						return requeueOnErr(err)
 					}
 					if snap.Name == snapshot.Spec.Name && lcmConfig.ExpiryDetails.ExpiryDateTimezone == snapshot.Spec.ExpiryDateTimezone && lcmConfig.ExpiryDetails.ExpireInDays == snapshot.Spec.ExpireInDays {
-						snapshotStatus.Id = snap.ID
+						snapshotStatus.Id = snap.Id
 						snapshotStatus.Status = common.DATABASE_CR_STATUS_DELETING
-						log.Info(fmt.Sprintf("Snap %s with id %s", snap.Name, snap.ID))
+						log.Info(fmt.Sprintf("Snap %s with id %s", snap.Name, snap.Id))
 						break
 					}
 				}

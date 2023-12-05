@@ -1,12 +1,13 @@
 package ndb_api
 
 type SnapshotResponse struct {
-	Id            string `json:"id"`
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	SnapshotId    string `json:"snapshotId"`
-	SnapshotUuid  string `json:"snapshotUuid"`
-	TimeMachineId string `json:"timeMachineId"`
+	Id            string      `json:"id"`
+	Name          string      `json:"name"`
+	Description   string      `json:"description"`
+	SnapshotId    string      `json:"snapshotId"`
+	SnapshotUuid  string      `json:"snapshotUuid"`
+	TimeMachineId string      `json:"timeMachineId"`
+	LcmConfig     interface{} `json:"lcmConfig"`
 }
 
 type AllSnapshotResponse struct {
@@ -76,7 +77,7 @@ type AllSnapshotResponse struct {
 			AllocatedSize               int         `json:"allocatedSize"`
 			UsedSize                    int         `json:"usedSize"`
 			Unit                        string      `json:"unit"`
-		} `json:"storage"`
+		} `json:"-"`
 	} `json:"metric"`
 	SoftwareSnapshotID             string      `json:"softwareSnapshotId"`
 	SoftwareDatabaseSnapshot       bool        `json:"softwareDatabaseSnapshot"`
@@ -103,26 +104,26 @@ type AllSnapshotResponse struct {
 
 type LcmConfigResponse struct {
 	ExpiryDetails struct {
-		RemindBeforeInDays int    `json:"remindBeforeInDays"`
-		EffectiveTimestamp string `json:"effectiveTimestamp"`
-		ExpiryTimestamp    string `json:"expiryTimestamp"`
+		RemindBeforeInDays int    `json:"-"`
+		EffectiveTimestamp string `json:"-"`
+		ExpiryTimestamp    string `json:"-"`
 		ExpiryDateTimezone string `json:"expiryDateTimezone"`
-		UserCreated        bool   `json:"userCreated"`
+		UserCreated        bool   `json:"-"`
 		ExpireInDays       int    `json:"expireInDays"`
 	} `json:"expiryDetails"`
 	RefreshDetails struct {
-		RefreshInDays       int    `json:"refreshInDays"`
-		RefreshInHours      int    `json:"refreshInHours"`
-		RefreshInMonths     int    `json:"refreshInMonths"`
-		LastRefreshDate     string `json:"lastRefreshDate"`
-		NextRefreshDate     string `json:"nextRefreshDate"`
-		RefreshTime         string `json:"refreshTime"`
-		RefreshDateTimezone string `json:"refreshDateTimezone"`
-	} `json:"refreshDetails"`
+		RefreshInDays       int    `json:"-"`
+		RefreshInHours      int    `json:"-"`
+		RefreshInMonths     int    `json:"-"`
+		LastRefreshDate     string `json:"-"`
+		NextRefreshDate     string `json:"-"`
+		RefreshTime         string `json:"-"`
+		RefreshDateTimezone string `json:"-"`
+	} `json:"-"`
 	PreDeleteCommand struct {
-		Command string `json:"command"`
-	} `json:"preDeleteCommand"`
+		Command string `json:"-"`
+	} `json:"-"`
 	PostDeleteCommand struct {
-		Command string `json:"command"`
-	} `json:"postDeleteCommand"`
+		Command string `json:"-"`
+	} `json:"-"`
 }
