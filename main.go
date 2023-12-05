@@ -70,7 +70,8 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 
 	// Set the log file path
-	logFilePath := "var/log/test1.log"
+	logFilePath := "/var/log/ndb-operator.log"
+	logRotateDuration := (1 * time.Minute)
 
 	// Create a file for logging with log rotation
 	logFile := &lumberjack.Logger{
@@ -81,20 +82,13 @@ func main() {
 		Compress:   false, // Whether to compress old log files
 	}
 
-	// Use a ticker to trigger log rotation every 2 minutes
-	ticker := time.NewTicker(1 * time.Minute)
+	// Use a ticker to trigger log rotation every timestep of logRoationDuration
+	ticker := time.NewTicker(logRotateDuration)
 	go func() {
 		for range ticker.C {
 			logFile.Rotate()
 		}
 	}()
-
-	// // Create a file for logging
-	// logFile, err := os.Create(logFilePath)
-	// if err != nil {
-	// 	log.Fatalf("Error creating log file: %v", err)
-	// }
-	// defer logFile.Close()
 
 	mwriter := io.MultiWriter(logFile, os.Stderr)
 

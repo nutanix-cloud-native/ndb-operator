@@ -12,10 +12,11 @@ data:
       paths:
         - '/var/log/*.log'
     output.elasticsearch:
-      hosts: ["https://quickstart-es-http:9200"]
+      hosts: ["https://quickstart-es-http.default.svc.cluster.local:9200"]
       username: "elastic"
       password: 
         valueFrom:
           secretKeyRef:
             name: quickstart-es-elastic-user
             key: elastic
+      ssl.verification_mode: none
