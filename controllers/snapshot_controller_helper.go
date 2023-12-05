@@ -52,11 +52,13 @@ func (r *SnapshotReconciler) handleSync(ctx context.Context, snapshot *ndbv1alph
 				return requeueOnErr(err)
 			}
 			for _, snap := range snapshots {
-				if snap.Name == snapshot.Spec.Name {
-					snapshotStatus.Id = snap.Id
-					snapshotStatus.Status = common.DATABASE_CR_STATUS_DELETING
-					log.Info(fmt.Sprintf("Snap %s with id %s", snap.Name, snap.Id))
-					break
+				if snap.LcmConfig != nil {
+					if snap.Name == snapshot.Spec.Name && snap.LcmConfig.ExpiryDetails.ExpiryDateTimezone == snapshot.Spec.ExpiryDateTimezone && snap.LcmConfig.ExpiryDetails.ExpireInDays == snapshot.Spec.ExpireInDays {
+						snapshotStatus.Id = snap.Id
+						snapshotStatus.Status = common.DATABASE_CR_STATUS_DELETING
+						log.Info(fmt.Sprintf("Snap %s with id %s", snap.Name, snap.Id))
+						break
+					}
 				}
 			}
 		}
