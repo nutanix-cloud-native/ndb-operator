@@ -23,7 +23,11 @@ package main
 
 import (
 	"flag"
+	"io"
 	"os"
+	"time"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -64,9 +68,34 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+
+	// Set the log file path
+	logFilePath := "/var/log/ndb-operator.log"
+	logRotateDuration := (1 * time.Minute)
+
+	// Create a file for logging with log rotation
+	logFile := &lumberjack.Logger{
+		Filename:   logFilePath,
+		MaxSize:    10,    // Max size in megabytes before log rolling (change as needed)
+		MaxBackups: 5,     // Max number of old log files to keep
+		MaxAge:     0,     // Max number of days to retain old log files
+		Compress:   false, // Whether to compress old log files
+	}
+
+	// Use a ticker to trigger log rotation every timestep of logRoationDuration
+	ticker := time.NewTicker(logRotateDuration)
+	go func() {
+		for range ticker.C {
+			logFile.Rotate()
+		}
+	}()
+
+	mwriter := io.MultiWriter(logFile, os.Stderr)
+
 	opts := zap.Options{
 		Development: true,
 		TimeEncoder: zapcore.RFC3339TimeEncoder,
+		DestWriter:  mwriter, // Configure Zap options to write into a multiwriter
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()

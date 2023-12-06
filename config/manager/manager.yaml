@@ -38,6 +38,9 @@ spec:
             - --leader-elect
           image: controller:latest
           name: manager
+          volumeMounts:
+            - name: varlog
+              mountPath: /var/log
           securityContext:
             allowPrivilegeEscalation: false
           # TODO(user): uncomment for common cases that do not require escalating privileges
@@ -63,5 +66,24 @@ spec:
             requests:
               cpu: 10m
               memory: 64Mi
+        - name: filebeat
+          image: elastic/filebeat:7.16.3
+          args:
+            - -c
+            - /etc/filebeat/conf.yaml
+            - -e
+          securityContext:
+            runAsUser: 9999
+          volumeMounts:
+            - name: filebeat-config
+              mountPath: /etc/filebeat
+            - name: varlog
+              mountPath: /var/log
+      volumes:
+        - name: varlog
+          emptyDir: {}
+        - name: filebeat-config
+          configMap:
+            name: filebeat-config
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
