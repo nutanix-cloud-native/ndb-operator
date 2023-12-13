@@ -3,7 +3,7 @@ module github.com/nutanix-cloud-native/ndb-operator
 go 1.20
 
 require (
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.5.0
 	github.com/joho/godotenv v1.5.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.9.5
