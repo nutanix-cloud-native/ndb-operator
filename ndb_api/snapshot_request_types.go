@@ -10,5 +10,10 @@ type SnapshotLcmConfig struct {
 }
 
 type SnapshotLcmConfigDetailed struct {
-	ExpiryDetails ExpiryDetails `json:"expiryDetails"`
+	ExpiryDetails SnapshotExpiryDetails `json:"expiryDetails"`
+}
+
+type SnapshotExpiryDetails struct {
+	ExpiryDateTimezone string `json:"expiryDateTimezone"`
+	ExpireInDays       int    `json:"expireInDays"`
 }

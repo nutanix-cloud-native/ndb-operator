@@ -1,11 +1,11 @@
 package ndb_api
 
-func GenerateSnapshotRequest(name string, expiryDateTimezone string, ExpireInDays string) *SnapshotRequest {
+func GenerateSnapshotRequest(name string, expiryDateTimezone string, ExpireInDays int) *SnapshotRequest {
 	return &SnapshotRequest{
 		Name: name,
 		SnapshotLcmConfig: SnapshotLcmConfig{
 			SnapshotLCMConfigDetailed: SnapshotLcmConfigDetailed{
-				ExpiryDetails: ExpiryDetails{
+				ExpiryDetails: SnapshotExpiryDetails{
 					ExpiryDateTimezone: expiryDateTimezone,
 					ExpireInDays:       ExpireInDays,
 				},
