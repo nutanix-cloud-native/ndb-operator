@@ -26,7 +26,7 @@ import (
 // Returns the task info summary response for the operation TODO
 func CreateSnapshotForTM(
 	ctx context.Context,
-	ndbClient *ndb_client.NDBClient,
+	ndbClient ndb_client.NDBClientHTTPInterface,
 	tmId string,
 	snapshotName string,
 	expiryDateTimezone string,
@@ -49,7 +49,7 @@ func CreateSnapshotForTM(
 
 // Gets snapshots for a time machine
 // Returns the task info summary response for the operation
-func GetSnapshotsForTM(ctx context.Context, ndbClient *ndb_client.NDBClient, tmId string) (response *TimeMachineGetSnapshotsResponse, err error) {
+func GetSnapshotsForTM(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, tmId string) (response *TimeMachineGetSnapshotsResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	// Checking if id is empty, this is necessary to get a snapshot for the timemachine (/tms/{timemachine_id}/snapshots)
 	if tmId == "" {
@@ -66,7 +66,7 @@ func GetSnapshotsForTM(ctx context.Context, ndbClient *ndb_client.NDBClient, tmI
 }
 
 // Gets TimeMachine by id
-func GetTimeMachineById(ctx context.Context, ndbClient *ndb_client.NDBClient, tmId string) (timeMachine *TimeMachineResponse, err error) {
+func GetTimeMachineById(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, tmId string) (timeMachine *TimeMachineResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	// Checking if id is empty, this is necessary to get a timemachine (/tms/{timemachine_id})
 	if tmId == "" {
