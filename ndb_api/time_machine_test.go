@@ -128,7 +128,7 @@ func TestGetSnapshotsForTM(t *testing.T) {
 	}
 
 	tmId := "1"
-	getSnapshotsPath := fmt.Sprintf("tms/%s/snapshots", tmId);
+	getSnapshotsPath := fmt.Sprintf("tms/%s/snapshots", tmId)
 
 	// Mocks of the NDB Client interface
 	mockNDBClient := &MockNDBClientHTTPInterface{}
@@ -204,7 +204,7 @@ func TestGetTimeMachineById(t *testing.T) {
 	}
 
 	tmId := "1"
-	getTmDetailedPath := fmt.Sprintf("tms/%s", tmId);
+	getTmDetailedPath := fmt.Sprintf("tms/%s", tmId)
 
 	// Mocks of the NDB Client interface
 	mockNDBClient := &MockNDBClientHTTPInterface{}
@@ -220,10 +220,10 @@ func TestGetTimeMachineById(t *testing.T) {
 	mockNDBClient.On("Do", req).Once().Return(res, nil)
 
 	tests := []struct {
-		name                   string
-		args                   args
+		name           string
+		args           args
 		wantTMResponse *TimeMachineResponse
-		wantErr                bool
+		wantErr        bool
 	}{
 		{
 			name: "Test 1: TestGetTimeMachineById returns an error when a request with empty id is passed to it",
@@ -233,7 +233,7 @@ func TestGetTimeMachineById(t *testing.T) {
 				tmId:      "",
 			},
 			wantTMResponse: nil,
-			wantErr:                true,
+			wantErr:        true,
 		},
 		{
 			name: "Test 2: TestGetTimeMachineById returns an error when sendRequest returns an error",
@@ -243,7 +243,7 @@ func TestGetTimeMachineById(t *testing.T) {
 				tmId:      tmId,
 			},
 			wantTMResponse: nil,
-			wantErr:                true,
+			wantErr:        true,
 		},
 		{
 			name: "Test 3: TestGetTimeMachineById returns a TimeMachineResponse response when sendRequest returns a response without error",
@@ -253,7 +253,7 @@ func TestGetTimeMachineById(t *testing.T) {
 				tmId:      tmId,
 			},
 			wantTMResponse: &TimeMachineResponse{
-				Id: "test-id",
+				Id:   "test-id",
 				Name: "test-name",
 			},
 			wantErr: false,
