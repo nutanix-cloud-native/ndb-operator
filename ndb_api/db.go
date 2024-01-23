@@ -164,17 +164,17 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, req
 		return
 	}
 	res, err := ndbClient.Post("databases/provision", req)
-	if err != nil || res == nil || res.StatusCode != http.StatusOK {
-		if err == nil {
-			if res != nil {
-				err = fmt.Errorf("POST databases/provision responded with %d", res.StatusCode)
-			} else {
-				err = fmt.Errorf("POST databases/provision responded with nil response")
-			}
-		}
+	if err != nil {
 		log.Error(err, "Error occurred provisioning database")
 		return
+	} else {
+		if res == nil {
+			err = fmt.Errorf("POST databases/provision responded with nil response")
+			log.Error(err, "Error occurred provisioning database")
+			return
+		}
 	}
+
 	log.Info("POST databases/provision", "HTTP status code", res.StatusCode)
 	body, err := io.ReadAll(res.Body)
 	defer res.Body.Close()
@@ -182,10 +182,22 @@ func ProvisionDatabase(ctx context.Context, ndbClient *ndb_client.NDBClient, req
 		log.Error(err, "Error occurred reading response.Body in ProvisionDatabase")
 		return
 	}
-	err = json.Unmarshal(body, &task)
-	if err != nil {
-		log.Error(err, "Error occurred trying to unmarshal.")
-		return
+
+	if res.StatusCode == http.StatusOK {
+		err = json.Unmarshal(body, &task)
+		if err != nil {
+			log.Error(err, "Error occurred trying to unmarshal.")
+			return
+		}
+	} else {
+		var result map[string]interface{}
+		err = json.Unmarshal(body, &result)
+		if err != nil {
+			log.Error(err, "Error occurred trying to unmarshal.")
+			return
+		}
+		err = fmt.Errorf("%+v", result)
+		log.Error(err, "Error occurred provisioning database")
 	}
 	log.Info("Returning from ndb_api.ProvisionDatabase")
 	return
