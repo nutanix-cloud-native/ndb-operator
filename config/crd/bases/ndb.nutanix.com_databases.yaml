@@ -69,6 +69,8 @@ spec:
                   description:
                     description: Description of the clone instance
                     type: string
+                  isHighAvailability:
+                    type: boolean
                   name:
                     description: Name of the clone instance
                     type: string
@@ -155,6 +157,8 @@ spec:
                   description:
                     description: Description of the database instance
                     type: string
+                  isHighAvailability:
+                    type: boolean
                   name:
                     description: Name of the database instance
                     type: string

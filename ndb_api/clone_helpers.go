@@ -17,6 +17,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
@@ -85,7 +86,7 @@ func GenerateCloningRequest(ctx context.Context, ndb_client ndb_client.NDBClient
 				NetworkProfileId:    profilesMap[common.PROFILE_TYPE_NETWORK].Id,
 				NewDbServerTimeZone: "",
 				NxClusterId:         database.GetClusterId(),
-				Properties:          make([]string, 0),
+				Properties:          make([]map[string]string, 0),
 			},
 		},
 		// Added by request appenders as per the engine
@@ -96,8 +97,11 @@ func GenerateCloningRequest(ctx context.Context, ndb_client ndb_client.NDBClient
 		NetworkProfileId:           profilesMap[common.PROFILE_TYPE_NETWORK].Id,
 		DatabaseParameterProfileId: profilesMap[common.PROFILE_TYPE_DATABASE_PARAMETER].Id,
 	}
+	// boolean for high availability
+	isHighAvailability := false
+
 	// Appending request body based on database type
-	appender, err := GetRequestAppender(databaseType)
+	appender, err := GetRequestAppender(databaseType, isHighAvailability)
 	if err != nil {
 		log.Error(err, "Error while getting a request appender")
 		return
@@ -185,6 +189,97 @@ func (a *MongoDbRequestAppender) appendCloningRequest(req *DatabaseCloneRequest,
 func (a *PostgresRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
 	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		/* Non-Configurable from additionalArguments*/
+		"vm_name":              database.GetName(),
+		"dbserver_description": "DB Server VM for " + database.GetName(),
+		"db_password":          dbPassword,
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	// Appending LCMConfig Details if specified
+	if err := appendLCMConfigDetailsToRequest(req, database.GetAdditionalArguments()); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func setCloneNodesParameters(req *DatabaseCloneRequest, database DatabaseInterface) {
+	// Extract values of ComputeProfileId and NetworkProfileId
+	computeProfileId := req.Nodes[0].ComputeProfileId
+	networkProfileId := req.Nodes[0].NetworkProfileId
+	serverTimeZone := req.Nodes[0].NewDbServerTimeZone
+
+	// Clear the original req.Nodes array
+	req.Nodes = []Node{}
+
+	// Create node object for HA Proxy
+	for i := 0; i < 2; i++ {
+		// Hard coding the HA Proxy properties
+		props := make([]map[string]string, 1)
+		props[0] = map[string]string{
+			"name":  "node_type",
+			"value": "haproxy",
+		}
+		req.Nodes = append(req.Nodes, Node{
+			Properties:  props,
+			VmName:      database.GetName() + "_haproxy" + strconv.Itoa(i),
+			NxClusterId: database.GetClusterId(),
+		})
+	}
+
+	// Create node object for Database Instances
+	for i := 0; i < 3; i++ {
+		// Hard coding the DB properties
+		props := make([]map[string]string, 4)
+		props[0] = map[string]string{
+			"name":  "role",
+			"value": "Secondary",
+		}
+		// 1st node will be the primary node
+		if i == 0 {
+			props[0]["value"] = "Primary"
+		}
+		props[1] = map[string]string{
+			"name":  "failover_mode",
+			"value": "Automatic",
+		}
+		props[2] = map[string]string{
+			"name":  "node_type",
+			"value": "database",
+		}
+		props[3] = map[string]string{
+			"name":  "remote_archive_destination",
+			"value": "",
+		}
+		req.Nodes = append(req.Nodes, Node{
+			ComputeProfileId:    computeProfileId,
+			NetworkProfileId:    networkProfileId,
+			NewDbServerTimeZone: serverTimeZone,
+			Properties:          props,
+			VmName:              database.GetName() + "-" + strconv.Itoa(i),
+			NxClusterId:         database.GetClusterId(),
+		})
+	}
+}
+
+func (a *PostgresHARequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
+	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+
+	// Set the number of nodes to 5, 3 Postgres nodes + 2 HA Proxy nodes
+	req.NodeCount = 5
+	setCloneNodesParameters(req, database)
 
 	// Default action arguments
 	actionArguments := map[string]string{

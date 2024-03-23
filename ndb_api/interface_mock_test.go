@@ -158,3 +158,9 @@ func (m *MockNDBClientHTTPInterface) Do(req *http.Request) (*http.Response, erro
 	}
 	return args.Get(0).(*http.Response), args.Error(1)
 }
+
+// GetInstanceIsHighAvailability is a mock implementation of the GetInstanceIsHighAvailability method in the Database interface
+func (m *MockDatabaseInterface) GetInstanceIsHighAvailability() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
