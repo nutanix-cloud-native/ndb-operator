@@ -110,12 +110,12 @@ metadata:
     app.kubernetes.io/created-by: ndb-operator
   name: ndb
 spec:
-  # Name of the secret that holds the credentials for NDB: username, password and ca_certificate created earlier
-  credentialSecret: ndb-secret-name
-  # NDB Server's API URL
-  server: https://[NDB IP]:8443/era/v0.9
-  # Set to true to skip SSL certificate validation, should be false if ca_certificate is provided in the credential secret.
-  skipCertificateVerification: true
+    # Name of the secret that holds the credentials for NDB: username, password and ca_certificate created earlier
+    credentialSecret: ndb-secret-name
+    # NDB Server's API URL
+    server: https://[NDB IP]:8443/era/v0.9
+    # Set to true to skip SSL certificate validation, should be false if ca_certificate is provided in the credential secret.
+    skipCertificateVerification: true
 
 ```
 Create the NDBServer resource using:
@@ -158,7 +158,7 @@ spec:
     type: postgres
     # isHighAvailability is an optional parameter. In case nothing is specified, it is set to false
     isHighAvailability: false
-
+    
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
     # Name is case-sensitive. ID is the UUID of the profile. Profile should be in the "READY" state
@@ -218,6 +218,7 @@ spec:
     clusterId: "Nutanix Cluster Id"
     # isHighAvailability is an optional parameter. In case nothing is specified, it is set to false
     isHighAvailability: false
+    
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
     # Name is case-sensitive. ID is the UUID of the profile. Profile should be in the "READY" state
