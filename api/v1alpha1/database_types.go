@@ -107,6 +107,8 @@ type Instance struct {
 	// +optional
 	// Additional database engine specific arguments
 	AdditionalArguments map[string]string `json:"additionalArguments"`
+	// +optional
+	IsHighAvailability bool `json:"isHighAvailability"`
 }
 
 type Clone struct {
@@ -133,6 +135,8 @@ type Clone struct {
 	// +optional
 	// Additional database engine specific arguments
 	AdditionalArguments map[string]string `json:"additionalArguments"`
+	// +optional
+	IsHighAvailability bool `json:"isHighAvailability"`
 }
 
 // Time Machine details

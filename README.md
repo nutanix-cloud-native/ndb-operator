@@ -20,7 +20,7 @@ The NDB operator brings automated and simplified database administration, provis
 4. A clone of the source code ([this](https://github.com/nutanix-cloud-native/ndb-operator) repository).
 5. Cert-manager (only when running in non OpenShift clusters). Follow the instructions [here](https://cert-manager.io/docs/installation/).
 
-With the pre-requisites completed, the NDB Operator can be deployed in one of the following ways: 
+With the pre-requisites completed, the NDB Operator can be deployed in one of the following ways:
 
 ### Outside Kubernetes
 Runs the controller outside the Kubernetes cluster as a process, but installs the CRDs, services and RBAC entities within the Kubernetes cluster. Generally used while development (without running webhooks):
@@ -28,7 +28,7 @@ Runs the controller outside the Kubernetes cluster as a process, but installs th
 make install run
 ```
 
-### Within Kubernetes 
+### Within Kubernetes
 Runs the controller pod, installs the CRDs, services and RBAC entities within the Kubernetes cluster. Used to run the operator from the container image defined in the Makefile. Make sure that the cert-manager is installed if not using OpenShift.
 
 ```sh
@@ -156,7 +156,9 @@ spec:
     size: 10
     timezone: "UTC"
     type: postgres
-
+    # isHighAvailability is an optional parameter. In case nothing is specified, it is set to false
+    isHighAvailability: false
+    
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
     # Name is case-sensitive. ID is the UUID of the profile. Profile should be in the "READY" state
@@ -214,6 +216,9 @@ spec:
     # Cluster id of the cluster where the Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
     clusterId: "Nutanix Cluster Id"
+    # isHighAvailability is an optional parameter. In case nothing is specified, it is set to false
+    isHighAvailability: false
+    
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
     # Name is case-sensitive. ID is the UUID of the profile. Profile should be in the "READY" state
@@ -257,7 +262,7 @@ kubectl apply -f <path/to/database-manifest.yaml>
 ### Additional Arguments for Databases
 Below are the various optional addtionalArguments you can specify along with examples of their corresponding values. Arguments that have defaults will be indicated.
 
-Provisioning Additional Arguments: 
+Provisioning Additional Arguments:
 ```yaml
 # PostGres
 additionalArguments:
@@ -287,7 +292,7 @@ additionalArguments:
   vm_win_license_key: <licenseKey>                 # NO Default.
 ```
 
-Cloning Additional Arguments: 
+Cloning Additional Arguments:
 ```yaml
 MSSQL:
   windows_domain_profile_id   
@@ -360,7 +365,7 @@ Run your controller locally (this will run in the foreground, so switch to a new
 make run
 ```
 
-**NOTES:** 
+**NOTES:**
 1. You can also run this in one step by running: `make install run`
 2. Run `make --help` for more information on all potential `make` targets
 

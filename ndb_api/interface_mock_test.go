@@ -136,3 +136,9 @@ func (m *MockDatabaseInterface) GetAdditionalArguments() map[string]string {
 	// If the type assertion fails, return default
 	return map[string]string{}
 }
+
+// GetInstanceIsHighAvailability is a mock implementation of the GetInstanceIsHighAvailability method in the Database interface
+func (m *MockDatabaseInterface) GetInstanceIsHighAvailability() bool {
+	args := m.Called()
+	return args.Bool(0)
+}

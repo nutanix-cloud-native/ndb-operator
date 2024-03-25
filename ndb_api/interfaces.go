@@ -49,6 +49,7 @@ type DatabaseInterface interface {
 	GetCloneSourceDBId() string
 	GetCloneSnapshotId() string
 	GetAdditionalArguments() map[string]string
+	GetInstanceIsHighAvailability() bool
 }
 
 // Internal Interfaces
@@ -72,3 +73,6 @@ type PostgresRequestAppender struct{}
 
 // Implements RequestAppender
 type MySqlRequestAppender struct{}
+
+// Implements RequestAppender
+type PostgresHARequestAppender struct{}
