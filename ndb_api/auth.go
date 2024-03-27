@@ -18,10 +18,6 @@ package ndb_api
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
@@ -30,38 +26,11 @@ import (
 
 // Validates the auth credentials against the 'auth/validate' endpoint
 // Returns the response along with an error (if any)
-func AuthValidate(ctx context.Context, ndbClient *ndb_client.NDBClient) (authValidateResponse AuthValidateResponse, err error) {
+func AuthValidate(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface) (authValidateResponse AuthValidateResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.AuthValidate")
-	if ndbClient == nil {
-		err = errors.New("nil reference: received nil reference for ndbClient")
-		log.Error(err, "Received nil ndbClient reference")
+	if _, err = sendRequest(ctx, ndbClient, http.MethodGet, "auth/validate", nil, &authValidateResponse); err != nil {
+		log.Error(err, "Error in AuthValidate")
 		return
 	}
-	res, err := ndbClient.Get("auth/validate")
-	if err != nil || res == nil || res.StatusCode != http.StatusOK {
-		if err == nil {
-			if res != nil {
-				err = fmt.Errorf("GET auth/validate responded with %d", res.StatusCode)
-			} else {
-				err = fmt.Errorf("GET auth/validate responded with a nil response")
-			}
-		}
-		log.Error(err, "Error occurred validating auth credentials")
-		return
-	}
-	log.Info("GET auth/validate", "HTTP status code", res.StatusCode)
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in AuthValidate")
-		return
-	}
-	err = json.Unmarshal(body, &authValidateResponse)
-	if err != nil {
-		log.Error(err, "Error occurred trying to unmarshal.")
-		return
-	}
-	log.Info("Returning from ndb_api.AuthValidate")
 	return
 }

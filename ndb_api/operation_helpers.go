@@ -20,7 +20,7 @@ const OPERATION_STATUS_FAILED = "FAILED"
 const OPERATION_STATUS_PASSED = "PASSED"
 
 // Returns an operation status string
-func GetOperationStatus(o OperationResponse) string {
+func GetOperationStatus(o *OperationResponse) string {
 	status := ""
 	// Statuses on NDB
 	// 2: STOPPED

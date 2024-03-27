@@ -18,10 +18,7 @@ package ndb_api
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
@@ -29,13 +26,8 @@ import (
 )
 
 // Fetches and returns a operation by an Id
-func GetOperationById(ctx context.Context, ndbClient *ndb_client.NDBClient, id string) (operation OperationResponse, err error) {
+func GetOperationById(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, id string) (operation *OperationResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	if ndbClient == nil {
-		err = errors.New("nil reference for ndbClient")
-		log.Error(err, "Received nil ndbClient reference")
-		return
-	}
 	// Checking if id is empty, this is necessary otherwise the request becomes a call to get all operations (/operations)
 	if id == "" {
 		err = fmt.Errorf("operation id is empty")
@@ -46,28 +38,8 @@ func GetOperationById(ctx context.Context, ndbClient *ndb_client.NDBClient, id s
 	// is not yet created in the operation table on NDB. It causes
 	// the operation details to be fetched from the WORK table instead.
 	getOperationPath := fmt.Sprintf("operations/%s?display=true", id)
-	res, err := ndbClient.Get(getOperationPath)
-	if err != nil || res == nil || res.StatusCode != http.StatusOK {
-		if err == nil {
-			if res != nil {
-				err = fmt.Errorf("GET %s responded with %d", getOperationPath, res.StatusCode)
-			} else {
-				err = fmt.Errorf("GET %s responded with a nil response", getOperationPath)
-			}
-		}
-		log.Error(err, "Error occurred fetching operation", "operationId", id)
-		return
-	}
-	log.Info(getOperationPath, "HTTP status code", res.StatusCode)
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in Get Operation by ID", "operation id", id)
-		return
-	}
-	err = json.Unmarshal(body, &operation)
-	if err != nil {
-		log.Error(err, "Error occurred trying to unmarshal.")
+	if _, err = sendRequest(ctx, ndbClient, http.MethodGet, getOperationPath, nil, &operation); err != nil {
+		log.Error(err, "Error in GetOperationById")
 		return
 	}
 	return

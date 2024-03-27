@@ -61,7 +61,7 @@ func getDatabaseName(ctx context.Context, database *ndbv1alpha1.Database) (name 
 }
 
 // Gets snapshot id from TimeMachineGetSnapshotsResponse
-func getSnapshotId(ctx context.Context, response ndb_api.TimeMachineGetSnapshotsResponse, nxClusterId string) (string, error) {
+func getSnapshotId(ctx context.Context, response *ndb_api.TimeMachineGetSnapshotsResponse, nxClusterId string) (string, error) {
 	logger := GetLogger(ctx)
 	logger.Println("getSnapshotId() starting...")
 

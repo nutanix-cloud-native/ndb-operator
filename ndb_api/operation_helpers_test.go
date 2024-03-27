@@ -17,19 +17,27 @@ limitations under the License.
 package ndb_api
 
 import (
-	"context"
-	"net/http"
+	"testing"
 
-	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
-	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
+	"github.com/stretchr/testify/assert"
 )
 
-// Fetches and returns all the available profiles as a profile slice
-func GetAllProfiles(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface) (profiles []ProfileResponse, err error) {
-	log := ctrllog.FromContext(ctx)
-	if _, err = sendRequest(ctx, ndbClient, http.MethodGet, "profiles", nil, &profiles); err != nil {
-		log.Error(err, "Error in GetAllProfiles")
-		return
+func TestGetOperationStatus(t *testing.T) {
+	// Test cases for GetOperationStatus
+	testCases := []struct {
+		status         string
+		expectedStatus string
+	}{
+		{"2", OPERATION_STATUS_FAILED},
+		{"3", OPERATION_STATUS_FAILED},
+		{"4", OPERATION_STATUS_FAILED},
+		{"5", OPERATION_STATUS_PASSED},
+		{"invalidStatus", ""},
 	}
-	return
+
+	for _, tc := range testCases {
+		operationResponse := &OperationResponse{Status: tc.status}
+		result := GetOperationStatus(operationResponse)
+		assert.Equal(t, tc.expectedStatus, result)
+	}
 }

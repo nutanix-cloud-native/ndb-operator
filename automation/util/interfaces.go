@@ -41,7 +41,7 @@ type TestSuiteManager interface {
 		ctx context.Context,
 		st *SetupTypes,
 		clientset *kubernetes.Clientset,
-		v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse ndb_api.DatabaseResponse, err error)
+		v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (databaseResponse *ndb_api.DatabaseResponse, err error)
 	GetAppResponse(
 		ctx context.Context,
 		st *SetupTypes,
@@ -51,7 +51,7 @@ type TestSuiteManager interface {
 		ctx context.Context,
 		st *SetupTypes,
 		clientset *kubernetes.Clientset,
-		v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (timemachineResponse ndb_api.TimeMachineResponse, err error)
+		v1alpha1ClientSet *clientsetv1alpha1.V1alpha1Client) (timemachineResponse *ndb_api.TimeMachineResponse, err error)
 }
 
 type CloningTestSuiteManager struct{}

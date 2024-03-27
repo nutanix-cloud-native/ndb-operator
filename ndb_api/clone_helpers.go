@@ -15,6 +15,7 @@ package ndb_api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -39,13 +40,18 @@ func GenerateDeprovisionCloneRequest() (req *CloneDeprovisionRequest) {
 }
 
 // This function generates and returns a request for cloning a database on NDB
-func GenerateCloningRequest(ctx context.Context, ndb_client *ndb_client.NDBClient, database DatabaseInterface, reqData map[string]interface{}) (requestBody *DatabaseCloneRequest, err error) {
+func GenerateCloningRequest(ctx context.Context, ndb_client ndb_client.NDBClientHTTPInterface, database DatabaseInterface, reqData map[string]interface{}) (requestBody *DatabaseCloneRequest, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.GenerateCloningRequest", "database name", database.GetName())
 
-	sourceDatabase, _ := GetDatabaseById(ctx, ndb_client, database.GetCloneSourceDBId())
+	sourceDatabase, err := GetDatabaseById(ctx, ndb_client, database.GetCloneSourceDBId())
+	if err != nil {
+		errMessage := "source database not found for clone"
+		log.Error(err, errMessage)
+		err = errors.New(errMessage)
+		return
+	}
 	databaseType := GetDatabaseTypeFromEngine(sourceDatabase.Type)
-	// database.
 	// Fetch the required profiles for the database
 	profilesMap, err := ResolveProfiles(ctx, ndb_client, databaseType, database.GetProfileResolvers())
 	if err != nil {

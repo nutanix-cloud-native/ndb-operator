@@ -24,6 +24,7 @@ import (
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
+	"github.com/stretchr/testify/assert"
 )
 
 // Tests the ResolveProfiles function against the following test cases:
@@ -376,5 +377,90 @@ func TestResolveProfiles(t *testing.T) {
 				t.Errorf("ResolveProfiles() = %v, want %v", gotProfilesMap, tt.wantProfilesMap)
 			}
 		})
+	}
+}
+
+func TestComputeOOBProfileResolver(t *testing.T) {
+	// Test cases for ComputeOOBProfileResolver
+	testCases := []struct {
+		profile      ProfileResponse
+		expectedBool bool
+	}{
+		{ProfileResponse{Type: common.PROFILE_TYPE_COMPUTE, SystemProfile: true, Name: common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE}, true},
+		{ProfileResponse{Type: common.PROFILE_TYPE_COMPUTE, SystemProfile: false, Name: common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE}, false},
+		{ProfileResponse{Type: common.PROFILE_TYPE_SOFTWARE, SystemProfile: true, Name: common.PROFILE_DEFAULT_OOB_SMALL_COMPUTE}, false},
+	}
+
+	for _, tc := range testCases {
+		result := ComputeOOBProfileResolver(tc.profile)
+		assert.Equal(t, tc.expectedBool, result)
+	}
+}
+
+func TestSoftwareOOBProfileResolverForSingleInstance(t *testing.T) {
+	// Test cases for SoftwareOOBProfileResolverForSingleInstance
+	testCases := []struct {
+		profile      ProfileResponse
+		expectedBool bool
+	}{
+		{ProfileResponse{Type: common.PROFILE_TYPE_SOFTWARE, SystemProfile: true, Topology: common.TOPOLOGY_SINGLE}, true},
+		{ProfileResponse{Type: common.PROFILE_TYPE_SOFTWARE, SystemProfile: false, Topology: common.TOPOLOGY_SINGLE}, false},
+		{ProfileResponse{Type: common.PROFILE_TYPE_NETWORK, SystemProfile: true, Topology: common.TOPOLOGY_SINGLE}, false},
+	}
+
+	for _, tc := range testCases {
+		result := SoftwareOOBProfileResolverForSingleInstance(tc.profile)
+		assert.Equal(t, tc.expectedBool, result)
+	}
+}
+
+func TestNetworkOOBProfileResolver(t *testing.T) {
+	// Test cases for NetworkOOBProfileResolver
+	testCases := []struct {
+		profile      ProfileResponse
+		expectedBool bool
+	}{
+		{ProfileResponse{Type: common.PROFILE_TYPE_NETWORK, SystemProfile: true}, true},
+		{ProfileResponse{Type: common.PROFILE_TYPE_NETWORK, SystemProfile: false}, true},
+		{ProfileResponse{Type: common.PROFILE_TYPE_COMPUTE, SystemProfile: true}, false},
+	}
+
+	for _, tc := range testCases {
+		result := NetworkOOBProfileResolver(tc.profile)
+		assert.Equal(t, tc.expectedBool, result)
+	}
+}
+
+func TestDbParamOOBProfileResolver(t *testing.T) {
+	// Test cases for DbParamOOBProfileResolver
+	testCases := []struct {
+		profile      ProfileResponse
+		expectedBool bool
+	}{
+		{ProfileResponse{Type: common.PROFILE_TYPE_DATABASE_PARAMETER, SystemProfile: true}, true},
+		{ProfileResponse{Type: common.PROFILE_TYPE_DATABASE_PARAMETER, SystemProfile: false}, false},
+		{ProfileResponse{Type: common.PROFILE_TYPE_SOFTWARE, SystemProfile: true}, false},
+	}
+
+	for _, tc := range testCases {
+		result := DbParamOOBProfileResolver(tc.profile)
+		assert.Equal(t, tc.expectedBool, result)
+	}
+}
+
+func TestDbParamInstanceOOBProfileResolver(t *testing.T) {
+	// Test cases for DbParamInstanceOOBProfileResolver
+	testCases := []struct {
+		profile      ProfileResponse
+		expectedBool bool
+	}{
+		{ProfileResponse{Type: common.PROFILE_TYPE_DATABASE_PARAMETER, SystemProfile: true, Topology: common.TOPOLOGY_INSTANCE}, true},
+		{ProfileResponse{Type: common.PROFILE_TYPE_DATABASE_PARAMETER, SystemProfile: false, Topology: common.TOPOLOGY_INSTANCE}, false},
+		{ProfileResponse{Type: common.PROFILE_TYPE_NETWORK, SystemProfile: true, Topology: common.TOPOLOGY_INSTANCE}, false},
+	}
+
+	for _, tc := range testCases {
+		result := DbParamInstanceOOBProfileResolver(tc.profile)
+		assert.Equal(t, tc.expectedBool, result)
 	}
 }

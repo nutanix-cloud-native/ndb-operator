@@ -15,7 +15,6 @@ import (
 	automation "github.com/nutanix-cloud-native/ndb-operator/automation"
 	clientsetv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/automation/clientset/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -67,7 +66,7 @@ func CheckRequiredEnv(ctx context.Context) (err error) {
 	// Loading env variables
 	err = godotenv.Load("../../.env")
 	if err != nil {
-		return fmt.Errorf("Error: loadEnv() ended! %s", err)
+		return fmt.Errorf("error: loadEnv() ended! %s", err)
 	} else {
 		logger.Print("Loaded .env file!")
 	}
@@ -87,7 +86,7 @@ func CheckRequiredEnv(ctx context.Context) (err error) {
 		}
 	}
 	if len(missingRequiredEnvs) != 0 {
-		return fmt.Errorf("Error: CheckRequiredEnv() ended! Missing the following required env variables: %s", missingRequiredEnvs)
+		return fmt.Errorf("error: loadEnv() ended! Missing the following required env variables: %s", missingRequiredEnvs)
 	} else {
 		logger.Print("Found no missing required env variables!")
 	}
@@ -113,7 +112,7 @@ func SetupKubeconfig(ctx context.Context) (config *rest.Config, err error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("Error: SetupKubeconfig() ended! %s", err)
+		return nil, fmt.Errorf("error: SetupKubeconfig() ended! %s", err)
 	}
 
 	logger.Println("SetupKubeconfig() ended!")
@@ -131,13 +130,13 @@ func SetupSchemeAndClientSet(ctx context.Context, config *rest.Config) (v1alpha1
 
 	v1alpha1ClientSet, err = clientsetv1alpha1.NewForConfig(config)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Error: SetupSchemeAndClientSet() ended! %s", err)
+		return nil, nil, fmt.Errorf("error: SetupSchemeAndClientSet() ended! %s", err)
 	}
 	logger.Printf("Created v1alpha1Client.")
 
 	clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Error: SetupSchemeAndClientSet() ended! %s", err)
+		return nil, nil, fmt.Errorf("error: SetupSchemeAndClientSet() ended! %s", err)
 	}
 	logger.Printf("Created clientset.")
 
@@ -171,7 +170,7 @@ func SetupTypeTemplates(ctx context.Context) (setupTypes *SetupTypes, err error)
 	}
 
 	// Create ndbSecret template automation.NDB_SECRET_PATH
-	ndbSecret := &v1.Secret{}
+	ndbSecret := &corev1.Secret{}
 	if err := CreateTypeFromPath(ndbSecret, automation.NDB_SECRET_PATH); err != nil {
 		errMsg += fmt.Sprintf("NdbSecret with path %s failed! %v. ", automation.NDB_SECRET_PATH, err)
 	} else {
@@ -179,7 +178,7 @@ func SetupTypeTemplates(ctx context.Context) (setupTypes *SetupTypes, err error)
 	}
 
 	// Create dbSecret template from automation.DB_SECRET_PATH
-	dbSecret := &v1.Secret{}
+	dbSecret := &corev1.Secret{}
 	if err := CreateTypeFromPath(dbSecret, automation.DB_SECRET_PATH); err != nil {
 		errMsg += fmt.Sprintf("DbSecret with path %s failed! %v. ", automation.DB_SECRET_PATH, err)
 	} else {
@@ -187,7 +186,7 @@ func SetupTypeTemplates(ctx context.Context) (setupTypes *SetupTypes, err error)
 	}
 
 	// Create appPod template from automation.APP_POD_PATH
-	appPod := &v1.Pod{}
+	appPod := &corev1.Pod{}
 	if err := CreateTypeFromPath(appPod, automation.APP_POD_PATH); err != nil {
 		errMsg += fmt.Sprintf("App Pod with path %s failed! %v. ", automation.APP_POD_PATH, err)
 	} else {

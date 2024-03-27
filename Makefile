@@ -114,6 +114,14 @@ vet: ## Run go vet against code.
 test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test `go list ./... | grep -v "/automation"` -coverprofile cover.out
 
+.PHONY: test-coverage
+test-coverage: manifests generate fmt vet envtest ## Run unit tests creating the output to report coverage
+	- rm -rf *.out  # Remove all coverage files if exists
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test `go list ./... | grep -v -E "/automation|/sandbox|/controllers"` -coverprofile=cover.out.tmp
+	cat cover.out.tmp | grep -v "zz_generated.deepcopy.go" > cover.out
+	go tool cover -func cover.out
+	rm cover.out.tmp
+
 ##@ Build
 
 .PHONY: build
