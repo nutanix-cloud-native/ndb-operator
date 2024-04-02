@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -106,7 +107,24 @@ func GetAllowedAdditionalArgumentsForDatabase(dbType string) (map[string]bool, e
 	case common.DATABASE_TYPE_POSTGRES:
 		return map[string]bool{
 			/* Has a default */
-			"listener_port": true,
+			"listener_port":           true,
+			"proxy_read_port":         true,
+			"proxy_write_port":        true,
+			"enable_synchronous_mode": true,
+			"auto_tune_staging_drive": true,
+			"backup_policy":           true,
+			"db_password":             true,
+			"database_names":          true,
+			"provision_virtual_ip":    true,
+			"deploy_haproxy":          true,
+			"failover_mode":           true,
+			"node_type":               true,
+			"allocate_pg_hugepage":    true,
+			"cluster_database":        true,
+			"archive_wal_expire_days": true,
+			"enable_peer_auth":        true,
+			"cluster_name":            true,
+			"patroni_cluster_name":    true,
 		}, nil
 	case common.DATABASE_TYPE_MYSQL:
 		return map[string]bool{

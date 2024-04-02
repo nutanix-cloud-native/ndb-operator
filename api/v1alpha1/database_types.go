@@ -109,6 +109,22 @@ type Instance struct {
 	AdditionalArguments map[string]string `json:"additionalArguments"`
 	// +optional
 	IsHighAvailability bool `json:"isHighAvailability"`
+	// +optional
+	Nodes []*Node `json:"nodes"`
+}
+type Node struct {
+	VmName string `json:"vmName"`
+	// +optional
+	NxClusterName string `json:"nxClusterName"` // not sure if we need this
+	// +optional
+	NxClusterId string `json:"nxClusterId"` // not sure if we need this
+	NodeType    string `json:"nodeType"`
+	// +optional
+	Role string `json:"role"`
+	// +optional
+	FailoverMode string `json:"failoverMode"`
+	// +optional
+	RemoteArchiveDestination string `json:"remoteArchiveDestination"`
 }
 
 type Clone struct {
