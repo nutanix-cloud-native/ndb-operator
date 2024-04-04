@@ -149,6 +149,10 @@ func (d *Database) GetInstanceIsHighAvailability() bool {
 	return d.Spec.Instance.IsHighAvailability
 }
 
+func (d *Database) GetInstanceNodes() []*v1alpha1.Node {
+	return d.Spec.Instance.Nodes
+}
+
 // Returns basic details about the Time Machine if provided in the
 // underlying database, else returns defaults like:
 // TM Name: <db_instance_name>_TM

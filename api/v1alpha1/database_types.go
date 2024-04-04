@@ -153,6 +153,8 @@ type Clone struct {
 	AdditionalArguments map[string]string `json:"additionalArguments"`
 	// +optional
 	IsHighAvailability bool `json:"isHighAvailability"`
+	// +optional
+	Nodes []*Node `json:"nodes"`
 }
 
 // Time Machine details

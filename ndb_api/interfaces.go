@@ -18,6 +18,7 @@ package ndb_api
 
 import (
 	"context"
+	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 )
 
 // External Interfaces
@@ -50,6 +51,7 @@ type DatabaseInterface interface {
 	GetCloneSnapshotId() string
 	GetAdditionalArguments() map[string]string
 	GetInstanceIsHighAvailability() bool
+	GetInstanceNodes() []*v1alpha1.Node
 }
 
 // Internal Interfaces
