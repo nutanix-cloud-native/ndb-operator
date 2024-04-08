@@ -115,16 +115,13 @@ type Instance struct {
 type Node struct {
 	VmName string `json:"vmName"`
 	// +optional
-	NxClusterName string `json:"nxClusterName"` // not sure if we need this
+	ComputeProfileId string `json:"computeProfileId,omitempty"`
 	// +optional
-	NxClusterId string `json:"nxClusterId"` // not sure if we need this
-	NodeType    string `json:"nodeType"`
+	NetworkProfileId string `json:"networkProfileId,omitempty"`
 	// +optional
-	Role string `json:"role"`
-	// +optional
-	FailoverMode string `json:"failoverMode"`
-	// +optional
-	RemoteArchiveDestination string `json:"remoteArchiveDestination"`
+	NewDbServerTimeZone string            `json:"newDbServerTimeZone,omitempty"`
+	NxClusterId         string            `json:"nxClusterId,omitempty"`
+	Properties          map[string]string `json:"properties"`
 }
 
 type Clone struct {
