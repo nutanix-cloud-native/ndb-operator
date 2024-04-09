@@ -407,27 +407,85 @@ func (a *PostgresHARequestAppender) appendProvisioningRequest(req *DatabaseProvi
 	if proxyReadPort == "" {
 		proxyReadPort = "5001"
 	}
-	actionArguments := map[string]string{
-		/* Non-Configurable from additionalArguments*/
-		"proxy_read_port":         proxyReadPort,
-		"listener_port":           "5432",
-		"proxy_write_port":        "5000",
-		"enable_synchronous_mode": "true",
-		"auto_tune_staging_drive": "true",
-		"backup_policy":           "primary_only",
-		"db_password":             dbPassword,
-		"database_names":          databaseNames,
-		"provision_virtual_ip":    "true",
-		"deploy_haproxy":          "true",
-		"failover_mode":           failoverMode,
-		"node_type":               "database",
-		"allocate_pg_hugepage":    "false",
-		"cluster_database":        "false",
-		"archive_wal_expire_days": "-1",
-		"enable_peer_auth":        "false",
-		"cluster_name":            "psqlcluster",
-		"patroni_cluster_name":    "patroni",
-	}
+	listenerPort := database.GetAdditionalArguments()["listener_port"]
+    if listenerPort == "" {
+        listenerPort = "5432"
+    }
+    proxyWritePort := database.GetAdditionalArguments()["proxy_write_port"]
+    if proxyWritePort == "" {
+        proxyWritePort = "5000"
+    }
+    enableSynchronousMode := database.GetAdditionalArguments()["enable_synchronous_mode"]
+    if enableSynchronousMode == "" {
+        enableSynchronousMode = "true"
+    }
+    autoTuneStagingDrive := database.GetAdditionalArguments()["auto_tune_staging_drive"]
+    if autoTuneStagingDrive == "" {
+        autoTuneStagingDrive = "true"
+    }
+    backupPolicy := database.GetAdditionalArguments()["backup_policy"]
+    if backupPolicy == "" {
+        backupPolicy = "primary_only"
+    }
+    provisionVirtualIP := database.GetAdditionalArguments()["provision_virtual_ip"]
+    if provisionVirtualIP == "" {
+        provisionVirtualIP = "true"
+    }
+    deployHAProxy := database.GetAdditionalArguments()["deploy_haproxy"]
+    if deployHAProxy == "" {
+        deployHAProxy = "true"
+    }
+    nodeType := database.GetAdditionalArguments()["node_type"]
+    if nodeType == "" {
+        nodeType = "database"
+    }
+    allocatePGHugePage := database.GetAdditionalArguments()["allocate_pg_hugepage"]
+    if allocatePGHugePage == "" {
+        allocatePGHugePage = "false"
+    }
+    clusterDatabase := database.GetAdditionalArguments()["cluster_database"]
+    if clusterDatabase == "" {
+        clusterDatabase = "false"
+    }
+    archiveWALExpireDays := database.GetAdditionalArguments()["archive_wal_expire_days"]
+    if archiveWALExpireDays == "" {
+        archiveWALExpireDays = "-1"
+    }
+    enablePeerAuth := database.GetAdditionalArguments()["enable_peer_auth"]
+    if enablePeerAuth == "" {
+        enablePeerAuth = "false"
+    }
+    clusterName := database.GetAdditionalArguments()["cluster_name"]
+    if clusterName == "" {
+        clusterName = "psqlcluster"
+    }
+    patroniClusterName := database.GetAdditionalArguments()["patroni_cluster_name"]
+    if patroniClusterName == "" {
+        patroniClusterName = "patroni"
+    }
+
+    actionArguments := map[string]string{
+        /* Non-Configurable from additionalArguments*/
+        "proxy_read_port":         proxyReadPort,
+        "listener_port":           listenerPort,
+        "proxy_write_port":        proxyWritePort,
+        "enable_synchronous_mode": enableSynchronousMode,
+        "auto_tune_staging_drive": autoTuneStagingDrive,
+        "backup_policy":           backupPolicy,
+        "db_password":             dbPassword,
+        "database_names":          databaseNames,
+        "provision_virtual_ip":    provisionVirtualIP,
+        "deploy_haproxy":          deployHAProxy,
+        "failover_mode":           failoverMode,
+        "node_type":               nodeType,
+        "allocate_pg_hugepage":    allocatePGHugePage,
+        "cluster_database":        clusterDatabase,
+        "archive_wal_expire_days": archiveWALExpireDays,
+        "enable_peer_auth":        enablePeerAuth,
+        "cluster_name":            clusterName,
+        "patroni_cluster_name":    patroniClusterName,
+    }
+
 
 	// Appending/overwriting database actionArguments to actionArguments
 	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
