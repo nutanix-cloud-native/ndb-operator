@@ -33,7 +33,7 @@ func CreateSnapshotForTM(
 	tmName string,
 	snapshotName string,
 	expiryDateTimezone string,
-	ExpireInDays string) (task TaskInfoSummaryResponse, err error) {
+	ExpireInDays int) (task TaskInfoSummaryResponse, err error) {
 
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndb_api.CreateSnapshotForTM")
