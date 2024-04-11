@@ -59,8 +59,14 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 		*errors = append(*errors, field.Invalid(clonePath.Child("name"), clone.Name, "A valid Clone Name must be specified"))
 	}
 
-	if err := util.ValidateUUID(clone.ClusterId); err != nil {
-		*errors = append(*errors, field.Invalid(clonePath.Child("clusterId"), clone.ClusterId, "ClusterId field must be a valid UUID"))
+	if clone.ClusterId == "" && clone.ClusterName == "" {
+		*errors = append(*errors, field.Invalid(clonePath.Child("clusterName"), clone.ClusterId, "ClusterId and ClusterName field cannot be blank"))
+	}
+
+	if clone.ClusterId != "" {
+		if err := util.ValidateUUID(clone.ClusterId); err != nil {
+			*errors = append(*errors, field.Invalid(clonePath.Child("clusterId"), clone.ClusterId, "ClusterId field must be a valid UUID"))
+		}
 	}
 
 	if clone.CredentialSecret == "" {
@@ -174,8 +180,14 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 		*errors = append(*errors, field.Invalid(instancePath.Child("name"), instance.Name, "A valid Database Instance Name must be specified"))
 	}
 
-	if err := util.ValidateUUID(instance.ClusterId); err != nil {
-		*errors = append(*errors, field.Invalid(instancePath.Child("clusterId"), instance.ClusterId, "ClusterId field must be a valid UUID"))
+	if instance.ClusterId == "" && instance.ClusterName == "" {
+		*errors = append(*errors, field.Invalid(instancePath.Child("clusterName"), instance.ClusterId, "ClusterId and ClusterName field cannot be blank"))
+	}
+
+	if instance.ClusterId != "" {
+		if err := util.ValidateUUID(instance.ClusterId); err != nil {
+			*errors = append(*errors, field.Invalid(instancePath.Child("clusterId"), instance.ClusterId, "ClusterId field must be a valid UUID"))
+		}
 	}
 
 	if instance.Size < 10 {

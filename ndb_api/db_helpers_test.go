@@ -19,6 +19,7 @@ const (
 	TEST_INSTANCE_TYPE = "testInstance"
 	TEST_TIMEZONE      = "test-timezone"
 	TEST_CLUSTER_ID    = "test-cluster-id"
+	TEST_CLUSTER_NAME  = "test-cluster-name"
 	TEST_INSTANCE_SIZE = 100
 )
 
@@ -1285,6 +1286,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
 		mockDatabase.On("GetTimeZone").Return(TEST_TIMEZONE)
 		mockDatabase.On("GetClusterId").Return(TEST_CLUSTER_ID)
+		mockDatabase.On("GetClusterName").Return(TEST_CLUSTER_NAME)
 		mockDatabase.On("GetInstanceSize").Return(TEST_INSTANCE_SIZE)
 		mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})

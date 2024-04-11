@@ -38,6 +38,7 @@ type DatabaseInterface interface {
 	GetName() string
 	GetDescription() string
 	GetClusterId() string
+	GetClusterName() string
 	GetProfileResolvers() ProfileResolvers
 	GetCredentialSecret() string
 	GetTimeZone() string
