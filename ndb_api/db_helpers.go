@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"strconv"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -309,82 +308,85 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 	// Clear the original req.Nodes array
 	req.Nodes = []Node{}
 
-	// Create node object for HA Proxy
-	nodeCount := len(database.GetInstanceNodes())
+	// Validate node counts
+	nodeCount := len(req.Nodes)
+	databaseNodeCount := 0
+	proxyNodeCount := 0
 	req.NodeCount = nodeCount
-	const MinReqNodes = 2
-	if nodeCount < MinReqNodes {
-		return fmt.Errorf("invalid node count: HA instance needs at least %d nodes, given: %d", MinReqNodes, nodeCount)
+	primaryNodeCount := getPrimaryNodeCount(database)
+	if primaryNodeCount > 1 {
+		return fmt.Errorf("invalid nodes: HA instance can only have one primary node")
 	}
+
 	for i := 0; i < nodeCount; i++ {
 		currentNode := database.GetInstanceNodes()[i]
-		nodeErrors = validateNodeRequest(currentNode)
-		if nodeErrors != nil {
-			return nodeErrors
+
+		if currentNode.Properties.NodeType != "database" && currentNode.Properties.NodeType != "haproxy" {
+			return fmt.Errorf("invalid node type: %s", currentNode.Properties.NodeType)
 		}
-		reqProps := database.GetInstanceNodes()[i].Properties
+		if currentNode.Properties.NodeType == "database" {
+			if databaseNodeCount == 0 && primaryNodeCount == 0 {
+				currentNode.Properties.Role = "Primary"
+			}
+			databaseNodeCount++
+			if currentNode.VmName == "" {
+				defaultDatabaseName := database.GetAdditionalArguments()["cluster_name"] + "-" + strconv.Itoa(databaseNodeCount+1)
+				currentNode.VmName = defaultDatabaseName
+			}
+		}
+		if currentNode.Properties.NodeType == "haproxy" {
+			proxyNodeCount++
+			if currentNode.VmName == "" {
+				defaultDatabaseName := database.GetAdditionalArguments()["cluster_name"] + "_haproxy" + strconv.Itoa(proxyNodeCount+1)
+				currentNode.VmName = defaultDatabaseName
+			}
+		}
+		isPrimaryNode := currentNode.Properties.NodeType == "database" && currentNode.Properties.Role == "Primary"
+		if isPrimaryNode {
+			primaryNodeCount += 1
+		}
+
+		//if nodeErrors != nil {
+		//	return nodeErrors
+		//}
+
 		props := make([]map[string]string, 0)
-		for key, value := range reqProps {
-			props = append(props, map[string]string{
-				"name":  key,
-				"value": value,
-			})
+		props[0] = map[string]string{
+			"role": currentNode.Properties.Role,
+		}
+		props[1] = map[string]string{
+			"failover_mode": currentNode.Properties.FailoverMode,
+		}
+		props[2] = map[string]string{
+			"role": currentNode.Properties.NodeType,
+		}
+		props[3] = map[string]string{
+			"remove_archive_destination": database.GetAdditionalArguments()["remove_archive_destination"],
 		}
 		req.Nodes = append(req.Nodes, Node{
 			Properties:       props,
 			VmName:           currentNode.VmName,
-			NxClusterId:      database.GetClusterId(), // change to use from currentNode on
+			NxClusterId:      database.GetClusterId(),
 			NetworkProfileId: req.NetworkProfileId,
 			ComputeProfileId: req.ComputeProfileId,
 		})
 	}
+	const MinReqDatabaseNodes = 3
+	if nodeCount < MinReqDatabaseNodes {
+		return fmt.Errorf("invalid node count: HA instance needs at least %d nodes, given: %d", MinReqDatabaseNodes, nodeCount)
+	}
+
 	return nil
-	//// Create node object for Database Instances
-	//for i := 0; i < 3; i++ {
-	//	// Hard coding the DB properties
-	//	props := make([]map[string]string, 4)
-	//	props[0] = map[string]string{
-	//		"name":  "role",
-	//		"value": "Secondary",
-	//	}
-	//	// 1st node will be the primary node
-	//	if i == 0 {
-	//		props[0]["value"] = "Primary"
-	//	}
-	//	props[1] = map[string]string{
-	//		"name":  "failover_mode",
-	//		"value": "Automatic",
-	//	}
-	//	props[2] = map[string]string{
-	//		"name":  "node_type",
-	//		"value": "database",
-	//	}
-	//	props[3] = map[string]string{
-	//		"name":  "remote_archive_destination",
-	//		"value": "",
-	//	}
-	//	req.Nodes = append(req.Nodes, Node{
-	//		Properties:       props,
-	//		VmName:           database.GetName() + "-" + strconv.Itoa(i+1),
-	//		NetworkProfileId: req.NetworkProfileId,
-	//		ComputeProfileId: req.ComputeProfileId,
-	//		NxClusterId:      database.GetClusterId(),
-	//	})
-	//}
 }
 
-func validateNodeRequest(node *v1alpha1.Node) (nodeErrors error) {
-	if len(node.VmName) == 0 {
-		return fmt.Errorf("node VM name cannot be emtpy")
+func getPrimaryNodeCount(database DatabaseInterface) int {
+	count := 0
+	for _, node := range database.GetInstanceNodes() {
+		if node.Properties.Role == "Primary" {
+			count++
+		}
 	}
-	if len(node.NxClusterId) != 36 {
-		return fmt.Errorf("node NxClusterId must be a valid UUID")
-	}
-	properties := node.Properties
-	if properties == nil || len(properties) == 0 {
-		return fmt.Errorf("missing/empty properties for node: %s", node.VmName)
-	}
-	return nil
+	return count
 }
 
 func (a *PostgresHARequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
@@ -408,84 +410,83 @@ func (a *PostgresHARequestAppender) appendProvisioningRequest(req *DatabaseProvi
 		proxyReadPort = "5001"
 	}
 	listenerPort := database.GetAdditionalArguments()["listener_port"]
-    if listenerPort == "" {
-        listenerPort = "5432"
-    }
-    proxyWritePort := database.GetAdditionalArguments()["proxy_write_port"]
-    if proxyWritePort == "" {
-        proxyWritePort = "5000"
-    }
-    enableSynchronousMode := database.GetAdditionalArguments()["enable_synchronous_mode"]
-    if enableSynchronousMode == "" {
-        enableSynchronousMode = "true"
-    }
-    autoTuneStagingDrive := database.GetAdditionalArguments()["auto_tune_staging_drive"]
-    if autoTuneStagingDrive == "" {
-        autoTuneStagingDrive = "true"
-    }
-    backupPolicy := database.GetAdditionalArguments()["backup_policy"]
-    if backupPolicy == "" {
-        backupPolicy = "primary_only"
-    }
-    provisionVirtualIP := database.GetAdditionalArguments()["provision_virtual_ip"]
-    if provisionVirtualIP == "" {
-        provisionVirtualIP = "true"
-    }
-    deployHAProxy := database.GetAdditionalArguments()["deploy_haproxy"]
-    if deployHAProxy == "" {
-        deployHAProxy = "true"
-    }
-    nodeType := database.GetAdditionalArguments()["node_type"]
-    if nodeType == "" {
-        nodeType = "database"
-    }
-    allocatePGHugePage := database.GetAdditionalArguments()["allocate_pg_hugepage"]
-    if allocatePGHugePage == "" {
-        allocatePGHugePage = "false"
-    }
-    clusterDatabase := database.GetAdditionalArguments()["cluster_database"]
-    if clusterDatabase == "" {
-        clusterDatabase = "false"
-    }
-    archiveWALExpireDays := database.GetAdditionalArguments()["archive_wal_expire_days"]
-    if archiveWALExpireDays == "" {
-        archiveWALExpireDays = "-1"
-    }
-    enablePeerAuth := database.GetAdditionalArguments()["enable_peer_auth"]
-    if enablePeerAuth == "" {
-        enablePeerAuth = "false"
-    }
-    clusterName := database.GetAdditionalArguments()["cluster_name"]
-    if clusterName == "" {
-        clusterName = "psqlcluster"
-    }
-    patroniClusterName := database.GetAdditionalArguments()["patroni_cluster_name"]
-    if patroniClusterName == "" {
-        patroniClusterName = "patroni"
-    }
+	if listenerPort == "" {
+		listenerPort = "5432"
+	}
+	proxyWritePort := database.GetAdditionalArguments()["proxy_write_port"]
+	if proxyWritePort == "" {
+		proxyWritePort = "5000"
+	}
+	enableSynchronousMode := database.GetAdditionalArguments()["enable_synchronous_mode"]
+	if enableSynchronousMode == "" {
+		enableSynchronousMode = "true"
+	}
+	autoTuneStagingDrive := database.GetAdditionalArguments()["auto_tune_staging_drive"]
+	if autoTuneStagingDrive == "" {
+		autoTuneStagingDrive = "true"
+	}
+	backupPolicy := database.GetAdditionalArguments()["backup_policy"]
+	if backupPolicy == "" {
+		backupPolicy = "primary_only"
+	}
+	provisionVirtualIP := database.GetAdditionalArguments()["provision_virtual_ip"]
+	if provisionVirtualIP == "" {
+		provisionVirtualIP = "true"
+	}
+	deployHAProxy := database.GetAdditionalArguments()["deploy_haproxy"]
+	if deployHAProxy == "" {
+		deployHAProxy = "true"
+	}
+	nodeType := database.GetAdditionalArguments()["node_type"]
+	if nodeType == "" {
+		nodeType = "database"
+	}
+	allocatePGHugePage := database.GetAdditionalArguments()["allocate_pg_hugepage"]
+	if allocatePGHugePage == "" {
+		allocatePGHugePage = "false"
+	}
+	clusterDatabase := database.GetAdditionalArguments()["cluster_database"]
+	if clusterDatabase == "" {
+		clusterDatabase = "false"
+	}
+	archiveWALExpireDays := database.GetAdditionalArguments()["archive_wal_expire_days"]
+	if archiveWALExpireDays == "" {
+		archiveWALExpireDays = "-1"
+	}
+	enablePeerAuth := database.GetAdditionalArguments()["enable_peer_auth"]
+	if enablePeerAuth == "" {
+		enablePeerAuth = "false"
+	}
+	clusterName := database.GetAdditionalArguments()["cluster_name"]
+	if clusterName == "" {
+		clusterName = "psqlcluster"
+	}
+	patroniClusterName := database.GetAdditionalArguments()["patroni_cluster_name"]
+	if patroniClusterName == "" {
+		patroniClusterName = "patroni"
+	}
 
-    actionArguments := map[string]string{
-        /* Non-Configurable from additionalArguments*/
-        "proxy_read_port":         proxyReadPort,
-        "listener_port":           listenerPort,
-        "proxy_write_port":        proxyWritePort,
-        "enable_synchronous_mode": enableSynchronousMode,
-        "auto_tune_staging_drive": autoTuneStagingDrive,
-        "backup_policy":           backupPolicy,
-        "db_password":             dbPassword,
-        "database_names":          databaseNames,
-        "provision_virtual_ip":    provisionVirtualIP,
-        "deploy_haproxy":          deployHAProxy,
-        "failover_mode":           failoverMode,
-        "node_type":               nodeType,
-        "allocate_pg_hugepage":    allocatePGHugePage,
-        "cluster_database":        clusterDatabase,
-        "archive_wal_expire_days": archiveWALExpireDays,
-        "enable_peer_auth":        enablePeerAuth,
-        "cluster_name":            clusterName,
-        "patroni_cluster_name":    patroniClusterName,
-    }
-
+	actionArguments := map[string]string{
+		/* Non-Configurable from additionalArguments*/
+		"proxy_read_port":         proxyReadPort,
+		"listener_port":           listenerPort,
+		"proxy_write_port":        proxyWritePort,
+		"enable_synchronous_mode": enableSynchronousMode,
+		"auto_tune_staging_drive": autoTuneStagingDrive,
+		"backup_policy":           backupPolicy,
+		"db_password":             dbPassword,
+		"database_names":          databaseNames,
+		"provision_virtual_ip":    provisionVirtualIP,
+		"deploy_haproxy":          deployHAProxy,
+		"failover_mode":           failoverMode,
+		"node_type":               nodeType,
+		"allocate_pg_hugepage":    allocatePGHugePage,
+		"cluster_database":        clusterDatabase,
+		"archive_wal_expire_days": archiveWALExpireDays,
+		"enable_peer_auth":        enablePeerAuth,
+		"cluster_name":            clusterName,
+		"patroni_cluster_name":    patroniClusterName,
+	}
 
 	// Appending/overwriting database actionArguments to actionArguments
 	if err := setConfiguredActionArguments(database, actionArguments); err != nil {

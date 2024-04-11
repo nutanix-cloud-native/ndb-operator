@@ -113,15 +113,17 @@ type Instance struct {
 	Nodes []*Node `json:"nodes"`
 }
 type Node struct {
-	VmName string `json:"vmName"`
 	// +optional
-	ComputeProfileId string `json:"computeProfileId,omitempty"`
+	VmName     string         `json:"vmName"`
+	Properties NodeProperties `json:"properties"`
+}
+
+type NodeProperties struct {
+	NodeType string `json:"properties"`
 	// +optional
-	NetworkProfileId string `json:"networkProfileId,omitempty"`
+	Role string `json:"role"`
 	// +optional
-	NewDbServerTimeZone string            `json:"newDbServerTimeZone,omitempty"`
-	NxClusterId         string            `json:"nxClusterId,omitempty"`
-	Properties          map[string]string `json:"properties"`
+	FailoverMode string `json:"failoverMode"`
 }
 
 type Clone struct {
