@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"time"
 
@@ -39,11 +40,20 @@ func SetupLogger(path string, rootName string) (*log.Logger, error) {
 		_ = os.Remove(path)
 	}
 
+	// Get the directory of the path
+	dir := filepath.Dir(path)
+
+	// Create the directory and all parent directories if they do not exist
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		return nil, err
+	}
+	
 	// Creates the file
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err
 	}
+	
 
 	// Links the logger to the file and returns the logger
 	return log.New(file, rootName, log.Ldate|log.Ltime|log.Lshortfile), nil

@@ -41,6 +41,7 @@ func (suite *MongoProvisioningSingleInstanceTestSuite) SetupSuite() {
 	// Setup logger and context
 	logger, err := util.SetupLogger(fmt.Sprintf("%s/mongo-provisioning-si_test.log", automation.PROVISIONING_LOG_PATH), "mongo-provisioning-si: ")
 	if err != nil {
+		fmt.Println(err)
 		suite.T().FailNow()
 	}
 	ctx = util.SetupContext(context.Background(), logger)
