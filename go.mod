@@ -1,6 +1,6 @@
 module github.com/nutanix-cloud-native/ndb-operator
 
-go 1.22.0
+go 1.21.7
 
 require (
 	github.com/google/uuid v1.3.0
