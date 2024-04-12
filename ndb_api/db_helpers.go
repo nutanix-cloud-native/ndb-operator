@@ -309,17 +309,22 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 	req.Nodes = []Node{}
 
 	// Validate node counts
-	nodeCount := len(req.Nodes)
+	nodesRequested := database.GetInstanceNodes()
+	nodeCount := len(nodesRequested)
+	if nodeCount == 0 {
+		nodeCount = 5
+		nodesRequested = createDefaultNodes(database)
+	}
 	databaseNodeCount := 0
 	proxyNodeCount := 0
 	req.NodeCount = nodeCount
-	primaryNodeCount := getPrimaryNodeCount(database)
+	primaryNodeCount := getPrimaryNodeCount(nodesRequested)
 	if primaryNodeCount > 1 {
 		return fmt.Errorf("invalid nodes: HA instance can only have one primary node")
 	}
 
 	for i := 0; i < nodeCount; i++ {
-		currentNode := database.GetInstanceNodes()[i]
+		currentNode := nodesRequested[i]
 
 		if currentNode.Properties.NodeType != "database" && currentNode.Properties.NodeType != "haproxy" {
 			return fmt.Errorf("invalid node type: %s", currentNode.Properties.NodeType)
@@ -350,7 +355,7 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 		//	return nodeErrors
 		//}
 
-		props := make([]map[string]string, 0)
+		props := make([]map[string]string, 4)
 		props[0] = map[string]string{
 			"role": currentNode.Properties.Role,
 		}
@@ -379,9 +384,50 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 	return nil
 }
 
-func getPrimaryNodeCount(database DatabaseInterface) int {
+func createDefaultNodes(database DatabaseInterface) []*v1alpha1.Node {
+	nodes := make([]*v1alpha1.Node, 0)
+	nodes = append(nodes, &v1alpha1.Node{
+		VmName: database.GetAdditionalArguments()["cluster_name"] + "_haproxy1",
+		Properties: v1alpha1.NodeProperties{
+			NodeType: "haproxy",
+		},
+	})
+	nodes = append(nodes, &v1alpha1.Node{
+		VmName: database.GetAdditionalArguments()["cluster_name"] + "_haproxy2",
+		Properties: v1alpha1.NodeProperties{
+			NodeType: "haproxy",
+		},
+	})
+	nodes = append(nodes, &v1alpha1.Node{
+		VmName: database.GetAdditionalArguments()["cluster_name"] + "-1",
+		Properties: v1alpha1.NodeProperties{
+			NodeType:     "database",
+			Role:         "Primary",
+			FailoverMode: "Automatic",
+		},
+	})
+	nodes = append(nodes, &v1alpha1.Node{
+		VmName: database.GetAdditionalArguments()["cluster_name"] + "-2",
+		Properties: v1alpha1.NodeProperties{
+			NodeType:     "database",
+			Role:         "Secondary",
+			FailoverMode: "Automatic",
+		},
+	})
+	nodes = append(nodes, &v1alpha1.Node{
+		VmName: database.GetAdditionalArguments()["cluster_name"] + "-3",
+		Properties: v1alpha1.NodeProperties{
+			NodeType:     "database",
+			Role:         "Secondary",
+			FailoverMode: "Automatic",
+		},
+	})
+	return nodes
+}
+
+func getPrimaryNodeCount(nodesRequested []*v1alpha1.Node) int {
 	count := 0
-	for _, node := range database.GetInstanceNodes() {
+	for _, node := range nodesRequested {
 		if node.Properties.Role == "Primary" {
 			count++
 		}

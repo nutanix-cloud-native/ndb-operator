@@ -3,6 +3,7 @@ package ndb_api
 import (
 	"context"
 	"errors"
+	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"reflect"
 	"sort"
 	"testing"
@@ -333,12 +334,14 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_positiveW
 		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
 		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
 	}
+	emptyNodes := make([]*v1alpha1.Node, 0)
 
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
 	mockDatabase.On("GetName").Return("TestPostgresHADB")
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+	mockDatabase.On("GetInstanceNodes").Return(emptyNodes)
 	mockDatabase.On("GetClusterId").Return(TEST_CLUSTER_ID)
 	mockDatabase.On("IsClone").Return(false)
 	expectedActionArgs := []ActionArgument{
@@ -454,11 +457,12 @@ func TestPostgresHAProvisionRequestAppender_withAdditionalArguments_positiveWork
 		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
 		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
 	}
-
+	emptyNodes := make([]*v1alpha1.Node, 0)
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
 	mockDatabase.On("GetName").Return("TestPostgresHADB")
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetInstanceNodes").Return(emptyNodes)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"listener_port": "0000",
 	})
@@ -578,11 +582,12 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_negativeW
 		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
 		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
 	}
-
+	emptyNodes := make([]*v1alpha1.Node, 0)
 	// Mock required Mock Database Interface methods
 	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
 	mockDatabase.On("GetName").Return("TestPostgresHADB")
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetInstanceNodes").Return(emptyNodes)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
 		"invalid-key": "invalid-value",
 	})
