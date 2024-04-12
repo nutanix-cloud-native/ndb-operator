@@ -40,6 +40,7 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) SetupSuite() {
 	// Setup logger and context
 	logger, err := util.SetupLogger(fmt.Sprintf("%s/mssql-provisioning-si_test.log", automation.PROVISIONING_LOG_PATH), "mssql-provisioning-si: ")
 	if err != nil {
+		fmt.Println(err)
 		suite.T().FailNow()
 	}
 	ctx = util.SetupContext(context.Background(), logger)
@@ -174,7 +175,7 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) TestTimeMachineSuccess() 
 		logger.Println("Timemachine response retrieved.")
 	}
 
-	err = util.CheckTmInfo(suite.ctx, suite.setupTypes.Database, &tm)
+	err = util.CheckTmInfo(suite.ctx, suite.setupTypes.Database, tm)
 	if err != nil {
 		logger.Printf("Error: TestTimeMachineSuccess() failed! %v", err)
 		assert.FailNow("Error: TestTimeMachineSuccess() failed! %v", err)

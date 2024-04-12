@@ -41,6 +41,7 @@ func (suite *MSSQLCloningSingleInstanceTestSuite) SetupSuite() {
 	// Setup logger and context
 	logger, err := util.SetupLogger(fmt.Sprintf("%s/mssql-cloning-si_test.log", automation.CLONING_LOG_PATH), "mssql-cloning-si: ")
 	if err != nil {
+		fmt.Println(err)
 		suite.T().FailNow()
 	}
 	ctx = util.SetupContext(context.Background(), logger)

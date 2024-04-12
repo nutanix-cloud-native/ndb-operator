@@ -2,6 +2,7 @@ package ndb_api
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -13,6 +14,11 @@ type MockDatabaseInterface struct {
 
 // MockProfileResolverInterface is a mock implementation of the ProfileResolver interface
 type MockProfileResolverInterface struct {
+	mock.Mock
+}
+
+// MockNDBClientHTTPInterface is a mock implementation of the NDBClientHTTP interface defined in the ndb_client package
+type MockNDBClientHTTPInterface struct {
 	mock.Mock
 }
 
@@ -135,4 +141,20 @@ func (m *MockDatabaseInterface) GetAdditionalArguments() map[string]string {
 
 	// If the type assertion fails, return default
 	return map[string]string{}
+}
+
+func (m *MockNDBClientHTTPInterface) NewRequest(method, endpoint string, requestBody interface{}) (*http.Request, error) {
+	args := m.Called(method, endpoint, requestBody)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*http.Request), args.Error(1)
+}
+
+func (m *MockNDBClientHTTPInterface) Do(req *http.Request) (*http.Response, error) {
+	args := m.Called(req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*http.Response), args.Error(1)
 }

@@ -73,7 +73,7 @@ func (inputProfile *Profile) Resolve(ctx context.Context, allProfiles []ndb_api.
 
 	/*
 		1. if both name & id not provided => resolve the OOB profile
-		2. else if both name & id are provided => resolve by both & ensure that both resolved profiles are match
+		2. else if both name & id are provided => resolve by both & ensure that both resolved profiles match
 		3. else if only id provided => resolve by id
 		4. else if only name provided => resolve by name
 		5. else => throw an error

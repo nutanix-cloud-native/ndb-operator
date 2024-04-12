@@ -41,6 +41,7 @@ func (suite *MySQLProvisioningSingleInstanceTestSuite) SetupSuite() {
 	// Setup logger and context
 	logger, err := util.SetupLogger(fmt.Sprintf("%s/mysql-provisioning-si_test.log", automation.PROVISIONING_LOG_PATH), "mysql-provisioning-si: ")
 	if err != nil {
+		fmt.Println(err)
 		suite.T().FailNow()
 	}
 	ctx = util.SetupContext(context.Background(), logger)
@@ -175,7 +176,7 @@ func (suite *MySQLProvisioningSingleInstanceTestSuite) TestTimeMachineSuccess() 
 		logger.Println("Timemachine response retrieved.")
 	}
 
-	err = util.CheckTmInfo(suite.ctx, suite.setupTypes.Database, &tm)
+	err = util.CheckTmInfo(suite.ctx, suite.setupTypes.Database, tm)
 	if err != nil {
 		logger.Printf("Error: TestTimeMachineSuccess() failed! %v", err)
 		assert.FailNow("Error: TestTimeMachineSuccess() failed! %v", err)

@@ -30,7 +30,7 @@ import (
 
 // Fetches all the profiles and returns a map of profiles
 // Returns an error if any profile is not found
-func ResolveProfiles(ctx context.Context, ndb_client *ndb_client.NDBClient, databaseType string, profileResolvers ProfileResolvers) (profilesMap map[string]ProfileResponse, err error) {
+func ResolveProfiles(ctx context.Context, ndb_client ndb_client.NDBClientHTTPInterface, databaseType string, profileResolvers ProfileResolvers) (profilesMap map[string]ProfileResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 
 	log.Info("Entered ndb_api.GetProfiles", "Input profiles", profileResolvers)

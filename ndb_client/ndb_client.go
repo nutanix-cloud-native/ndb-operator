@@ -21,8 +21,15 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"io"
 	"net/http"
 )
+
+// NDBClientInterface defines the methods for an NDB client.
+type NDBClientHTTPInterface interface {
+	NewRequest(method, endpoint string, requestBody interface{}) (*http.Request, error)
+	Do(req *http.Request) (*http.Response, error)
+}
 
 type NDBClient struct {
 	username string
@@ -44,39 +51,36 @@ func NewNDBClient(username, password, url, caCert string, skipVerify bool) *NDBC
 	return &NDBClient{username, password, url, client}
 }
 
-func (ndbClient *NDBClient) Get(path string) (*http.Response, error) {
-	url := ndbClient.url + "/" + path
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		// fmt.Println(err)
-		return nil, err
-	}
-	req.SetBasicAuth(ndbClient.username, ndbClient.password)
-	return ndbClient.client.Do(req)
-}
+func (ndbClient *NDBClient) NewRequest(method, endpoint string, requestBody interface{}) (*http.Request, error) {
 
-func (ndbClient *NDBClient) Post(path string, body interface{}) (*http.Response, error) {
-	url := ndbClient.url + "/" + path
-	payload, _ := json.Marshal(body)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
+	url := ndbClient.url + "/" + endpoint
+
+	var body io.Reader
+
+	if requestBody != nil {
+		// Serialize the request body to JSON.
+		payload, err := json.Marshal(requestBody)
+		if err != nil {
+			return nil, err
+		}
+		// Create a reader from the serialized payload.
+		body = bytes.NewReader(payload)
+	}
+
+	// Create a new HTTP request with the specified method and URL.
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		// fmt.Println(err)
 		return nil, err
 	}
+
+	// Set headers
 	req.SetBasicAuth(ndbClient.username, ndbClient.password)
 	req.Header.Add("Content-Type", "application/json; charset=utf-8")
-	return ndbClient.client.Do(req)
+
+	return req, nil
 }
 
-func (ndbClient *NDBClient) Delete(path string, body interface{}) (*http.Response, error) {
-	url := ndbClient.url + "/" + path
-	payload, _ := json.Marshal(body)
-	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(payload))
-	if err != nil {
-		// fmt.Println(err)
-		return nil, err
-	}
-	req.SetBasicAuth(ndbClient.username, ndbClient.password)
-	req.Header.Add("Content-Type", "application/json; charset=utf-8")
+func (ndbClient *NDBClient) Do(req *http.Request) (*http.Response, error) {
+	// Use the HTTP client to send the provided request.
 	return ndbClient.client.Do(req)
 }

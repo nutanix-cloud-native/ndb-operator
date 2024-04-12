@@ -18,10 +18,6 @@ package ndb_api
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
@@ -29,37 +25,11 @@ import (
 )
 
 // Fetches and returns all the SLAs as a sla slice
-func GetAllSLAs(ctx context.Context, ndbClient *ndb_client.NDBClient) (slas []SLAResponse, err error) {
+func GetAllSLAs(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface) (slas []SLAResponse, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered ndb_api.GetAllSLAs")
-	if ndbClient == nil {
-		err = errors.New("nil reference: received nil reference for ndbClient")
-		log.Error(err, "Received nil ndbClient reference")
+	if _, err = sendRequest(ctx, ndbClient, http.MethodGet, "slas", nil, &slas); err != nil {
+		log.Error(err, "Error in GetAllSLAs")
 		return
 	}
-	res, err := ndbClient.Get("slas")
-	if err != nil || res == nil || res.StatusCode != http.StatusOK {
-		if err == nil {
-			if res != nil {
-				err = fmt.Errorf("GET /slas responded with %d", res.StatusCode)
-			} else {
-				err = fmt.Errorf("GET /slas responded with nil response")
-			}
-		}
-		log.Error(err, "Error occurred while fetching slas")
-		return
-	}
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-	if err != nil {
-		log.Error(err, "Error occurred reading response.Body in GetAllSLAs")
-		return
-	}
-	err = json.Unmarshal(body, &slas)
-	if err != nil {
-		log.Error(err, "Error occurred trying to unmarshal.")
-		return
-	}
-	log.Info("Returning from ndb_api.GetAllSLAs")
 	return
 }
