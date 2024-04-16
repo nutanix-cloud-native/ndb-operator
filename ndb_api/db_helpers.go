@@ -115,8 +115,8 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		log.Error(err, "Error while appending provisioning request")
 		return
 	}
+
 	requestBody, err = appender.appendProvisioningRequest(requestBody, database, reqData)
-	util.ToString(requestBody)
 	if err != nil {
 		log.Error(err, "Error while appending provisioning request")
 	}
@@ -331,13 +331,16 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 			return fmt.Errorf("invalid node type: %s", currentNode.Properties.NodeType)
 		}
 		if currentNode.Properties.NodeType == "database" {
-			if databaseNodeCount == 0 && primaryNodeCount == 0 {
+			if databaseNodeCount == 0 && primaryNodeCount == 0 && currentNode.Properties.Role == "" {
 				currentNode.Properties.Role = "Primary"
 			}
 			databaseNodeCount++
 			if currentNode.VmName == "" {
 				defaultDatabaseName := database.GetAdditionalArguments()["cluster_name"] + "-" + strconv.Itoa(databaseNodeCount+1)
 				currentNode.VmName = defaultDatabaseName
+			}
+			if currentNode.Properties.Role == "" {
+				currentNode.Properties.Role = "Secondary"
 			}
 		}
 		if currentNode.Properties.NodeType == "haproxy" {
@@ -351,10 +354,6 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 		if isPrimaryNode {
 			primaryNodeCount += 1
 		}
-
-		//if nodeErrors != nil {
-		//	return nodeErrors
-		//}
 
 		props := make([]map[string]string, 4)
 		props[0] = map[string]string{
