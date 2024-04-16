@@ -107,6 +107,23 @@ type Instance struct {
 	// +optional
 	// Additional database engine specific arguments
 	AdditionalArguments map[string]string `json:"additionalArguments"`
+	// +optional
+	IsHighAvailability bool `json:"isHighAvailability"`
+	// +optional
+	Nodes []*Node `json:"nodes"`
+}
+type Node struct {
+	// +optional
+	VmName     string         `json:"vmName"`
+	Properties NodeProperties `json:"properties"`
+}
+
+type NodeProperties struct {
+	NodeType string `json:"node_type"`
+	// +optional
+	Role string `json:"role"`
+	// +optional
+	FailoverMode string `json:"failover_mode"`
 }
 
 type Clone struct {
@@ -133,6 +150,10 @@ type Clone struct {
 	// +optional
 	// Additional database engine specific arguments
 	AdditionalArguments map[string]string `json:"additionalArguments"`
+	// +optional
+	IsHighAvailability bool `json:"isHighAvailability"`
+	// +optional
+	Nodes []*Node `json:"nodes"`
 }
 
 // Time Machine details

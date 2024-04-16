@@ -134,12 +134,16 @@ func GetDatabasePortByType(dbType string) int32 {
 }
 
 // Get specific implementation of the DBProvisionRequestAppender interface based on the provided databaseType
-func GetRequestAppender(databaseType string) (requestAppender RequestAppender, err error) {
+func GetRequestAppender(databaseType string, isHighAvailability bool) (requestAppender RequestAppender, err error) {
 	switch databaseType {
 	case common.DATABASE_TYPE_MYSQL:
 		requestAppender = &MySqlRequestAppender{}
 	case common.DATABASE_TYPE_POSTGRES:
-		requestAppender = &PostgresRequestAppender{}
+		if isHighAvailability {
+			requestAppender = &PostgresHARequestAppender{}
+		} else {
+			requestAppender = &PostgresRequestAppender{}
+		}
 	case common.DATABASE_TYPE_MONGODB:
 		requestAppender = &MongoDbRequestAppender{}
 	case common.DATABASE_TYPE_MSSQL:

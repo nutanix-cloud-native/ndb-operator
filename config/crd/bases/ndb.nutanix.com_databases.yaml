@@ -69,9 +69,33 @@ spec:
                   description:
                     description: Description of the clone instance
                     type: string
+                  isHighAvailability:
+                    type: boolean
                   name:
                     description: Name of the clone instance
                     type: string
+                  nodes:
+                    items:
+                      properties:
+                        failoverMode:
+                          type: string
+                        nodeType:
+                          type: string
+                        nxClusterId:
+                          type: string
+                        nxClusterName:
+                          type: string
+                        remoteArchiveDestination:
+                          type: string
+                        role:
+                          type: string
+                        vmName:
+                          type: string
+                      required:
+                      - nodeType
+                      - vmName
+                      type: object
+                    type: array
                   profiles:
                     properties:
                       compute:
@@ -155,9 +179,33 @@ spec:
                   description:
                     description: Description of the database instance
                     type: string
+                  isHighAvailability:
+                    type: boolean
                   name:
                     description: Name of the database instance
                     type: string
+                  nodes:
+                    items:
+                      properties:
+                        failoverMode:
+                          type: string
+                        nodeType:
+                          type: string
+                        nxClusterId:
+                          type: string
+                        nxClusterName:
+                          type: string
+                        remoteArchiveDestination:
+                          type: string
+                        role:
+                          type: string
+                        vmName:
+                          type: string
+                      required:
+                      - nodeType
+                      - vmName
+                      type: object
+                    type: array
                   profiles:
                     properties:
                       compute:

@@ -242,7 +242,7 @@ func TestGetRequestAppender(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		result, err := GetRequestAppender(tc.databaseType)
+		result, err := GetRequestAppender(tc.databaseType, false)
 		if tc.expectedResult {
 			assert.NotNil(t, result)
 			assert.NoError(t, err)
