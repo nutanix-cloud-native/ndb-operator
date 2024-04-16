@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"strconv"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"

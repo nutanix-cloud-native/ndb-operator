@@ -1,7 +1,6 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
