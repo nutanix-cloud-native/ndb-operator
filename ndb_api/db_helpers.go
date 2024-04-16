@@ -357,16 +357,20 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 
 		props := make([]map[string]string, 4)
 		props[0] = map[string]string{
-			"role": currentNode.Properties.Role,
+			"name":  "role",
+			"value": currentNode.Properties.Role,
 		}
 		props[1] = map[string]string{
-			"failover_mode": currentNode.Properties.FailoverMode,
+			"name":  "failover_mode",
+			"value": currentNode.Properties.FailoverMode,
 		}
 		props[2] = map[string]string{
-			"role": currentNode.Properties.NodeType,
+			"name":  "node_type",
+			"value": currentNode.Properties.NodeType,
 		}
 		props[3] = map[string]string{
-			"remove_archive_destination": database.GetAdditionalArguments()["remove_archive_destination"],
+			"name":  "remove_archive_destination",
+			"value": database.GetAdditionalArguments()["remove_archive_destination"],
 		}
 		req.Nodes = append(req.Nodes, Node{
 			Properties:       props,

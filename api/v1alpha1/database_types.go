@@ -119,11 +119,11 @@ type Node struct {
 }
 
 type NodeProperties struct {
-	NodeType string `json:"properties"`
+	NodeType string `json:"node_type"`
 	// +optional
 	Role string `json:"role"`
 	// +optional
-	FailoverMode string `json:"failoverMode"`
+	FailoverMode string `json:"failover_mode"`
 }
 
 type Clone struct {
