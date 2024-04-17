@@ -110,7 +110,7 @@ type Instance struct {
 	// +optional
 	IsHighAvailability bool `json:"isHighAvailability"`
 	// +optional
-	Nodes []*Node `json:"nodes"`
+	Nodes []*Node `json:"nodes,omitempty"`
 }
 type Node struct {
 	// +optional
@@ -153,7 +153,7 @@ type Clone struct {
 	// +optional
 	IsHighAvailability bool `json:"isHighAvailability"`
 	// +optional
-	Nodes []*Node `json:"nodes"`
+	Nodes []*Node `json:"nodes,omitempty"`
 }
 
 // Time Machine details
