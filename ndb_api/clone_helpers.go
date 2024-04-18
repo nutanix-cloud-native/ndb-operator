@@ -279,8 +279,7 @@ func (a *PostgresHARequestAppender) appendCloningRequest(req *DatabaseCloneReque
 	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 
-	// Set the number of nodes to 5, 3 Postgres nodes + 2 HA Proxy nodes
-	req.NodeCount = 5
+	req.NodeCount = len(database.GetInstanceNodes())
 	setCloneNodesParameters(req, database)
 
 	// Default action arguments
