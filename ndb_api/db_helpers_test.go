@@ -350,6 +350,10 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_positiveW
 			Value: "5001",
 		},
 		{
+			Name:  "cluster_name",
+			Value: "postgresHaCluster",
+		},
+		{
 			Name:  "listener_port",
 			Value: "5432",
 		},
