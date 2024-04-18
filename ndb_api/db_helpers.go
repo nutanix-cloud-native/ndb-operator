@@ -308,7 +308,9 @@ func (a *PostgresRequestAppender) appendProvisioningRequest(req *DatabaseProvisi
 func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterface) (nodeErrors error) {
 	// Clear the original req.Nodes array
 	req.Nodes = []Node{}
-
+	if database.GetAdditionalArguments()["cluster_name"] == "" {
+		database.GetAdditionalArguments()["cluster_name"] = "postgresHaCluster"
+	}
 	// Validate node counts
 	nodesRequested := database.GetInstanceNodes()
 	nodeCount := len(nodesRequested)
