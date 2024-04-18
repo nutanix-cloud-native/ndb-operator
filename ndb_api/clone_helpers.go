@@ -17,8 +17,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 
+	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -220,56 +220,58 @@ func setCloneNodesParameters(req *DatabaseCloneRequest, database DatabaseInterfa
 	networkProfileId := req.Nodes[0].NetworkProfileId
 	serverTimeZone := req.Nodes[0].NewDbServerTimeZone
 
-	// Clear the original req.Nodes array
+	// Convert database.Instance.Nodes to the common type Nodes
 	req.Nodes = []Node{}
-
-	// Create node object for HA Proxy
-	for i := 0; i < 2; i++ {
-		// Hard coding the HA Proxy properties
-		props := make([]map[string]string, 1)
-		props[0] = map[string]string{
-			"name":  "node_type",
-			"value": "haproxy",
+	for _, node := range database.GetInstanceNodes() {
+		built := Node{}
+		if node.Properties.NodeType == "haproxy" {
+			built = buildHAProxyNode(req, node, database.GetClusterId())
+		} else {
+			built = buildDatabaseNode(req, node, computeProfileId, networkProfileId, serverTimeZone, database.GetClusterId())
 		}
-		req.Nodes = append(req.Nodes, Node{
-			Properties:  props,
-			VmName:      database.GetName() + "_haproxy" + strconv.Itoa(i),
-			NxClusterId: database.GetClusterId(),
-		})
+
+		req.Nodes = append(req.Nodes, built)
 	}
+}
 
-	// Create node object for Database Instances
-	for i := 0; i < 3; i++ {
-		// Hard coding the DB properties
-		props := make([]map[string]string, 4)
-		props[0] = map[string]string{
-			"name":  "role",
-			"value": "Secondary",
-		}
-		// 1st node will be the primary node
-		if i == 0 {
-			props[0]["value"] = "Primary"
-		}
-		props[1] = map[string]string{
-			"name":  "failover_mode",
-			"value": "Automatic",
-		}
-		props[2] = map[string]string{
-			"name":  "node_type",
-			"value": "database",
-		}
-		props[3] = map[string]string{
-			"name":  "remote_archive_destination",
-			"value": "",
-		}
-		req.Nodes = append(req.Nodes, Node{
-			ComputeProfileId:    computeProfileId,
-			NetworkProfileId:    networkProfileId,
-			NewDbServerTimeZone: serverTimeZone,
-			Properties:          props,
-			VmName:              database.GetName() + "-" + strconv.Itoa(i),
-			NxClusterId:         database.GetClusterId(),
-		})
+func buildHAProxyNode(req *DatabaseCloneRequest, node *v1alpha1.Node, clusterId string) Node {
+	props := make([]map[string]string, 1)
+	props[0] = map[string]string{
+		"name":  "node_type",
+		"value": node.Properties.NodeType,
+	}
+	return Node{
+		Properties:  props,
+		VmName:      node.VmName,
+		NxClusterId: clusterId,
+	}
+}
+
+func buildDatabaseNode(req *DatabaseCloneRequest, node *v1alpha1.Node, computeProfileId, networkProfileId, serverTimeZone, clusterId string) Node {
+	props := make([]map[string]string, 4)
+	props[0] = map[string]string{
+		"name":  "role",
+		"value": node.Properties.Role,
+	}
+	props[1] = map[string]string{
+		"name":  "failover_mode",
+		"value": node.Properties.FailoverMode,
+	}
+	props[2] = map[string]string{
+		"name":  "node_type",
+		"value": node.Properties.NodeType,
+	}
+	props[3] = map[string]string{
+		"name":  "remote_archive_destination",
+		"value": "",
+	}
+	return Node{
+		ComputeProfileId:    computeProfileId,
+		NetworkProfileId:    networkProfileId,
+		NewDbServerTimeZone: serverTimeZone,
+		Properties:          props,
+		VmName:              node.VmName,
+		NxClusterId:         clusterId,
 	}
 }
 
