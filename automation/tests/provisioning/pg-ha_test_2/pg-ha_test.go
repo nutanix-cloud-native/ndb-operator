@@ -175,7 +175,7 @@ func (suite *PostgresProvisioningHighAvailabilityTestSuite) TestTimeMachineSucce
 		logger.Println("Timemachine response retrieved.")
 	}
 
-	err = util.CheckTmInfo(suite.ctx, suite.setupTypes.Database, &tm)
+	err = util.CheckTmInfo(suite.ctx, suite.setupTypes.Database, tm)
 	if err != nil {
 		logger.Printf("Error: TestTimeMachineSuccess() failed! %v", err)
 		assert.FailNow("Error: TestTimeMachineSuccess() failed! %v", err)
