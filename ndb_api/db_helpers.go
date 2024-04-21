@@ -305,6 +305,31 @@ func (a *PostgresRequestAppender) appendProvisioningRequest(req *DatabaseProvisi
 	return req, nil
 }
 
+func (a *PostgresHARequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+	databaseNames := database.GetInstanceDatabaseNames()
+	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	// Set the number of nodes to 5, 3 Postgres nodes + 2 HA Proxy nodes
+	err := setNodesParameters(req, database)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Clustered = true
+
+	// Default action arguments
+	actionArguments := defaultActionArgumentsforHAProvisioning(database, dbPassword, databaseNames)
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
+}
+
 func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterface) (nodeErrors error) {
 	// Clear the original req.Nodes array
 	req.Nodes = []Node{}
@@ -439,31 +464,6 @@ func getPrimaryNodeCount(nodesRequested []*v1alpha1.Node) int {
 		}
 	}
 	return count
-}
-
-func (a *PostgresHARequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
-	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
-	databaseNames := database.GetInstanceDatabaseNames()
-	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
-	// Set the number of nodes to 5, 3 Postgres nodes + 2 HA Proxy nodes
-	err := setNodesParameters(req, database)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Clustered = true
-
-	// Default action arguments
-	actionArguments := defaultActionArgumentsforHAProvisioning(database, dbPassword, databaseNames)
-
-	// Appending/overwriting database actionArguments to actionArguments
-	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
-		return nil, err
-	}
-	// Converting action arguments map to list and appending to req.ActionArguments
-	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
-
-	return req, nil
 }
 
 func defaultActionArgumentsforHAProvisioning(database DatabaseInterface, dbPassword string, databaseNames string) map[string]string {
