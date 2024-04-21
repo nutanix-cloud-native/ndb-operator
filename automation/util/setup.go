@@ -47,12 +47,13 @@ func SetupLogger(path string, rootName string) (*log.Logger, error) {
 	if err := os.MkdirAll(dir, 0777); err != nil {
 		return nil, err
 	}
-
+	
 	// Creates the file
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err
 	}
+	
 
 	// Links the logger to the file and returns the logger
 	return log.New(file, rootName, log.Ldate|log.Ltime|log.Lshortfile), nil
