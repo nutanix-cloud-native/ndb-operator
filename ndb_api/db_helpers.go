@@ -190,7 +190,7 @@ func setConfiguredActionArguments(database DatabaseInterface, actionArguments ma
 		return fmt.Errorf("%s! Action arguments cannot be nil", errMsgRoot)
 	}
 
-	allowedAdditionalArguments, err := util.GetAllowedAdditionalArguments(database.IsClone(), database.GetInstanceType())
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArguments(database.IsClone(), database.GetInstanceType(), database.GetInstanceIsHighAvailability())
 	if err != nil {
 		return fmt.Errorf("%s! %s", errMsgRoot, err.Error())
 	}

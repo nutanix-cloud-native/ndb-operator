@@ -141,6 +141,7 @@ func TestPostgresProvisionRequestAppender_withoutAdditionalArguments_positiveWor
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "proxy_read_port",
@@ -222,6 +223,7 @@ func TestPostgresProvisionRequestAppender_withAdditionalArguments_positiveWorkfl
 		"listener_port": "0000",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -304,6 +306,7 @@ func TestPostgresProvisionRequestAppender_withAdditionalArguments_negativeWorkfl
 		"invalid-key": "invalid-value",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES, false)
 
@@ -344,6 +347,7 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_positiveW
 	mockDatabase.On("GetInstanceNodes").Return(emptyNodes)
 	mockDatabase.On("GetClusterId").Return(TEST_CLUSTER_ID)
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(true)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "proxy_read_port",
@@ -468,6 +472,7 @@ func TestPostgresHAProvisionRequestAppender_withAdditionalArguments_positiveWork
 	})
 	mockDatabase.On("GetClusterId").Return(TEST_CLUSTER_ID)
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(true)
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -536,7 +541,7 @@ func TestPostgresHAProvisionRequestAppender_withAdditionalArguments_positiveWork
 		},
 		{
 			Name:  "cluster_name",
-			Value: "psqlcluster",
+			Value: "postgresHaCluster",
 		},
 		{
 			Name:  "patroni_cluster_name",
@@ -593,6 +598,7 @@ func TestPostgresHAProvisionRequestAppender_withoutAdditionalArguments_negativeW
 	})
 	mockDatabase.On("GetClusterId").Return(TEST_CLUSTER_ID)
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(true)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES, true)
 
@@ -644,6 +650,7 @@ func TestMSSQLProvisionRequestAppender_withoutAdditionalArguments_positiveWorklo
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MSSQL)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "working_dir",
@@ -763,6 +770,7 @@ func TestMSSQLProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(
 		"vm_db_server_user":         "<vm-db-server-user>",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "sql_user_name",
@@ -892,6 +900,7 @@ func TestMSSQLProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(
 		"invalid-key2": "invalid-value",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MSSQL, false)
 
@@ -929,6 +938,7 @@ func TestMongoDbProvisionRequestAppender_withoutAdditionalArguments_positiveWork
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MONGODB)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -1016,6 +1026,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_positiveWorkflo
 		"journal_size":  "1",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -1101,6 +1112,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_negativeWorkflo
 		"invalid-key": "invalid-value",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB, false)
 
@@ -1137,6 +1149,7 @@ func TestMySqlProvisionRequestAppender_withoutAdditionalArguments_positiveWorkfl
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MYSQL)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -1202,6 +1215,7 @@ func TestMySqlProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(
 		"listener_port": "1111",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -1267,6 +1281,7 @@ func TestMySqlProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(
 		"invalid-key": "invalid-value",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("GetInstanceIsHighAvailability").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL, false)
 

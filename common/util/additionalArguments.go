@@ -10,11 +10,12 @@ import (
 //  1. A map where the keys are the allowed additional arguments for the database type, and the corresponding values indicates whether the key is an action argument (where true=yes and false=no).
 //     Currently, all additional arguments are action arguments but this might not always be the case, thus this distinction is made so actual action arguments are appended to the appropriate provisioning body property.
 //  2. An error if there is no allowed additional arguments for the corresponding type, in other words, if the dbType is not MSSQL, MongoDB, PostGres, or MYSQL. Else nil.
-func GetAllowedAdditionalArguments(isClone bool, dbType string) (map[string]bool, error) {
+
+func GetAllowedAdditionalArguments(isClone bool, dbType string, isHa bool) (map[string]bool, error) {
 	if isClone {
 		return GetAllowedAdditionalArgumentsForClone(dbType)
 	} else {
-		return GetAllowedAdditionalArgumentsForDatabase(dbType)
+		return GetAllowedAdditionalArgumentsForDatabase(dbType, isHa)
 	}
 }
 
@@ -79,7 +80,7 @@ func GetAllowedAdditionalArgumentsForClone(dbType string) (map[string]bool, erro
 	}
 }
 
-func GetAllowedAdditionalArgumentsForDatabase(dbType string) (map[string]bool, error) {
+func GetAllowedAdditionalArgumentsForDatabase(dbType string, isHA bool) (map[string]bool, error) {
 	switch dbType {
 	case common.DATABASE_TYPE_MSSQL:
 		return map[string]bool{
@@ -104,27 +105,34 @@ func GetAllowedAdditionalArgumentsForDatabase(dbType string) (map[string]bool, e
 			"journal_size":  true,
 		}, nil
 	case common.DATABASE_TYPE_POSTGRES:
-		return map[string]bool{
-			/* Has a default */
-			"listener_port":           true,
-			"proxy_read_port":         true,
-			"proxy_write_port":        true,
-			"enable_synchronous_mode": true,
-			"auto_tune_staging_drive": true,
-			"backup_policy":           true,
-			"db_password":             true,
-			"database_names":          true,
-			"provision_virtual_ip":    true,
-			"deploy_haproxy":          true,
-			"failover_mode":           true,
-			"node_type":               true,
-			"allocate_pg_hugepage":    true,
-			"cluster_database":        true,
-			"archive_wal_expire_days": true,
-			"enable_peer_auth":        true,
-			"cluster_name":            true,
-			"patroni_cluster_name":    true,
-		}, nil
+		if isHA {
+			return map[string]bool{
+				/* Has a default */
+				"listener_port":           true,
+				"proxy_read_port":         true,
+				"proxy_write_port":        true,
+				"enable_synchronous_mode": true,
+				"auto_tune_staging_drive": true,
+				"backup_policy":           true,
+				"db_password":             true,
+				"database_names":          true,
+				"provision_virtual_ip":    true,
+				"deploy_haproxy":          true,
+				"failover_mode":           true,
+				"node_type":               true,
+				"allocate_pg_hugepage":    true,
+				"cluster_database":        true,
+				"archive_wal_expire_days": true,
+				"enable_peer_auth":        true,
+				"cluster_name":            true,
+				"patroni_cluster_name":    true,
+			}, nil
+		} else {
+			return map[string]bool{
+				/* Has a default */
+				"listener_port": true,
+			}, nil
+		}
 	case common.DATABASE_TYPE_MYSQL:
 		return map[string]bool{
 			"listener_port": true,

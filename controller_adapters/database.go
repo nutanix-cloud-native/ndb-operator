@@ -146,10 +146,16 @@ func (d *Database) GetInstanceSize() int {
 }
 
 func (d *Database) GetInstanceIsHighAvailability() bool {
+	if d.IsClone() {
+		return d.Spec.Clone.IsHighAvailability
+	}
 	return d.Spec.Instance.IsHighAvailability
 }
 
 func (d *Database) GetInstanceNodes() []*v1alpha1.Node {
+	if d.IsClone() {
+		return d.Spec.Instance.Nodes
+	}
 	return d.Spec.Instance.Nodes
 }
 

@@ -97,13 +97,13 @@ func (r *Database) ValidateDelete() (admission.Warnings, error) {
 }
 
 /* Checks if configured additional arguments are valid or not and returns the corresponding additional arguments. If error is nil valid, else invalid */
-func additionalArgumentsValidationCheck(isClone bool, dbType string, specifiedAdditionalArguments map[string]string) error {
+func additionalArgumentsValidationCheck(isClone bool, dbType string, isHA bool, specifiedAdditionalArguments map[string]string) error {
 	// Empty additionalArguments is always valid
 	if specifiedAdditionalArguments == nil {
 		return nil
 	}
 
-	allowedAdditionalArguments, err := util.GetAllowedAdditionalArguments(isClone, dbType)
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArguments(isClone, dbType, isHA)
 
 	// Invalid type returns error
 	if err != nil {

@@ -91,7 +91,7 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 		}
 	}
 
-	if err := additionalArgumentsValidationCheck(spec.IsClone, clone.Type, clone.AdditionalArguments); err != nil {
+	if err := additionalArgumentsValidationCheck(spec.IsClone, clone.Type, clone.IsHighAvailability, clone.AdditionalArguments); err != nil {
 		*errors = append(*errors, field.Invalid(clonePath.Child("additionalArguments"), clone.AdditionalArguments, err.Error()))
 	}
 	databaselog.Info("Exiting validateCreate for clone")
@@ -230,7 +230,7 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 		))
 	}
 
-	if err := additionalArgumentsValidationCheck(spec.IsClone, instance.Type, instance.AdditionalArguments); err != nil {
+	if err := additionalArgumentsValidationCheck(spec.IsClone, instance.Type, instance.IsHighAvailability, instance.AdditionalArguments); err != nil {
 		*errors = append(*errors, field.Invalid(instancePath.Child("additionalArguments"), instance.AdditionalArguments, err.Error()))
 	}
 
