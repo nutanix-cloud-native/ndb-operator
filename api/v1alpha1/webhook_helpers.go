@@ -97,7 +97,7 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 
 	// Validate nodes for HA
 	if err := ValidateNodes(clone.Nodes, clone.IsHighAvailability); err != nil {
-		*errors = append(*errors, field.Invalid(clonePath.Child("nodes"), spec.Nodes, err.Error()))
+		*errors = append(*errors, field.Invalid(clonePath.Child("nodes"), clone.Nodes, err.Error()))
 	}
 
 	databaselog.Info("Exiting validateCreate for clone")
