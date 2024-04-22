@@ -602,43 +602,43 @@ var _ = Describe("Webhook Tests", func() {
 				clone := createDefaultClone("clone19")
 				clone.Spec.Clone.IsHighAvailability = true
 				clone.Spec.Clone.Nodes = nil
-
+		
 				err := k8sClient.Create(context.Background(), clone)
 				Expect(err).To(HaveOccurred())
-		
+			
 				errMsg := err.(*errors.StatusError).ErrStatus.Message
 				Expect(errMsg).To(ContainSubstring("invalid Node: nil"))
 			})
-
+		
 			It("Should have 5 nodes and IsHighAvailability set to true", func() {
 				clone := createDefaultClone("clone19")
 				primaryProp := createDefaultNodeProperties("database", "primary")
 				secondaryProp := createDefaultNodeProperties("database", "secondary")
 				proxyProp := createDefaultNodeProperties("haproxy", "secondary")
 				clone.Spec.Clone.IsHighAvailability = true
-				clone.Spec.Clone.Nodes = []&Node{
-					Node {
-						VmName: "VM1",
+				clone.Spec.Clone.Nodes = []Node{
+					{
+						VmName:     "VM1",
 						Properties: *primaryProp,
 					},
-					Node {
-						VmName: "VM2",
+					{
+						VmName:     "VM2",
 						Properties: *secondaryProp,
 					},
-					Node {
-						VmName: "VM3",
+					{
+						VmName:     "VM3",
 						Properties: *secondaryProp,
 					},
-					Node {
-						VmName: "VM4",
+					{
+						VmName:     "VM4",
 						Properties: *proxyProp,
 					},
-					Node {
-						VmName: "VM5",
+					{
+						VmName:     "VM5",
 						Properties: *proxyProp,
 					},
 				}
-
+		
 				err := k8sClient.Create(context.Background(), clone)
 				Expect(err).To(HaveOccurred())
 			})
