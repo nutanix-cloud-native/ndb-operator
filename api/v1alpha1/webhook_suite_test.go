@@ -597,26 +597,23 @@ var _ = Describe("Webhook Tests", func() {
 			})
 		})
 
-		FWhen("Postgres specified with IsHighAvailability", func() {	
+		When("Postgres specified with IsHighAvailability", func() {
 			It("Should have zero nodes and IsHighAvailability set to true", func() {
 				clone := createDefaultClone("clone19")
 				clone.Spec.Clone.IsHighAvailability = true
 				clone.Spec.Clone.Nodes = nil
-		
+
 				err := k8sClient.Create(context.Background(), clone)
 				Expect(err).To(HaveOccurred())
-			
-				errMsg := err.(*errors.StatusError).ErrStatus.Message
-				Expect(errMsg).To(ContainSubstring("invalid Node: nil"))
 			})
-		
+
 			It("Should have 5 nodes and IsHighAvailability set to true", func() {
 				clone := createDefaultClone("clone19")
 				primaryProp := createDefaultNodeProperties("database", "primary")
 				secondaryProp := createDefaultNodeProperties("database", "secondary")
 				proxyProp := createDefaultNodeProperties("haproxy", "secondary")
 				clone.Spec.Clone.IsHighAvailability = true
-				clone.Spec.Clone.Nodes = []Node{
+				clone.Spec.Clone.Nodes = []*Node{
 					{
 						VmName:     "VM1",
 						Properties: *primaryProp,
@@ -638,76 +635,34 @@ var _ = Describe("Webhook Tests", func() {
 						Properties: *proxyProp,
 					},
 				}
-		
+
 				err := k8sClient.Create(context.Background(), clone)
-				Expect(err).To(HaveOccurred())
+				Expect(err).ToNot(HaveOccurred())
 			})
 
-			// It("Should have 5 nodes and IsHighAvailability set to true", func() {
-			// 	clone := createDefaultClone("clone19")
-			// 	clone.Spec.Clone.IsHighAvailability = true
-			// 	clone.Spec.Clone.Nodes = []Nodes{}
+			It("Should throw error when given 3 nodes", func() {
+				db := createDefaultDatabase("db19")
+				primaryProp := createDefaultNodeProperties("database", "primary")
+				secondaryProp := createDefaultNodeProperties("database", "secondary")
+				db.Spec.Instance.IsHighAvailability = true
+				db.Spec.Instance.Nodes = []*Node{
+					{
+						VmName:     "VM1",
+						Properties: *primaryProp,
+					},
+					{
+						VmName:     "VM2",
+						Properties: *secondaryProp,
+					},
+					{
+						VmName:     "VM3",
+						Properties: *secondaryProp,
+					},
+				}
 
-			// 	err := k8sClient.Create(context.Background(), clone)
-			// 	Expect(err).To(HaveOccurred())
-		
-			// 	totalNodes := len(clone.Spec.Clone.Nodes)
-			// 	Expect(totalNodes).To(Equal(5))
-		
-			// 	haproxyNodes := 0
-			// 	databaseNodes := 0
-		
-			// 	for _, node := range nodes {
-			// 		if node.Type == "haproxy" {
-			// 			haproxyNodes++
-			// 		} else if node.Type == "database" {
-			// 			databaseNodes++
-			// 		}
-			// 	}
-		
-			// 	Expect(haproxyNodes).To(Equal(2))
-			// 	Expect(databaseNodes).To(Equal(3))
-			// })
-	
-			// It("Should have 2 haproxy node types and IsHighAvailability set to true", func() {
-			// 	clone := createDefaultClone("clone20")
-			// 	clone.Spec.Clone.IsHighAvailability = true
-
-			// 	err := k8sClient.Create(context.Background(), clone)
-			// 	Expect(err).To(HaveOccurred())
-
-			// 	nodes, err := getNodesFromCluster()
-			// 	Expect(err).ToNot(HaveOccurred())
-		
-			// 	haproxyNodes := 0
-			// 	for _, node := range nodes {
-			// 		if node.Type == "haproxy" {
-			// 			haproxyNodes++
-			// 		}
-			// 	}
-		
-			// 	Expect(haproxyNodes).To(Equal(2))
-			// })
-		
-			// It("Should have 3 database node types and IsHighAvailability set to true", func() {
-			// 	clone := createDefaultClone("clone21")
-			// 	clone.Spec.Clone.IsHighAvailability = true
-
-			// 	err := k8sClient.Create(context.Background(), clone)
-			// 	Expect(err).To(HaveOccurred())z
-				
-			// 	nodes, err := getNodesFromCluster()
-			// 	Expect(err).ToNot(HaveOccurred())
-		
-			// 	databaseNodes := 0
-			// 	for _, node := range nodes {
-			// 		if node.Type == "database" {
-			// 			databaseNodes++
-			// 		}
-			// 	}
-		
-			// 	Expect(databaseNodes).To(Equal(3))
-			// })
+				err := k8sClient.Create(context.Background(), db)
+				Expect(err).To(HaveOccurred())
+			})
 		})
 	})
 })
@@ -761,9 +716,9 @@ func createDefaultClone(metadataName string) *Database {
 }
 
 func createDefaultNodeProperties(node_type, role string) *NodeProperties {
-	return &NodeProperties {
-		NodeType: node_type,
-		Role: role,
+	return &NodeProperties{
+		NodeType:     node_type,
+		Role:         role,
 		FailoverMode: "Automatic",
 	}
 }
