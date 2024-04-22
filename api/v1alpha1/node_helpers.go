@@ -15,8 +15,12 @@ var (
 )
 
 func ValidateNodes(nodes []*Node, isHighAvailability bool) error {
-	if !isHighAvailability || len(nodes) < 5 {
-		return nil // no nodes is valid?
+	if !isHighAvailability {
+		return nil
+	}
+
+	if len(nodes) < 5 {
+		return fmt.Errorf("High Availability requires at least 5 nodes")
 	}
 
 	vmNames := make(map[string]bool) // for validating that vmnames are unique
