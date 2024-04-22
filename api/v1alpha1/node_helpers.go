@@ -18,13 +18,12 @@ func ValidateNodes(nodes []*Node, isHighAvailability bool) error {
 	if !isHighAvailability {
 		return nil
 	}
-
-	if len(nodes) < 5 {
-		return fmt.Errorf("High Availability requires at least 5 nodes")
-	}
-
+	databaseNodeCount := 0
 	vmNames := make(map[string]bool) // for validating that vmnames are unique
 	for _, node := range nodes {
+		if node.Properties.NodeType == "database" {
+			databaseNodeCount++
+		}
 		if err := ValidateNodeProperties(node.Properties); err != nil {
 			return err
 		}
@@ -34,7 +33,9 @@ func ValidateNodes(nodes []*Node, isHighAvailability bool) error {
 		}
 		vmNames[node.VmName] = true
 	}
-
+	if databaseNodeCount < 3 {
+		return fmt.Errorf("high Availability requires at least 3 nodes database nodes")
+	}
 	return nil
 }
 
