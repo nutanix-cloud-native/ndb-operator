@@ -616,7 +616,7 @@ var _ = Describe("Webhook Tests", func() {
 				secondaryProp := createDefaultNodeProperties("database", "secondary")
 				proxyProp := createDefaultNodeProperties("haproxy", "secondary")
 				clone.Spec.Clone.IsHighAvailability = true
-				clone.Spec.Clone.Nodes = []Nodes{
+				clone.Spec.Clone.Nodes = []Node{
 					Node {
 						VMName: "VM1",
 						Properties: primaryProp,
