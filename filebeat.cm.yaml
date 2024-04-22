@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: ndb-operator-system
+  labels:
+    component: filebeat
+data:
+  conf.yaml: |
+    filebeat.inputs:
+    - type: log
+      paths:
+        - '/var/log/*.log'
+    output.elasticsearch:
+      hosts: ["https://quickstart-es-http.default.svc.cluster.local:9200"]
+      username: "elastic"
+      password: 
+        valueFrom:
+          secretKeyRef:
+            name: quickstart-es-elastic-user
+            key: elastic
+      ssl.verification_mode: none
