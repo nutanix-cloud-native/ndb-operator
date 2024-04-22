@@ -619,23 +619,23 @@ var _ = Describe("Webhook Tests", func() {
 				clone.Spec.Clone.Nodes = []Nodes{
 					Node {
 						VMName: "VM1",
-						Properties: primaryProp
+						Properties: primaryProp,
 					},
 					Node {
 						VMName: "VM2",
-						Properties: secondaryProp
+						Properties: secondaryProp,
 					},
 					Node {
 						VMName: "VM3",
-						Properties: secondaryProp
+						Properties: secondaryProp,
 					},
 					Node {
 						VMName: "VM4",
-						Properties: proxyProp
+						Properties: proxyProp,
 					},
 					Node {
 						VMName: "VM5",
-						Properties: proxyProp
+						Properties: proxyProp,
 					}
 				}
 
@@ -760,10 +760,10 @@ func createDefaultClone(metadataName string) *Database {
 	}
 }
 
-func createDefaultNodeProperties(type, role string) *NodeProperties {
+func createDefaultNodeProperties(type string, role string) *NodeProperties {
 	return &NodeProperties {
 		NodeType: type,
 		Role: role,
-		FailoverMode: "Automatic"
+		FailoverMode: "Automatic",
 	}
 }
