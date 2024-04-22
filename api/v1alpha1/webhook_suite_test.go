@@ -596,6 +596,119 @@ var _ = Describe("Webhook Tests", func() {
 				Expect(errMsg).To(ContainSubstring(fmt.Sprintf("additional arguments validation for type: %s failed!", common.DATABASE_TYPE_MSSQL)))
 			})
 		})
+
+		FWhen("Postgres specified with IsHighAvailability", func() {	
+			It("Should have zero nodes and IsHighAvailability set to true", func() {
+				clone := createDefaultClone("clone19")
+				clone.Spec.Clone.IsHighAvailability = true
+				clone.Spec.Clone.Nodes = nil
+
+				err := k8sClient.Create(context.Background(), clone)
+				Expect(err).To(HaveOccurred())
+		
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring("invalid Node: nil"))
+			})
+
+			It("Should have 5 nodes and IsHighAvailability set to true", func() {
+				clone := createDefaultClone("clone19")
+				primaryProp := createDefaultNodeProperties("database", "primary")
+				secondaryProp := createDefaultNodeProperties("database", "secondary")
+				proxyProp := createDefaultNodeProperties("haproxy", "secondary")
+				clone.Spec.Clone.IsHighAvailability = true
+				clone.Spec.Clone.Nodes = []Nodes{
+					Node {
+						VMName: "VM1",
+						Properties: primaryProp
+					},
+					Node {
+						VMName: "VM2",
+						Properties: secondaryProp
+					},
+					Node {
+						VMName: "VM3",
+						Properties: secondaryProp
+					},
+					Node {
+						VMName: "VM4",
+						Properties: proxyProp
+					},
+					Node {
+						VMName: "VM5",
+						Properties: proxyProp
+					}
+				}
+
+				err := k8sClient.Create(context.Background(), clone)
+				Expect(err).To(HaveOccurred())
+			})
+
+			// It("Should have 5 nodes and IsHighAvailability set to true", func() {
+			// 	clone := createDefaultClone("clone19")
+			// 	clone.Spec.Clone.IsHighAvailability = true
+			// 	clone.Spec.Clone.Nodes = []Nodes{}
+
+			// 	err := k8sClient.Create(context.Background(), clone)
+			// 	Expect(err).To(HaveOccurred())
+		
+			// 	totalNodes := len(clone.Spec.Clone.Nodes)
+			// 	Expect(totalNodes).To(Equal(5))
+		
+			// 	haproxyNodes := 0
+			// 	databaseNodes := 0
+		
+			// 	for _, node := range nodes {
+			// 		if node.Type == "haproxy" {
+			// 			haproxyNodes++
+			// 		} else if node.Type == "database" {
+			// 			databaseNodes++
+			// 		}
+			// 	}
+		
+			// 	Expect(haproxyNodes).To(Equal(2))
+			// 	Expect(databaseNodes).To(Equal(3))
+			// })
+	
+			// It("Should have 2 haproxy node types and IsHighAvailability set to true", func() {
+			// 	clone := createDefaultClone("clone20")
+			// 	clone.Spec.Clone.IsHighAvailability = true
+
+			// 	err := k8sClient.Create(context.Background(), clone)
+			// 	Expect(err).To(HaveOccurred())
+
+			// 	nodes, err := getNodesFromCluster()
+			// 	Expect(err).ToNot(HaveOccurred())
+		
+			// 	haproxyNodes := 0
+			// 	for _, node := range nodes {
+			// 		if node.Type == "haproxy" {
+			// 			haproxyNodes++
+			// 		}
+			// 	}
+		
+			// 	Expect(haproxyNodes).To(Equal(2))
+			// })
+		
+			// It("Should have 3 database node types and IsHighAvailability set to true", func() {
+			// 	clone := createDefaultClone("clone21")
+			// 	clone.Spec.Clone.IsHighAvailability = true
+
+			// 	err := k8sClient.Create(context.Background(), clone)
+			// 	Expect(err).To(HaveOccurred())z
+				
+			// 	nodes, err := getNodesFromCluster()
+			// 	Expect(err).ToNot(HaveOccurred())
+		
+			// 	databaseNodes := 0
+			// 	for _, node := range nodes {
+			// 		if node.Type == "database" {
+			// 			databaseNodes++
+			// 		}
+			// 	}
+		
+			// 	Expect(databaseNodes).To(Equal(3))
+			// })
+		})
 	})
 })
 
@@ -644,5 +757,13 @@ func createDefaultClone(metadataName string) *Database {
 				IsHighAvailability:  HA,
 			},
 		},
+	}
+}
+
+func createDefaultNodeProperties(type, role string) *NodeProperties {
+	return &NodeProperties {
+		NodeType: type,
+		Role: role,
+		FailoverMode: "Automatic"
 	}
 }
