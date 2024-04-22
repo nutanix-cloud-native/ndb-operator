@@ -618,23 +618,23 @@ var _ = Describe("Webhook Tests", func() {
 				clone.Spec.Clone.IsHighAvailability = true
 				clone.Spec.Clone.Nodes = []Node{
 					Node {
-						VMName: "VM1",
+						VmName: "VM1",
 						Properties: primaryProp,
 					},
 					Node {
-						VMName: "VM2",
+						VmName: "VM2",
 						Properties: secondaryProp,
 					},
 					Node {
-						VMName: "VM3",
+						VmName: "VM3",
 						Properties: secondaryProp,
 					},
 					Node {
-						VMName: "VM4",
+						VmName: "VM4",
 						Properties: proxyProp,
 					},
 					Node {
-						VMName: "VM5",
+						VmName: "VM5",
 						Properties: proxyProp,
 					},
 				}
