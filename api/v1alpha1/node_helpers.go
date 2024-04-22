@@ -10,9 +10,11 @@ import (
 	"strings"
 )
 
-TYPE_OPTIONS := map[string]bool{"database": true, "haproxy": true}
-ROLE_OPTIONS := map[string]bool{"primary": true, "secondary": true}
-FAILOVER_OPTIONS := map[string]bool{"Automatic": true, "Manual": true}
+var (
+	typeOptions = map[string]bool{"database": true, "haproxy": true}
+	roleOptions = map[string]bool{"primary": true, "secondary": true}
+	failoverOptions = map[string]bool{"Automatic": true, "Manual": true}
+)
 
 func ValidateNodes(nodes []Node, isHighAvailability bool) error {
 	if !isHighAvailability || len(nodes) == 0 {
@@ -37,14 +39,14 @@ func ValidateNodes(nodes []Node, isHighAvailability bool) error {
 }
 
 func ValidateNodeProperties(np v1alpha1.NodeProperties) error {
-	if !TYPE_OPTIONS[np.NodeType] {
+	if !typeOptions[np.NodeType] {
 		return fmt.Errorf("invalid NodeType in Node Properties: %s", np.NodeType)
 	}
 
-	if !ROLE_OPTIONS[np.Role] {
+	if !roleOptions[np.Role] {
 		return fmt.Errorf("invalid Role in Node Properties: %s", np.Role)
 
-	if !FAILOVER_OPTIONS[np.FailoverMode] {
+	if !failoverOptions[np.FailoverMode] {
 		return fmt.Errorf("invalid FailoverMode in Node Properties: %s", np.FailoverMode)
 	}
 
