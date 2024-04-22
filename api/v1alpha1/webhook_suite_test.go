@@ -636,7 +636,7 @@ var _ = Describe("Webhook Tests", func() {
 					Node {
 						VMName: "VM5",
 						Properties: proxyProp,
-					}
+					},
 				}
 
 				err := k8sClient.Create(context.Background(), clone)
@@ -760,9 +760,9 @@ func createDefaultClone(metadataName string) *Database {
 	}
 }
 
-func createDefaultNodeProperties(type string, role string) *NodeProperties {
+func createDefaultNodeProperties(node_type, role string) *NodeProperties {
 	return &NodeProperties {
-		NodeType: type,
+		NodeType: node_type,
 		Role: role,
 		FailoverMode: "Automatic",
 	}
