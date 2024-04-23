@@ -77,21 +77,23 @@ spec:
                   nodes:
                     items:
                       properties:
-                        properties:
-                          properties:
-                            failover_mode:
-                              type: string
-                            node_type:
-                              type: string
-                            role:
-                              type: string
-                          required:
-                          - node_type
-                          type: object
+                        failoverMode:
+                          type: string
+                        nodeType:
+                          type: string
+                        nxClusterId:
+                          type: string
+                        nxClusterName:
+                          type: string
+                        remoteArchiveDestination:
+                          type: string
+                        role:
+                          type: string
                         vmName:
                           type: string
                       required:
-                      - properties
+                      - nodeType
+                      - vmName
                       type: object
                     type: array
                   profiles:
@@ -185,21 +187,23 @@ spec:
                   nodes:
                     items:
                       properties:
-                        properties:
-                          properties:
-                            failover_mode:
-                              type: string
-                            node_type:
-                              type: string
-                            role:
-                              type: string
-                          required:
-                          - node_type
-                          type: object
+                        failoverMode:
+                          type: string
+                        nodeType:
+                          type: string
+                        nxClusterId:
+                          type: string
+                        nxClusterName:
+                          type: string
+                        remoteArchiveDestination:
+                          type: string
+                        role:
+                          type: string
                         vmName:
                           type: string
                       required:
-                      - properties
+                      - nodeType
+                      - vmName
                       type: object
                     type: array
                   profiles:
