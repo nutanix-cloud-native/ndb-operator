@@ -147,7 +147,8 @@ func (d *Database) GetInstanceSize() int {
 
 func (d *Database) GetInstanceIsHighAvailability() bool {
 	if d.IsClone() {
-		return d.Spec.Clone.IsHighAvailability
+		// Clone doesn't currently support HA
+		return false
 	}
 	return d.Spec.Instance.IsHighAvailability
 }
