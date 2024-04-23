@@ -1,8 +1,0 @@
-apiVersion: ndb.nutanix.com/v1alpha1
-kind: NDBServer
-metadata:
-  name: ndb-pg
-spec:
-  credentialSecret: ndb-secret-pg-ha
-  server: <https://<ip-for-ndb>:8443/era/v0.9>
-  skipCertificateVerification: true

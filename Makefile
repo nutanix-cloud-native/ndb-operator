@@ -299,22 +299,13 @@ run-automation-cloning:
 	fi; \
 	go test $(DEFAULT_CLONING_ROOT)$$folders -v -timeout 90m
 
-.PHONY: run-automation-provisioning-si
+.PHONY: run-automation-provisioning
 DEFAULT_PROVISIONING_ROOT := ./automation/tests/provisioning/
-# change this list to every folder but the pg-ha_test one
-SI_PROVISIONING_FOLDERS := ...
-run-automation-provisioning-si:
+PROVISIONING_FOLDERS := ...
+run-automation-provisioning:
 	@read -p "Enter the test directories with spacing to run (mongo-si_test mssql-si_test mysql-si_test pg-si_test). Else all directories will be run: " folders; \
 	if [ -z "$$folders" ]; then \
-		folders="$(SI_PROVISIONING_FOLDERS)"; \
+		folders="$(PROVISIONING_FOLDERS)"; \
 	fi; \
 	go test $(DEFAULT_PROVISIONING_ROOT)$$folders -v -timeout 90m
 
-.PHONY: run-automation-provisioning-ha
-HA_PROVISIONING_FOLDERS := pg-ha_test
-run-automation-provisioning-ha:
-	@read -p "Enter the test directories with spacing to run (pg-ha_test). Else all directories will be run: " folders; \
-	if [ -z "$$folders" ]; then \
-		folders="$(HA_PROVISIONING_FOLDERS)"; \
-	fi; \
-	go test $(DEFAULT_PROVISIONING_ROOT)$$folders -v -timeout 90m
