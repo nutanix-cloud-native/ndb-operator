@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-pg-ha
+  labels:
+    app: app-pg-ha
+spec:
+  containers:
+  - name: best-app
+    image: manavrajvanshinx/best-app:latest
+    resources:
+      limits:
+        memory: 512Mi
+        cpu: "1"
+    env:
+    - name: DBHOST
+      value: db-pg-ha-svc
+    - name: DBPORT
+      value: '80'
+    - name: PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: db-secret-pg-ha
+          key: password
+    ports:
+    - containerPort: 3000
+  initContainers:
+  - name: init-db
+    image: busybox:1.28
+    command: ['sh', '-c', "until nslookup db-pg-ha-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for database service; sleep 2; done"]
