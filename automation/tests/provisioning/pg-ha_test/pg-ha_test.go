@@ -140,6 +140,7 @@ func (suite *PostgresProvisioningHighAvailabilityTestSuite) TestProvisioningSucc
 
 	assert := assert.New(suite.T())
 	assert.Equal(common.DATABASE_CR_STATUS_READY, databaseResponse.Status, "The database status should be ready.")
+	assert.Greater(len(databaseResponse.DatabaseNodes), 1)
 }
 
 // Tests if app is able to connect to database via GET request
