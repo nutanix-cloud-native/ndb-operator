@@ -290,6 +290,26 @@ additionalArguments:
   windows_domain_profile_id: <domain-profile-id>   # NO Default. Must specify vm_db_server_user.
   vm_db_server_user: <vm-db-server-use>            # NO Default. Must specify windows_domain_profile_id.
   vm_win_license_key: <licenseKey>                 # NO Default.
+
+# Postgres High Availability
+additionalArguments:
+  listener_port:           "1111"                  # Default: "5432"
+  failover_mode:           "Manual"                # Default: "Automatic"
+	proxy_read_port:         "1111"                  # Default: "5001"
+	listener_port:           "1111"                  # Default: "5432"
+	proxy_write_port:        "1111"                  # Default: "5000",
+	enable_synchronous_mode: "true"                  # Default: "true",
+	auto_tune_staging_drive: "false"                 # Default: true",
+	backup_policy:           "primary_only"          # Default: "primary_only"
+	provision_virtual_ip":   "true"                  # Default: "true"
+	deploy_haproxy:          "true"                  # Default: "true"
+	node_type:               "haproxy"               # Default: "database"
+	allocate_pg_hugepage:    "false"                 # Default: "true"
+	cluster_database:        "false"                 # Default: "true"
+	archive_wal_expire_days: "7"                     # Default: "-1"
+	enable_peer_auth:        "false"                 # Default: "true"
+	cluster_name:            "<cluster-name>"               
+	patroni_cluster_name:    "<patroni>"
 ```
 
 Cloning Additional Arguments: 

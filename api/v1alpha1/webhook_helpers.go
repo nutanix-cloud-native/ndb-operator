@@ -91,13 +91,10 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 		}
 	}
 
-	if err := additionalArgumentsValidationCheck(spec.IsClone, clone.Type, clone.IsHighAvailability, clone.AdditionalArguments); err != nil {
+	// HA is not supported when cloning
+	isHighAvailability := false
+	if err := additionalArgumentsValidationCheck(spec.IsClone, clone.Type, isHighAvailability, clone.AdditionalArguments); err != nil {
 		*errors = append(*errors, field.Invalid(clonePath.Child("additionalArguments"), clone.AdditionalArguments, err.Error()))
-	}
-
-	// Validate nodes for HA
-	if err := ValidateNodes(clone.Nodes, clone.IsHighAvailability); err != nil {
-		*errors = append(*errors, field.Invalid(clonePath.Child("nodes"), clone.Nodes, err.Error()))
 	}
 
 	databaselog.Info("Exiting validateCreate for clone")

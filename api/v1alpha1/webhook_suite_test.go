@@ -775,7 +775,6 @@ func createDefaultClone(metadataName string) *Database {
 				SnapshotId:          DEFAULT_UUID,
 				Profiles:            &(Profiles{}),
 				AdditionalArguments: map[string]string{},
-				IsHighAvailability:  HA,
 			},
 		},
 	}

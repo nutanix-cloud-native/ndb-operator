@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -97,7 +96,7 @@ func GenerateCloningRequest(ctx context.Context, ndb_client ndb_client.NDBClient
 		NetworkProfileId:           profilesMap[common.PROFILE_TYPE_NETWORK].Id,
 		DatabaseParameterProfileId: profilesMap[common.PROFILE_TYPE_DATABASE_PARAMETER].Id,
 	}
-	// boolean for high availability
+	// boolean for high availability; unavailable for cloning
 	isHighAvailability := false
 
 	// Appending request body based on database type
@@ -214,73 +213,11 @@ func (a *PostgresRequestAppender) appendCloningRequest(req *DatabaseCloneRequest
 	return req, nil
 }
 
-func setCloneNodesParameters(req *DatabaseCloneRequest, database DatabaseInterface) {
-	// Extract values of ComputeProfileId and NetworkProfileId
-	computeProfileId := req.Nodes[0].ComputeProfileId
-	networkProfileId := req.Nodes[0].NetworkProfileId
-	serverTimeZone := req.Nodes[0].NewDbServerTimeZone
-
-	// Convert database.Instance.Nodes to the common type Nodes
-	req.Nodes = []Node{}
-	for _, node := range database.GetInstanceNodes() {
-		built := Node{}
-		if node.Properties.NodeType == "haproxy" {
-			built = buildHAProxyNode(req, node, database.GetClusterId())
-		} else {
-			built = buildDatabaseNode(req, node, computeProfileId, networkProfileId, serverTimeZone, database.GetClusterId())
-		}
-
-		req.Nodes = append(req.Nodes, built)
-	}
-}
-
-func buildHAProxyNode(req *DatabaseCloneRequest, node *v1alpha1.Node, clusterId string) Node {
-	props := make([]map[string]string, 1)
-	props[0] = map[string]string{
-		"name":  "node_type",
-		"value": node.Properties.NodeType,
-	}
-	return Node{
-		Properties:  props,
-		VmName:      node.VmName,
-		NxClusterId: clusterId,
-	}
-}
-
-func buildDatabaseNode(req *DatabaseCloneRequest, node *v1alpha1.Node, computeProfileId, networkProfileId, serverTimeZone, clusterId string) Node {
-	props := make([]map[string]string, 4)
-	props[0] = map[string]string{
-		"name":  "role",
-		"value": node.Properties.Role,
-	}
-	props[1] = map[string]string{
-		"name":  "failover_mode",
-		"value": node.Properties.FailoverMode,
-	}
-	props[2] = map[string]string{
-		"name":  "node_type",
-		"value": node.Properties.NodeType,
-	}
-	props[3] = map[string]string{
-		"name":  "remote_archive_destination",
-		"value": "",
-	}
-	return Node{
-		ComputeProfileId:    computeProfileId,
-		NetworkProfileId:    networkProfileId,
-		NewDbServerTimeZone: serverTimeZone,
-		Properties:          props,
-		VmName:              node.VmName,
-		NxClusterId:         clusterId,
-	}
-}
-
 func (a *PostgresHARequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
 	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 
 	req.NodeCount = len(database.GetInstanceNodes())
-	setCloneNodesParameters(req, database)
 
 	// Default action arguments
 	actionArguments := map[string]string{
