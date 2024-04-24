@@ -338,20 +338,21 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 	}
 	// Validate node counts
 	nodesRequested := database.GetInstanceNodes()
-	nodeCount := len(nodesRequested)
-	if nodeCount == 0 {
-		nodeCount = 5
+	if len(nodesRequested) == 0 {
 		nodesRequested = createDefaultNodes(database)
 	}
-	databaseNodeCount := 0
 	proxyNodeCount := 0
-	req.NodeCount = nodeCount
-	primaryNodeCount := getPrimaryNodeCount(nodesRequested)
+	req.NodeCount = len(nodesRequested)
+	primaryNodeCount, databaseNodeCount := getNodeCounts(nodesRequested)
 	if primaryNodeCount > 1 {
 		return fmt.Errorf("invalid nodes: HA instance can only have one primary node")
 	}
+	const MinReqDatabaseNodes = 3
+	if databaseNodeCount < MinReqDatabaseNodes {
+		return fmt.Errorf("invalid node count: HA instance needs at least %d nodes, given: %d", MinReqDatabaseNodes, databaseNodeCount)
+	}
 
-	for i := 0; i < nodeCount; i++ {
+	for i := 0; i < req.NodeCount; i++ {
 		currentNode := nodesRequested[i]
 
 		if currentNode.Properties.NodeType != "database" && currentNode.Properties.NodeType != "haproxy" {
@@ -407,28 +408,26 @@ func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterfac
 			ComputeProfileId: req.ComputeProfileId,
 		})
 	}
-	const MinReqDatabaseNodes = 3
-	if nodeCount < MinReqDatabaseNodes {
-		return fmt.Errorf("invalid node count: HA instance needs at least %d nodes, given: %d", MinReqDatabaseNodes, nodeCount)
-	}
-
 	return nil
 }
 
 func createDefaultNodes(database DatabaseInterface) []*v1alpha1.Node {
 	nodes := make([]*v1alpha1.Node, 0)
-	nodes = append(nodes, &v1alpha1.Node{
-		VmName: database.GetAdditionalArguments()["cluster_name"] + "_haproxy1",
-		Properties: v1alpha1.NodeProperties{
-			NodeType: "haproxy",
-		},
-	})
-	nodes = append(nodes, &v1alpha1.Node{
-		VmName: database.GetAdditionalArguments()["cluster_name"] + "_haproxy2",
-		Properties: v1alpha1.NodeProperties{
-			NodeType: "haproxy",
-		},
-	})
+	deployProxy := database.GetAdditionalArguments()["deploy_haproxy"] == "" || database.GetAdditionalArguments()["deploy_haproxy"] == "true"
+	if deployProxy {
+		nodes = append(nodes, &v1alpha1.Node{
+			VmName: database.GetAdditionalArguments()["cluster_name"] + "_haproxy1",
+			Properties: v1alpha1.NodeProperties{
+				NodeType: "haproxy",
+			},
+		})
+		nodes = append(nodes, &v1alpha1.Node{
+			VmName: database.GetAdditionalArguments()["cluster_name"] + "_haproxy2",
+			Properties: v1alpha1.NodeProperties{
+				NodeType: "haproxy",
+			},
+		})
+	}
 	nodes = append(nodes, &v1alpha1.Node{
 		VmName: database.GetAdditionalArguments()["cluster_name"] + "-1",
 		Properties: v1alpha1.NodeProperties{
@@ -456,14 +455,17 @@ func createDefaultNodes(database DatabaseInterface) []*v1alpha1.Node {
 	return nodes
 }
 
-func getPrimaryNodeCount(nodesRequested []*v1alpha1.Node) int {
-	count := 0
+func getNodeCounts(nodesRequested []*v1alpha1.Node) (primaryCount int, databaseCount int) {
+
 	for _, node := range nodesRequested {
 		if node.Properties.Role == "Primary" {
-			count++
+			primaryCount++
+		}
+		if node.Properties.NodeType == "database" {
+			databaseCount++
 		}
 	}
-	return count
+	return primaryCount, databaseCount
 }
 
 func defaultActionArgumentsforHAProvisioning(database DatabaseInterface, dbPassword string, databaseNames string) map[string]string {
