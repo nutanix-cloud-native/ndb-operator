@@ -434,7 +434,7 @@ var _ = Describe("Webhook Tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("Should throw error when given 3 nodes", func() {
+			It("Should throw error when given 2 nodes", func() {
 				db := createDefaultDatabase("db17")
 				db.Spec.Instance.AdditionalArguments = map[string]string{
 					"failover_mode":           "Automatic",
@@ -464,10 +464,6 @@ var _ = Describe("Webhook Tests", func() {
 					},
 					{
 						VmName:     "VM2",
-						Properties: *secondaryProp,
-					},
-					{
-						VmName:     "VM3",
 						Properties: *secondaryProp,
 					},
 				}
