@@ -354,6 +354,143 @@ var _ = Describe("Webhook Tests", func() {
 				Expect(errMsg).To(ContainSubstring(fmt.Sprintf("additional arguments validation for type: %s failed!", common.DATABASE_TYPE_MSSQL)))
 			})
 		})
+
+		When("Postgres specified with IsHighAvailability", func() {
+			It("Should have zero nodes and IsHighAvailability set to true", func() {
+				db := createDefaultDatabase("db15")
+				db.Spec.Instance.AdditionalArguments = map[string]string{
+					"failover_mode":           "Automatic",
+					"proxy_read_port":         "5001",
+					"listener_port":           "5432",
+					"proxy_write_port":        "5000",
+					"enable_synchronous_mode": "true",
+					"auto_tune_staging_drive": "true",
+					"backup_policy":           "primary_only",
+					"provision_virtual_ip":    "true",
+					"deploy_haproxy":          "true",
+					"node_type":               "database",
+					"allocate_pg_hugepage":    "false",
+					"cluster_database":        "false",
+					"archive_wal_expire_days": "-1",
+					"enable_peer_auth":        "false",
+					"cluster_name":            "psqlcluster",
+					"patroni_cluster_name":    "patroni",
+				}
+				db.Spec.Instance.IsHighAvailability = true
+				db.Spec.Instance.Nodes = nil
+
+				err := k8sClient.Create(context.Background(), db)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("Should have 5 nodes and IsHighAvailability set to true", func() {
+				db := createDefaultDatabase("db16")
+				db.Spec.Instance.AdditionalArguments = map[string]string{
+					"failover_mode":           "Automatic",
+					"proxy_read_port":         "5001",
+					"listener_port":           "5432",
+					"proxy_write_port":        "5000",
+					"enable_synchronous_mode": "true",
+					"auto_tune_staging_drive": "true",
+					"backup_policy":           "primary_only",
+					"provision_virtual_ip":    "true",
+					"deploy_haproxy":          "true",
+					"node_type":               "database",
+					"allocate_pg_hugepage":    "false",
+					"cluster_database":        "false",
+					"archive_wal_expire_days": "-1",
+					"enable_peer_auth":        "false",
+					"cluster_name":            "psqlcluster",
+					"patroni_cluster_name":    "patroni",
+				}
+				primaryProp := createDefaultNodeProperties("database", "primary")
+				secondaryProp := createDefaultNodeProperties("database", "secondary")
+				proxyProp := createDefaultNodeProperties("haproxy", "secondary")
+				db.Spec.Instance.IsHighAvailability = true
+				db.Spec.Instance.Nodes = []*Node{
+					{
+						VmName:     "VM1",
+						Properties: *primaryProp,
+					},
+					{
+						VmName:     "VM2",
+						Properties: *secondaryProp,
+					},
+					{
+						VmName:     "VM3",
+						Properties: *secondaryProp,
+					},
+					{
+						VmName:     "VM4",
+						Properties: *proxyProp,
+					},
+					{
+						VmName:     "VM5",
+						Properties: *proxyProp,
+					},
+				}
+
+				err := k8sClient.Create(context.Background(), db)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("Should throw error when given 3 nodes", func() {
+				db := createDefaultDatabase("db17")
+				db.Spec.Instance.AdditionalArguments = map[string]string{
+					"failover_mode":           "Automatic",
+					"proxy_read_port":         "5001",
+					"listener_port":           "5432",
+					"proxy_write_port":        "5000",
+					"enable_synchronous_mode": "true",
+					"auto_tune_staging_drive": "true",
+					"backup_policy":           "primary_only",
+					"provision_virtual_ip":    "true",
+					"deploy_haproxy":          "true",
+					"node_type":               "database",
+					"allocate_pg_hugepage":    "false",
+					"cluster_database":        "false",
+					"archive_wal_expire_days": "-1",
+					"enable_peer_auth":        "false",
+					"cluster_name":            "psqlcluster",
+					"patroni_cluster_name":    "patroni",
+				}
+				primaryProp := createDefaultNodeProperties("database", "primary")
+				secondaryProp := createDefaultNodeProperties("database", "secondary")
+				db.Spec.Instance.IsHighAvailability = true
+				db.Spec.Instance.Nodes = []*Node{
+					{
+						VmName:     "VM1",
+						Properties: *primaryProp,
+					},
+					{
+						VmName:     "VM2",
+						Properties: *secondaryProp,
+					},
+					{
+						VmName:     "VM3",
+						Properties: *secondaryProp,
+					},
+				}
+
+				err := k8sClient.Create(context.Background(), db)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("Should error out for invalid Postgres additionalArguments and IsHighAvailability set to true", func() {
+				db := createDefaultDatabase("db18")
+				db.Spec.Instance.AdditionalArguments = map[string]string{
+					"listener_port": "5432",
+					"invalid":       "invalid",
+				}
+				db.Spec.Instance.IsHighAvailability = true
+
+				err := k8sClient.Create(context.Background(), db)
+				Expect(err).To(HaveOccurred())
+				errMsg := err.(*errors.StatusError).ErrStatus.Message
+				Expect(errMsg).To(ContainSubstring(fmt.Sprintf("additional arguments validation for type: %s failed!", common.DATABASE_TYPE_POSTGRES)))
+			})
+		})
+
 	})
 
 	Context("Clone checks", func() {
@@ -597,73 +734,6 @@ var _ = Describe("Webhook Tests", func() {
 			})
 		})
 
-		When("Postgres specified with IsHighAvailability", func() {
-			It("Should have zero nodes and IsHighAvailability set to true", func() {
-				clone := createDefaultClone("clone19")
-				clone.Spec.Clone.IsHighAvailability = true
-				clone.Spec.Clone.Nodes = nil
-
-				err := k8sClient.Create(context.Background(), clone)
-				Expect(err).To(HaveOccurred())
-			})
-
-			It("Should have 5 nodes and IsHighAvailability set to true", func() {
-				clone := createDefaultClone("clone19")
-				primaryProp := createDefaultNodeProperties("database", "primary")
-				secondaryProp := createDefaultNodeProperties("database", "secondary")
-				proxyProp := createDefaultNodeProperties("haproxy", "secondary")
-				clone.Spec.Clone.IsHighAvailability = true
-				clone.Spec.Clone.Nodes = []*Node{
-					{
-						VmName:     "VM1",
-						Properties: *primaryProp,
-					},
-					{
-						VmName:     "VM2",
-						Properties: *secondaryProp,
-					},
-					{
-						VmName:     "VM3",
-						Properties: *secondaryProp,
-					},
-					{
-						VmName:     "VM4",
-						Properties: *proxyProp,
-					},
-					{
-						VmName:     "VM5",
-						Properties: *proxyProp,
-					},
-				}
-
-				err := k8sClient.Create(context.Background(), clone)
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("Should throw error when given 3 nodes", func() {
-				db := createDefaultDatabase("db19")
-				primaryProp := createDefaultNodeProperties("database", "primary")
-				secondaryProp := createDefaultNodeProperties("database", "secondary")
-				db.Spec.Instance.IsHighAvailability = true
-				db.Spec.Instance.Nodes = []*Node{
-					{
-						VmName:     "VM1",
-						Properties: *primaryProp,
-					},
-					{
-						VmName:     "VM2",
-						Properties: *secondaryProp,
-					},
-					{
-						VmName:     "VM3",
-						Properties: *secondaryProp,
-					},
-				}
-
-				err := k8sClient.Create(context.Background(), db)
-				Expect(err).To(HaveOccurred())
-			})
-		})
 	})
 })
 
