@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.8)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.8)
-VERSION ?= 0.5.0
+VERSION ?= 0.5.1
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -299,22 +299,13 @@ run-automation-cloning:
 	fi; \
 	go test $(DEFAULT_CLONING_ROOT)$$folders -v -timeout 90m
 
-.PHONY: run-automation-provisioning-si
+.PHONY: run-automation-provisioning
 DEFAULT_PROVISIONING_ROOT := ./automation/tests/provisioning/
-# change this list to every folder but the pg-ha_test one
-SI_PROVISIONING_FOLDERS := ...
-run-automation-provisioning-si:
+PROVISIONING_FOLDERS := ...
+run-automation-provisioning:
 	@read -p "Enter the test directories with spacing to run (mongo-si_test mssql-si_test mysql-si_test pg-si_test). Else all directories will be run: " folders; \
 	if [ -z "$$folders" ]; then \
-		folders="$(SI_PROVISIONING_FOLDERS)"; \
+		folders="$(PROVISIONING_FOLDERS)"; \
 	fi; \
 	go test $(DEFAULT_PROVISIONING_ROOT)$$folders -v -timeout 90m
 
-.PHONY: run-automation-provisioning-ha
-HA_PROVISIONING_FOLDERS := pg-ha_test
-run-automation-provisioning-ha:
-	@read -p "Enter the test directories with spacing to run (pg-ha_test). Else all directories will be run: " folders; \
-	if [ -z "$$folders" ]; then \
-		folders="$(HA_PROVISIONING_FOLDERS)"; \
-	fi; \
-	go test $(DEFAULT_PROVISIONING_ROOT)$$folders -v -timeout 90m
