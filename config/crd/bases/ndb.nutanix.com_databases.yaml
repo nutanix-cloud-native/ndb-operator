@@ -77,23 +77,21 @@ spec:
                   nodes:
                     items:
                       properties:
-                        failoverMode:
-                          type: string
-                        nodeType:
-                          type: string
-                        nxClusterId:
-                          type: string
-                        nxClusterName:
-                          type: string
-                        remoteArchiveDestination:
-                          type: string
-                        role:
-                          type: string
+                        properties:
+                          properties:
+                            failover_mode:
+                              type: string
+                            node_type:
+                              type: string
+                            role:
+                              type: string
+                          required:
+                          - node_type
+                          type: object
                         vmName:
                           type: string
                       required:
-                      - nodeType
-                      - vmName
+                      - properties
                       type: object
                     type: array
                   profiles:
@@ -187,23 +185,21 @@ spec:
                   nodes:
                     items:
                       properties:
-                        failoverMode:
-                          type: string
-                        nodeType:
-                          type: string
-                        nxClusterId:
-                          type: string
-                        nxClusterName:
-                          type: string
-                        remoteArchiveDestination:
-                          type: string
-                        role:
-                          type: string
+                        properties:
+                          properties:
+                            failover_mode:
+                              type: string
+                            node_type:
+                              type: string
+                            role:
+                              type: string
+                          required:
+                          - node_type
+                          type: object
                         vmName:
                           type: string
                       required:
-                      - nodeType
-                      - vmName
+                      - properties
                       type: object
                     type: array
                   profiles:
