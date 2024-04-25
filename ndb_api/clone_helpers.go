@@ -85,7 +85,7 @@ func GenerateCloningRequest(ctx context.Context, ndb_client ndb_client.NDBClient
 				NetworkProfileId:    profilesMap[common.PROFILE_TYPE_NETWORK].Id,
 				NewDbServerTimeZone: "",
 				NxClusterId:         database.GetClusterId(),
-				Properties:          make([]string, 0),
+				Properties:          make([]map[string]string, 0),
 			},
 		},
 		// Added by request appenders as per the engine
@@ -96,8 +96,11 @@ func GenerateCloningRequest(ctx context.Context, ndb_client ndb_client.NDBClient
 		NetworkProfileId:           profilesMap[common.PROFILE_TYPE_NETWORK].Id,
 		DatabaseParameterProfileId: profilesMap[common.PROFILE_TYPE_DATABASE_PARAMETER].Id,
 	}
+	// boolean for high availability; unavailable for cloning
+	isHighAvailability := false
+
 	// Appending request body based on database type
-	appender, err := GetRequestAppender(databaseType)
+	appender, err := GetRequestAppender(databaseType, isHighAvailability)
 	if err != nil {
 		log.Error(err, "Error while getting a request appender")
 		return
@@ -185,6 +188,36 @@ func (a *MongoDbRequestAppender) appendCloningRequest(req *DatabaseCloneRequest,
 func (a *PostgresRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
 	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		/* Non-Configurable from additionalArguments*/
+		"vm_name":              database.GetName(),
+		"dbserver_description": "DB Server VM for " + database.GetName(),
+		"db_password":          dbPassword,
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	// Appending LCMConfig Details if specified
+	if err := appendLCMConfigDetailsToRequest(req, database.GetAdditionalArguments()); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func (a *PostgresHARequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
+	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+
+	req.NodeCount = len(database.GetInstanceNodes())
 
 	// Default action arguments
 	actionArguments := map[string]string{

@@ -69,9 +69,31 @@ spec:
                   description:
                     description: Description of the clone instance
                     type: string
+                  isHighAvailability:
+                    type: boolean
                   name:
                     description: Name of the clone instance
                     type: string
+                  nodes:
+                    items:
+                      properties:
+                        properties:
+                          properties:
+                            failover_mode:
+                              type: string
+                            node_type:
+                              type: string
+                            role:
+                              type: string
+                          required:
+                          - node_type
+                          type: object
+                        vmName:
+                          type: string
+                      required:
+                      - properties
+                      type: object
+                    type: array
                   profiles:
                     properties:
                       compute:
@@ -155,9 +177,31 @@ spec:
                   description:
                     description: Description of the database instance
                     type: string
+                  isHighAvailability:
+                    type: boolean
                   name:
                     description: Name of the database instance
                     type: string
+                  nodes:
+                    items:
+                      properties:
+                        properties:
+                          properties:
+                            failover_mode:
+                              type: string
+                            node_type:
+                              type: string
+                            role:
+                              type: string
+                          required:
+                          - node_type
+                          type: object
+                        vmName:
+                          type: string
+                      required:
+                      - properties
+                      type: object
+                    type: array
                   profiles:
                     properties:
                       compute:

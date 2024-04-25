@@ -18,6 +18,7 @@ package ndb_api
 
 import (
 	"context"
+	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 )
 
 // External Interfaces
@@ -49,6 +50,8 @@ type DatabaseInterface interface {
 	GetCloneSourceDBId() string
 	GetCloneSnapshotId() string
 	GetAdditionalArguments() map[string]string
+	GetInstanceIsHighAvailability() bool
+	GetInstanceNodes() []*v1alpha1.Node
 }
 
 // Internal Interfaces
@@ -72,3 +75,6 @@ type PostgresRequestAppender struct{}
 
 // Implements RequestAppender
 type MySqlRequestAppender struct{}
+
+// Implements RequestAppender
+type PostgresHARequestAppender struct{}

@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"strconv"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -92,7 +93,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		},
 		Nodes: []Node{
 			{
-				Properties: make([]string, 0),
+				Properties: make([]map[string]string, 0),
 				VmName:     database.GetName() + "_VM",
 			},
 		},
@@ -109,7 +110,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 	}
 
 	// Appending request body based on database type
-	appender, err := GetRequestAppender(database.GetInstanceType())
+	appender, err := GetRequestAppender(database.GetInstanceType(), database.GetInstanceIsHighAvailability())
 	if err != nil {
 		log.Error(err, "Error while appending provisioning request")
 		return
@@ -189,7 +190,7 @@ func setConfiguredActionArguments(database DatabaseInterface, actionArguments ma
 		return fmt.Errorf("%s! Action arguments cannot be nil", errMsgRoot)
 	}
 
-	allowedAdditionalArguments, err := util.GetAllowedAdditionalArguments(database.IsClone(), database.GetInstanceType())
+	allowedAdditionalArguments, err := util.GetAllowedAdditionalArguments(database.IsClone(), database.GetInstanceType(), database.GetInstanceIsHighAvailability())
 	if err != nil {
 		return fmt.Errorf("%s! %s", errMsgRoot, err.Error())
 	}
@@ -302,6 +303,206 @@ func (a *PostgresRequestAppender) appendProvisioningRequest(req *DatabaseProvisi
 	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
 
 	return req, nil
+}
+
+func (a *PostgresHARequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+	databaseNames := database.GetInstanceDatabaseNames()
+	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	// Set the number of nodes to 5, 3 Postgres nodes + 2 HA Proxy nodes
+	err := setNodesParameters(req, database)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Clustered = true
+
+	// Default action arguments
+	actionArguments := defaultActionArgumentsforHAProvisioning(database, dbPassword, databaseNames)
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
+}
+
+func setNodesParameters(req *DatabaseProvisionRequest, database DatabaseInterface) (nodeErrors error) {
+	// Clear the original req.Nodes array
+	req.Nodes = []Node{}
+	if database.GetAdditionalArguments()["cluster_name"] == "" {
+		database.GetAdditionalArguments()["cluster_name"] = "postgresHaCluster"
+	}
+	// Validate node counts
+	nodesRequested := database.GetInstanceNodes()
+	if len(nodesRequested) == 0 {
+		nodesRequested = createDefaultNodes(database)
+	}
+	proxyNodeCount := 0
+	req.NodeCount = len(nodesRequested)
+	primaryNodeCount, databaseNodeCount := getNodeCounts(nodesRequested)
+	if primaryNodeCount > 1 {
+		return fmt.Errorf("invalid nodes: HA instance can only have one primary node")
+	}
+	const MinReqDatabaseNodes = 3
+	if databaseNodeCount < MinReqDatabaseNodes {
+		return fmt.Errorf("invalid node count: HA instance needs at least %d nodes, given: %d", MinReqDatabaseNodes, databaseNodeCount)
+	}
+
+	for i := 0; i < req.NodeCount; i++ {
+		currentNode := nodesRequested[i]
+
+		if currentNode.Properties.NodeType != "database" && currentNode.Properties.NodeType != "haproxy" {
+			return fmt.Errorf("invalid node type: %s", currentNode.Properties.NodeType)
+		}
+		if currentNode.Properties.NodeType == "database" {
+			if databaseNodeCount == 0 && primaryNodeCount == 0 && currentNode.Properties.Role == "" {
+				currentNode.Properties.Role = "Primary"
+			}
+			databaseNodeCount++
+			if currentNode.VmName == "" {
+				defaultDatabaseName := database.GetAdditionalArguments()["cluster_name"] + "-" + strconv.Itoa(databaseNodeCount+1)
+				currentNode.VmName = defaultDatabaseName
+			}
+			if currentNode.Properties.Role == "" {
+				currentNode.Properties.Role = "Secondary"
+			}
+		}
+		if currentNode.Properties.NodeType == "haproxy" {
+			proxyNodeCount++
+			if currentNode.VmName == "" {
+				defaultDatabaseName := database.GetAdditionalArguments()["cluster_name"] + "_haproxy" + strconv.Itoa(proxyNodeCount+1)
+				currentNode.VmName = defaultDatabaseName
+			}
+		}
+		isPrimaryNode := currentNode.Properties.NodeType == "database" && currentNode.Properties.Role == "Primary"
+		if isPrimaryNode {
+			primaryNodeCount += 1
+		}
+
+		props := make([]map[string]string, 4)
+		props[0] = map[string]string{
+			"name":  "role",
+			"value": currentNode.Properties.Role,
+		}
+		props[1] = map[string]string{
+			"name":  "failover_mode",
+			"value": currentNode.Properties.FailoverMode,
+		}
+		props[2] = map[string]string{
+			"name":  "node_type",
+			"value": currentNode.Properties.NodeType,
+		}
+		props[3] = map[string]string{
+			"name":  "remove_archive_destination",
+			"value": database.GetAdditionalArguments()["remove_archive_destination"],
+		}
+		req.Nodes = append(req.Nodes, Node{
+			Properties:       props,
+			VmName:           currentNode.VmName,
+			NxClusterId:      database.GetClusterId(),
+			NetworkProfileId: req.NetworkProfileId,
+			ComputeProfileId: req.ComputeProfileId,
+		})
+	}
+	return nil
+}
+
+func createDefaultNodes(database DatabaseInterface) []*v1alpha1.Node {
+	nodes := make([]*v1alpha1.Node, 0)
+	deployProxy := database.GetAdditionalArguments()["deploy_haproxy"] == "" || database.GetAdditionalArguments()["deploy_haproxy"] == "true"
+	if deployProxy {
+		nodes = append(nodes, &v1alpha1.Node{
+			VmName: database.GetAdditionalArguments()["cluster_name"] + "_haproxy1",
+			Properties: v1alpha1.NodeProperties{
+				NodeType: "haproxy",
+			},
+		})
+		nodes = append(nodes, &v1alpha1.Node{
+			VmName: database.GetAdditionalArguments()["cluster_name"] + "_haproxy2",
+			Properties: v1alpha1.NodeProperties{
+				NodeType: "haproxy",
+			},
+		})
+	}
+	nodes = append(nodes, &v1alpha1.Node{
+		VmName: database.GetAdditionalArguments()["cluster_name"] + "-1",
+		Properties: v1alpha1.NodeProperties{
+			NodeType:     "database",
+			Role:         "Primary",
+			FailoverMode: "Automatic",
+		},
+	})
+	nodes = append(nodes, &v1alpha1.Node{
+		VmName: database.GetAdditionalArguments()["cluster_name"] + "-2",
+		Properties: v1alpha1.NodeProperties{
+			NodeType:     "database",
+			Role:         "Secondary",
+			FailoverMode: "Automatic",
+		},
+	})
+	nodes = append(nodes, &v1alpha1.Node{
+		VmName: database.GetAdditionalArguments()["cluster_name"] + "-3",
+		Properties: v1alpha1.NodeProperties{
+			NodeType:     "database",
+			Role:         "Secondary",
+			FailoverMode: "Automatic",
+		},
+	})
+	return nodes
+}
+
+func getNodeCounts(nodesRequested []*v1alpha1.Node) (primaryCount int, databaseCount int) {
+
+	for _, node := range nodesRequested {
+		if node.Properties.Role == "Primary" {
+			primaryCount++
+		}
+		if node.Properties.NodeType == "database" {
+			databaseCount++
+		}
+	}
+	return primaryCount, databaseCount
+}
+
+func defaultActionArgumentsforHAProvisioning(database DatabaseInterface, dbPassword string, databaseNames string) map[string]string {
+	defaults := map[string]string{
+		"failover_mode":           "Automatic",
+		"proxy_read_port":         "5001",
+		"listener_port":           "5432",
+		"proxy_write_port":        "5000",
+		"enable_synchronous_mode": "true",
+		"auto_tune_staging_drive": "true",
+		"backup_policy":           "primary_only",
+		"provision_virtual_ip":    "true",
+		"deploy_haproxy":          "true",
+		"node_type":               "database",
+		"allocate_pg_hugepage":    "false",
+		"cluster_database":        "false",
+		"archive_wal_expire_days": "-1",
+		"enable_peer_auth":        "false",
+		"cluster_name":            "psqlcluster",
+		"patroni_cluster_name":    "patroni",
+	}
+
+	additionalArguments := map[string]string{
+		"db_password":    dbPassword,
+		"database_names": databaseNames,
+	}
+	originalAdditionalArguments := database.GetAdditionalArguments()
+	for key, defaultValue := range defaults {
+		value := originalAdditionalArguments[key]
+		if value == "" {
+			additionalArguments[key] = defaultValue
+		} else {
+			additionalArguments[key] = value
+		}
+	}
+
+	return additionalArguments
 }
 
 func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
