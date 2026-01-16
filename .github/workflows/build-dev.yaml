@@ -41,6 +41,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.5"
+
       - name: Build container image
         env:
           IMAGE_TAG_BASE: ${{ github.repository }}_build_container_test
