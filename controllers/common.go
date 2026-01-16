@@ -94,7 +94,7 @@ func getNDBCredentialsFromSecret(ctx context.Context, k8sClient client.Client, n
 	caCert = string(secretDataMap[common.SECRET_DATA_KEY_CA_CERTIFICATE])
 	if username == "" || password == "" {
 		errStatement := "NDB username or password is empty."
-		err = fmt.Errorf("Empty credentials. " + errStatement)
+		err = fmt.Errorf("Empty credentials. %s", errStatement)
 		log.Error(err, errStatement, "username empty", username == "", "password empty", password == "")
 		return
 	}
