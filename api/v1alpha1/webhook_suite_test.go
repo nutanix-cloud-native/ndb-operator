@@ -119,8 +119,12 @@ var _ = BeforeEach(func() {
 	})
 
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:         scheme,
-		WebhookServer:  webhookServer,
+		Scheme: scheme,
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Host:    webhookInstallOptions.LocalServingHost,
+			Port:    webhookInstallOptions.LocalServingPort,
+			CertDir: webhookInstallOptions.LocalServingCertDir,
+		}),
 		LeaderElection: false,
 		Metrics:        metricsserver.Options{BindAddress: "0"},
 	})
