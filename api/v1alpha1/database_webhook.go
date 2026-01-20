@@ -34,8 +34,12 @@ import (
 var databaselog = logf.Log.WithName("database-resource")
 
 func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
+	// In controller-runtime v0.21.0+, you must explicitly set the defaulter and validator
+	// The For() method alone does not automatically detect these interfaces
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(r).
+		WithValidator(r).
 		Complete()
 }
 

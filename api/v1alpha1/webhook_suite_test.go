@@ -29,7 +29,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	//+kubebuilder:scaffold:imports
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -99,7 +99,7 @@ var _ = BeforeEach(func() {
 	err = AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = admissionv1beta1.AddToScheme(scheme)
+	err = admissionv1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
@@ -110,13 +110,17 @@ var _ = BeforeEach(func() {
 
 	// start webhook server using Manager
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
+
+	// Create webhook server
+	webhookServer := webhook.NewServer(webhook.Options{
+		Host:    webhookInstallOptions.LocalServingHost,
+		Port:    webhookInstallOptions.LocalServingPort,
+		CertDir: webhookInstallOptions.LocalServingCertDir,
+	})
+
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme: scheme,
-		WebhookServer: webhook.NewServer(webhook.Options{
-			Host:    webhookInstallOptions.LocalServingHost,
-			Port:    webhookInstallOptions.LocalServingPort,
-			CertDir: webhookInstallOptions.LocalServingCertDir,
-		}),
+		Scheme:         scheme,
+		WebhookServer:  webhookServer,
 		LeaderElection: false,
 		Metrics:        metricsserver.Options{BindAddress: "0"},
 	})
