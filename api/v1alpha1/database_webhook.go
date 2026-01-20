@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -26,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -41,34 +41,37 @@ func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:webhook:path=/mutate-ndb-nutanix-com-v1alpha1-database,mutating=true,failurePolicy=fail,sideEffects=None,groups=ndb.nutanix.com,resources=databases,verbs=create;update,versions=v1alpha1,name=mdatabase.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &Database{}
+var _ admission.CustomDefaulter = &Database{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Database) Default() {
+// Default implements admission.CustomDefaulter so a webhook will be registered for the type
+func (r *Database) Default(ctx context.Context, obj runtime.Object) error {
 	databaselog.Info("Entering Default()...")
 
-	getDatabaseWebhookHandler(r).defaulter(&r.Spec)
+	db := obj.(*Database)
+	getDatabaseWebhookHandler(db).defaulter(&db.Spec)
 
 	databaselog.Info("Exiting Default()!")
+	return nil
 }
 
 // +kubebuilder:webhook:path=/validate-ndb-nutanix-com-v1alpha1-database,mutating=false,failurePolicy=fail,sideEffects=None,groups=ndb.nutanix.com,resources=databases,verbs=create;update,versions=v1alpha1,name=vdatabase.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Validator = &Database{}
+var _ admission.CustomValidator = &Database{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Database) ValidateCreate() (admission.Warnings, error) {
+// ValidateCreate implements admission.CustomValidator so a webhook will be registered for the type
+func (r *Database) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	databaselog.Info("Entering ValidateCreate...")
 
+	db := obj.(*Database)
 	errors := &field.ErrorList{}
 	var path string
-	if r.Spec.IsClone {
+	if db.Spec.IsClone {
 		path = "Clone"
 	} else {
 		path = "Instance"
 	}
 
-	getDatabaseWebhookHandler(r).validateCreate(&r.Spec, errors, field.NewPath("spec").Child(path))
+	getDatabaseWebhookHandler(db).validateCreate(&db.Spec, errors, field.NewPath("spec").Child(path))
 
 	combined_err := util.CombineFieldErrors(*errors)
 
@@ -79,18 +82,18 @@ func (r *Database) ValidateCreate() (admission.Warnings, error) {
 	return nil, combined_err
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Database) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	databaselog.Info("validate update", "name", r.Name)
+// ValidateUpdate implements admission.CustomValidator so a webhook will be registered for the type
+func (r *Database) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	databaselog.Info("validate update", "name", newObj.(*Database).Name)
 
 	// TODO: This method will be used to make fields immutable.
 	// Here you can reject the updates to any fields. I think we should mark everything immutable by default.
 	return nil, nil
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Database) ValidateDelete() (admission.Warnings, error) {
-	databaselog.Info("validate delete", "name", r.Name)
+// ValidateDelete implements admission.CustomValidator so a webhook will be registered for the type
+func (r *Database) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	databaselog.Info("validate delete", "name", obj.(*Database).Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
 	return nil, nil
