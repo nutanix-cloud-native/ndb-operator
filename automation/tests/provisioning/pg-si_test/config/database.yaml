@@ -15,7 +15,9 @@ spec:
     size: 10
     timezone: "UTC"
     type: postgres
-    profiles: {}
+    profiles:
+      network:
+        name: "PGSI_ntwk_profile"
     timeMachine:
       name: db-pg-si_TM
       description: "TM provisioned by operator"

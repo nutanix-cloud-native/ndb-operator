@@ -18,7 +18,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21.7"
+          go-version: "1.25.5"
 
       - name: Test build
         run: make test build
@@ -40,6 +40,11 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.5"
 
       - name: Build container image
         env:

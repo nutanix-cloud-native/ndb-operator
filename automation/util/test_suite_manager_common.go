@@ -342,14 +342,29 @@ func getAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.C
 	// Wait for a brief period to let port-forwarding start
 	time.Sleep(2 * time.Second)
 
-	// Verify the forwarded port by making an HTTP request
+	// Verify the forwarded port by making an HTTP request with retry logic
 	url := fmt.Sprintf("http://localhost:%s", localPort)
-	resp, err := http.Get(url)
+	maxRetries := 10
+	retryDelay := 2 * time.Second
+	var resp *http.Response
 
-	if err != nil {
-		return http.Response{}, fmt.Errorf("http://localhost:%s failed! %v,", localPort, err)
-	} else {
-		logger.Printf("http://localhost:%s succesful.", localPort)
+	for i := 0; i < maxRetries; i++ {
+		resp, err = http.Get(url)
+		if err == nil && resp.StatusCode == 200 {
+			logger.Printf("http://localhost:%s successful on attempt %d.", localPort, i+1)
+			break
+		}
+		if i < maxRetries-1 {
+			logger.Printf("Attempt %d failed (err: %v), retrying in %v...", i+1, err, retryDelay)
+			if resp != nil {
+				resp.Body.Close()
+			}
+			time.Sleep(retryDelay)
+		}
+	}
+
+	if err != nil || resp.StatusCode != 200 {
+		return http.Response{}, fmt.Errorf("http://localhost:%s failed after %d attempts! Last error: %v", localPort, maxRetries, err)
 	}
 
 	defer resp.Body.Close()
@@ -357,12 +372,12 @@ func getAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.C
 	// Read and print the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return http.Response{}, errors.New(fmt.Sprintf("getAppResponse() ended! Error while reading response body: %s", err))
+		return http.Response{}, fmt.Errorf("getAppResponse() ended! Error while reading response body: %s", err)
 	} else {
 		logger.Println("Response: ", string(body))
 	}
 
-	logger.Println(fmt.Sprintf("%s!", errBaseMsg))
+	logger.Printf("%s!", errBaseMsg)
 
 	return *resp, nil
 }

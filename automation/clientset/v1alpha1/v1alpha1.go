@@ -17,6 +17,10 @@ func NewForConfig(c *rest.Config) (*V1alpha1Client, error) {
 	config.ContentConfig.GroupVersion = &schema.GroupVersion{Group: ndbv1alpha1.GroupVersion.Group, Version: ndbv1alpha1.GroupVersion.Version}
 	config.APIPath = "/apis"
 	scheme := runtime.NewScheme()
+	// Add NDB types to the scheme so serializer can encode/decode them
+	if err := ndbv1alpha1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
 	codecs := serializer.NewCodecFactory(scheme)
 	negotiatedSerializer := codecs.WithoutConversion()
 	config.NegotiatedSerializer = negotiatedSerializer

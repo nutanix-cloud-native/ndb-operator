@@ -30,7 +30,7 @@ func (c *NDBServerClient) List(opts metav1.ListOptions) (*ndbv1alpha1.NDBServerL
 	err := c.restClient.
 		Get().
 		Namespace(c.namespace).
-		Resource("NDBServers").
+		Resource("ndbservers").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(context.TODO()).
 		Into(&result)
@@ -43,7 +43,7 @@ func (c *NDBServerClient) Get(name string, opts metav1.GetOptions) (*ndbv1alpha1
 	err := c.restClient.
 		Get().
 		Namespace(c.namespace).
-		Resource("NDBServers").
+		Resource("ndbservers").
 		Name(name).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(context.TODO()).
@@ -57,7 +57,7 @@ func (c *NDBServerClient) Create(NDBServer *ndbv1alpha1.NDBServer) (*ndbv1alpha1
 	err := c.restClient.
 		Post().
 		Namespace(c.namespace).
-		Resource("NDBServers").
+		Resource("ndbservers").
 		Body(NDBServer).
 		Do(context.TODO()).
 		Into(&result)
@@ -70,7 +70,7 @@ func (c *NDBServerClient) Update(NDBServer *ndbv1alpha1.NDBServer) (*ndbv1alpha1
 	err := c.restClient.
 		Put().
 		Namespace(c.namespace).
-		Resource("NDBServers").
+		Resource("ndbservers").
 		Name(NDBServer.Name).
 		Body(NDBServer).
 		Do(context.TODO()).
@@ -83,7 +83,7 @@ func (c *NDBServerClient) Delete(name string, opts *metav1.DeleteOptions) error 
 	return c.restClient.
 		Delete().
 		Namespace(c.namespace).
-		Resource("NDBServers").
+		Resource("ndbservers").
 		Name(name).
 		VersionedParams(opts, scheme.ParameterCodec).
 		Do(context.TODO()).
@@ -95,7 +95,7 @@ func (c *NDBServerClient) Watch(opts metav1.ListOptions) (watch.Interface, error
 	return c.restClient.
 		Get().
 		Namespace(c.namespace).
-		Resource("NDBServers").
+		Resource("ndbservers").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch(context.TODO())
 }
