@@ -86,7 +86,13 @@ type Instance struct {
 	// Description of the database instance
 	Description string `json:"description"`
 	// Id of the cluster to provision the database on
-	ClusterId string `json:"clusterId"`
+	// Either clusterId or clusterName must be provided
+	// +optional
+	ClusterId string `json:"clusterId,omitempty"`
+	// Name of the cluster to provision the database on
+	// Either clusterId or clusterName must be provided
+	// +optional
+	ClusterName string `json:"clusterName,omitempty"`
 	// +optional
 	Profiles *Profiles `json:"profiles"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
@@ -118,7 +124,13 @@ type Clone struct {
 	// Type of parent clone
 	Type string `json:"type"`
 	// Id of the cluster to clone the database on
-	ClusterId string `json:"clusterId"`
+	// Either clusterId or clusterName must be provided
+	// +optional
+	ClusterId string `json:"clusterId,omitempty"`
+	// Name of the cluster to clone the database on
+	// Either clusterId or clusterName must be provided
+	// +optional
+	ClusterName string `json:"clusterName,omitempty"`
 	// +optional
 	Profiles *Profiles `json:"profiles"`
 	// Name of the secret holding the credentials for the database instance (password and ssh key)
@@ -127,9 +139,21 @@ type Clone struct {
 	// default UTC
 	TimeZone string `json:"timezone"`
 	// Id of the source database on NDB to clone from
-	SourceDatabaseId string `json:"sourceDatabaseId"`
+	// Either sourceDatabaseId or sourceDatabaseName must be provided
+	// +optional
+	SourceDatabaseId string `json:"sourceDatabaseId,omitempty"`
+	// Name of the source database on NDB to clone from
+	// Either sourceDatabaseId or sourceDatabaseName must be provided
+	// +optional
+	SourceDatabaseName string `json:"sourceDatabaseName,omitempty"`
 	// Id of the snapshot to create a clone from
-	SnapshotId string `json:"snapshotId"`
+	// Either snapshotId or snapshotName must be provided
+	// +optional
+	SnapshotId string `json:"snapshotId,omitempty"`
+	// Name of the snapshot to create a clone from
+	// Either snapshotId or snapshotName must be provided
+	// +optional
+	SnapshotName string `json:"snapshotName,omitempty"`
 	// +optional
 	// Additional database engine specific arguments
 	AdditionalArguments map[string]string `json:"additionalArguments"`
