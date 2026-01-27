@@ -31,6 +31,19 @@ type DatabaseManager struct{}
 
 type CloneManager struct{}
 
+// resolveNamesToUUIDs is a helper function that resolves name fields to UUID fields
+// This should be called before generating NDB API requests
+func resolveNamesToUUIDs(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) error {
+	log := ctrllog.FromContext(ctx)
+	if err := controller_adapters.ResolveNamesToUUIDs(ctx, ndbClient, database); err != nil {
+		errStatement := "Failed to resolve names to UUIDs"
+		log.Error(err, errStatement)
+		r.recorder.Eventf(database, "Warning", EVENT_REQUEST_GENERATION_FAILURE, "Error: %s. %s", errStatement, err.Error())
+		return err
+	}
+	return nil
+}
+
 func (dm *DatabaseManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse *ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Provisioning a database on NDB")
@@ -51,6 +64,11 @@ func (dm *DatabaseManager) create(ctx context.Context, r *DatabaseReconciler, nd
 	reqData := map[string]interface{}{
 		common.NDB_PARAM_PASSWORD:       dbPassword,
 		common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+	}
+
+	// Resolve names to UUIDs before generating request
+	if err := resolveNamesToUUIDs(ctx, r, ndbClient, database); err != nil {
+		return
 	}
 
 	databaseAdapter := &controller_adapters.Database{Database: *database}
@@ -94,6 +112,12 @@ func (dm *DatabaseManager) deleteDatabaseServer(ctx context.Context, r *Database
 func (cm *CloneManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse *ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Cloning a database on NDB")
+	
+	// Resolve names to UUIDs before generating request
+	if err := resolveNamesToUUIDs(ctx, r, ndbClient, database); err != nil {
+		return
+	}
+
 	databaseAdapter := &controller_adapters.Database{Database: *database}
 	dbPassword, sshPublicKey, err := r.getDatabaseCredentials(ctx, databaseAdapter.GetCredentialSecret(), namespace)
 	if err != nil || dbPassword == "" || sshPublicKey == "" {

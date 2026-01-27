@@ -11,6 +11,18 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
+// validateUUIDOrName validates that either UUID or name is provided, and validates UUID if provided
+func validateUUIDOrName(uuid, name string, uuidPath, namePath *field.Path, uuidFieldName, nameFieldName string, errors *field.ErrorList) {
+	if uuid == "" && name == "" {
+		*errors = append(*errors, field.Invalid(uuidPath, uuid, fmt.Sprintf("Either %s or %s must be provided", uuidFieldName, nameFieldName)))
+	} else if uuid != "" {
+		// If UUID is provided, validate it's a valid UUID
+		if err := util.ValidateUUID(uuid); err != nil {
+			*errors = append(*errors, field.Invalid(uuidPath, uuid, fmt.Sprintf("%s field must be a valid UUID", uuidFieldName)))
+		}
+	}
+}
+
 // Get specific implementation of the DBProvisionRequestAppender interface based on the provided databaseType
 func getDatabaseWebhookHandler(database *Database) DatabaseWebhookHandler {
 	if database.Spec.IsClone {
@@ -59,9 +71,8 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 		*errors = append(*errors, field.Invalid(clonePath.Child("name"), clone.Name, "A valid Clone Name must be specified"))
 	}
 
-	if err := util.ValidateUUID(clone.ClusterId); err != nil {
-		*errors = append(*errors, field.Invalid(clonePath.Child("clusterId"), clone.ClusterId, "ClusterId field must be a valid UUID"))
-	}
+	// Validate clusterId or clusterName - at least one must be provided
+	validateUUIDOrName(clone.ClusterId, clone.ClusterName, clonePath.Child("clusterId"), clonePath.Child("clusterName"), "clusterId", "clusterName", errors)
 
 	if clone.CredentialSecret == "" {
 		*errors = append(*errors, field.Invalid(clonePath.Child("credentialSecret"), clone.CredentialSecret, "CredentialSecret must be provided in the Clone Spec"))
@@ -71,13 +82,11 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 		*errors = append(*errors, field.Invalid(clonePath.Child("timeZone"), clone.TimeZone, "TimeZone must be provided in Clone Spec"))
 	}
 
-	if err := util.ValidateUUID(clone.SourceDatabaseId); err != nil {
-		*errors = append(*errors, field.Invalid(clonePath.Child("sourceDatabaseId"), clone.SourceDatabaseId, "sourceDatabaseId must be a valid UUID"))
-	}
+	// Validate sourceDatabaseId or sourceDatabaseName - at least one must be provided
+	validateUUIDOrName(clone.SourceDatabaseId, clone.SourceDatabaseName, clonePath.Child("sourceDatabaseId"), clonePath.Child("sourceDatabaseName"), "sourceDatabaseId", "sourceDatabaseName", errors)
 
-	if err := util.ValidateUUID(clone.SnapshotId); err != nil {
-		*errors = append(*errors, field.Invalid(clonePath.Child("snapshotId"), clone.SnapshotId, "snapshotId must be a valid UUID"))
-	}
+	// Validate snapshotId or snapshotName - at least one must be provided
+	validateUUIDOrName(clone.SnapshotId, clone.SnapshotName, clonePath.Child("snapshotId"), clonePath.Child("snapshotName"), "snapshotId", "snapshotName", errors)
 
 	if _, isPresent := api.AllowedDatabaseTypes[clone.Type]; !isPresent {
 		*errors = append(*errors, field.Invalid(clonePath.Child("type"), clone.Type,
@@ -174,9 +183,8 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 		*errors = append(*errors, field.Invalid(instancePath.Child("name"), instance.Name, "A valid Database Instance Name must be specified"))
 	}
 
-	if err := util.ValidateUUID(instance.ClusterId); err != nil {
-		*errors = append(*errors, field.Invalid(instancePath.Child("clusterId"), instance.ClusterId, "ClusterId field must be a valid UUID"))
-	}
+	// Validate clusterId or clusterName - at least one must be provided
+	validateUUIDOrName(instance.ClusterId, instance.ClusterName, instancePath.Child("clusterId"), instancePath.Child("clusterName"), "clusterId", "clusterName", errors)
 
 	if instance.Size < 10 {
 		*errors = append(*errors, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
