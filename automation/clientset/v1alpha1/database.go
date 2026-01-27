@@ -30,7 +30,7 @@ func (c *DatabaseClient) List(opts metav1.ListOptions) (*ndbv1alpha1.DatabaseLis
 	err := c.restClient.
 		Get().
 		Namespace(c.namespace).
-		Resource("Databases").
+		Resource("databases").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(context.TODO()).
 		Into(&result)
@@ -43,7 +43,7 @@ func (c *DatabaseClient) Get(name string, opts metav1.GetOptions) (*ndbv1alpha1.
 	err := c.restClient.
 		Get().
 		Namespace(c.namespace).
-		Resource("Databases").
+		Resource("databases").
 		Name(name).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(context.TODO()).
@@ -57,7 +57,7 @@ func (c *DatabaseClient) Create(database *ndbv1alpha1.Database) (*ndbv1alpha1.Da
 	err := c.restClient.
 		Post().
 		Namespace(c.namespace).
-		Resource("Databases").
+		Resource("databases").
 		Body(database).
 		Do(context.TODO()).
 		Into(&result)
@@ -70,7 +70,7 @@ func (c *DatabaseClient) Update(database *ndbv1alpha1.Database) (*ndbv1alpha1.Da
 	err := c.restClient.
 		Put().
 		Namespace(c.namespace).
-		Resource("Databases").
+		Resource("databases").
 		Name(database.Name).
 		Body(database).
 		Do(context.TODO()).
@@ -83,7 +83,7 @@ func (c *DatabaseClient) Delete(name string, opts *metav1.DeleteOptions) error {
 	return c.restClient.
 		Delete().
 		Namespace(c.namespace).
-		Resource("Databases").
+		Resource("databases").
 		Name(name).
 		VersionedParams(opts, scheme.ParameterCodec).
 		Do(context.TODO()).
@@ -95,7 +95,7 @@ func (c *DatabaseClient) Watch(opts metav1.ListOptions) (watch.Interface, error)
 	return c.restClient.
 		Get().
 		Namespace(c.namespace).
-		Resource("Databases").
+		Resource("databases").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch(context.TODO())
 }

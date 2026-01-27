@@ -80,7 +80,7 @@ func extractDailySnapshotTime(ctx context.Context, dailySnapshotTime string) (ho
 		fmt.Println("Conversion error for hour:", err)
 		return -1, -1, -1, fmt.Errorf("ExtractDailySnapshotTime() failed! Conversion error for hour: %v", err)
 	} else {
-		logger.Println(fmt.Sprintf("Extracted hour: %d", hour))
+		logger.Printf("Extracted hour: %d\n", hour)
 	}
 
 	minute, err = strconv.Atoi(dailySnapshotTime[3:5])
@@ -88,7 +88,7 @@ func extractDailySnapshotTime(ctx context.Context, dailySnapshotTime string) (ho
 		fmt.Println("Conversion error for minute:", err)
 		return -1, -1, -1, fmt.Errorf("ExtractDailySnapshotTime() failed! Conversion error for minute: %v", err)
 	} else {
-		logger.Println(fmt.Sprintf("Extracted minute: %d", minute))
+		logger.Printf("Extracted minute: %d\n", minute)
 	}
 
 	second, err = strconv.Atoi(dailySnapshotTime[6:8])
@@ -96,7 +96,7 @@ func extractDailySnapshotTime(ctx context.Context, dailySnapshotTime string) (ho
 		fmt.Println("Conversion error for second:", err)
 		return -1, -1, -1, fmt.Errorf("ExtractDailySnapshotTime() failed! Conversion error for second: %v", err)
 	} else {
-		logger.Println(fmt.Sprintf("Extracted second: %d", second))
+		logger.Printf("Extracted second: %d\n", second)
 	}
 
 	logger.Println("extractDailySnapshotTime() ended!...")
