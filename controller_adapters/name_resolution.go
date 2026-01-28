@@ -123,4 +123,3 @@ func resolveSnapshotNameToId(ctx context.Context, ndbClient *ndb_client.NDBClien
 	log.Info("Resolved snapshot name to ID", "snapshotName", snapshotName, "snapshotId", snapshotId)
 	return nil
 }
-
