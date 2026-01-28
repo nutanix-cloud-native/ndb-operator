@@ -67,7 +67,7 @@ func (dm *DatabaseManager) create(ctx context.Context, r *DatabaseReconciler, nd
 	}
 
 	// Resolve names to UUIDs before generating request
-	if err := resolveNamesToUUIDs(ctx, r, ndbClient, database); err != nil {
+	if err = resolveNamesToUUIDs(ctx, r, ndbClient, database); err != nil {
 		return
 	}
 
@@ -112,9 +112,9 @@ func (dm *DatabaseManager) deleteDatabaseServer(ctx context.Context, r *Database
 func (cm *CloneManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse *ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Cloning a database on NDB")
-	
+
 	// Resolve names to UUIDs before generating request
-	if err := resolveNamesToUUIDs(ctx, r, ndbClient, database); err != nil {
+	if err = resolveNamesToUUIDs(ctx, r, ndbClient, database); err != nil {
 		return
 	}
 
