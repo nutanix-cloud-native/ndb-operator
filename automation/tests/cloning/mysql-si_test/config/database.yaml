@@ -10,10 +10,13 @@ spec:
     type: mysql
     description: Cloning mysql single instance testing 
     clusterId: <cluster-id>
+    # clusterName: <cluster-name>  # Optional: use clusterName instead of clusterId
     profiles: {}
     credentialSecret: clone-db-secret-mysql-si
     timezone: UTC
     sourceDatabaseId: <source-database-id>
+    # sourceDatabaseName: <source-database-name>  # Optional: use sourceDatabaseName instead of sourceDatabaseId
     snapshotId: <snapshot-id>
+    # snapshotName: <snapshot-name>  # Optional: use snapshotName instead of snapshotId
     additionalArguments: {}
     

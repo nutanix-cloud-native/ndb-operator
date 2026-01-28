@@ -10,13 +10,16 @@ spec:
     type: mssql
     description: Cloning mssql single instance testing 
     clusterId: <cluster-id>
+    # clusterName: <cluster-name>  # Optional: use clusterName instead of clusterId
     profiles: 
       software:
         name: MSSQL-MAZIN2
     credentialSecret: clone-db-secret-mssql-si
     timezone: UTC
     sourceDatabaseId: <source-database-id>
+    # sourceDatabaseName: <source-database-name>  # Optional: use sourceDatabaseName instead of sourceDatabaseId
     snapshotId: <snapshot-id>
+    # snapshotName: <snapshot-name>  # Optional: use snapshotName instead of snapshotId
     additionalArguments:
       "authentication_mode": "mixed"
     

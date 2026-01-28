@@ -211,9 +211,12 @@ spec:
     name: "Clone-Instance-Name"
     # The description of the clone instance
     description: Database Description
-    # Cluster id of the cluster where the Database has to be provisioned
-    # Can be fetched from the GET /clusters endpoint
-    clusterId: "Nutanix Cluster Id"
+    # Cluster id or name of the cluster where the Database has to be provisioned
+    # Either clusterId or clusterName must be provided
+    # clusterId can be fetched from the GET /clusters endpoint
+    # clusterName is the name of the cluster (more developer-friendly)
+    clusterId: "Nutanix Cluster Id"  # Optional if clusterName is provided
+    # clusterName: "Cluster-Name"    # Optional if clusterId is provided
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
     # Name is case-sensitive. ID is the UUID of the profile. Profile should be in the "READY" state
@@ -240,10 +243,14 @@ spec:
     # data: password, ssh_public_key
     credentialSecret: clone-instance-secret-name
     timezone: "UTC"
-    # ID of the database to clone from, can be fetched from NDB REST API Explorer
-    sourceDatabaseId: source-database-id
-    # ID of the snapshot to clone from, can be fetched from NDB REST API Explorer
-    snapshotId: snapshot-id
+    # ID or name of the database to clone from
+    # Either sourceDatabaseId or sourceDatabaseName must be provided
+    sourceDatabaseId: source-database-id  # Optional if sourceDatabaseName is provided
+    # sourceDatabaseName: "source-database-name"  # Optional if sourceDatabaseId is provided
+    # ID or name of the snapshot to clone from
+    # Either snapshotId or snapshotName must be provided
+    snapshotId: snapshot-id  # Optional if snapshotName is provided
+    # snapshotName: "snapshot-name"  # Optional if snapshotId is provided
     additionalArguments:                # Optional block, can specify additional arguments that are unique to database engines.
       expireInDays: 3
 
