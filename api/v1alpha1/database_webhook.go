@@ -31,6 +31,8 @@ import (
 )
 
 // log is for logging in this package.
+// Note: databaselog is only used by helper methods in webhook_helpers.go that don't receive a context.
+// Webhook methods (Default, ValidateCreate, etc.) should use logf.FromContext(ctx) for request-aware logging.
 var databaselog = logf.Log.WithName("database-resource")
 
 func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -49,12 +51,13 @@ var _ admission.CustomDefaulter = &Database{}
 
 // Default implements admission.CustomDefaulter so a webhook will be registered for the type
 func (r *Database) Default(ctx context.Context, obj runtime.Object) error {
-	databaselog.Info("Entering Default()...")
+	log := logf.FromContext(ctx)
+	log.Info("Entering Default()...")
 
 	db := obj.(*Database)
 	getDatabaseWebhookHandler(db).defaulter(&db.Spec)
 
-	databaselog.Info("Exiting Default()!")
+	log.Info("Exiting Default()!")
 	return nil
 }
 
@@ -64,7 +67,8 @@ var _ admission.CustomValidator = &Database{}
 
 // ValidateCreate implements admission.CustomValidator so a webhook will be registered for the type
 func (r *Database) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	databaselog.Info("Entering ValidateCreate...")
+	log := logf.FromContext(ctx)
+	log.Info("Entering ValidateCreate...")
 
 	db := obj.(*Database)
 	errors := &field.ErrorList{}
@@ -79,16 +83,17 @@ func (r *Database) ValidateCreate(ctx context.Context, obj runtime.Object) (admi
 
 	combined_err := util.CombineFieldErrors(*errors)
 
-	databaselog.Info("ValidateCreate webhook response...", "combined_err", combined_err)
+	log.Info("ValidateCreate webhook response...", "combined_err", combined_err)
 
-	databaselog.Info("Exiting ValidateCreate!")
+	log.Info("Exiting ValidateCreate!")
 
 	return nil, combined_err
 }
 
 // ValidateUpdate implements admission.CustomValidator so a webhook will be registered for the type
 func (r *Database) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	databaselog.Info("validate update", "name", newObj.(*Database).Name)
+	log := logf.FromContext(ctx)
+	log.Info("validate update", "name", newObj.(*Database).Name)
 
 	// TODO: This method will be used to make fields immutable.
 	// Here you can reject the updates to any fields. I think we should mark everything immutable by default.
@@ -97,7 +102,8 @@ func (r *Database) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Ob
 
 // ValidateDelete implements admission.CustomValidator so a webhook will be registered for the type
 func (r *Database) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	databaselog.Info("validate delete", "name", obj.(*Database).Name)
+	log := logf.FromContext(ctx)
+	log.Info("validate delete", "name", obj.(*Database).Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
 	return nil, nil
