@@ -86,13 +86,18 @@ func CheckRequiredEnv(ctx context.Context) (err error) {
 		automation.NDB_SECRET_USERNAME_ENV,
 		automation.NDB_SECRET_PASSWORD_ENV,
 		automation.NDB_SERVER_ENV,
-		automation.NX_CLUSTER_ID_ENV,
 	}
 	missingRequiredEnvs := []string{}
 	for _, env := range requiredEnvs {
 		if _, ok := os.LookupEnv(env); !ok {
 			missingRequiredEnvs = append(missingRequiredEnvs, env)
 		}
+	}
+	// Check that at least one of NX_CLUSTER_ID or NX_CLUSTER_NAME is provided
+	nxClusterId := os.Getenv(automation.NX_CLUSTER_ID_ENV)
+	nxClusterName := os.Getenv(automation.NX_CLUSTER_NAME_ENV)
+	if nxClusterId == "" && nxClusterName == "" {
+		missingRequiredEnvs = append(missingRequiredEnvs, fmt.Sprintf("%s or %s", automation.NX_CLUSTER_ID_ENV, automation.NX_CLUSTER_NAME_ENV))
 	}
 	if len(missingRequiredEnvs) != 0 {
 		return fmt.Errorf("error: loadEnv() ended! Missing the following required env variables: %s", missingRequiredEnvs)

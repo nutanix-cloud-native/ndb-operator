@@ -60,7 +60,14 @@ spec:
                     description: Additional database engine specific arguments
                     type: object
                   clusterId:
-                    description: Id of the cluster to clone the database on
+                    description: |-
+                      Id of the cluster to clone the database on
+                      Either clusterId or clusterName must be provided
+                    type: string
+                  clusterName:
+                    description: |-
+                      Name of the cluster to clone the database on
+                      Either clusterId or clusterName must be provided
                     type: string
                   credentialSecret:
                     description: Name of the secret holding the credentials for the
@@ -111,10 +118,24 @@ spec:
                         type: object
                     type: object
                   snapshotId:
-                    description: Id of the snapshot to create a clone from
+                    description: |-
+                      Id of the snapshot to create a clone from
+                      Either snapshotId or snapshotName must be provided
+                    type: string
+                  snapshotName:
+                    description: |-
+                      Name of the snapshot to create a clone from
+                      Either snapshotId or snapshotName must be provided
                     type: string
                   sourceDatabaseId:
-                    description: Id of the source database on NDB to clone from
+                    description: |-
+                      Id of the source database on NDB to clone from
+                      Either sourceDatabaseId or sourceDatabaseName must be provided
+                    type: string
+                  sourceDatabaseName:
+                    description: |-
+                      Name of the source database on NDB to clone from
+                      Either sourceDatabaseId or sourceDatabaseName must be provided
                     type: string
                   timezone:
                     description: default UTC
@@ -123,11 +144,8 @@ spec:
                     description: Type of parent clone
                     type: string
                 required:
-                - clusterId
                 - credentialSecret
                 - name
-                - snapshotId
-                - sourceDatabaseId
                 - type
                 type: object
               databaseInstance:
@@ -139,7 +157,14 @@ spec:
                     description: Additional database engine specific arguments
                     type: object
                   clusterId:
-                    description: Id of the cluster to provision the database on
+                    description: |-
+                      Id of the cluster to provision the database on
+                      Either clusterId or clusterName must be provided
+                    type: string
+                  clusterName:
+                    description: |-
+                      Name of the cluster to provision the database on
+                      Either clusterId or clusterName must be provided
                     type: string
                   credentialSecret:
                     description: Name of the secret holding the credentials for the
@@ -239,7 +264,6 @@ spec:
                   type:
                     type: string
                 required:
-                - clusterId
                 - credentialSecret
                 - name
                 - size

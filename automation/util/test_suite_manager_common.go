@@ -89,13 +89,21 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 
 	// Create Database or Clone
 	if st.Database != nil {
+		// Check if clusterName is provided, otherwise use clusterId
+		nxClusterName := os.Getenv(automation.NX_CLUSTER_NAME_ENV)
 		nxClusterId := os.Getenv(automation.NX_CLUSTER_ID_ENV)
 		if st.Database.Spec.IsClone {
 			if err = updateClone(ctx, st.Database, st.NdbServer, st.NdbSecret); err != nil {
 				return
 			}
 		} else {
-			st.Database.Spec.Instance.ClusterId = nxClusterId
+			if nxClusterName != "" {
+				st.Database.Spec.Instance.ClusterName = nxClusterName
+				// Clear clusterId if clusterName is provided
+				st.Database.Spec.Instance.ClusterId = ""
+			} else if nxClusterId != "" {
+				st.Database.Spec.Instance.ClusterId = nxClusterId
+			}
 		}
 		st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Create(st.Database)
 		if err != nil {
