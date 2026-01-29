@@ -29,11 +29,11 @@ type DatabaseWebhookHandler interface {
 }
 
 // +kubebuilder:object:generate:=false
-// Implements webhook.Validator, webhook.Defaulter
+// Implements admission.CustomValidator, admission.CustomDefaulter
 type CloningWebhookHandler struct{}
 
 // +kubebuilder:object:generate:=false
-// Implements webhook.Validator, webhook.Defaulter
+// Implements admission.CustomValidator, admission.CustomDefaulter
 type ProvisioningWebhookHandler struct{}
 
 func (v *CloningWebhookHandler) defaulter(spec *DatabaseSpec) {
