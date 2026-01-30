@@ -111,8 +111,8 @@ var _ = BeforeEach(func() {
 	// start webhook server using Manager
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
 
-	// Create webhook server (not used directly, but required for webhook setup)
-	_ = webhook.NewServer(webhook.Options{
+	// Create webhook server
+	webhookServer := webhook.NewServer(webhook.Options{
 		Host:    webhookInstallOptions.LocalServingHost,
 		Port:    webhookInstallOptions.LocalServingPort,
 		CertDir: webhookInstallOptions.LocalServingCertDir,
@@ -173,12 +173,11 @@ var _ = Describe("Webhook Tests", func() {
 		It("Should check for missing ClusterId", func() {
 			database := createDefaultDatabase("db2")
 			database.Spec.Instance.ClusterId = ""
-			database.Spec.Instance.ClusterName = ""
 
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("Either clusterId or clusterName must be provided"))
+			Expect(errMsg).To(ContainSubstring("ClusterId field must be a valid UUID"))
 		})
 
 		It("Should check for missing CredentialSecret", func() {
@@ -378,12 +377,11 @@ var _ = Describe("Webhook Tests", func() {
 		It("Should check for missing ClusterId", func() {
 			clone := createDefaultClone("clone2")
 			clone.Spec.Clone.ClusterId = ""
-			clone.Spec.Clone.ClusterName = ""
 
 			err := k8sClient.Create(context.Background(), clone)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("Either clusterId or clusterName must be provided"))
+			Expect(errMsg).To(ContainSubstring("ClusterId field must be a valid UUID"))
 		})
 
 		It("Should check for missing CredentialSecret", func() {
@@ -419,23 +417,21 @@ var _ = Describe("Webhook Tests", func() {
 		It("Should check for sourceDatabaseId", func() {
 			clone := createDefaultClone("clone6")
 			clone.Spec.Clone.SourceDatabaseId = ""
-			clone.Spec.Clone.SourceDatabaseName = ""
 
 			err := k8sClient.Create(context.Background(), clone)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("Either sourceDatabaseId or sourceDatabaseName must be provided"))
+			Expect(errMsg).To(ContainSubstring("sourceDatabaseId must be a valid UUID"))
 		})
 
 		It("Should check for snapshotId", func() {
 			clone := createDefaultClone("clone7")
 			clone.Spec.Clone.SnapshotId = ""
-			clone.Spec.Clone.SnapshotName = ""
 
 			err := k8sClient.Create(context.Background(), clone)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("Either snapshotId or snapshotName must be provided"))
+			Expect(errMsg).To(ContainSubstring("snapshotId must be a valid UUID"))
 		})
 
 		It("Should check for invalid Type'", func() {
