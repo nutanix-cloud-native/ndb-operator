@@ -73,6 +73,7 @@ func ResolveSourceDatabaseNameToId(ctx context.Context, ndbClient *ndb_client.ND
 
 // ResolveSnapshotNameToId resolves a snapshot name to its UUID
 // This requires the time machine ID and searches through snapshots for the matching name
+// If multiple snapshots have the same name, returns the most recent one
 func ResolveSnapshotNameToId(ctx context.Context, ndbClient *ndb_client.NDBClient, snapshotName string, timeMachineId string) (snapshotId string, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Resolving snapshot name to ID", "snapshotName", snapshotName, "timeMachineId", timeMachineId)
@@ -83,6 +84,13 @@ func ResolveSnapshotNameToId(ctx context.Context, ndbClient *ndb_client.NDBClien
 		log.Error(err, "Error fetching snapshots for time machine")
 		return "", fmt.Errorf("failed to fetch snapshots: %w", err)
 	}
+
+	// Collect all snapshots with matching name
+	type snapshotWithTimestamp struct {
+		id        string
+		timestamp int64
+	}
+	var matchingSnapshots []snapshotWithTimestamp
 
 	// Search through all snapshots across all clusters
 	for _, snapshotsPerCluster := range snapshotsResponse.SnapshotsPerNxCluster {
@@ -95,13 +103,31 @@ func ResolveSnapshotNameToId(ctx context.Context, ndbClient *ndb_client.NDBClien
 					continue
 				}
 				if detailedSnapshot != nil && detailedSnapshot.Name == snapshotName {
-					return snapshot.Id, nil
+					// Found a matching snapshot - add to list with timestamp
+					matchingSnapshots = append(matchingSnapshots, snapshotWithTimestamp{
+						id:        snapshot.Id,
+						timestamp: detailedSnapshot.SnapshotTimeStampDate,
+					})
 				}
 			}
 		}
 	}
 
-	return "", fmt.Errorf("snapshot with name '%s' not found in time machine '%s'", snapshotName, timeMachineId)
+	// If no snapshots found, return error
+	if len(matchingSnapshots) == 0 {
+		return "", fmt.Errorf("snapshot with name '%s' not found in time machine '%s'", snapshotName, timeMachineId)
+	}
+
+	// Find the most recent snapshot (highest timestamp)
+	mostRecentSnapshot := matchingSnapshots[0]
+	for _, s := range matchingSnapshots {
+		if s.timestamp > mostRecentSnapshot.timestamp {
+			mostRecentSnapshot = s
+		}
+	}
+
+	log.Info("Resolved snapshot name to ID (most recent)", "snapshotName", snapshotName, "snapshotId", mostRecentSnapshot.id, "matchingCount", len(matchingSnapshots))
+	return mostRecentSnapshot.id, nil
 }
 
 // GetAllClusters fetches all clusters from NDB
