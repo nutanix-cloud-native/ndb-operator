@@ -240,7 +240,7 @@ spec:
         name: ""
         id: ""
     
-    # Credentials secret for the clone instance
+    # Name of the secret with the
     # data: password, ssh_public_key
     credentialSecret: clone-instance-secret-name
     timezone: "UTC"
