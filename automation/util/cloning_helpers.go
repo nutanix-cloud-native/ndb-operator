@@ -76,7 +76,7 @@ func getSnapshotId(ctx context.Context, response *ndb_api.TimeMachineGetSnapshot
 		// Return the first available snapshot
 		for j := 0; j < len(snapshots); j++ {
 			logger.Println("getSnapshotId() ended!")
-			return snapshots[i].Id, nil
+			return snapshots[j].Id, nil
 		}
 	}
 
