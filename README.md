@@ -138,7 +138,7 @@ spec:
   isClone: false
   # Database instance specific details (that is to be provisioned)
   databaseInstance:
-    # Cluster name or cluster ID where the Database has to provisioned
+    # Cluster Name or cluster ID where the Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
     clusterName: "Nutanix Cluster Name"         # Recommended: Use cluster name
     # clusterId: "Nutanix Cluster UUID"         # Alternative: Use cluster UUID
@@ -212,7 +212,8 @@ spec:
     name: "Clone-Instance-Name"
     # The description of the clone instance
     description: Database Description
-    # Cluster name or cluster ID where the clone will be provisioned
+    # Cluster Name or Cluster id of the cluster where the Cloned Database has to be provisioned
+    # Can be fetched from the GET /clusters endpoint
     clusterName: "Nutanix Cluster Name"         # Recommended: Use cluster name
     # clusterId: "Nutanix Cluster UUID"         # Alternative: Use cluster UUID
     
@@ -248,7 +249,7 @@ spec:
     sourceDatabaseName: "source-database-name"      # Recommended: Use database name
     # sourceDatabaseId: "source-database-uuid"      # Alternative: Use database UUID
     
-    # Name or ID of the snapshot to clone from, can be fetched from NDB REST API Explorer (name recommended, UUID as alternative, or leave empty for latest)
+    # Name or ID of the snapshot to clone from, can be fetched from NDB REST API Explorer
     snapshotName: "snapshot-name"                   # Recommended: Use snapshot name, or leave empty for latest
     # snapshotId: "snapshot-uuid"                   # Alternative: Use snapshot UUID
     
