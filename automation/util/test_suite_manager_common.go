@@ -101,7 +101,7 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 			} else if nxClusterId != "" {
 				st.Database.Spec.Clone.ClusterId = nxClusterId
 			}
-			
+
 			// Get source database name from environment and set it in the spec
 			// This enables testing of name-based resolution for source databases
 			sourceDatabaseName, dbErr := getDatabaseName(ctx, st.Database)
@@ -110,7 +110,7 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 				// Clear sourceDatabaseId if sourceDatabaseName is provided
 				st.Database.Spec.Clone.SourceDatabaseId = ""
 			}
-			
+
 			if err = updateClone(ctx, st.Database, st.NdbServer, st.NdbSecret); err != nil {
 				return
 			}
