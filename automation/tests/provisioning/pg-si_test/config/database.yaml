@@ -10,8 +10,8 @@ spec:
       - database_one
       - database_two
       - database_three
-    clusterId: <cluster-id>
-    # clusterName: <cluster-name>  # Optional: use clusterName instead of clusterId
+    # clusterId: <cluster-id>
+    clusterName: <cluster-name>  # Optional: use clusterName instead of clusterId
     credentialSecret: db-secret-pg-si
     size: 10
     timezone: "UTC"

@@ -93,6 +93,24 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 		nxClusterName := os.Getenv(automation.NX_CLUSTER_NAME_ENV)
 		nxClusterId := os.Getenv(automation.NX_CLUSTER_ID_ENV)
 		if st.Database.Spec.IsClone {
+			// For clones, set clusterName from env if provided
+			if nxClusterName != "" {
+				st.Database.Spec.Clone.ClusterName = nxClusterName
+				// Clear clusterId if clusterName is provided
+				st.Database.Spec.Clone.ClusterId = ""
+			} else if nxClusterId != "" {
+				st.Database.Spec.Clone.ClusterId = nxClusterId
+			}
+			
+			// Get source database name from environment and set it in the spec
+			// This enables testing of name-based resolution for source databases
+			sourceDatabaseName, dbErr := getDatabaseName(ctx, st.Database)
+			if dbErr == nil && sourceDatabaseName != "" {
+				st.Database.Spec.Clone.SourceDatabaseName = sourceDatabaseName
+				// Clear sourceDatabaseId if sourceDatabaseName is provided
+				st.Database.Spec.Clone.SourceDatabaseId = ""
+			}
+			
 			if err = updateClone(ctx, st.Database, st.NdbServer, st.NdbSecret); err != nil {
 				return
 			}
@@ -155,9 +173,17 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 			if err != nil {
 				return
 			}
+			// Check if pod is ready (not just running) - this ensures init containers have completed
+			podReady := false
+			for _, condition := range st.AppPod.Status.Conditions {
+				if condition.Type == "Ready" && condition.Status == "True" {
+					podReady = true
+					break
+				}
+			}
 			statusMessage := "Pod " + st.AppPod.Name + " is in '" + string(st.AppPod.Status.Phase) + "' status."
-			if st.AppPod.Status.Phase == "Running" {
-				logger.Println(statusMessage)
+			if podReady {
+				logger.Println(statusMessage + " Pod is ready.")
 				return
 			}
 			err = errors.New(statusMessage)
@@ -165,6 +191,10 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 		})
 		if err == nil {
 			logger.Println("Pod is ready")
+			// Add a small grace period to ensure the app inside the pod
+			// has fully initialized and bound to its port before tests start
+			logger.Println("Waiting 5 seconds for application to fully initialize...")
+			time.Sleep(5 * time.Second)
 		} else {
 			logger.Println(err)
 			return
@@ -344,11 +374,13 @@ func getAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.C
 	if err != nil {
 		return http.Response{}, fmt.Errorf("%s! kubectl port-forward %s %s:%d failed! %v. ", errBaseMsg, podName, localPort, podTargetPort, err)
 	} else {
-		logger.Printf("kubectl port-forward %s %s:%d succesful.", podName, localPort, podTargetPort)
+		logger.Printf("kubectl port-forward %s %s:%d started.", podName, localPort, podTargetPort)
 	}
 
-	// Wait for a brief period to let port-forwarding start
-	time.Sleep(2 * time.Second)
+	// Wait for port-forwarding to establish
+	// Increased from 2s to 10s to ensure port-forward fully establishes before HTTP attempts
+	logger.Println("Waiting 10 seconds for port-forward to establish...")
+	time.Sleep(10 * time.Second)
 
 	// Verify the forwarded port by making an HTTP request with retry logic
 	url := fmt.Sprintf("http://localhost:%s", localPort)

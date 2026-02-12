@@ -9,14 +9,14 @@ spec:
     name: clone-mysql-si
     type: mysql
     description: Cloning mysql single instance testing 
-    clusterId: <cluster-id>
-    # clusterName: <cluster-name>  # Optional: use clusterName instead of clusterId
+    # clusterId: ""  # Alternative: use UUID instead of name
+    clusterName: ""  # Set by test framework from NX_CLUSTER_NAME_ENV
     profiles: {}
     credentialSecret: clone-db-secret-mysql-si
     timezone: UTC
-    sourceDatabaseId: <source-database-id>
-    # sourceDatabaseName: <source-database-name>  # Optional: use sourceDatabaseName instead of sourceDatabaseId
-    snapshotId: <snapshot-id>
-    # snapshotName: <snapshot-name>  # Optional: use snapshotName instead of snapshotId
+    # sourceDatabaseId: ""  # Alternative: use UUID instead of name
+    sourceDatabaseName: ""  # Set by test framework from MYSQL_SI_CLONING_NAME_ENV
+    # snapshotId: ""  # Alternative: use specific snapshot UUID
+    snapshotName: ""  # Optional: use specific snapshot name, or leave empty for auto-selection
     additionalArguments: {}
     
