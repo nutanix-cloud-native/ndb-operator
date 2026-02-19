@@ -36,4 +36,4 @@ automation/tests/**/*.log
 *.env
 *.env.backup
 *.env.bak
-!automation/tests/.env
+!automation/tests/.env.example

@@ -38,7 +38,9 @@ func ResolveNamesToUUIDs(ctx context.Context, ndbClient *ndb_client.NDBClient, d
 	return resolveInstanceNamesToUUIDs(ctx, ndbClient, database)
 }
 
-// resolveInstanceNamesToUUIDs resolves names to UUIDs for provisioning instances
+// resolveInstanceNamesToUUIDs resolves names to UUIDs for provisioning instances.
+// This function resolves the following fields:
+//   - clusterName -> clusterId (if clusterId is not provided)
 func resolveInstanceNamesToUUIDs(ctx context.Context, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) error {
 	instance := database.Spec.Instance
 
@@ -50,7 +52,11 @@ func resolveInstanceNamesToUUIDs(ctx context.Context, ndbClient *ndb_client.NDBC
 	return nil
 }
 
-// resolveCloneNamesToUUIDs resolves names to UUIDs for cloning
+// resolveCloneNamesToUUIDs resolves names to UUIDs for cloning operations.
+// This function resolves the following fields:
+//   - clusterName -> clusterId (if clusterId is not provided)
+//   - sourceDatabaseName -> sourceDatabaseId (if sourceDatabaseId is not provided)
+//   - snapshotName -> snapshotId (if snapshotId is not provided, requires sourceDatabaseId)
 func resolveCloneNamesToUUIDs(ctx context.Context, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) error {
 	clone := database.Spec.Clone
 
