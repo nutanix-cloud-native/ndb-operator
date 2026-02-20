@@ -1,0 +1,33 @@
+name: Black Duck Intelligent Scan
+# This workflow runs INTELLIGENT (full) scans daily to create/update the project in Black Duck
+# This creates the baseline that RAPID scans use for comparison
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Daily at midnight UTC
+  workflow_dispatch:  # Allow manual trigger to create initial project baseline
+
+jobs:
+  security:
+    if: github.repository == 'nutanix-cloud-native/ndb-operator'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.7"
+
+      - name: Build Project
+        run: make build
+
+      - name: Black Duck Security Scan
+        uses: blackduck-inc/black-duck-security-scan@v2
+        with:
+          blackducksca_url: ${{ secrets.BLACKDUCK_URL }}
+          blackducksca_token: ${{ secrets.BLACKDUCK_API_TOKEN }}
+          blackducksca_scan_full: true  # true = INTELLIGENT scan (full analysis)
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Fail on policy violations
+          mark_build_status: failure

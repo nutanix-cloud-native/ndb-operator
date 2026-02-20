@@ -1,0 +1,40 @@
+name: Black Duck Policy Check
+# This workflow runs RAPID scans for quick policy checks on PRs and pushes
+# Note: RAPID scans work best after an INTELLIGENT scan has created the project baseline
+# Using BOM_COMPARE mode - if this fails with "project version doesn't exist",
+# either run the INTELLIGENT scan workflow manually first, or change to mode=ALL
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+
+jobs:
+  security:
+    if: github.repository == 'nutanix-cloud-native/ndb-operator'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.7"
+
+      - name: Build Project
+        run: make build
+
+      - name: Black Duck Security Scan
+        uses: blackduck-inc/black-duck-security-scan@v2
+        with:
+          blackducksca_url: ${{ secrets.BLACKDUCK_URL }}
+          blackducksca_token: ${{ secrets.BLACKDUCK_API_TOKEN }}
+          blackducksca_scan_full: false  # false = RAPID scan (for PR checks)
+          blackducksca_prComment_enabled: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Use ALL mode for initial scans (works without existing project baseline)
+          # Once INTELLIGENT scan runs, can optionally switch to BOM_COMPARE or BOM_COMPARE_STRICT
+          detect_args: "--detect.blackduck.rapid.compare.mode=ALL"
+          # Fail on policy violations
+          mark_build_status: failure
