@@ -368,56 +368,8 @@ func getAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.C
 	podName := st.AppPod.Name
 	podTargetPort := st.AppPod.Spec.Containers[0].Ports[0].ContainerPort
 
-	// The SetupSuite already waits for Pod.Status.Phase == "Running"
-	// However, this only means the container started, NOT that the app is ready or stable.
-	// We need to check:
-	// 1. Container readiness (not just pod phase)
-	// 2. Whether the pod has crashed and restarted
-	// 3. Give the app time to fully initialize and stabilize
-	
-	logger.Printf("Checking pod %s readiness and stability...", podName)
-	pod, err := clientset.CoreV1().Pods(st.AppPod.Namespace).Get(ctx, podName, metav1.GetOptions{})
-	if err != nil {
-		logger.Printf("Warning: Could not get pod status: %v", err)
-	} else {
-		// Check container readiness and restart count
-		for _, containerStatus := range pod.Status.ContainerStatuses {
-			logger.Printf("Container %s: Ready=%v, RestartCount=%d", 
-				containerStatus.Name, containerStatus.Ready, containerStatus.RestartCount)
-			
-			if !containerStatus.Ready {
-				logger.Printf("Container %s is not ready yet. Waiting 10 seconds...", containerStatus.Name)
-				time.Sleep(10 * time.Second)
-			}
-			
-			if containerStatus.RestartCount > 0 {
-				logger.Printf("Pod %s has restarted %d time(s). Waiting 15 seconds for stability...", 
-					podName, containerStatus.RestartCount)
-				time.Sleep(15 * time.Second)
-			}
-		}
-	}
-
-	// Wait additional time for the application inside the container to fully initialize
-	// Even when container is "Ready", the app might still be connecting to database, etc.
-	logger.Printf("Waiting 10 seconds for application inside pod %s to fully initialize...", podName)
-	time.Sleep(10 * time.Second)
-
 	// Run port-forward command using kubectl
-	// Need to capture stdout/stderr to prevent the process from terminating
 	cmd := exec.Command("kubectl", "port-forward", podName, fmt.Sprintf("%s:%d", localPort, podTargetPort))
-	
-	// Create pipes for stdout and stderr to keep the process alive
-	_, err = cmd.StdoutPipe()
-	if err != nil {
-		return http.Response{}, fmt.Errorf("%s! Failed to create stdout pipe: %v", errBaseMsg, err)
-	}
-	_, err = cmd.StderrPipe()
-	if err != nil {
-		return http.Response{}, fmt.Errorf("%s! Failed to create stderr pipe: %v", errBaseMsg, err)
-	}
-	
-	// Start the port-forward process
 	err = cmd.Start()
 	if err != nil {
 		return http.Response{}, fmt.Errorf("%s! kubectl port-forward %s %s:%d failed! %v. ", errBaseMsg, podName, localPort, podTargetPort, err)
