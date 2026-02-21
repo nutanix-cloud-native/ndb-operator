@@ -138,9 +138,10 @@ spec:
   isClone: false
   # Database instance specific details (that is to be provisioned)
   databaseInstance:
-    # Cluster id of the cluster where the Database has to be provisioned
+    # Cluster Name or cluster ID where the Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
-    clusterId: "Nutanix Cluster Id"
+    clusterName: "Nutanix Cluster Name"         # Recommended: Use cluster name
+    # clusterId: "Nutanix Cluster UUID"         # Alternative: Use cluster UUID
     # The database instance name on NDB
     name: "Database-Instance-Name"
     # The description of the database instance
@@ -211,9 +212,11 @@ spec:
     name: "Clone-Instance-Name"
     # The description of the clone instance
     description: Database Description
-    # Cluster id of the cluster where the Database has to be provisioned
+    # Cluster Name or Cluster id of the cluster where the Cloned Database has to be provisioned
     # Can be fetched from the GET /clusters endpoint
-    clusterId: "Nutanix Cluster Id"
+    clusterName: "Nutanix Cluster Name"         # Recommended: Use cluster name
+    # clusterId: "Nutanix Cluster UUID"         # Alternative: Use cluster UUID
+    
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
     # Name is case-sensitive. ID is the UUID of the profile. Profile should be in the "READY" state
@@ -236,15 +239,21 @@ spec:
       dbParamInstance:
         name: ""
         id: ""
+    
     # Name of the secret with the
     # data: password, ssh_public_key
     credentialSecret: clone-instance-secret-name
     timezone: "UTC"
-    # ID of the database to clone from, can be fetched from NDB REST API Explorer
-    sourceDatabaseId: source-database-id
-    # ID of the snapshot to clone from, can be fetched from NDB REST API Explorer
-    snapshotId: snapshot-id
-    additionalArguments:                # Optional block, can specify additional arguments that are unique to database engines.
+    
+    # Name or ID of the database to clone from, can be fetched from NDB REST API Explorer
+    sourceDatabaseName: "source-database-name"      # Recommended: Use database name
+    # sourceDatabaseId: "source-database-uuid"      # Alternative: Use database UUID
+    
+    # Name or ID of the snapshot to clone from, can be fetched from NDB REST API Explorer
+    snapshotName: "snapshot-name"                   # Recommended: Use snapshot name, or leave empty for latest
+    # snapshotId: "snapshot-uuid"                   # Alternative: Use snapshot UUID
+    
+    additionalArguments:                        # Optional block, can specify additional arguments that are unique to database engines.
       expireInDays: 3
 
 ```

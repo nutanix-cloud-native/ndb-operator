@@ -8,7 +8,8 @@ spec:
     name: db-mysql-si
     databaseNames:
       - database_one
-    clusterId: <cluster-id>
+    # clusterId: <cluster-id>
+    clusterName: <cluster-name>  # Optional: use clusterName instead of clusterId
     credentialSecret: db-secret-mysql-si
     size: 10
     timezone: "UTC"

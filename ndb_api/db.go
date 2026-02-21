@@ -69,6 +69,25 @@ func GetDatabaseByName(ctx context.Context, ndbClient *ndb_client.NDBClient, nam
 	return
 }
 
+// ResolveSourceDatabaseNameToId resolves a source database name to its UUID
+// This uses the existing GetDatabaseByName function
+func ResolveSourceDatabaseNameToId(ctx context.Context, ndbClient *ndb_client.NDBClient, databaseName string) (databaseId string, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Resolving source database name to ID", "databaseName", databaseName)
+
+	database, err := GetDatabaseByName(ctx, ndbClient, databaseName)
+	if err != nil {
+		log.Error(err, "Error resolving database name to ID")
+		return "", fmt.Errorf("failed to resolve database name '%s': %w", databaseName, err)
+	}
+
+	if database == nil {
+		return "", fmt.Errorf("database with name '%s' not found", databaseName)
+	}
+
+	return database.Id, nil
+}
+
 // Provisions a database instance based on the database provisioning request
 // Returns the task info summary response for the operation
 func ProvisionDatabase(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, req *DatabaseProvisionRequest) (task *TaskInfoSummaryResponse, err error) {

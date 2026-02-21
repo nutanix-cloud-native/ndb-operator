@@ -76,7 +76,7 @@ func getSnapshotId(ctx context.Context, response *ndb_api.TimeMachineGetSnapshot
 		// Return the first available snapshot
 		for j := 0; j < len(snapshots); j++ {
 			logger.Println("getSnapshotId() ended!")
-			return snapshots[i].Id, nil
+			return snapshots[j].Id, nil
 		}
 	}
 
@@ -128,10 +128,17 @@ func updateClone(ctx context.Context, database *ndbv1alpha1.Database, ndbServer 
 		logger.Printf("Retrieved snapshot: %s for clusterId: %s", snapshotId, nxClusterId)
 	}
 
-	// Update sourceDatabaseId, nxClusterId, and snapshotId
-	database.Spec.Clone.SourceDatabaseId = sourceDatabaseId
-	database.Spec.Clone.ClusterId = nxClusterId
-	database.Spec.Clone.SnapshotId = snapshotId
+	// Update sourceDatabaseId, nxClusterId, and snapshotId only if names are not provided
+	// If names are provided, the controller will resolve them to IDs
+	if database.Spec.Clone.SourceDatabaseName == "" {
+		database.Spec.Clone.SourceDatabaseId = sourceDatabaseId
+	}
+	if database.Spec.Clone.ClusterName == "" {
+		database.Spec.Clone.ClusterId = nxClusterId
+	}
+	if database.Spec.Clone.SnapshotName == "" {
+		database.Spec.Clone.SnapshotId = snapshotId
+	}
 
 	return
 }

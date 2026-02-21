@@ -177,7 +177,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), database)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("ClusterId field must be a valid UUID"))
+			Expect(errMsg).To(ContainSubstring("Either clusterId or clusterName must be provided"))
 		})
 
 		It("Should check for missing CredentialSecret", func() {
@@ -381,7 +381,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), clone)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("ClusterId field must be a valid UUID"))
+			Expect(errMsg).To(ContainSubstring("Either clusterId or clusterName must be provided"))
 		})
 
 		It("Should check for missing CredentialSecret", func() {
@@ -421,7 +421,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), clone)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("sourceDatabaseId must be a valid UUID"))
+			Expect(errMsg).To(ContainSubstring("Either sourceDatabaseId or sourceDatabaseName must be provided"))
 		})
 
 		It("Should check for snapshotId", func() {
@@ -431,7 +431,7 @@ var _ = Describe("Webhook Tests", func() {
 			err := k8sClient.Create(context.Background(), clone)
 			Expect(err).To(HaveOccurred())
 			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("snapshotId must be a valid UUID"))
+			Expect(errMsg).To(ContainSubstring("Either snapshotId or snapshotName must be provided"))
 		})
 
 		It("Should check for invalid Type'", func() {

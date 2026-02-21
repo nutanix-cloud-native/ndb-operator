@@ -8,16 +8,21 @@ spec:
     name: db-mssql-si
     databaseNames:
       - database_one
-    clusterId: <cluster-id>
+    # clusterId: <cluster-id>
+    clusterName: <cluster-name>  # Optional: use clusterName instead of clusterId
     credentialSecret: db-secret-mssql-si
     size: 10
     timezone: "UTC"
     type: mssql
     profiles: 
-      # software:
-      #   name: "MSSQL-MAZIN2"
+      software:
+        name: "MSSQL-MAZIN2"
       network:
         name: "MSSQL_ntwk_profile"
+      dbParam:
+        name: "DEFAULT_SQLSERVER_DATABASE_PARAMS"
+      dbParamInstance:
+        name: "DEFAULT_SQLSERVER_INSTANCE_PARAMS"
     timeMachine:
       name: db-mssql-si_TM
       description: "TM provisioned by operator"
