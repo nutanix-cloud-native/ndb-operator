@@ -354,9 +354,15 @@ func getDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *
 	// Get NDB username and password from NDB CredentialSecretRef
 	ref := ndbServer.Spec.CredentialSecretRef
 	secret, err := clientset.CoreV1().Secrets(ref.Namespace).Get(context.TODO(), ref.Name, metav1.GetOptions{})
-	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
-	if err != nil || username == "" || password == "" {
+	if err != nil {
 		return nil, fmt.Errorf("%s! Could not fetch data from secret! %s", errBaseMsg, err)
+	}
+	if secret == nil {
+		return nil, fmt.Errorf("%s! Secret %s/%s is nil", errBaseMsg, ref.Namespace, ref.Name)
+	}
+	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
+	if username == "" || password == "" {
+		return nil, fmt.Errorf("%s! Secret %s/%s has empty username or password", errBaseMsg, ref.Namespace, ref.Name)
 	}
 
 	// Create ndbClient and getting databaseOrCloneResponse

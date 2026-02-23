@@ -83,9 +83,15 @@ func (pm *ProvisioningTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx c
 	// Get NDB username and password from NDB CredentialSecretRef
 	ref := ndbServer.Spec.CredentialSecretRef
 	secret, err := clientset.CoreV1().Secrets(ref.Namespace).Get(context.TODO(), ref.Name, metav1.GetOptions{})
-	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
-	if err != nil || username == "" || password == "" {
+	if err != nil {
 		return nil, fmt.Errorf("%s! Could not fetch data from secret! %s\n", errBaseMsg, err)
+	}
+	if secret == nil {
+		return nil, fmt.Errorf("%s! Secret %s/%s is nil\n", errBaseMsg, ref.Namespace, ref.Name)
+	}
+	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
+	if username == "" || password == "" {
+		return nil, fmt.Errorf("%s! Secret %s/%s has empty username or password\n", errBaseMsg, ref.Namespace, ref.Name)
 	}
 
 	// Create ndbClient and getting databaseResponse so we can get timemachine id
