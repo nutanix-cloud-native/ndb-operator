@@ -65,9 +65,9 @@ func (pm *ProvisioningTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx c
 	errBaseMsg := "Error: GetTimemachineResponse() ended"
 
 	// Get NDBServer CR
-	ndbServer, err := v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Get(st.NdbServer.Name, metav1.GetOptions{})
+	ndbServer, err := v1alpha1ClientSet.NDBServers("").Get(st.NdbServer.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("%s! Could not fetch ndbServer '%s' CR! %s\n", errBaseMsg, ndbServer.Name, err)
+		return nil, fmt.Errorf("%s! Could not fetch ndbServer '%s' CR! %s\n", errBaseMsg, st.NdbServer.Name, err)
 	} else {
 		logger.Printf("Retrieved ndbServer '%s' CR from v1alpha1ClientSet", ndbServer.Name)
 	}
@@ -80,9 +80,9 @@ func (pm *ProvisioningTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx c
 		logger.Printf("Retrieved database '%s' CR from v1alpha1ClientSet", database.Name)
 	}
 
-	// Get NDB username and password from NDB CredentialSecret
-	ndb_secret_name := ndbServer.Spec.CredentialSecret
-	secret, err := clientset.CoreV1().Secrets(database.Namespace).Get(context.TODO(), ndb_secret_name, metav1.GetOptions{})
+	// Get NDB username and password from NDB CredentialSecretRef
+	ref := ndbServer.Spec.CredentialSecretRef
+	secret, err := clientset.CoreV1().Secrets(ref.Namespace).Get(context.TODO(), ref.Name, metav1.GetOptions{})
 	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
 	if err != nil || username == "" || password == "" {
 		return nil, fmt.Errorf("%s! Could not fetch data from secret! %s\n", errBaseMsg, err)

@@ -63,13 +63,20 @@ The container and bundle image creation steps can be skipped if existing images 
 ---
 
 ## Usage
+
+**NDBServer and credentials:** The operator uses two custom resources—**NDBServer** (cluster-scoped) and **Database** (namespaced). **NDBServer** is cluster-scoped so that admins can store the NDB API credential secret in a restricted namespace (e.g. `ndb-credentials`) and set `credentialSecretRef` to point to it. Developers who create **Database** resources only need to reference the NDBServer by **name** in `ndbRef` (e.g. `ndbRef: ndb`); they can list and use cluster-scoped NDBServers without needing access to the secret's namespace.
+
 ###  Create secrets to be used by the NDBServer and Database resources using the manifest:
+
+- **NDB API credential secret:** Create this in a **restricted namespace** (e.g. `ndb-credentials`) so only admins need access. Create that namespace if it does not exist, then apply the secret there.
+- **Database instance secret:** Create this in the same namespace where you will create the Database resource (e.g. your application namespace).
 
 ```yaml
 apiVersion: v1
 kind: Secret
 metadata:
   name: ndb-secret-name
+  namespace: ndb-credentials   # use a restricted namespace; create it first
 type: Opaque
 stringData:
   username: username-for-ndb-server
@@ -83,6 +90,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: db-instance-secret-name
+  # no namespace, or set to the namespace where you will create the Database
 type: Opaque
 stringData:
   password: password-for-the-database-instance
@@ -90,13 +98,16 @@ stringData:
 
 ```
 
-Create the secrets:
+Create the NDB credential namespace, then apply the secrets (the NDB secret YAML above includes `namespace: ndb-credentials`):
 
-```
+```sh
+kubectl create namespace ndb-credentials
 kubectl apply -f <path/to/secrets-manifest.yaml>
 ```
 
 ###  Create the NDBServer resource. The manifest for NDBServer is described as follows:
+
+**NDBServer is cluster-scoped.** Admins create the NDB API credential secret in a restricted namespace (e.g. `ndb-credentials`) and set `credentialSecretRef` to that secret. The NDBServer resource itself has no namespace; developers in any namespace can reference it by name.
 
 ```yaml
 apiVersion: ndb.nutanix.com/v1alpha1
@@ -109,9 +120,13 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: ndb-operator
   name: ndb
+  # no namespace: NDBServer is cluster-scoped
 spec:
-    # Name of the secret that holds the credentials for NDB: username, password and ca_certificate created earlier
-    credentialSecret: ndb-secret-name
+    # Reference to the secret that holds the credentials for NDB (username, password, ca_certificate).
+    # Point to the restricted namespace where the secret was created; developers do not need access to this namespace.
+    credentialSecretRef:
+      name: ndb-secret-name
+      namespace: ndb-credentials
     # NDB Server's API URL
     server: https://[NDB IP]:8443/era/v0.9
     # Set to true to skip SSL certificate validation, should be false if ca_certificate is provided in the credential secret.
@@ -133,7 +148,7 @@ metadata:
   # This name that will be used within the kubernetes cluster
   name: db
 spec:
-  # Name of the NDBServer resource created earlier
+  # Name of the cluster-scoped NDBServer (no namespace needed; developers reference by name only)
   ndbRef: ndb
   isClone: false
   # Database instance specific details (that is to be provisioned)
@@ -201,7 +216,7 @@ metadata:
   # This name that will be used within the kubernetes cluster
   name: db
 spec:
-  # Name of the NDBServer resource created earlier
+  # Name of the cluster-scoped NDBServer (no namespace needed; developers reference by name only)
   ndbRef: ndb
   isClone: true
   # Clone specific details (that is to be provisioned)
@@ -348,6 +363,22 @@ To deregister the database and delete the VM run:
 ```sh
 kubectl delete -f <path/to/NDBServer-manifest.yaml>
 ```
+
+---
+
+## Upgrading from namespaced NDBServer
+
+If you are upgrading from an earlier version where **NDBServer** was namespaced, there is no in-place conversion: NDBServer is now cluster-scoped and uses `credentialSecretRef` (name + namespace) instead of `credentialSecret`.
+
+**Recommended approach:**
+
+1. Create a dedicated namespace for NDB API credentials (e.g. `ndb-credentials`) and create or copy the credential secret there.
+2. Delete the existing namespaced NDBServer(s), or leave them in place and create new cluster-scoped NDBServer(s) with the same `metadata.name` if you want to avoid updating Database resources.
+3. Create a new **cluster-scoped** NDBServer with `spec.credentialSecretRef.name` and `spec.credentialSecretRef.namespace` pointing to that secret.
+4. Ensure each **Database** resource’s `spec.ndbRef` is set to the cluster-scoped NDBServer’s name (no namespace). If you recreated the NDBServer with the same name, no change to Database manifests is needed.
+5. Remove the old namespaced NDBServer(s) and the credential secret from the old namespace once all Databases are using the new cluster-scoped NDBServer.
+
+There is no compatibility window supporting both namespaced and cluster-scoped NDBServer in the same operator version; a one-time migration as above is required.
 
 ---
 

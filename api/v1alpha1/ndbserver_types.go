@@ -20,12 +20,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// SecretReference references a Secret by name and namespace (e.g. for NDB API credentials in a restricted namespace).
+type SecretReference struct {
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// +kubebuilder:validation:Required
+	Namespace string `json:"namespace"`
+}
+
 // NDBServerSpec defines the desired state of NDBServer
 type NDBServerSpec struct {
 	// +kubebuilder:validation:Required
 	Server string `json:"server"`
+	// Reference to the secret holding NDB API credentials. The secret can live in a restricted namespace
+	// so that developers with access to NDBServer do not need access to the secret.
 	// +kubebuilder:validation:Required
-	CredentialSecret string `json:"credentialSecret"`
+	CredentialSecretRef SecretReference `json:"credentialSecretRef"`
 	// +kubebuilder:default:=false
 	// +optional
 	// Skip server's certificate and hostname verification
@@ -46,11 +56,11 @@ type ReconcileCounter struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:shortName={"ndb","ndbs"}
+// +kubebuilder:resource:scope=Cluster,shortName={"ndb","ndbs"}
 // +kubebuilder:printcolumn:name="Status",type=string,JSONPath=`.status.status`
 // +kubebuilder:printcolumn:name="Updated At",type=string,JSONPath=`.status.lastUpdated`
 
-// NDBServer is the Schema for the ndbservers API
+// NDBServer is the Schema for the ndbservers API (cluster-scoped).
 type NDBServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
