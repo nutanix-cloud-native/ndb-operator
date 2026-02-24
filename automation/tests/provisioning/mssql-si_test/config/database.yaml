@@ -14,15 +14,7 @@ spec:
     size: 10
     timezone: "UTC"
     type: mssql
-    profiles: 
-      software:
-        name: "MSSQL-MAZIN2"
-      network:
-        name: "MSSQL_ntwk_profile"
-      dbParam:
-        name: "DEFAULT_SQLSERVER_DATABASE_PARAMS"
-      dbParamInstance:
-        name: "DEFAULT_SQLSERVER_INSTANCE_PARAMS"
+    profiles: {}
     timeMachine:
       name: db-mssql-si_TM
       description: "TM provisioned by operator"

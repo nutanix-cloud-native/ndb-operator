@@ -14,11 +14,7 @@ spec:
     size: 10
     timezone: "UTC"
     type: mongodb
-    profiles:
-      network:
-        name: "MONGODB_ntwk_profile"
-      software:
-        name: "MONGODB_RL_9_5_MONGODB_8_0_8_CE"
+    profiles: {}
     timeMachine:
       name: db-mongo-si_TM
       description: "TM provisioned by operator"

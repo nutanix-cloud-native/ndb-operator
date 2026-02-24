@@ -14,9 +14,7 @@ spec:
     size: 10
     timezone: "UTC"
     type: mysql
-    profiles:
-      network:
-        name: "MYSQL_ntwk_profile"
+    profiles: {}  
     timeMachine:
       name: db-mysql-si_TM
       description: "TM provisioned by operator"
