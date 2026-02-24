@@ -16,7 +16,7 @@ spec:
             capabilities:
               drop:
                 - "ALL"
-          image: quay.io/brancz/kube-rbac-proxy:v0.20.2
+          image: bitnami/kube-rbac-proxy@sha256:696e043fa27df8076bbe0581c924b79938509d26c0bd98cbde8d0b3c7def527c
           args:
             - "--secure-listen-address=0.0.0.0:8443"
             - "--upstream=http://127.0.0.1:8080/"
