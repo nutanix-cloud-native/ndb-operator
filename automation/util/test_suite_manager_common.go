@@ -157,6 +157,38 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 		st.AppPod, err = clientset.CoreV1().Pods(ns).Create(context.TODO(), st.AppPod, metav1.CreateOptions{})
 		if err != nil {
 			logger.Printf("Error while creating Pod %s: %s\n", st.AppPod.Name, err)
+			// When pod already exists, fetch it so st.AppPod has a valid Name for the "Wait for Pod" step below.
+			// Otherwise st.AppPod.Name can be empty (e.g. if template used generateName) and Get(podName) fails with "resource name may not be empty".
+			if k8serrors.IsAlreadyExists(err) {
+				podName := st.AppPod.Name
+				if podName == "" {
+					if statusErr, ok := err.(*k8serrors.StatusError); ok && statusErr.ErrStatus.Details != nil {
+						podName = statusErr.ErrStatus.Details.Name
+					}
+				}
+				if podName == "" && st.AppPod.GenerateName != "" {
+					// List pods in namespace and match by GenerateName prefix or labels
+					list, listErr := clientset.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{})
+					if listErr == nil {
+						for i := range list.Items {
+							p := &list.Items[i]
+							if p.GenerateName == st.AppPod.GenerateName || (len(st.AppPod.Labels) > 0 && hasLabels(p.Labels, st.AppPod.Labels)) {
+								podName = p.Name
+								break
+							}
+						}
+					}
+				}
+				if podName != "" {
+					st.AppPod, err = clientset.CoreV1().Pods(ns).Get(context.TODO(), podName, metav1.GetOptions{})
+					if err != nil {
+						logger.Printf("Error while getting existing Pod %s: %s\n", podName, err)
+					} else {
+						logger.Printf("Using existing Pod %s.\n", podName)
+						err = nil
+					}
+				}
+			}
 		} else {
 			logger.Printf("Pod %s created.\n", st.AppPod.Name)
 		}
@@ -389,21 +421,23 @@ func getAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.C
 	logger.Println("getAppResponse() started...")
 	errBaseMsg := "getAppResponse() ended"
 
-	// Retrieve the pod name and targetPort
+	// Retrieve the pod name, namespace, and targetPort
 	podName := st.AppPod.Name
+	ns := automation.NAMESPACE_DEFAULT
+	if st.Database != nil && st.Database.Namespace != "" {
+		ns = st.Database.Namespace
+	}
 	podTargetPort := st.AppPod.Spec.Containers[0].Ports[0].ContainerPort
 
-	// Run port-forward command using kubectl
-	cmd := exec.Command("kubectl", "port-forward", podName, fmt.Sprintf("%s:%d", localPort, podTargetPort))
+	// Run port-forward with explicit namespace so it works regardless of kubeconfig default
+	cmd := exec.Command("kubectl", "port-forward", "-n", ns, "pod/"+podName, fmt.Sprintf("%s:%d", localPort, podTargetPort))
 	err = cmd.Start()
 	if err != nil {
 		return http.Response{}, fmt.Errorf("%s! kubectl port-forward %s %s:%d failed! %v. ", errBaseMsg, podName, localPort, podTargetPort, err)
-	} else {
-		logger.Printf("kubectl port-forward %s %s:%d started.", podName, localPort, podTargetPort)
 	}
+	logger.Printf("kubectl port-forward -n %s %s %s:%d started.", ns, podName, localPort, podTargetPort)
 
 	// Wait for port-forwarding to establish
-	// Increased from 2s to 10s to ensure port-forward fully establishes before HTTP attempts
 	logger.Println("Waiting 10 seconds for port-forward to establish...")
 	time.Sleep(10 * time.Second)
 
@@ -445,4 +479,14 @@ func getAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.C
 	logger.Printf("%s!", errBaseMsg)
 
 	return *resp, nil
+}
+
+// hasLabels returns true if actual has all keys from expected with the same values.
+func hasLabels(actual, expected map[string]string) bool {
+	for k, v := range expected {
+		if actual[k] != v {
+			return false
+		}
+	}
+	return len(expected) > 0
 }
