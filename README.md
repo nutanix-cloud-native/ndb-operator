@@ -140,6 +140,50 @@ kubectl apply -f <path/to/NDBServer-manifest.yaml>
 
 ### Create a Database Resource. A database can either be provisioned or cloned on NDB based on the inputs specified in the database manifest.
 
+#### Using ConfigMap Defaults (Optional)
+The NDB Operator supports using a ConfigMap to provide default values for database configurations. This allows administrators to pre-configure common settings, reducing the amount of configuration developers need to specify in their Database CRs.
+
+**Benefits:**
+- Simplifies Database CR definitions
+- Centralizes common configuration
+- Easy to update defaults without modifying Database CRs
+- Values in Database CR always override ConfigMap defaults
+
+**Quick Example:**
+```yaml
+# 1. Create a ConfigMap with defaults
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ndb-database-defaults
+  namespace: default
+data:
+  clusterName: "production-cluster"
+  timezone: "UTC"
+  profiles.compute.name: "DEFAULT_OOB_COMPUTE"
+  profiles.network.name: "DEFAULT_OOB_NETWORK"
+  timeMachine.sla: "DEFAULT_OOB_BRASS_SLA"
+  postgres.profiles.software.name: "POSTGRES_15.6_OOB"
+  postgres.size: "10"
+
+---
+# 2. Create a minimal Database CR using the defaults
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: my-app-db
+spec:
+  ndbRef: ndb
+  defaultsConfigMapRef: ndb-database-defaults  # Reference the ConfigMap
+  isClone: false
+  databaseInstance:
+    type: postgres
+    name: my-app-db
+    databaseNames: ["appdb"]
+    credentialSecret: db-instance-secret-name
+    # All other fields (cluster, size, profiles, timeMachine) come from ConfigMap!
+```
+
 #### Provisioning manifest
 ```yaml
 apiVersion: ndb.nutanix.com/v1alpha1
