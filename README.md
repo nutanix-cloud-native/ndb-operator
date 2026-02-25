@@ -163,8 +163,14 @@ data:
   profiles.compute.name: "DEFAULT_OOB_COMPUTE"
   profiles.network.name: "DEFAULT_OOB_NETWORK"
   timeMachine.sla: "DEFAULT_OOB_BRASS_SLA"
+  # PostgreSQL-specific defaults
   postgres.profiles.software.name: "POSTGRES_15.6_OOB"
+  postgres.profiles.dbParam.name: "DEFAULT_POSTGRES_PARAMS"
   postgres.size: "10"
+  # MySQL-specific defaults
+  mysql.profiles.software.name: "MYSQL_8.0_OOB"
+  mysql.profiles.dbParam.name: "DEFAULT_MYSQL_PARAMS"
+  mysql.size: "10"
 
 ---
 # 2. Create a minimal Database CR using the defaults
