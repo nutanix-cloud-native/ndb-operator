@@ -315,8 +315,11 @@ spec:
     # sourceDatabaseId: "source-database-uuid"      # Alternative: Use database UUID
     
     # Name or ID of the snapshot to clone from, can be fetched from NDB REST API Explorer
-    snapshotName: "snapshot-name"                   # Recommended: Use snapshot name, or leave empty for latest
+    # If both snapshotName and snapshotId are omitted, the operator will automatically
+    # select the most recent snapshot from the source database
+    snapshotName: "snapshot-name"                   # Recommended: Use snapshot name
     # snapshotId: "snapshot-uuid"                   # Alternative: Use snapshot UUID
+    # Omit both to auto-select latest snapshot (recommended for dev/test environments)
     
     additionalArguments:                        # Optional block, can specify additional arguments that are unique to database engines.
       expireInDays: 3
