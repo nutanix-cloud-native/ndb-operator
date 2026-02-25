@@ -424,14 +424,17 @@ var _ = Describe("Webhook Tests", func() {
 			Expect(errMsg).To(ContainSubstring("Either sourceDatabaseId or sourceDatabaseName must be provided"))
 		})
 
-		It("Should check for snapshotId", func() {
+		It("Should allow omitting snapshotId and snapshotName for auto-snapshot", func() {
 			clone := createDefaultClone("clone7")
 			clone.Spec.Clone.SnapshotId = ""
+			clone.Spec.Clone.SnapshotName = ""
 
 			err := k8sClient.Create(context.Background(), clone)
-			Expect(err).To(HaveOccurred())
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("Either snapshotId or snapshotName must be provided"))
+			// Should NOT error - auto-snapshot is allowed
+			Expect(err).NotTo(HaveOccurred())
+
+			// Cleanup
+			_ = k8sClient.Delete(context.Background(), clone)
 		})
 
 		It("Should check for invalid Type'", func() {

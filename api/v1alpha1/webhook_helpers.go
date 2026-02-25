@@ -90,11 +90,9 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 	// Validate sourceDatabaseId or sourceDatabaseName - at least one must be provided
 	validateUUIDOrName(clone.SourceDatabaseId, clone.SourceDatabaseName, clonePath.Child("sourceDatabaseId"), clonePath.Child("sourceDatabaseName"), "sourceDatabaseId", "sourceDatabaseName", errors)
 
-	// Validate snapshotId or snapshotName - at least one must be provided
-	// Exception: If defaultsConfigMap is set, allow both to be empty (will auto-select latest snapshot)
-	if !hasDefaultsConfigMap {
-		validateUUIDOrName(clone.SnapshotId, clone.SnapshotName, clonePath.Child("snapshotId"), clonePath.Child("snapshotName"), "snapshotId", "snapshotName", errors)
-	}
+	// Validate snapshot specification
+	// If both snapshotId and snapshotName are omitted, the operator will auto-select the latest snapshot
+	// This allows for convenient "clone from latest" workflows without requiring explicit snapshot selection
 
 	if _, isPresent := api.AllowedDatabaseTypes[clone.Type]; !isPresent {
 		*errors = append(*errors, field.Invalid(clonePath.Child("type"), clone.Type,
