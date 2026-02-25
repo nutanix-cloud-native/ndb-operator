@@ -37,7 +37,8 @@ type DatabaseWebhookHandler interface {
 	// Default logic
 	defaulter(databaseSpec *DatabaseSpec)
 	// Validates creation (after defaulting)
-	validateCreate(databaseSpec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path)
+	// Pass hasDefaultsConfigMap to indicate if validation should be relaxed for fields that can come from ConfigMap
+	validateCreate(databaseSpec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path, hasDefaultsConfigMap bool)
 }
 
 // +kubebuilder:object:generate:=false
@@ -62,7 +63,7 @@ func (v *CloningWebhookHandler) defaulter(spec *DatabaseSpec) {
 	databaselog.Info("Exiting defaulter for clone")
 }
 
-func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, clonePath *field.Path) {
+func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, clonePath *field.Path, hasDefaultsConfigMap bool) {
 	databaselog.Info("Entering validateCreate for clone")
 
 	clone := spec.Clone
@@ -71,14 +72,18 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 		*errors = append(*errors, field.Invalid(clonePath.Child("name"), clone.Name, "A valid Clone Name must be specified"))
 	}
 
-	// Validate clusterId or clusterName - at least one must be provided
-	validateUUIDOrName(clone.ClusterId, clone.ClusterName, clonePath.Child("clusterId"), clonePath.Child("clusterName"), "clusterId", "clusterName", errors)
+	// Skip cluster validation if defaults ConfigMap is provided
+	if !hasDefaultsConfigMap {
+		// Validate clusterId or clusterName - at least one must be provided
+		validateUUIDOrName(clone.ClusterId, clone.ClusterName, clonePath.Child("clusterId"), clonePath.Child("clusterName"), "clusterId", "clusterName", errors)
+	}
 
 	if clone.CredentialSecret == "" {
 		*errors = append(*errors, field.Invalid(clonePath.Child("credentialSecret"), clone.CredentialSecret, "CredentialSecret must be provided in the Clone Spec"))
 	}
 
-	if clone.TimeZone == "" {
+	// Skip timezone validation if defaults ConfigMap is provided
+	if !hasDefaultsConfigMap && clone.TimeZone == "" {
 		*errors = append(*errors, field.Invalid(clonePath.Child("timeZone"), clone.TimeZone, "TimeZone must be provided in Clone Spec"))
 	}
 
@@ -172,7 +177,7 @@ func (v *ProvisioningWebhookHandler) defaulter(spec *DatabaseSpec) {
 	databaselog.Info("Exiting defaulter for provisioning")
 }
 
-func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path) {
+func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path, hasDefaultsConfigMap bool) {
 	databaselog.Info("Entering validateCreate for provisioning")
 
 	instance := spec.Instance
@@ -183,11 +188,14 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 		*errors = append(*errors, field.Invalid(instancePath.Child("name"), instance.Name, "A valid Database Instance Name must be specified"))
 	}
 
-	// Validate clusterId or clusterName - at least one must be provided
-	validateUUIDOrName(instance.ClusterId, instance.ClusterName, instancePath.Child("clusterId"), instancePath.Child("clusterName"), "clusterId", "clusterName", errors)
+	// Skip cluster and size validation if defaults ConfigMap is provided
+	if !hasDefaultsConfigMap {
+		// Validate clusterId or clusterName - at least one must be provided
+		validateUUIDOrName(instance.ClusterId, instance.ClusterName, instancePath.Child("clusterId"), instancePath.Child("clusterName"), "clusterId", "clusterName", errors)
 
-	if instance.Size < 10 {
-		*errors = append(*errors, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
+		if instance.Size < 10 {
+			*errors = append(*errors, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
+		}
 	}
 
 	if instance.CredentialSecret == "" {
@@ -206,36 +214,39 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 		}
 	}
 
-	// validating time machine info
-	dailySnapshotTimeRegex := regexp.MustCompile(`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`)
-	if isMatch := dailySnapshotTimeRegex.MatchString(tmInfo.DailySnapshotTime); !isMatch {
-		*errors = append(*errors, field.Invalid(tmPath.Child("dailySnapshotTime"), tmInfo.DailySnapshotTime, "Invalid time format for the daily snapshot time. Use the 24-hour format (HH:MM:SS)."))
-	}
+	// Skip time machine validation if defaults ConfigMap is provided
+	if !hasDefaultsConfigMap {
+		// validating time machine info
+		dailySnapshotTimeRegex := regexp.MustCompile(`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`)
+		if isMatch := dailySnapshotTimeRegex.MatchString(tmInfo.DailySnapshotTime); !isMatch {
+			*errors = append(*errors, field.Invalid(tmPath.Child("dailySnapshotTime"), tmInfo.DailySnapshotTime, "Invalid time format for the daily snapshot time. Use the 24-hour format (HH:MM:SS)."))
+		}
 
-	if tmInfo.SnapshotsPerDay < 1 || tmInfo.SnapshotsPerDay > 6 {
-		*errors = append(*errors, field.Invalid(tmPath.Child("snapshotsPerDay"), tmInfo.SnapshotsPerDay, "Number of snapshots per day should be within 1 to 6"))
-	}
+		if tmInfo.SnapshotsPerDay < 1 || tmInfo.SnapshotsPerDay > 6 {
+			*errors = append(*errors, field.Invalid(tmPath.Child("snapshotsPerDay"), tmInfo.SnapshotsPerDay, "Number of snapshots per day should be within 1 to 6"))
+		}
 
-	if _, isPresent := api.AllowedLogCatchupFrequencyInMinutes[tmInfo.LogCatchUpFrequency]; !isPresent {
-		*errors = append(*errors, field.Invalid(tmPath.Child("logCatchUpFrequency"), tmInfo.LogCatchUpFrequency,
-			fmt.Sprintf("Log catchup frequency must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedLogCatchupFrequencyInMinutes).MapKeys()),
-		))
-	}
+		if _, isPresent := api.AllowedLogCatchupFrequencyInMinutes[tmInfo.LogCatchUpFrequency]; !isPresent {
+			*errors = append(*errors, field.Invalid(tmPath.Child("logCatchUpFrequency"), tmInfo.LogCatchUpFrequency,
+				fmt.Sprintf("Log catchup frequency must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedLogCatchupFrequencyInMinutes).MapKeys()),
+			))
+		}
 
-	if _, isPresent := api.AllowedWeeklySnapshotDays[tmInfo.WeeklySnapshotDay]; !isPresent {
-		*errors = append(*errors, field.Invalid(tmPath.Child("weeklySnapshotDay"), tmInfo.WeeklySnapshotDay,
-			fmt.Sprintf("Weekly Snapshot day must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedWeeklySnapshotDays).MapKeys()),
-		))
-	}
+		if _, isPresent := api.AllowedWeeklySnapshotDays[tmInfo.WeeklySnapshotDay]; !isPresent {
+			*errors = append(*errors, field.Invalid(tmPath.Child("weeklySnapshotDay"), tmInfo.WeeklySnapshotDay,
+				fmt.Sprintf("Weekly Snapshot day must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedWeeklySnapshotDays).MapKeys()),
+			))
+		}
 
-	if tmInfo.MonthlySnapshotDay < 1 || tmInfo.MonthlySnapshotDay > 28 {
-		*errors = append(*errors, field.Invalid(tmPath.Child("monthlySnapshotDay"), tmInfo.MonthlySnapshotDay, "Monthly snapshot day value must be between 1 and 28"))
-	}
+		if tmInfo.MonthlySnapshotDay < 1 || tmInfo.MonthlySnapshotDay > 28 {
+			*errors = append(*errors, field.Invalid(tmPath.Child("monthlySnapshotDay"), tmInfo.MonthlySnapshotDay, "Monthly snapshot day value must be between 1 and 28"))
+		}
 
-	if _, isPresent := api.AllowedQuarterlySnapshotMonths[tmInfo.QuarterlySnapshotMonth]; !isPresent {
-		*errors = append(*errors, field.Invalid(tmPath.Child("quarterlySnapshotMonth"), tmInfo.QuarterlySnapshotMonth,
-			fmt.Sprintf("Quarterly snapshot month must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedQuarterlySnapshotMonths).MapKeys()),
-		))
+		if _, isPresent := api.AllowedQuarterlySnapshotMonths[tmInfo.QuarterlySnapshotMonth]; !isPresent {
+			*errors = append(*errors, field.Invalid(tmPath.Child("quarterlySnapshotMonth"), tmInfo.QuarterlySnapshotMonth,
+				fmt.Sprintf("Quarterly snapshot month must be specified. Valid values are: %s", reflect.ValueOf(api.AllowedQuarterlySnapshotMonths).MapKeys()),
+			))
+		}
 	}
 
 	if err := additionalArgumentsValidationCheck(spec.IsClone, instance.Type, instance.AdditionalArguments); err != nil {

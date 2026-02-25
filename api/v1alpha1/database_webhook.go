@@ -79,7 +79,14 @@ func (r *Database) ValidateCreate(ctx context.Context, obj runtime.Object) (admi
 		path = "Instance"
 	}
 
-	getDatabaseWebhookHandler(db).validateCreate(&db.Spec, errors, field.NewPath("spec").Child(path))
+	// Check if defaults ConfigMap is specified - if so, relax validation for fields that can come from ConfigMap
+	hasDefaultsConfigMap := db.Spec.DefaultsConfigMapRef != ""
+	if hasDefaultsConfigMap {
+		log.Info("DefaultsConfigMapRef is set, relaxing validation for fields that can come from ConfigMap",
+			"configMapName", db.Spec.DefaultsConfigMapRef)
+	}
+
+	getDatabaseWebhookHandler(db).validateCreate(&db.Spec, errors, field.NewPath("spec").Child(path), hasDefaultsConfigMap)
 
 	combined_err := util.CombineFieldErrors(*errors)
 
