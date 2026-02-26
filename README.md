@@ -366,19 +366,95 @@ kubectl delete -f <path/to/NDBServer-manifest.yaml>
 
 ---
 
-## Upgrading from namespaced NDBServer
+## Upgrading from 0.5.2 to 0.5.3 (NDBServer: namespaced → cluster-scoped)
 
-If you are upgrading from an earlier version where **NDBServer** was namespaced, there is no in-place conversion: NDBServer is now cluster-scoped and uses `credentialSecretRef` (name + namespace) instead of `credentialSecret`.
+In **0.5.3**, **NDBServer** is **cluster-scoped** and uses **`credentialSecretRef`** (secret `name` + `namespace`) instead of **`credentialSecret`** (name only). There is no in-place conversion; you must perform a one-time migration before or as part of the upgrade.
 
-**Recommended approach:**
+**Important:** The Kubernetes API does not allow changing a CRD from namespaced to cluster-scoped while custom resources of that kind exist. You must delete all existing **NDBServer** resources (after backing them up) before installing the 0.5.3 CRD.
 
-1. Create a dedicated namespace for NDB API credentials (e.g. `ndb-credentials`) and create or copy the credential secret there.
-2. Delete the existing namespaced NDBServer(s), or leave them in place and create new cluster-scoped NDBServer(s) with the same `metadata.name` if you want to avoid updating Database resources.
-3. Create a new **cluster-scoped** NDBServer with `spec.credentialSecretRef.name` and `spec.credentialSecretRef.namespace` pointing to that secret.
-4. Ensure each **Database** resource’s `spec.ndbRef` is set to the cluster-scoped NDBServer’s name (no namespace). If you recreated the NDBServer with the same name, no change to Database manifests is needed.
-5. Remove the old namespaced NDBServer(s) and the credential secret from the old namespace once all Databases are using the new cluster-scoped NDBServer.
+### Step 1: Back up existing NDBServer(s)
 
-There is no compatibility window supporting both namespaced and cluster-scoped NDBServer in the same operator version; a one-time migration as above is required.
+Record the name and spec of each NDBServer so you can recreate them. For example:
+
+```bash
+kubectl get ndbserver -A -o yaml > ndbserver-backup.yaml
+```
+
+Note which namespace each NDBServer was in and which secret name it used (`spec.credentialSecret`).
+
+### Step 2: Create credentials namespace and secret
+
+Create a dedicated namespace for NDB API credentials and ensure the secret exists there (create it or copy from the old namespace):
+
+```bash
+kubectl create namespace ndb-credentials
+# If the secret was in another namespace (e.g. default), copy it:
+kubectl get secret <your-ndb-secret-name> -n <old-namespace> -o yaml | \
+  sed 's/namespace: .*/namespace: ndb-credentials/' | kubectl apply -f -
+# Or create a new secret in ndb-credentials with your NDB API credentials.
+```
+
+Use a single secret name (e.g. `ndb-api-secret`) that you will reference in the new NDBServer.
+
+### Step 3: Remove existing namespaced NDBServer(s)
+
+You must delete all NDBServer resources before upgrading, or the CRD update (namespaced → cluster-scoped) will be rejected.
+
+```bash
+kubectl delete ndbserver --all -A
+```
+
+**Database** resources can stay; they will reconcile again once the new cluster-scoped NDBServer exists and `ndbRef` matches its name.
+
+### Step 4: Upgrade the operator to 0.5.3
+
+Install or deploy the ndb-operator **0.5.3** release (manifests, Helm, or OLM). This installs the updated CRD with `scope: Cluster` and the new operator image.
+
+### Step 5: Create cluster-scoped NDBServer(s)
+
+Create one NDBServer per logical NDB server. Use the **same `metadata.name`** as before if you want existing **Database** resources (which reference NDBServer by name in `spec.ndbRef`) to work without changes.
+
+Example:
+
+```yaml
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: NDBServer
+metadata:
+  name: ndb   # same name as before so existing Databases need no change
+spec:
+  server: "https://<ndb-server>:8443/era/v0.9"
+  credentialSecretRef:
+    name: ndb-api-secret
+    namespace: ndb-credentials
+```
+
+Apply with `kubectl apply -f <file>`. No `namespace` in metadata (cluster-scoped).
+
+### Step 6: Verify Databases
+
+Ensure each **Database** has `spec.ndbRef` set to the cluster-scoped NDBServer’s **name** (e.g. `ndb`). If you used the same NDBServer name as before, no change is needed. Check reconciliation:
+
+```bash
+kubectl get databases -A
+kubectl get ndbserver
+```
+
+### Summary
+
+| Step | Action |
+|------|--------|
+| 1 | Back up NDBServer(s) (`kubectl get ndbserver -A -o yaml`) |
+| 2 | Create `ndb-credentials` namespace and put/copy NDB API secret there |
+| 3 | Delete all namespaced NDBServer(s) (`kubectl delete ndbserver --all -A`) |
+| 4 | Install ndb-operator **0.5.3** |
+| 5 | Create new cluster-scoped NDBServer(s) with `credentialSecretRef` and same name(s) as before |
+| 6 | Confirm Databases reconcile (same `ndbRef` if you kept the same NDBServer name) |
+
+---
+
+## Upgrading from namespaced NDBServer (earlier versions)
+
+If you are on an older version where **NDBServer** was namespaced, the same conceptual migration applies: NDBServer is now cluster-scoped and uses `credentialSecretRef` (name + namespace) instead of `credentialSecret`. Follow the steps in [Upgrading from 0.5.2 to 0.5.3](#upgrading-from-052-to-053-ndbserver-namespaced--cluster-scoped) above.
 
 ---
 
