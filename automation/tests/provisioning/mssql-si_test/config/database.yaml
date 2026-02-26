@@ -14,7 +14,11 @@ spec:
     size: 10
     timezone: "UTC"
     type: mssql
-    profiles: {}
+    profiles:
+      dbParam:
+        name: "DEFAULT_SQLSERVER_DATABASE_PARAMS"
+      dbParamInstance:
+        name: "DEFAULT_SQLSERVER_INSTANCE_PARAMS"
     timeMachine:
       name: db-mssql-si_TM
       description: "TM provisioned by operator"
