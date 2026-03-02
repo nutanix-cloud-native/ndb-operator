@@ -96,7 +96,7 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 			st.NdbServer.Spec.CredentialSecretRef.Name = st.NdbSecret.Name
 		}
 		st.NdbServer.Namespace = "" // cluster-scoped has no namespace
-		st.NdbServer, err = v1alpha1ClientSet.NDBServers("").Create(st.NdbServer)
+		st.NdbServer, err = v1alpha1ClientSet.NDBServers().Create(st.NdbServer)
 		if err != nil {
 			logger.Printf("Error while creating NDBServer %s: %s\n", st.NdbServer.Name, err)
 		} else {
@@ -276,7 +276,7 @@ func deprovisionOrDeclone(ctx context.Context, st *SetupTypes, clientset *kubern
 	// Delete NDB Server
 	if st.NdbServer != nil {
 		logger.Printf("Attempting to delete ndb server: %s...", st.NdbServer.Name)
-		err := v1alpha1ClientSet.NDBServers("").Delete(st.NdbServer.Name, &metav1.DeleteOptions{})
+		err := v1alpha1ClientSet.NDBServers().Delete(st.NdbServer.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			logger.Printf("Error while deleting ndb server %s: %s!\n", st.NdbServer.Name, err)
 		} else {
@@ -336,7 +336,7 @@ func getDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *
 	errBaseMsg := "Error: getDatabaseOrCloneResponse() ended"
 
 	// Get NDBServer CR
-	ndbServer, err := v1alpha1ClientSet.NDBServers("").Get(st.NdbServer.Name, metav1.GetOptions{})
+	ndbServer, err := v1alpha1ClientSet.NDBServers().Get(st.NdbServer.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("%s! Could not fetch ndbServer '%s' CR! %s", errBaseMsg, st.NdbServer.Name, err)
 	} else {

@@ -65,7 +65,7 @@ func (pm *ProvisioningTestSuiteManager) GetTimemachineResponseByDatabaseId(ctx c
 	errBaseMsg := "Error: GetTimemachineResponse() ended"
 
 	// Get NDBServer CR
-	ndbServer, err := v1alpha1ClientSet.NDBServers("").Get(st.NdbServer.Name, metav1.GetOptions{})
+	ndbServer, err := v1alpha1ClientSet.NDBServers().Get(st.NdbServer.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("%s! Could not fetch ndbServer '%s' CR! %s\n", errBaseMsg, st.NdbServer.Name, err)
 	} else {

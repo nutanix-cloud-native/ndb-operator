@@ -414,6 +414,10 @@ Install or deploy the ndb-operator **0.5.3** release (manifests, Helm, or OLM). 
 
 Create one NDBServer per logical NDB server. Use the **same `metadata.name`** as before if you want existing **Database** resources (which reference NDBServer by name in `spec.ndbRef`) to work without changes.
 
+**NOTE ⚠️ : when the NDB server yaml file is applied and it shows error that CRD spec.CredentialSecret field is incorrect then please run below command to delete existing NDB server CRD and install new one from the installation commands.**
+```bash
+kubectl delete crds ndbservers.ndb.nutanix.com
+```
 Example:
 
 ```yaml

@@ -22,6 +22,7 @@ import (
 	"math"
 	"time"
 
+	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -81,12 +82,12 @@ func requeueWithTimeout(t int) (ctrl.Result, error) {
 
 // Returns the credentials(username, password and caCertificate) for NDB
 // Returns an error if reading the secret containing credentials fails
-func getNDBCredentialsFromSecret(ctx context.Context, k8sClient client.Client, name, namespace string) (username, password, caCert string, err error) {
+func getNDBCredentialsFromSecret(ctx context.Context, k8sClient client.Client, ref ndbv1alpha1.SecretReference) (username, password, caCert string, err error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Reading secret", "Secret Name", name)
-	secretDataMap, err := util.GetAllDataFromSecret(ctx, k8sClient, name, namespace)
+	log.Info("Reading secret", "Secret Name", ref.Name)
+	secretDataMap, err := util.GetAllDataFromSecret(ctx, k8sClient, ref.Name, ref.Namespace)
 	if err != nil {
-		log.Error(err, "Error occured while fetching NDB secret", "Secret Name", name, "Namespace", namespace)
+		log.Error(err, "Error occured while fetching NDB secret", "Secret Name", ref.Name, "Namespace", ref.Namespace)
 		return
 	}
 	username = string(secretDataMap[common.SECRET_DATA_KEY_USERNAME])

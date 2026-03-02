@@ -93,8 +93,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	NDBInfo := ndbServer.Spec
-	ref := NDBInfo.CredentialSecretRef
-	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, ref.Name, ref.Namespace)
+	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, NDBInfo.CredentialSecretRef)
 	if err != nil {
 		r.recorder.Eventf(database, "Warning", EVENT_INVALID_CREDENTIALS, "Error: %s", err.Error())
 		return requeueOnErr(err)

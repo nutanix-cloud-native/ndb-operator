@@ -84,7 +84,7 @@ func (r *NDBServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// Fetch credentials and check Authentication (secret is in CredentialSecretRef.Namespace)
 	ref := ndbServer.Spec.CredentialSecretRef
 	var ndbClient *ndb_client.NDBClient
-	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, ref.Name, ref.Namespace)
+	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, ref)
 	if err != nil {
 		log.Error(err, "Credential Error: error while fetching credentials from CredentialSecretRef", "secret", ref.Namespace+"/"+ref.Name)
 		status.Status = common.NDB_CR_STATUS_CREDENTIAL_ERROR
