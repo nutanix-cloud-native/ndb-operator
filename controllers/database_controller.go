@@ -27,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -75,10 +76,9 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	log.Info("Database CR Status: " + util.ToString(database.Status))
 
-	// Fetch the NDBServer resource from the namespace
+	// Fetch the NDBServer resource (cluster-scoped, so by name only)
 	ndbServer := &ndbv1alpha1.NDBServer{}
-	ndbNamespacedName := req.NamespacedName
-	ndbNamespacedName.Name = database.Spec.NDBRef
+	ndbNamespacedName := types.NamespacedName{Name: database.Spec.NDBRef}
 	err = r.Get(ctx, ndbNamespacedName, ndbServer)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -93,7 +93,7 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	NDBInfo := ndbServer.Spec
-	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, NDBInfo.CredentialSecret, req.Namespace)
+	username, password, caCert, err := getNDBCredentialsFromSecret(ctx, r.Client, NDBInfo.CredentialSecretRef)
 	if err != nil {
 		r.recorder.Eventf(database, "Warning", EVENT_INVALID_CREDENTIALS, "Error: %s", err.Error())
 		return requeueOnErr(err)

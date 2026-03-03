@@ -2,6 +2,10 @@ package automation
 
 const (
 	NAMESPACE_DEFAULT = "default"
+	// NDB_CREDENTIALS_NAMESPACE is the dedicated namespace for NDB API credential secrets.
+	// Keeping credentials here allows Database resources (in other namespaces) to reference
+	// cluster-scoped NDBServer without needing access to the secret.
+	NDB_CREDENTIALS_NAMESPACE = "ndb-credentials"
 
 	// Resource paths
 	NDBSERVER_PATH  = "./config/ndb.yaml"

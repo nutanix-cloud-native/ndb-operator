@@ -14,11 +14,7 @@ spec:
     size: 10
     timezone: "UTC"
     type: mssql
-    profiles: 
-      software:
-        name: "MSSQL-MAZIN2"
-      network:
-        name: "MSSQL_ntwk_profile"
+    profiles:
       dbParam:
         name: "DEFAULT_SQLSERVER_DATABASE_PARAMS"
       dbParamInstance:

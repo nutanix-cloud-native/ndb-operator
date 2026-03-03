@@ -44,12 +44,7 @@ func (c *V1alpha1Client) Databases(namespace string) DatabaseInterface {
 	}
 }
 
-func (c *V1alpha1Client) NDBServers(namespace string) NDBServerInterface {
-	if namespace == "" {
-		namespace = "default"
-	}
-	return &NDBServerClient{
-		restClient: c.restClient,
-		namespace:  namespace,
-	}
+// NDBServers returns a client for NDBServer (cluster-scoped; no namespace).
+func (c *V1alpha1Client) NDBServers() NDBServerInterface {
+	return &NDBServerClient{restClient: c.restClient}
 }

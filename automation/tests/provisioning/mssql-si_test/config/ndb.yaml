@@ -3,6 +3,8 @@ kind: NDBServer
 metadata:
   name: ndb-mssql
 spec:
-  credentialSecret: ndb-secret-mssql-si
+  credentialSecretRef:
+    name: ndb-secret-mssql-si
+    namespace: ndb-credentials
   server: <https://<ip-for-ndb>:8443/era/v0.9>
   skipCertificateVerification: true

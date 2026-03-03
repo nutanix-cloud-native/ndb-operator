@@ -17,6 +17,8 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -43,12 +45,23 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 		return errors.New(errMsg)
 	}
 
+	// Database (and DB instance secret, app pod) live in this namespace
 	ns := automation.NAMESPACE_DEFAULT
 	if st.Database != nil && st.Database.Namespace != "" {
 		ns = st.Database.Namespace
 	}
+	ndbCredsNs := automation.NDB_CREDENTIALS_NAMESPACE
 
-	// Create Secrets
+	// Ensure dedicated namespace for NDB API credentials exists
+	_, err = clientset.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ndbCredsNs}}, metav1.CreateOptions{})
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return fmt.Errorf("failed to create namespace %s: %w", ndbCredsNs, err)
+	}
+	if err == nil {
+		logger.Printf("Namespace %s created for NDB credentials.\n", ndbCredsNs)
+	}
+
+	// Create DB instance secret in database namespace
 	if st.DbSecret != nil {
 		st.DbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv(automation.DB_SECRET_PASSWORD_ENV)
 		_, err = clientset.CoreV1().Secrets(ns).Create(ctx, st.DbSecret, metav1.CreateOptions{})
@@ -61,23 +74,29 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 		logger.Printf("Error while fetching db secret type %s. Db Secret is nil.\n", st.DbSecret.Name)
 	}
 
+	// Create NDB API credential secret in dedicated namespace (not visible to devs in database namespace)
 	if st.NdbSecret != nil {
 		st.NdbSecret.StringData[common.SECRET_DATA_KEY_USERNAME] = os.Getenv(automation.NDB_SECRET_USERNAME_ENV)
 		st.NdbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv(automation.NDB_SECRET_PASSWORD_ENV)
-		_, err = clientset.CoreV1().Secrets(ns).Create(context.TODO(), st.NdbSecret, metav1.CreateOptions{})
+		_, err = clientset.CoreV1().Secrets(ndbCredsNs).Create(context.TODO(), st.NdbSecret, metav1.CreateOptions{})
 		if err != nil {
 			logger.Printf("Error while creating ndb secret %s: %s\n", st.NdbSecret.Name, err)
 		} else {
-			logger.Printf("NDB Secret %s created.\n", st.NdbSecret.Name)
+			logger.Printf("NDB Secret %s created in namespace %s.\n", st.NdbSecret.Name, ndbCredsNs)
 		}
 	} else {
 		logger.Printf("Error while fetching ndb secret type %s. Ndb Secret is nil.\n", st.DbSecret.Name)
 	}
 
-	// Create NDBServer
+	// Create NDBServer (cluster-scoped) with credential ref pointing to dedicated namespace
 	if st.NdbServer != nil {
 		st.NdbServer.Spec.Server = os.Getenv(automation.NDB_SERVER_ENV)
-		st.NdbServer, err = v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Create(st.NdbServer)
+		st.NdbServer.Spec.CredentialSecretRef.Namespace = ndbCredsNs
+		if st.NdbServer.Spec.CredentialSecretRef.Name == "" && st.NdbSecret != nil {
+			st.NdbServer.Spec.CredentialSecretRef.Name = st.NdbSecret.Name
+		}
+		st.NdbServer.Namespace = "" // cluster-scoped has no namespace
+		st.NdbServer, err = v1alpha1ClientSet.NDBServers().Create(st.NdbServer)
 		if err != nil {
 			logger.Printf("Error while creating NDBServer %s: %s\n", st.NdbServer.Name, err)
 		} else {
@@ -257,7 +276,7 @@ func deprovisionOrDeclone(ctx context.Context, st *SetupTypes, clientset *kubern
 	// Delete NDB Server
 	if st.NdbServer != nil {
 		logger.Printf("Attempting to delete ndb server: %s...", st.NdbServer.Name)
-		err := v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Delete(st.NdbServer.Name, &metav1.DeleteOptions{})
+		err := v1alpha1ClientSet.NDBServers().Delete(st.NdbServer.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			logger.Printf("Error while deleting ndb server %s: %s!\n", st.NdbServer.Name, err)
 		} else {
@@ -280,8 +299,8 @@ func deprovisionOrDeclone(ctx context.Context, st *SetupTypes, clientset *kubern
 		logger.Printf("Error while fetching db secret type %s. Db Secret is nil.\n", st.DbSecret.Name)
 	}
 	if st.NdbSecret != nil {
-		logger.Printf("Attempting to delete ndb secret: %s...", st.NdbSecret.Name)
-		err = clientset.CoreV1().Secrets(ns).Delete(context.TODO(), st.NdbSecret.Name, metav1.DeleteOptions{})
+		logger.Printf("Attempting to delete ndb secret: %s (from %s)...", st.NdbSecret.Name, automation.NDB_CREDENTIALS_NAMESPACE)
+		err = clientset.CoreV1().Secrets(automation.NDB_CREDENTIALS_NAMESPACE).Delete(context.TODO(), st.NdbSecret.Name, metav1.DeleteOptions{})
 		if err != nil {
 			logger.Printf("Error while deleting secret %s: %s!\n", st.NdbSecret.Name, err)
 		} else {
@@ -317,9 +336,9 @@ func getDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *
 	errBaseMsg := "Error: getDatabaseOrCloneResponse() ended"
 
 	// Get NDBServer CR
-	ndbServer, err := v1alpha1ClientSet.NDBServers(st.NdbServer.Namespace).Get(st.NdbServer.Name, metav1.GetOptions{})
+	ndbServer, err := v1alpha1ClientSet.NDBServers().Get(st.NdbServer.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("%s! Could not fetch ndbServer '%s' CR! %s", errBaseMsg, ndbServer.Name, err)
+		return nil, fmt.Errorf("%s! Could not fetch ndbServer '%s' CR! %s", errBaseMsg, st.NdbServer.Name, err)
 	} else {
 		logger.Printf("Retrieved ndbServer '%s' CR from v1alpha1ClientSet", ndbServer.Name)
 	}
@@ -332,12 +351,18 @@ func getDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *
 		logger.Printf("Retrieved database '%s' CR from v1alpha1ClientSet", database.Name)
 	}
 
-	// Get NDB username and password from NDB CredentialSecret
-	ndb_secret_name := ndbServer.Spec.CredentialSecret
-	secret, err := clientset.CoreV1().Secrets(database.Namespace).Get(context.TODO(), ndb_secret_name, metav1.GetOptions{})
-	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
-	if err != nil || username == "" || password == "" {
+	// Get NDB username and password from NDB CredentialSecretRef
+	ref := ndbServer.Spec.CredentialSecretRef
+	secret, err := clientset.CoreV1().Secrets(ref.Namespace).Get(context.TODO(), ref.Name, metav1.GetOptions{})
+	if err != nil {
 		return nil, fmt.Errorf("%s! Could not fetch data from secret! %s", errBaseMsg, err)
+	}
+	if secret == nil {
+		return nil, fmt.Errorf("%s! Secret %s/%s is nil", errBaseMsg, ref.Namespace, ref.Name)
+	}
+	username, password := string(secret.Data[common.SECRET_DATA_KEY_USERNAME]), string(secret.Data[common.SECRET_DATA_KEY_PASSWORD])
+	if username == "" || password == "" {
+		return nil, fmt.Errorf("%s! Secret %s/%s has empty username or password", errBaseMsg, ref.Namespace, ref.Name)
 	}
 
 	// Create ndbClient and getting databaseOrCloneResponse

@@ -3,6 +3,8 @@ kind: NDBServer
 metadata:
   name: ndb-mysql
 spec:
-  credentialSecret: ndb-secret-mysql-si
+  credentialSecretRef:
+    name: ndb-secret-mysql-si
+    namespace: ndb-credentials
   server: <https://<ip-for-ndb>:8443/era/v0.9>
   skipCertificateVerification: true
