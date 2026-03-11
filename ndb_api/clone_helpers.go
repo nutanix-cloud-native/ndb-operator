@@ -242,6 +242,11 @@ func (a *MySqlRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, d
 func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArguments map[string]string) error {
 	errMsg := "appendLCMConfigDetailsToRequest() failed!"
 
+	// Initialize LcmConfig before any access - req.LcmConfig is nil by default when creating DatabaseCloneRequest
+	if req.LcmConfig == nil {
+		req.LcmConfig = &LcmConfig{}
+	}
+
 	// expiryDetails appender
 	databaseLcmConfigProperties := []string{"expireInDays", "expiryDateTimezone", "deleteDatabase"}
 	databaseLcmConfigCount := 0
@@ -276,8 +281,8 @@ func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArgume
 			RefreshTime:         additionalArguments["refreshTime"],
 			RefreshDateTimezone: additionalArguments["refreshDateTimezone"],
 		}
-	} else if databaseLcmConfigCount != 0 {
-		return fmt.Errorf("%s. Ensure refreshInDay, refreshTime, refreshDateTimezone are all specified. You only have %d/3 specified", errMsg, refreshDetailsCount)
+	} else if refreshDetailsCount != 0 {
+		return fmt.Errorf("%s. Ensure refreshInDays, refreshTime, refreshDateTimezone are all specified. You only have %d/3 specified", errMsg, refreshDetailsCount)
 	}
 
 	return nil
