@@ -7,6 +7,15 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - endpoints
   - services
   verbs:
@@ -24,14 +33,6 @@ rules:
   verbs:
   - create
   - patch
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
 - apiGroups:
   - ndb.nutanix.com
   resources:

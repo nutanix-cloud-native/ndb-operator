@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -35,7 +36,7 @@ func getDatabaseWebhookHandler(database *Database) DatabaseWebhookHandler {
 // +kubebuilder:object:generate:=false
 type DatabaseWebhookHandler interface {
 	// Default logic
-	defaulter(databaseSpec *DatabaseSpec)
+	defaulter(databaseSpec *DatabaseSpec, defaults map[string]string)
 	// Validates creation (after defaulting)
 	validateCreate(databaseSpec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path)
 }
@@ -48,7 +49,7 @@ type CloningWebhookHandler struct{}
 // Implements admission.CustomValidator, admission.CustomDefaulter
 type ProvisioningWebhookHandler struct{}
 
-func (v *CloningWebhookHandler) defaulter(spec *DatabaseSpec) {
+func (v *CloningWebhookHandler) defaulter(spec *DatabaseSpec, defaults map[string]string) {
 	databaselog.Info("Entering defaulter for clone")
 
 	initializeObjects(spec)
@@ -57,6 +58,13 @@ func (v *CloningWebhookHandler) defaulter(spec *DatabaseSpec) {
 		description := "Clone created by ndb-operator: " + spec.Clone.Name
 		databaselog.Info(fmt.Sprintf("Initializing Description to: %s.", description))
 		spec.Clone.Description = description
+	}
+
+	if spec.Clone.TimeZone == "" {
+		if tz, ok := defaults["clone_timezone"]; ok {
+			databaselog.Info(fmt.Sprintf("Initializing TimeZone from configmap to: %s.", tz))
+			spec.Clone.TimeZone = tz
+		}
 	}
 
 	databaselog.Info("Exiting defaulter for clone")
@@ -106,7 +114,7 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 	databaselog.Info("Exiting validateCreate for clone")
 }
 
-func (v *ProvisioningWebhookHandler) defaulter(spec *DatabaseSpec) {
+func (v *ProvisioningWebhookHandler) defaulter(spec *DatabaseSpec, defaults map[string]string) {
 	databaselog.Info("Entering defaulter for provisioning")
 
 	initializeObjects(spec)
@@ -122,9 +130,25 @@ func (v *ProvisioningWebhookHandler) defaulter(spec *DatabaseSpec) {
 		spec.Instance.DatabaseNames = api.DefaultDatabaseNames
 	}
 
+	if spec.Instance.Size == 0 {
+		if sizeStr, ok := defaults["instance_size"]; ok {
+			if size, err := strconv.Atoi(sizeStr); err == nil {
+				databaselog.Info(fmt.Sprintf("Initializing Size from configmap to: %d.", size))
+				spec.Instance.Size = size
+			} else {
+				databaselog.Info(fmt.Sprintf("Invalid instance_size format in configmap: %s.", sizeStr))
+			}
+		}
+	}
+
 	if spec.Instance.TimeZone == "" {
-		databaselog.Info(fmt.Sprintf("Initializing TimeZone to: %s.", common.TIMEZONE_UTC))
-		spec.Instance.TimeZone = common.TIMEZONE_UTC
+		if tz, ok := defaults["instance_timezone"]; ok {
+			databaselog.Info(fmt.Sprintf("Initializing TimeZone from configmap to: %s.", tz))
+			spec.Instance.TimeZone = tz
+		} else {
+			databaselog.Info(fmt.Sprintf("Initializing TimeZone to: %s.", common.TIMEZONE_UTC))
+			spec.Instance.TimeZone = common.TIMEZONE_UTC
+		}
 	}
 
 	// Profiles defaulting logic

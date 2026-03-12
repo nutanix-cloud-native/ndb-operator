@@ -22,6 +22,10 @@ import (
 	"reflect"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -35,27 +39,45 @@ import (
 // Webhook methods (Default, ValidateCreate, etc.) should use logf.FromContext(ctx) for request-aware logging.
 var databaselog = logf.Log.WithName("database-resource")
 
+// +kubebuilder:rbac:groups="core",resources=configmaps,verbs=get;list;watch
+
+// +kubebuilder:object:generate=false
+type DatabaseCustomDefaulter struct {
+	Client client.Client
+}
+
+var _ admission.CustomDefaulter = &DatabaseCustomDefaulter{}
+
 func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	// In controller-runtime v0.21.0+, you must explicitly set the defaulter and validator
 	// The For() method alone does not automatically detect these interfaces
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
-		WithDefaulter(r).
+		WithDefaulter(&DatabaseCustomDefaulter{Client: mgr.GetClient()}).
 		WithValidator(r).
 		Complete()
 }
 
 // +kubebuilder:webhook:path=/mutate-ndb-nutanix-com-v1alpha1-database,mutating=true,failurePolicy=fail,sideEffects=None,groups=ndb.nutanix.com,resources=databases,verbs=create;update,versions=v1alpha1,name=mdatabase.kb.io,admissionReviewVersions=v1
 
-var _ admission.CustomDefaulter = &Database{}
-
 // Default implements admission.CustomDefaulter so a webhook will be registered for the type
-func (r *Database) Default(ctx context.Context, obj runtime.Object) error {
+func (d *DatabaseCustomDefaulter) Default(ctx context.Context, obj runtime.Object) error {
 	log := logf.FromContext(ctx)
 	log.Info("Entering Default()...")
 
 	db := obj.(*Database)
-	getDatabaseWebhookHandler(db).defaulter(&db.Spec)
+
+	// Fetch default configurations
+	defaults := make(map[string]string)
+	cm := &corev1.ConfigMap{}
+	err := d.Client.Get(ctx, types.NamespacedName{Name: "defaultconfigurations", Namespace: db.Namespace}, cm)
+	if err == nil {
+		defaults = cm.Data
+	} else {
+		log.Info("Could not read defaultconfigurations configmap or it does not exist, proceeding with standard defaults", "error", err)
+	}
+
+	getDatabaseWebhookHandler(db).defaulter(&db.Spec, defaults)
 
 	log.Info("Exiting Default()!")
 	return nil
