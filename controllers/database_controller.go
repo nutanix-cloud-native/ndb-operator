@@ -36,7 +36,6 @@ import (
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
-	"github.com/nutanix-cloud-native/ndb-operator/controller_adapters"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 )
 
@@ -78,27 +77,8 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	log.Info("Database CR Status: " + util.ToString(database.Status))
 
-	// Apply defaults from ConfigMap if specified
-	if database.Spec.DefaultsConfigMapRef != "" {
-		log.Info("ConfigMap defaults reference found, fetching and applying defaults",
-			"configMapName", database.Spec.DefaultsConfigMapRef)
-
-		defaults, err := controller_adapters.FetchConfigMapDefaults(
-			ctx,
-			r.Client,
-			database.Namespace,
-			database.Spec.DefaultsConfigMapRef,
-		)
-		if err != nil {
-			log.Error(err, "Failed to fetch defaults ConfigMap, continuing without defaults")
-			r.recorder.Eventf(database, "Warning", EVENT_CONFIGMAP_ERROR,
-				"Failed to fetch defaults ConfigMap '%s': %s", database.Spec.DefaultsConfigMapRef, err.Error())
-			// Continue without defaults rather than failing
-		} else {
-			controller_adapters.ApplyDefaultsToDatabase(ctx, database, defaults)
-			log.Info("Successfully applied defaults from ConfigMap")
-		}
-	}
+	// ConfigMap defaults are applied by the defaulter webhook before the CR is persisted.
+	// The controller receives the fully populated CR.
 
 	// Fetch the NDBServer resource (cluster-scoped, so by name only)
 	ndbServer := &ndbv1alpha1.NDBServer{}

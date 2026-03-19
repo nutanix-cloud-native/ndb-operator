@@ -143,11 +143,44 @@ kubectl apply -f <path/to/NDBServer-manifest.yaml>
 #### Using ConfigMap Defaults (Optional)
 The NDB Operator supports using a ConfigMap to provide default values for database configurations. This allows administrators to pre-configure common settings, reducing the amount of configuration developers need to specify in their Database CRs.
 
+Defaults are applied by the **mutating webhook** (defaulter) before the CR is validated and persisted. The controller receives the fully populated CR, so validation is always strict and there is no duplicate logic.
+
+**How it works:**
+- Set `defaultsConfigMapRef` in the Database spec to the name of a ConfigMap in the **same namespace** as the Database CR.
+- The defaulter webhook fetches the ConfigMap, applies defaults to empty fields, then runs standard defaulting. Validation runs on the fully populated CR.
+- If the ConfigMap does not exist or cannot be fetched, the webhook proceeds without ConfigMap defaults (logs a message) and uses standard defaults.
+- Omit `defaultsConfigMapRef` to use the traditional flow—no ConfigMap, no change in behavior.
+
 **Benefits:**
 - Simplifies Database CR definitions
 - Centralizes common configuration
 - Easy to update defaults without modifying Database CRs
 - Values in Database CR always override ConfigMap defaults
+
+**Key precedence:** Type-specific keys (e.g. `postgres.size`, `postgres.profiles.software.name`) are tried first; generic keys (e.g. `size`, `profiles.software.name`) are used as fallback. For clones, `clone.*` keys override generic keys.
+
+**Supported ConfigMap Keys:**
+
+| Key | Applies To | Description |
+|-----|------------|-------------|
+| `clusterName` | Provision, Clone | NDB cluster name |
+| `timezone` | Provision, Clone | Database timezone |
+| `size` | Provision | DB size in GB |
+| `profiles.compute.name` | Provision, Clone | Compute profile |
+| `profiles.network.name` | Provision, Clone | Network profile |
+| `profiles.software.name` | Provision, Clone | Software profile |
+| `profiles.dbParam.name` | Provision, Clone | DB parameter profile |
+| `profiles.dbParamInstance.name` | Provision, Clone | DB param instance (MSSQL) |
+| `timeMachine.sla` | Provision | SLA name |
+| `timeMachine.dailySnapshotTime` | Provision | Daily snapshot time (hh:mm:ss) |
+| `timeMachine.snapshotsPerDay` | Provision | Snapshots per day |
+| `timeMachine.logCatchUpFrequency` | Provision | Log catch-up (minutes) |
+| `timeMachine.weeklySnapshotDay` | Provision | Weekly snapshot day |
+| `timeMachine.monthlySnapshotDay` | Provision | Monthly snapshot day |
+| `timeMachine.quarterlySnapshotMonth` | Provision | Quarterly snapshot month |
+| `postgres.size`, `postgres.profiles.*` | Provision, Clone | PostgreSQL-specific overrides |
+| `mysql.size`, `mysql.profiles.*` | Provision, Clone | MySQL-specific overrides |
+| `clone.clusterName`, `clone.timezone`, `clone.profiles.*` | Clone | Clone-specific overrides |
 
 **Quick Example:**
 ```yaml

@@ -36,9 +36,8 @@ func getDatabaseWebhookHandler(database *Database) DatabaseWebhookHandler {
 type DatabaseWebhookHandler interface {
 	// Default logic
 	defaulter(databaseSpec *DatabaseSpec)
-	// Validates creation (after defaulting)
-	// Pass hasDefaultsConfigMap to indicate if validation should be relaxed for fields that can come from ConfigMap
-	validateCreate(databaseSpec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path, hasDefaultsConfigMap bool)
+	// Validates creation (after defaulting). Defaulter injects ConfigMap values first, so validation is always strict.
+	validateCreate(databaseSpec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path)
 }
 
 // +kubebuilder:object:generate:=false
@@ -63,7 +62,7 @@ func (v *CloningWebhookHandler) defaulter(spec *DatabaseSpec) {
 	databaselog.Info("Exiting defaulter for clone")
 }
 
-func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, clonePath *field.Path, hasDefaultsConfigMap bool) {
+func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, clonePath *field.Path) {
 	databaselog.Info("Entering validateCreate for clone")
 
 	clone := spec.Clone
@@ -72,18 +71,14 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 		*errors = append(*errors, field.Invalid(clonePath.Child("name"), clone.Name, "A valid Clone Name must be specified"))
 	}
 
-	// Skip cluster validation if defaults ConfigMap is provided
-	if !hasDefaultsConfigMap {
-		// Validate clusterId or clusterName - at least one must be provided
-		validateUUIDOrName(clone.ClusterId, clone.ClusterName, clonePath.Child("clusterId"), clonePath.Child("clusterName"), "clusterId", "clusterName", errors)
-	}
+	// Validate clusterId or clusterName - at least one must be provided (defaulter injects from ConfigMap if set)
+	validateUUIDOrName(clone.ClusterId, clone.ClusterName, clonePath.Child("clusterId"), clonePath.Child("clusterName"), "clusterId", "clusterName", errors)
 
 	if clone.CredentialSecret == "" {
 		*errors = append(*errors, field.Invalid(clonePath.Child("credentialSecret"), clone.CredentialSecret, "CredentialSecret must be provided in the Clone Spec"))
 	}
 
-	// Skip timezone validation if defaults ConfigMap is provided
-	if !hasDefaultsConfigMap && clone.TimeZone == "" {
+	if clone.TimeZone == "" {
 		*errors = append(*errors, field.Invalid(clonePath.Child("timeZone"), clone.TimeZone, "TimeZone must be provided in Clone Spec"))
 	}
 
@@ -178,7 +173,7 @@ func (v *ProvisioningWebhookHandler) defaulter(spec *DatabaseSpec) {
 	databaselog.Info("Exiting defaulter for provisioning")
 }
 
-func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path, hasDefaultsConfigMap bool) {
+func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path) {
 	databaselog.Info("Entering validateCreate for provisioning")
 
 	instance := spec.Instance
@@ -189,14 +184,11 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 		*errors = append(*errors, field.Invalid(instancePath.Child("name"), instance.Name, "A valid Database Instance Name must be specified"))
 	}
 
-	// Skip cluster and size validation if defaults ConfigMap is provided
-	if !hasDefaultsConfigMap {
-		// Validate clusterId or clusterName - at least one must be provided
-		validateUUIDOrName(instance.ClusterId, instance.ClusterName, instancePath.Child("clusterId"), instancePath.Child("clusterName"), "clusterId", "clusterName", errors)
+	// Validate clusterId or clusterName - at least one must be provided (defaulter injects from ConfigMap if set)
+	validateUUIDOrName(instance.ClusterId, instance.ClusterName, instancePath.Child("clusterId"), instancePath.Child("clusterName"), "clusterId", "clusterName", errors)
 
-		if instance.Size < 10 {
-			*errors = append(*errors, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
-		}
+	if instance.Size < 10 {
+		*errors = append(*errors, field.Invalid(instancePath.Child("size"), instance.Size, "Initial Database size must be specified with a value 10 GBs or more"))
 	}
 
 	if instance.CredentialSecret == "" {
@@ -215,9 +207,8 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 		}
 	}
 
-	// Skip time machine validation if defaults ConfigMap is provided
-	if !hasDefaultsConfigMap {
-		// validating time machine info
+	// Validating time machine info (defaulter injects from ConfigMap if set)
+	{
 		dailySnapshotTimeRegex := regexp.MustCompile(`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`)
 		if isMatch := dailySnapshotTimeRegex.MatchString(tmInfo.DailySnapshotTime); !isMatch {
 			*errors = append(*errors, field.Invalid(tmPath.Child("dailySnapshotTime"), tmInfo.DailySnapshotTime, "Invalid time format for the daily snapshot time. Use the 24-hour format (HH:MM:SS)."))
