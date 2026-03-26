@@ -149,15 +149,16 @@ Defaults are applied by the **mutating webhook** (defaulter) before the CR is va
 - Set `defaultsConfigMapRef` in the Database spec to the name of a ConfigMap in the **same namespace** as the Database CR.
 - The defaulter webhook fetches the ConfigMap, applies defaults to empty fields, then runs standard defaulting. Validation runs on the fully populated CR.
 - If the ConfigMap does not exist or cannot be fetched, the webhook proceeds without ConfigMap defaults (logs a message) and uses standard defaults.
+- If the ConfigMap exists but `data` is empty, no defaults are applied from it (same as having no keys).
 - Omit `defaultsConfigMapRef` to use the traditional flow—no ConfigMap, no change in behavior.
+- The operator’s ServiceAccount must be allowed to **get** and **list** ConfigMaps in namespaces where `Database` resources are created (the shipped RBAC includes this).
 
 **Benefits:**
 - Simplifies Database CR definitions
 - Centralizes common configuration
 - Easy to update defaults without modifying Database CRs
-- Values in Database CR always override ConfigMap defaults
 
-**Key precedence:** Type-specific keys (e.g. `postgres.size`, `postgres.profiles.software.name`) are tried first; generic keys (e.g. `size`, `profiles.software.name`) are used as fallback. For clones, `clone.*` keys override generic keys.
+**Key precedence:** Explicitly set fields on the Database CR take precedence; the ConfigMap only fills **empty** fields. Engine-specific keys (e.g. `postgres.profiles.software.name`) are evaluated before generic keys (e.g. `profiles.software.name`). For clones, `clone.*` keys (e.g. `clone.timezone`, `clone.profiles.software.name`) are evaluated before the shared generic keys. **`size`** keys apply to **provisioning** only, not cloning.
 
 **Supported ConfigMap Keys:**
 
@@ -178,9 +179,11 @@ Defaults are applied by the **mutating webhook** (defaulter) before the CR is va
 | `timeMachine.weeklySnapshotDay` | Provision | Weekly snapshot day |
 | `timeMachine.monthlySnapshotDay` | Provision | Monthly snapshot day |
 | `timeMachine.quarterlySnapshotMonth` | Provision | Quarterly snapshot month |
-| `postgres.size`, `postgres.profiles.*` | Provision, Clone | PostgreSQL-specific overrides |
-| `mysql.size`, `mysql.profiles.*` | Provision, Clone | MySQL-specific overrides |
-| `clone.clusterName`, `clone.timezone`, `clone.profiles.*` | Clone | Clone-specific overrides |
+| `postgres.size`, `mysql.size`, `mongodb.size`, `mssql.size` | Provision | Engine-specific size (GB); not used for clone |
+| `postgres.profiles.*`, `mysql.profiles.*`, `mongodb.profiles.*`, `mssql.profiles.*` | Provision, Clone | Engine-specific profile defaults |
+| `clone.clusterName`, `clone.timezone`, `clone.profiles.*` | Clone | Clone-specific keys (take precedence over generic keys for clones) |
+
+If a key is present in the ConfigMap, it is applied when the corresponding CR field is empty. To rely on NDB OOB profile resolution for a given profile slot instead, omit that key from the ConfigMap (or set the profile explicitly on the CR).
 
 **Quick Example:**
 ```yaml
@@ -386,7 +389,7 @@ additionalArguments:
 
 # MSSQL
 additionalArguments:
-  sql_user_name: "mazin"                           # Defualt: "sa".
+  sql_user_name: "mazin"                           # Default: "sa".
   authentication_mode: "mixed"                     # Default: "windows". Options are "windows" or "mixed". Must specify sql_user.
   server_collation: "<server-collation>"           # Default: "SQL_Latin1_General_CP1_CI_AS".
   database_collation:  "<server-collation>"        # Default: "SQL_Latin1_General_CP1_CI_AS".
@@ -549,7 +552,7 @@ If you are on an older version where **NDBServer** was namespaced, the same conc
 
 ---
 
-## Developement
+## Development
 
 ### Modifying the API definitions
 If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
