@@ -226,6 +226,8 @@ spec:
     # All other fields (cluster, size, profiles, timeMachine) come from ConfigMap!
 ```
 
+#### Using Database CRs traditional way (without configmap)
+
 #### Provisioning manifest
 ```yaml
 apiVersion: ndb.nutanix.com/v1alpha1

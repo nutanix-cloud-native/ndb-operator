@@ -44,7 +44,7 @@ func FetchConfigMapDefaults(ctx context.Context, k8sClient client.Client, namesp
 		return nil, fmt.Errorf("failed to fetch ConfigMap '%s': %w", configMapName, err)
 	}
 
-	if configMap.Data == nil || len(configMap.Data) == 0 {
+	if len(configMap.Data) == 0 {
 		log.Info("ConfigMap is empty", "configMapName", configMapName)
 		return make(map[string]string), nil
 	}
