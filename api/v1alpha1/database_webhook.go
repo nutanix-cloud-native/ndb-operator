@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -35,26 +36,46 @@ import (
 // Webhook methods (Default, ValidateCreate, etc.) should use logf.FromContext(ctx) for request-aware logging.
 var databaselog = logf.Log.WithName("database-resource")
 
+// +kubebuilder:object:generate=false
+// DatabaseCustomDefaulter injects ConfigMap defaults into the Database CR before validation.
+// This ensures validation sees the fully populated CR and we don't need to relax validation.
+type DatabaseCustomDefaulter struct {
+	Client client.Client
+}
+
+var _ admission.CustomDefaulter = &DatabaseCustomDefaulter{}
+
 func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	// In controller-runtime v0.21.0+, you must explicitly set the defaulter and validator
 	// The For() method alone does not automatically detect these interfaces
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
-		WithDefaulter(r).
+		WithDefaulter(&DatabaseCustomDefaulter{Client: mgr.GetClient()}).
 		WithValidator(r).
 		Complete()
 }
 
 // +kubebuilder:webhook:path=/mutate-ndb-nutanix-com-v1alpha1-database,mutating=true,failurePolicy=fail,sideEffects=None,groups=ndb.nutanix.com,resources=databases,verbs=create;update,versions=v1alpha1,name=mdatabase.kb.io,admissionReviewVersions=v1
 
-var _ admission.CustomDefaulter = &Database{}
-
-// Default implements admission.CustomDefaulter so a webhook will be registered for the type
-func (r *Database) Default(ctx context.Context, obj runtime.Object) error {
+// Default implements admission.CustomDefaulter. Fetches ConfigMap if defaultsConfigMapRef is set,
+// applies defaults to the CR, then runs standard defaulter. Validation runs on the fully populated CR.
+func (d *DatabaseCustomDefaulter) Default(ctx context.Context, obj runtime.Object) error {
 	log := logf.FromContext(ctx)
 	log.Info("Entering Default()...")
 
 	db := obj.(*Database)
+
+	// Apply ConfigMap defaults first (if specified)
+	if db.Spec.DefaultsConfigMapRef != "" {
+		defaults, err := FetchConfigMapDefaults(ctx, d.Client, db.Namespace, db.Spec.DefaultsConfigMapRef)
+		if err != nil {
+			log.Info("Could not fetch ConfigMap, proceeding without ConfigMap defaults", "configMapName", db.Spec.DefaultsConfigMapRef, "error", err)
+		} else if len(defaults) > 0 {
+			ApplyDefaultsFromConfigMap(ctx, db, defaults)
+		}
+	}
+
+	// Run standard defaulter (description, databaseNames, timezone fallback, etc.)
 	getDatabaseWebhookHandler(db).defaulter(&db.Spec)
 
 	log.Info("Exiting Default()!")
@@ -79,6 +100,7 @@ func (r *Database) ValidateCreate(ctx context.Context, obj runtime.Object) (admi
 		path = "Instance"
 	}
 
+	// Defaulter webhook injects ConfigMap values before validation, so we always validate strictly
 	getDatabaseWebhookHandler(db).validateCreate(&db.Spec, errors, field.NewPath("spec").Child(path))
 
 	combined_err := util.CombineFieldErrors(*errors)

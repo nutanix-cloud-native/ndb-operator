@@ -30,6 +30,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	admissionv1 "k8s.io/api/admission/v1"
+	corev1 "k8s.io/api/core/v1"
 	//+kubebuilder:scaffold:imports
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -100,6 +101,9 @@ var _ = BeforeEach(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = admissionv1.AddToScheme(scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = corev1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
@@ -363,6 +367,45 @@ var _ = Describe("Webhook Tests", func() {
 		})
 	})
 
+	Context("ConfigMap defaulter", func() {
+		It("Should inject defaults from ConfigMap when defaultsConfigMapRef is set", func() {
+			// Create ConfigMap with defaults
+			cm := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: "ndb-defaults-test", Namespace: NAMESPACE},
+				Data: map[string]string{
+					"clusterName": "test-cluster",
+					"size":        "20",
+					"timezone":    "America/New_York",
+				},
+			}
+			err := k8sClient.Create(context.Background(), cm)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Create minimal Database CR - cluster, size, timezone empty; defaulter should inject from ConfigMap
+			db := createDefaultDatabase("db-configmap-defaults")
+			db.Spec.DefaultsConfigMapRef = "ndb-defaults-test"
+			db.Spec.Instance.ClusterId = ""
+			db.Spec.Instance.ClusterName = ""
+			db.Spec.Instance.Size = 0
+			db.Spec.Instance.TimeZone = ""
+
+			err = k8sClient.Create(context.Background(), db)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Verify defaulter injected values
+			created := &Database{}
+			err = k8sClient.Get(context.Background(), client.ObjectKeyFromObject(db), created)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(created.Spec.Instance.ClusterName).To(Equal("test-cluster"))
+			Expect(created.Spec.Instance.Size).To(Equal(20))
+			Expect(created.Spec.Instance.TimeZone).To(Equal("America/New_York"))
+
+			// Cleanup
+			_ = k8sClient.Delete(context.Background(), db)
+			_ = k8sClient.Delete(context.Background(), cm)
+		})
+	})
+
 	Context("Clone checks", func() {
 		It("Should check for missing Clone Name", func() {
 			clone := createDefaultClone("clone1")
@@ -424,14 +467,17 @@ var _ = Describe("Webhook Tests", func() {
 			Expect(errMsg).To(ContainSubstring("Either sourceDatabaseId or sourceDatabaseName must be provided"))
 		})
 
-		It("Should check for snapshotId", func() {
+		It("Should allow omitting snapshotId and snapshotName for auto-snapshot", func() {
 			clone := createDefaultClone("clone7")
 			clone.Spec.Clone.SnapshotId = ""
+			clone.Spec.Clone.SnapshotName = ""
 
 			err := k8sClient.Create(context.Background(), clone)
-			Expect(err).To(HaveOccurred())
-			errMsg := err.(*errors.StatusError).ErrStatus.Message
-			Expect(errMsg).To(ContainSubstring("Either snapshotId or snapshotName must be provided"))
+			// Should NOT error - auto-snapshot is allowed
+			Expect(err).NotTo(HaveOccurred())
+
+			// Cleanup
+			_ = k8sClient.Delete(context.Background(), clone)
 		})
 
 		It("Should check for invalid Type'", func() {

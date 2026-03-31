@@ -43,6 +43,7 @@ import (
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups="core",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="core",resources=endpoints,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="core",resources=configmaps,verbs=get;list
 // +kubebuilder:rbac:groups="core",resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/status,verbs=get;update;patch
@@ -75,6 +76,9 @@ func (r *DatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	log.Info("Database CR Status: " + util.ToString(database.Status))
+
+	// ConfigMap defaults are applied by the defaulter webhook before the CR is persisted.
+	// The controller receives the fully populated CR.
 
 	// Fetch the NDBServer resource (cluster-scoped, so by name only)
 	ndbServer := &ndbv1alpha1.NDBServer{}

@@ -36,7 +36,7 @@ func getDatabaseWebhookHandler(database *Database) DatabaseWebhookHandler {
 type DatabaseWebhookHandler interface {
 	// Default logic
 	defaulter(databaseSpec *DatabaseSpec)
-	// Validates creation (after defaulting)
+	// Validates creation (after defaulting). Defaulter injects ConfigMap values first, so validation is always strict.
 	validateCreate(databaseSpec *DatabaseSpec, errors *field.ErrorList, instancePath *field.Path)
 }
 
@@ -71,7 +71,7 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 		*errors = append(*errors, field.Invalid(clonePath.Child("name"), clone.Name, "A valid Clone Name must be specified"))
 	}
 
-	// Validate clusterId or clusterName - at least one must be provided
+	// Validate clusterId or clusterName - at least one must be provided (defaulter injects from ConfigMap if set)
 	validateUUIDOrName(clone.ClusterId, clone.ClusterName, clonePath.Child("clusterId"), clonePath.Child("clusterName"), "clusterId", "clusterName", errors)
 
 	if clone.CredentialSecret == "" {
@@ -85,8 +85,9 @@ func (v *CloningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *field
 	// Validate sourceDatabaseId or sourceDatabaseName - at least one must be provided
 	validateUUIDOrName(clone.SourceDatabaseId, clone.SourceDatabaseName, clonePath.Child("sourceDatabaseId"), clonePath.Child("sourceDatabaseName"), "sourceDatabaseId", "sourceDatabaseName", errors)
 
-	// Validate snapshotId or snapshotName - at least one must be provided
-	validateUUIDOrName(clone.SnapshotId, clone.SnapshotName, clonePath.Child("snapshotId"), clonePath.Child("snapshotName"), "snapshotId", "snapshotName", errors)
+	// Validate snapshot specification
+	// If both snapshotId and snapshotName are omitted, the operator will auto-select the latest snapshot
+	// This allows for convenient "clone from latest" workflows without requiring explicit snapshot selection
 
 	if _, isPresent := api.AllowedDatabaseTypes[clone.Type]; !isPresent {
 		*errors = append(*errors, field.Invalid(clonePath.Child("type"), clone.Type,
@@ -183,7 +184,7 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 		*errors = append(*errors, field.Invalid(instancePath.Child("name"), instance.Name, "A valid Database Instance Name must be specified"))
 	}
 
-	// Validate clusterId or clusterName - at least one must be provided
+	// Validate clusterId or clusterName - at least one must be provided (defaulter injects from ConfigMap if set)
 	validateUUIDOrName(instance.ClusterId, instance.ClusterName, instancePath.Child("clusterId"), instancePath.Child("clusterName"), "clusterId", "clusterName", errors)
 
 	if instance.Size < 10 {
@@ -206,7 +207,7 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 		}
 	}
 
-	// validating time machine info
+	// Validating time machine info (defaulter injects from ConfigMap if set)
 	dailySnapshotTimeRegex := regexp.MustCompile(`^(2[0-3]|[01][0-9]):[0-5][0-9]:[0-5][0-9]$`)
 	if isMatch := dailySnapshotTimeRegex.MatchString(tmInfo.DailySnapshotTime); !isMatch {
 		*errors = append(*errors, field.Invalid(tmPath.Child("dailySnapshotTime"), tmInfo.DailySnapshotTime, "Invalid time format for the daily snapshot time. Use the 24-hour format (HH:MM:SS)."))

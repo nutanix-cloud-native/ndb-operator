@@ -140,6 +140,94 @@ kubectl apply -f <path/to/NDBServer-manifest.yaml>
 
 ### Create a Database Resource. A database can either be provisioned or cloned on NDB based on the inputs specified in the database manifest.
 
+#### Using ConfigMap Defaults (Optional)
+The NDB Operator supports using a ConfigMap to provide default values for database configurations. This allows administrators to pre-configure common settings, reducing the amount of configuration developers need to specify in their Database CRs.
+
+Defaults are applied by the **mutating webhook** (defaulter) before the CR is validated and persisted. The controller receives the fully populated CR, so validation is always strict and there is no duplicate logic.
+
+**How it works:**
+- Set `defaultsConfigMapRef` in the Database spec to the name of a ConfigMap in the **same namespace** as the Database CR.
+- The defaulter webhook fetches the ConfigMap, applies defaults to empty fields, then runs standard defaulting. Validation runs on the fully populated CR.
+- If the ConfigMap does not exist or cannot be fetched, the webhook proceeds without ConfigMap defaults (logs a message) and uses standard defaults.
+- If the ConfigMap exists but `data` is empty, no defaults are applied from it (same as having no keys).
+- Omit `defaultsConfigMapRef` to use the traditional flow—no ConfigMap, no change in behavior.
+- The operator’s ServiceAccount must be allowed to **get** and **list** ConfigMaps in namespaces where `Database` resources are created (the shipped RBAC includes this).
+
+**Benefits:**
+- Simplifies Database CR definitions
+- Centralizes common configuration
+- Easy to update defaults without modifying Database CRs
+
+**Key precedence:** Explicitly set fields on the Database CR take precedence; the ConfigMap only fills **empty** fields. Engine-specific keys (e.g. `postgres.profiles.software.name`) are evaluated before generic keys (e.g. `profiles.software.name`). For clones, `clone.*` keys (e.g. `clone.timezone`, `clone.profiles.software.name`) are evaluated before the shared generic keys. **`size`** keys apply to **provisioning** only, not cloning.
+
+**Supported ConfigMap Keys:**
+
+| Key | Applies To | Description |
+|-----|------------|-------------|
+| `clusterName` | Provision, Clone | NDB cluster name |
+| `timezone` | Provision, Clone | Database timezone |
+| `size` | Provision | DB size in GB |
+| `profiles.compute.name` | Provision, Clone | Compute profile |
+| `profiles.network.name` | Provision, Clone | Network profile |
+| `profiles.software.name` | Provision, Clone | Software profile |
+| `profiles.dbParam.name` | Provision, Clone | DB parameter profile |
+| `profiles.dbParamInstance.name` | Provision, Clone | DB param instance (MSSQL) |
+| `timeMachine.sla` | Provision | SLA name |
+| `timeMachine.dailySnapshotTime` | Provision | Daily snapshot time (hh:mm:ss) |
+| `timeMachine.snapshotsPerDay` | Provision | Snapshots per day |
+| `timeMachine.logCatchUpFrequency` | Provision | Log catch-up (minutes) |
+| `timeMachine.weeklySnapshotDay` | Provision | Weekly snapshot day |
+| `timeMachine.monthlySnapshotDay` | Provision | Monthly snapshot day |
+| `timeMachine.quarterlySnapshotMonth` | Provision | Quarterly snapshot month |
+| `postgres.size`, `mysql.size`, `mongodb.size`, `mssql.size` | Provision | Engine-specific size (GB); not used for clone |
+| `postgres.profiles.*`, `mysql.profiles.*`, `mongodb.profiles.*`, `mssql.profiles.*` | Provision, Clone | Engine-specific profile defaults |
+| `clone.clusterName`, `clone.timezone`, `clone.profiles.*` | Clone | Clone-specific keys (take precedence over generic keys for clones) |
+
+If a key is present in the ConfigMap, it is applied when the corresponding CR field is empty. To rely on NDB OOB profile resolution for a given profile slot instead, omit that key from the ConfigMap (or set the profile explicitly on the CR).
+
+**Quick Example:**
+```yaml
+# 1. Create a ConfigMap with defaults
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ndb-database-defaults
+  namespace: default
+data:
+  clusterName: "production-cluster"
+  timezone: "UTC"
+  profiles.compute.name: "DEFAULT_OOB_COMPUTE"
+  profiles.network.name: "DEFAULT_OOB_NETWORK"
+  timeMachine.sla: "DEFAULT_OOB_BRASS_SLA"
+  # PostgreSQL-specific defaults
+  postgres.profiles.software.name: "POSTGRES_15.6_OOB"
+  postgres.profiles.dbParam.name: "DEFAULT_POSTGRES_PARAMS"
+  postgres.size: "10"
+  # MySQL-specific defaults
+  mysql.profiles.software.name: "MYSQL_8.0_OOB"
+  mysql.profiles.dbParam.name: "DEFAULT_MYSQL_PARAMS"
+  mysql.size: "10"
+
+---
+# 2. Create a minimal Database CR using the defaults
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: my-app-db
+spec:
+  ndbRef: ndb
+  defaultsConfigMapRef: ndb-database-defaults  # Reference the ConfigMap
+  isClone: false
+  databaseInstance:
+    type: postgres
+    name: my-app-db
+    databaseNames: ["appdb"]
+    credentialSecret: db-instance-secret-name
+    # All other fields (cluster, size, profiles, timeMachine) come from ConfigMap!
+```
+
+#### Using Database CRs traditional way (without configmap)
+
 #### Provisioning manifest
 ```yaml
 apiVersion: ndb.nutanix.com/v1alpha1
@@ -265,8 +353,12 @@ spec:
     # sourceDatabaseId: "source-database-uuid"      # Alternative: Use database UUID
     
     # Name or ID of the snapshot to clone from, can be fetched from NDB REST API Explorer
-    snapshotName: "snapshot-name"                   # Recommended: Use snapshot name, or leave empty for latest
+    # AUTO-SNAPSHOT: If both snapshotName and snapshotId are omitted, the operator will 
+    # automatically select the most recent snapshot from the source database.
+    # This works with or without ConfigMap defaults.
+    snapshotName: "snapshot-name"                   # Recommended: Use snapshot name
     # snapshotId: "snapshot-uuid"                   # Alternative: Use snapshot UUID
+    # Omit both to auto-select latest snapshot
     
     additionalArguments:                        # Optional block, can specify additional arguments that are unique to database engines.
       expireInDays: 3
@@ -299,7 +391,7 @@ additionalArguments:
 
 # MSSQL
 additionalArguments:
-  sql_user_name: "mazin"                           # Defualt: "sa".
+  sql_user_name: "mazin"                           # Default: "sa".
   authentication_mode: "mixed"                     # Default: "windows". Options are "windows" or "mixed". Must specify sql_user.
   server_collation: "<server-collation>"           # Default: "SQL_Latin1_General_CP1_CI_AS".
   database_collation:  "<server-collation>"        # Default: "SQL_Latin1_General_CP1_CI_AS".
@@ -462,7 +554,7 @@ If you are on an older version where **NDBServer** was namespaced, the same conc
 
 ---
 
-## Developement
+## Development
 
 ### Modifying the API definitions
 If you are editing the API definitions, generate the manifests such as CRs or CRDs using:

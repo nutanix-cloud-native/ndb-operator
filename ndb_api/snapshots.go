@@ -84,6 +84,65 @@ func ResolveSnapshotNameToId(ctx context.Context, ndbClient *ndb_client.NDBClien
 	return mostRecentSnapshot.id, nil
 }
 
+// GetLatestSnapshotForTM gets the most recent snapshot for a time machine
+// This is used when no snapshot name or ID is specified during cloning
+func GetLatestSnapshotForTM(ctx context.Context, ndbClient *ndb_client.NDBClient, timeMachineId string) (snapshotId string, err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Fetching latest snapshot for time machine", "timeMachineId", timeMachineId)
+
+	// Get all snapshots for the time machine
+	snapshotsResponse, err := GetSnapshotsForTM(ctx, ndbClient, timeMachineId)
+	if err != nil {
+		log.Error(err, "Error fetching snapshots for time machine")
+		return "", fmt.Errorf("failed to fetch snapshots: %w", err)
+	}
+
+	// Collect all snapshots with their timestamps
+	type snapshotWithTimestamp struct {
+		id        string
+		name      string
+		timestamp int64
+	}
+	var allSnapshots []snapshotWithTimestamp
+
+	// Search through all snapshots across all clusters
+	for _, snapshotsPerCluster := range snapshotsResponse.SnapshotsPerNxCluster {
+		for _, snapshotParent := range snapshotsPerCluster {
+			for _, snapshot := range snapshotParent.Snapshots {
+				// Fetch detailed snapshot info to get timestamp
+				detailedSnapshot, err := GetSnapshotById(ctx, ndbClient, snapshot.Id)
+				if err != nil {
+					log.V(1).Info("Could not fetch detailed snapshot info", "snapshotId", snapshot.Id, "error", err)
+					continue
+				}
+				if detailedSnapshot != nil {
+					allSnapshots = append(allSnapshots, snapshotWithTimestamp{
+						id:        snapshot.Id,
+						name:      detailedSnapshot.Name,
+						timestamp: detailedSnapshot.SnapshotTimeStampDate,
+					})
+				}
+			}
+		}
+	}
+
+	// If no snapshots found, return error
+	if len(allSnapshots) == 0 {
+		return "", fmt.Errorf("no snapshots found in time machine '%s'", timeMachineId)
+	}
+
+	// Find the most recent snapshot (highest timestamp)
+	latestSnapshot := allSnapshots[0]
+	for _, s := range allSnapshots {
+		if s.timestamp > latestSnapshot.timestamp {
+			latestSnapshot = s
+		}
+	}
+
+	log.Info("Found latest snapshot", "snapshotId", latestSnapshot.id, "snapshotName", latestSnapshot.name, "totalSnapshots", len(allSnapshots))
+	return latestSnapshot.id, nil
+}
+
 // GetSnapshotById fetches detailed snapshot information by ID
 func GetSnapshotById(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, snapshotId string) (snapshot *SnapshotResponse, err error) {
 	log := ctrllog.FromContext(ctx)

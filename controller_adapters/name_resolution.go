@@ -57,6 +57,7 @@ func resolveInstanceNamesToUUIDs(ctx context.Context, ndbClient *ndb_client.NDBC
 //   - clusterName -> clusterId (if clusterId is not provided)
 //   - sourceDatabaseName -> sourceDatabaseId (if sourceDatabaseId is not provided)
 //   - snapshotName -> snapshotId (if snapshotId is not provided, requires sourceDatabaseId)
+//   - If both snapshotName and snapshotId are empty, auto-selects the latest snapshot
 func resolveCloneNamesToUUIDs(ctx context.Context, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) error {
 	clone := database.Spec.Clone
 
@@ -77,13 +78,22 @@ func resolveCloneNamesToUUIDs(ctx context.Context, ndbClient *ndb_client.NDBClie
 		log.Info("Resolved source database name to ID", "sourceDatabaseName", clone.SourceDatabaseName, "databaseId", databaseId)
 	}
 
-	// Resolve snapshot name to ID if needed (requires source database ID to be resolved first)
-	if clone.SnapshotId == "" && clone.SnapshotName != "" {
+	// Handle snapshot resolution (requires source database ID to be resolved first)
+	if clone.SnapshotId == "" {
 		if clone.SourceDatabaseId == "" {
-			return fmt.Errorf("sourceDatabaseId or sourceDatabaseName must be provided to resolve snapshot name")
+			return fmt.Errorf("sourceDatabaseId or sourceDatabaseName must be provided to resolve snapshot")
 		}
-		if err := resolveSnapshotNameToId(ctx, ndbClient, clone.SourceDatabaseId, clone.SnapshotName, clone); err != nil {
-			return err
+
+		// Case 1: snapshotName is provided - resolve it to ID
+		if clone.SnapshotName != "" {
+			if err := resolveSnapshotNameToId(ctx, ndbClient, clone.SourceDatabaseId, clone.SnapshotName, clone); err != nil {
+				return err
+			}
+		} else {
+			// Case 2: Both snapshotId and snapshotName are empty - auto-select latest snapshot
+			if err := resolveLatestSnapshot(ctx, ndbClient, clone.SourceDatabaseId, clone); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -127,5 +137,31 @@ func resolveSnapshotNameToId(ctx context.Context, ndbClient *ndb_client.NDBClien
 	}
 	clone.SnapshotId = snapshotId
 	log.Info("Resolved snapshot name to ID", "snapshotName", snapshotName, "snapshotId", snapshotId)
+	return nil
+}
+
+// resolveLatestSnapshot automatically selects the latest available snapshot
+// This is used when both snapshotId and snapshotName are empty
+func resolveLatestSnapshot(ctx context.Context, ndbClient *ndb_client.NDBClient, sourceDatabaseId string, clone *ndbv1alpha1.Clone) error {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Auto-selecting latest snapshot for cloning", "sourceDatabaseId", sourceDatabaseId)
+
+	// Fetch source database to get time machine ID
+	sourceDatabase, err := ndb_api.GetDatabaseById(ctx, ndbClient, sourceDatabaseId)
+	if err != nil {
+		return fmt.Errorf("failed to fetch source database '%s': %w", sourceDatabaseId, err)
+	}
+	if sourceDatabase.TimeMachineId == "" {
+		return fmt.Errorf("source database '%s' does not have a time machine", sourceDatabaseId)
+	}
+
+	log.Info("Fetching latest snapshot from time machine", "timeMachineId", sourceDatabase.TimeMachineId)
+	snapshotId, err := ndb_api.GetLatestSnapshotForTM(ctx, ndbClient, sourceDatabase.TimeMachineId)
+	if err != nil {
+		return fmt.Errorf("failed to get latest snapshot: %w", err)
+	}
+
+	clone.SnapshotId = snapshotId
+	log.Info("Auto-selected latest snapshot", "snapshotId", snapshotId)
 	return nil
 }

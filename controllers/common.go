@@ -36,6 +36,7 @@ const (
 	EVENT_CREATION_COMPLETED = "CreationCompleted"
 
 	EVENT_INVALID_CREDENTIALS = "InvalidCredentials"
+	EVENT_CONFIGMAP_ERROR     = "ConfigMapError"
 
 	EVENT_REQUEST_GENERATION         = "RequestGenerated"
 	EVENT_REQUEST_GENERATION_FAILURE = "RequestGenerationFailed"

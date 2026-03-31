@@ -30,6 +30,12 @@ type DatabaseSpec struct {
 	// +kubebuilder:validation:Required
 	NDBRef string `json:"ndbRef"`
 	// +optional
+	// DefaultsConfigMapRef references a ConfigMap containing default values
+	// for database configuration. Values explicitly set in this spec take
+	// precedence over ConfigMap defaults. The ConfigMap should be in the same
+	// namespace as the Database resource.
+	DefaultsConfigMapRef string `json:"defaultsConfigMapRef,omitempty"`
+	// +optional
 	IsClone bool `json:"isClone"`
 	// +optional
 	Instance *Instance `json:"databaseInstance"`
