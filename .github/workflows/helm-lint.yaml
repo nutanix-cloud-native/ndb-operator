@@ -1,0 +1,37 @@
+name: Linting Charts
+
+on:
+  push:
+    paths:
+      - 'deploy/helm/**'
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.8.0
+
+      - name: Run chart-testing (lint-changed)
+        id: list-changed
+        run: |
+          changed=$(ct list-changed --config .github/ct.yaml --target-branch main)
+          if [[ -n "$changed" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run chart-testing (lint)
+        run: ct lint --config .github/ct.yaml --target-branch main
+
+      - name: ArtifactHUB Lint
+        env:
+          AH_CLI_VERSION: 1.6.0
+        run: |
+          curl -LO https://github.com/artifacthub/hub/releases/download/v${AH_CLI_VERSION}/ah_${AH_CLI_VERSION}_linux_amd64.tar.gz
+          tar xvzf ah_${AH_CLI_VERSION}_linux_amd64.tar.gz
+          ./ah lint deploy/helm
