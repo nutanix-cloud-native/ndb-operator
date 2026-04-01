@@ -117,9 +117,9 @@ func TestAppendLCMConfigDetailsToRequest(t *testing.T) {
 	t.Run("all three expiry fields set ExpiryDetails", func(t *testing.T) {
 		req := &DatabaseCloneRequest{}
 		args := map[string]string{
-			"expireInDays":         "7",
-			"expiryDateTimezone":   "UTC",
-			"deleteDatabase":       "true",
+			"expireInDays":       "7",
+			"expiryDateTimezone": "UTC",
+			"deleteDatabase":     "true",
 		}
 		require.NoError(t, appendLCMConfigDetailsToRequest(req, args))
 		assert.Equal(t, "7", req.LcmConfig.DatabaseLCMConfig.ExpiryDetails.ExpireInDays)
@@ -166,12 +166,12 @@ func TestAppendLCMConfigDetailsToRequest(t *testing.T) {
 	t.Run("full expiry and full refresh both applied", func(t *testing.T) {
 		req := &DatabaseCloneRequest{}
 		args := map[string]string{
-			"expireInDays":         "1",
-			"expiryDateTimezone":   "UTC",
-			"deleteDatabase":       "false",
-			"refreshInDays":        "2",
-			"refreshTime":          "01:00:00",
-			"refreshDateTimezone":  "America/New_York",
+			"expireInDays":        "1",
+			"expiryDateTimezone":  "UTC",
+			"deleteDatabase":      "false",
+			"refreshInDays":       "2",
+			"refreshTime":         "01:00:00",
+			"refreshDateTimezone": "America/New_York",
 		}
 		require.NoError(t, appendLCMConfigDetailsToRequest(req, args))
 		assert.Equal(t, "1", req.LcmConfig.DatabaseLCMConfig.ExpiryDetails.ExpireInDays)
