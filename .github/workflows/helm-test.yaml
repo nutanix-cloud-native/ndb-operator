@@ -5,6 +5,9 @@ on:
     paths:
       - 'deploy/helm/**'
 
+permissions:
+  contents: read
+
 jobs:
   lint-test:
     runs-on: ubuntu-latest
