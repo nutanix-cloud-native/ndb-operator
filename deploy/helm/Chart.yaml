@@ -2,8 +2,8 @@ apiVersion: v2
 name: ndb-operator
 description: A Helm chart for Nutanix Database Kubernetes Operator
 type: application
-version: 0.5.5
-appVersion: v0.5.3
+version: 0.5.6
+appVersion: v0.5.4
 maintainers:
   - name: mazin-s
     email: mazin.shaaeldin@nutanix.com
@@ -27,11 +27,11 @@ icon: https://www.nutanix.com/content/dam/nutanix/global/icons/products/svg/Nuta
 annotations:
   artifacthub.io/changes: |
     - kind: changed
-      description: "Upgraded controller from v0.5.2 to v0.5.3."
+      description: "Chart 0.5.6: controller image v0.5.4."
     - kind: security
-      description: "Upgraded kube-rbac-proxy from v0.18.0 to v0.21.0"
+      description: "kube-rbac-proxy v0.21.2."
     - kind: changed
-      description: "controller image v0.5.3 details : https://github.com/nutanix-cloud-native/ndb-operator/releases/tag/v0.5.3"
+      description: "Release details: https://github.com/nutanix-cloud-native/ndb-operator/releases/tag/v0.5.4"
   artifacthub.io/containsSecurityUpdates: "true"
   artifacthub.io/license: Apache-2.0
   artifacthub.io/maintainers: |
