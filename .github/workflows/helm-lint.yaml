@@ -37,3 +37,4 @@ jobs:
           curl -LO https://github.com/artifacthub/hub/releases/download/v${AH_CLI_VERSION}/ah_${AH_CLI_VERSION}_linux_amd64.tar.gz
           tar xvzf ah_${AH_CLI_VERSION}_linux_amd64.tar.gz
           ./ah lint deploy/helm
+          

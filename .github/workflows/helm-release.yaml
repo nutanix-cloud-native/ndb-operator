@@ -53,3 +53,4 @@ jobs:
               helm push "$pkg" oci://ghcr.io/nutanix-cloud-native/chart
             fi
           done
+          
