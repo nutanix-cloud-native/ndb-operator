@@ -279,6 +279,13 @@ spec:
                 - size
                 - type
                 type: object
+              defaultsConfigMapRef:
+                description: |-
+                  DefaultsConfigMapRef references a ConfigMap containing default values
+                  for database configuration. Values explicitly set in this spec take
+                  precedence over ConfigMap defaults. The ConfigMap should be in the same
+                  namespace as the Database resource.
+                type: string
               isClone:
                 type: boolean
               ndbRef:
