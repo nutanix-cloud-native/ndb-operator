@@ -121,13 +121,21 @@ helm uninstall ndb-operator --namespace ndb-operator-system
 
 ## Usage
 
+For the complete operator guide (including migration notes and development), see the [main repository README](https://github.com/nutanix-cloud-native/ndb-operator/blob/main/README.md).
+
+**NDBServer and credentials:** The operator uses two custom resources—**NDBServer** (cluster-scoped) and **Database** (namespaced). **NDBServer** is cluster-scoped so that admins can store the NDB API credential secret in a restricted namespace (e.g. `ndb-credentials`) and set `credentialSecretRef` to point to it. Developers who create **Database** resources only need to reference the NDBServer by **name** in `ndbRef` (e.g. `ndbRef: ndb`); they can list and use cluster-scoped NDBServers without needing access to the secret's namespace.
+
 ### Create secrets to be used by the NDBServer and Database resources using the manifest:
+
+- **NDB API credential secret:** Create this in a **restricted namespace** (e.g. `ndb-credentials`) so only admins need access. Create that namespace if it does not exist, then apply the secret there.
+- **Database instance secret:** Create this in the same namespace where you will create the Database resource (e.g. your application namespace).
 
 ```yaml
 apiVersion: v1
 kind: Secret
 metadata:
   name: ndb-secret-name
+  namespace: ndb-credentials   # use a restricted namespace; create it first
 type: Opaque
 stringData:
   username: username-for-ndb-server
@@ -141,6 +149,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: db-instance-secret-name
+  # no namespace, or set to the namespace where you will create the Database
 type: Opaque
 stringData:
   password: password-for-the-database-instance
@@ -148,13 +157,16 @@ stringData:
 
 ```
 
-Create the secrets:
+Create the NDB credential namespace, then apply the secrets (the NDB secret YAML above includes `namespace: ndb-credentials`):
 
-```
+```sh
+kubectl create namespace ndb-credentials
 kubectl apply -f <path/to/secrets-manifest.yaml>
 ```
 
 ### Create the NDBServer resource. The manifest for NDBServer is described as follows:
+
+**NDBServer is cluster-scoped.** Admins create the NDB API credential secret in a restricted namespace (e.g. `ndb-credentials`) and set `credentialSecretRef` to that secret. The NDBServer resource itself has no namespace; developers in any namespace can reference it by name.
 
 ```yaml
 apiVersion: ndb.nutanix.com/v1alpha1
@@ -167,11 +179,13 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: ndb-operator
   name: ndb
+  # no namespace: NDBServer is cluster-scoped
 spec:
-    # Name of the secret that holds the credentials for NDB: username, password and ca_certificate created earlier
+    # Reference to the secret that holds the credentials for NDB (username, password, ca_certificate).
+    # Point to the restricted namespace where the secret was created; developers do not need access to this namespace.
     credentialSecretRef:
       name: ndb-secret-name
-      namespace: ndb-secret-namespace-name
+      namespace: ndb-credentials
     # NDB Server's API URL
     server: https://[NDB IP]:8443/era/v0.9
     # Set to true to skip SSL certificate validation, should be false if ca_certificate is provided in the credential secret.
@@ -187,6 +201,98 @@ kubectl apply -f <path/to/NDBServer-manifest.yaml>
 
 ### Create a Database Resource. A database can either be provisioned or cloned on NDB based on the inputs specified in the database manifest.
 
+#### Using ConfigMap Defaults (Optional)
+
+The NDB Operator supports using a ConfigMap to provide default values for database configurations. This allows administrators to pre-configure common settings, reducing the amount of configuration developers need to specify in their Database CRs.
+
+Defaults are applied by the **mutating webhook** (defaulter) before the CR is validated and persisted. The controller receives the fully populated CR, so validation is always strict and there is no duplicate logic.
+
+**How it works:**
+
+- Set `defaultsConfigMapRef` in the Database spec to the name of a ConfigMap in the **same namespace** as the Database CR.
+- The defaulter webhook fetches the ConfigMap, applies defaults to empty fields, then runs standard defaulting. Validation runs on the fully populated CR.
+- If the ConfigMap does not exist or cannot be fetched, the webhook proceeds without ConfigMap defaults (logs a message) and uses standard defaults.
+- If the ConfigMap exists but `data` is empty, no defaults are applied from it (same as having no keys).
+- Omit `defaultsConfigMapRef` to use the traditional flow—no ConfigMap, no change in behavior.
+- The operator’s ServiceAccount must be allowed to **get** and **list** ConfigMaps in namespaces where `Database` resources are created (the shipped RBAC includes this).
+
+**Benefits:**
+
+- Simplifies Database CR definitions
+- Centralizes common configuration
+- Easy to update defaults without modifying Database CRs
+
+**Key precedence:** Explicitly set fields on the Database CR take precedence; the ConfigMap only fills **empty** fields. Engine-specific keys (e.g. `postgres.profiles.software.name`) are evaluated before generic keys (e.g. `profiles.software.name`). For clones, `clone.*` keys (e.g. `clone.timezone`, `clone.profiles.software.name`) are evaluated before the shared generic keys. **`size`** keys apply to **provisioning** only, not cloning.
+
+**Supported ConfigMap Keys:**
+
+| Key | Applies To | Description |
+|-----|------------|-------------|
+| `clusterName` | Provision, Clone | NDB cluster name |
+| `timezone` | Provision, Clone | Database timezone |
+| `size` | Provision | DB size in GB |
+| `profiles.compute.name` | Provision, Clone | Compute profile |
+| `profiles.network.name` | Provision, Clone | Network profile |
+| `profiles.software.name` | Provision, Clone | Software profile |
+| `profiles.dbParam.name` | Provision, Clone | DB parameter profile |
+| `profiles.dbParamInstance.name` | Provision, Clone | DB param instance (MSSQL) |
+| `timeMachine.sla` | Provision | SLA name |
+| `timeMachine.dailySnapshotTime` | Provision | Daily snapshot time (hh:mm:ss) |
+| `timeMachine.snapshotsPerDay` | Provision | Snapshots per day |
+| `timeMachine.logCatchUpFrequency` | Provision | Log catch-up (minutes) |
+| `timeMachine.weeklySnapshotDay` | Provision | Weekly snapshot day |
+| `timeMachine.monthlySnapshotDay` | Provision | Monthly snapshot day |
+| `timeMachine.quarterlySnapshotMonth` | Provision | Quarterly snapshot month |
+| `postgres.size`, `mysql.size`, `mongodb.size`, `mssql.size` | Provision | Engine-specific size (GB); not used for clone |
+| `postgres.profiles.*`, `mysql.profiles.*`, `mongodb.profiles.*`, `mssql.profiles.*` | Provision, Clone | Engine-specific profile defaults |
+| `clone.clusterName`, `clone.timezone`, `clone.profiles.*` | Clone | Clone-specific keys (take precedence over generic keys for clones) |
+
+If a key is present in the ConfigMap, it is applied when the corresponding CR field is empty. To rely on NDB OOB profile resolution for a given profile slot instead, omit that key from the ConfigMap (or set the profile explicitly on the CR).
+
+**Quick Example:**
+
+```yaml
+# 1. Create a ConfigMap with defaults
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ndb-database-defaults
+  namespace: default
+data:
+  clusterName: "production-cluster"
+  timezone: "UTC"
+  profiles.compute.name: "DEFAULT_OOB_COMPUTE"
+  profiles.network.name: "DEFAULT_OOB_NETWORK"
+  timeMachine.sla: "DEFAULT_OOB_BRASS_SLA"
+  # PostgreSQL-specific defaults
+  postgres.profiles.software.name: "POSTGRES_15.6_OOB"
+  postgres.profiles.dbParam.name: "DEFAULT_POSTGRES_PARAMS"
+  postgres.size: "10"
+  # MySQL-specific defaults
+  mysql.profiles.software.name: "MYSQL_8.0_OOB"
+  mysql.profiles.dbParam.name: "DEFAULT_MYSQL_PARAMS"
+  mysql.size: "10"
+
+---
+# 2. Create a minimal Database CR using the defaults
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: my-app-db
+spec:
+  ndbRef: ndb
+  defaultsConfigMapRef: ndb-database-defaults  # Reference the ConfigMap
+  isClone: false
+  databaseInstance:
+    type: postgres
+    name: my-app-db
+    databaseNames: ["appdb"]
+    credentialSecret: db-instance-secret-name
+    # All other fields (cluster, size, profiles, timeMachine) come from ConfigMap!
+```
+
+#### Using Database CRs traditional way (without configmap)
+
 #### Provisioning manifest
 
 ```yaml
@@ -196,7 +302,7 @@ metadata:
   # This name that will be used within the kubernetes cluster
   name: db
 spec:
-  # Name of the NDBServer resource created earlier
+  # Name of the cluster-scoped NDBServer (no namespace needed; developers reference by name only)
   ndbRef: ndb
   isClone: false
   # Database instance specific details (that is to be provisioned)
@@ -265,7 +371,7 @@ metadata:
   # This name that will be used within the kubernetes cluster
   name: db
 spec:
-  # Name of the NDBServer resource created earlier
+  # Name of the cluster-scoped NDBServer (no namespace needed; developers reference by name only)
   ndbRef: ndb
   isClone: true
   # Clone specific details (that is to be provisioned)
@@ -312,8 +418,12 @@ spec:
     # sourceDatabaseId: "source-database-uuid"      # Alternative: Use database UUID
     
     # Name or ID of the snapshot to clone from, can be fetched from NDB REST API Explorer
-    snapshotName: "snapshot-name"                   # Recommended: Use snapshot name, or leave empty for latest
+    # AUTO-SNAPSHOT: If both snapshotName and snapshotId are omitted, the operator will
+    # automatically select the most recent snapshot from the source database.
+    # This works with or without ConfigMap defaults.
+    snapshotName: "snapshot-name"                   # Recommended: Use snapshot name
     # snapshotId: "snapshot-uuid"                   # Alternative: Use snapshot UUID
+    # Omit both to auto-select latest snapshot
     
     additionalArguments:                        # Optional block, can specify additional arguments that are unique to database engines.
       expireInDays: 3
