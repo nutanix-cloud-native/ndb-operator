@@ -40,6 +40,7 @@ jobs:
           charts_dir: deploy
           config: .github/cr.yaml
           skip_existing: true
+          skip_upload: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           
