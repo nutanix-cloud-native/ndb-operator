@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'deploy/helm/**'
+      - '.github/workflows/helm-release.yaml'
+  workflow_dispatch:  # manual re-run to publish after fixing release config
 
 permissions:
   contents: write
@@ -31,12 +33,15 @@ jobs:
           tool_versions: |
             helm: latest
 
+      # charts_dir must match .github/cr.yaml (charts-dir: deploy). Default "charts" finds nothing here.
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.7.0
+        with:
+          charts_dir: deploy
+          config: .github/cr.yaml
+          skip_existing: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          CR_SKIP_EXISTING: true
-          CR_CONFIG: .github/cr.yaml
           
 
       - name: Login to GHCR
