@@ -649,6 +649,6 @@ This code is developed in the open with input from the community through issues 
 ---
 
 ## License
-Copyright 2022-2023 Nutanix, Inc.
+Copyright 2022-2026 Nutanix, Inc.
 
 The project is released under version 2.0 of the [Apache license](http://www.apache.org/licenses/LICENSE-2.0).

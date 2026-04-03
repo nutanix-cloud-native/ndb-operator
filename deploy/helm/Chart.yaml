@@ -2,15 +2,11 @@ apiVersion: v2
 name: ndb-operator
 description: A Helm chart for Nutanix Database Kubernetes Operator
 type: application
-version: 0.5.6
+version: 0.5.7
 appVersion: v0.5.4
 maintainers:
   - name: mazin-s
     email: mazin.shaaeldin@nutanix.com
-  - name: akshmish
-    email: akshay.mishra@nutanix.com
-  - name: shenoypritika
-    email: pritika.shenoy@nutanix.com
   - name: krunal-jhaveri
     email: krunal.jhaveri@nutanix.com
   - name: manavrajvanshi
@@ -27,9 +23,7 @@ icon: https://www.nutanix.com/content/dam/nutanix/global/icons/products/svg/Nuta
 annotations:
   artifacthub.io/changes: |
     - kind: changed
-      description: "Chart 0.5.6: controller image v0.5.4."
-    - kind: security
-      description: "kube-rbac-proxy v0.21.2."
+      description: "Chart 0.5.7: controller image v0.5.4."
     - kind: changed
       description: "Release details: https://github.com/nutanix-cloud-native/ndb-operator/releases/tag/v0.5.4"
   artifacthub.io/containsSecurityUpdates: "true"
@@ -37,10 +31,6 @@ annotations:
   artifacthub.io/maintainers: |
     - name: Mazin Shaaeldin
       email: mazin.shaaeldin@nutanix.com
-    - name: Akshay Mishra
-      email: akshay.mishra@nutanix.com
-    - name: Pritika Shenoy
-      email: pritika.shenoy@nutanix.com
     - name: Krunal Jhaveri
       email: krunal.jhaveri@nutanix.com
     - name: Manav Rajvanshi

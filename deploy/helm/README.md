@@ -12,7 +12,7 @@ NDB operator supports these functionalities:
 
 ## Pre-requisites
 
-1. [Install](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-NDB-User-Guide-v2_5:top-installation-c.html) NDB 2.5.
+1. [Install](https://portal.nutanix.com/page/documents/details?targetId=Nutanix-NDB-User-Guide-v2_8:Nutanix-NDB-User-Guide-v2_8) NDB 2.8.
 2. [Install](https://helm.sh/docs/intro/install/) Helm v3.0.0.
 3. [Install](https://kubernetes.io/docs/setup/) a Kubernetes cluster.
 4. [Install](https://cert-manager.io/docs/installation/#getting-started) cert-manager. Ensure that the cert-manager resouces are up and running successfully before installing the NDB operator.
@@ -40,7 +40,7 @@ Install a specific version:
 
 ```sh
 helm install ndb-operator nutanix/ndb-operator \
-  --version 0.5.6 \
+  --version 0.5.7 \
   --namespace ndb-operator-system \
   --create-namespace
 ```
@@ -65,7 +65,7 @@ Install a specific version:
 
 ```sh
 helm install ndb-operator oci://ghcr.io/nutanix-cloud-native/chart/ndb-operator \
-  --version 0.5.6 \
+  --version 0.5.7 \
   --namespace ndb-operator-system \
   --create-namespace
 ```
@@ -107,7 +107,7 @@ helm upgrade ndb-operator nutanix/ndb-operator \
 
 # Using OCI registry
 helm upgrade ndb-operator oci://ghcr.io/nutanix-cloud-native/chart/ndb-operator \
-  --version 0.5.6 \
+  --version 0.5.7 \
   --namespace ndb-operator-system
 ```
 
@@ -615,6 +615,6 @@ Issues and enhancement requests can be submitted in the [Issues tab of this repo
 
 ## License
 
-Copyright 2022-2023 Nutanix, Inc.
+Copyright 2022-2026 Nutanix, Inc.
 
 The project is released under version 2.0 of the [Apache license](http://www.apache.org/licenses/LICENSE-2.0).
