@@ -7,10 +7,6 @@ appVersion: v0.5.4
 maintainers:
   - name: mazin-s
     email: mazin.shaaeldin@nutanix.com
-  - name: akshmish
-    email: akshay.mishra@nutanix.com
-  - name: shenoypritika
-    email: pritika.shenoy@nutanix.com
   - name: krunal-jhaveri
     email: krunal.jhaveri@nutanix.com
   - name: manavrajvanshi
@@ -37,10 +33,6 @@ annotations:
   artifacthub.io/maintainers: |
     - name: Mazin Shaaeldin
       email: mazin.shaaeldin@nutanix.com
-    - name: Akshay Mishra
-      email: akshay.mishra@nutanix.com
-    - name: Pritika Shenoy
-      email: pritika.shenoy@nutanix.com
     - name: Krunal Jhaveri
       email: krunal.jhaveri@nutanix.com
     - name: Manav Rajvanshi
