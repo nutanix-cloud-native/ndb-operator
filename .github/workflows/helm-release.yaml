@@ -45,8 +45,4 @@ jobs:
             echo "Chart $VERSION already exists on GHCR, skipping push."
             exit 0
           fi
-          for pkg in .cr-release-packages/*.tgz; do
-            if [ -f "$pkg" ]; then
-              helm push "$pkg" oci://ghcr.io/nutanix-cloud-native/chart
-            fi
-          done
+          helm push .cr-release-packages/ndb-operator-${VERSION}.tgz oci://ghcr.io/nutanix-cloud-native/chart
