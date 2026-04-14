@@ -9,7 +9,7 @@ import (
 // Returns a tuple that consists of the following:
 //  1. A map where the keys are the allowed additional arguments for the database type, and the corresponding values indicates whether the key is an action argument (where true=yes and false=no).
 //     Currently, all additional arguments are action arguments but this might not always be the case, thus this distinction is made so actual action arguments are appended to the appropriate provisioning body property.
-//  2. An error if there is no allowed additional arguments for the corresponding type, in other words, if the dbType is not MSSQL, MongoDB, PostGres, or MYSQL. Else nil.
+//  2. An error if there is no allowed additional arguments for the corresponding type, in other words, if the dbType is not MSSQL, MongoDB, PostGres, MySQL, or Oracle. Else nil.
 func GetAllowedAdditionalArguments(isClone bool, dbType string) (map[string]bool, error) {
 	if isClone {
 		return GetAllowedAdditionalArgumentsForClone(dbType)
@@ -74,6 +74,16 @@ func GetAllowedAdditionalArgumentsForClone(dbType string) (map[string]bool, erro
 			"refreshTime":         false, // In lcmConfig.refreshDetails.refreshDetails
 			"refreshDateTimezone": false, // In lcmConfig.refreshDetails.refreshDetails
 		}, nil
+	case common.DATABASE_TYPE_ORACLE:
+		return map[string]bool{
+			/* No default */
+			"expireInDays":        false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"expiryDateTimezone":  false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"deleteDatabase":      false, // In lcmConfig.databaseLCMConfig.expiryDetails
+			"refreshInDays":       false, // In lcmConfig.refreshDetails.refreshDetails
+			"refreshTime":         false, // In lcmConfig.refreshDetails.refreshDetails
+			"refreshDateTimezone": false, // In lcmConfig.refreshDetails.refreshDetails
+		}, nil
 	default:
 		return map[string]bool{}, fmt.Errorf("could not find allowed additional arguments for clone of type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES)
 	}
@@ -109,6 +119,10 @@ func GetAllowedAdditionalArgumentsForDatabase(dbType string) (map[string]bool, e
 			"listener_port": true,
 		}, nil
 	case common.DATABASE_TYPE_MYSQL:
+		return map[string]bool{
+			"listener_port": true,
+		}, nil
+	case common.DATABASE_TYPE_ORACLE:
 		return map[string]bool{
 			"listener_port": true,
 		}, nil

@@ -239,6 +239,35 @@ func (a *MySqlRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, d
 	return req, nil
 }
 
+func (a *OracleRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
+	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		/* Non-Configurable */
+		/* Configurable */
+		"vm_name":              database.GetName(),
+		"dbserver_description": "DB Server VM for " + database.GetName(),
+		"db_password":          dbPassword,
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	// Appending LCMConfig Details if specified
+	if err := appendLCMConfigDetailsToRequest(req, database.GetAdditionalArguments()); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArguments map[string]string) error {
 	errMsg := "appendLCMConfigDetailsToRequest() failed!"
 

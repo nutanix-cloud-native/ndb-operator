@@ -328,3 +328,28 @@ func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionR
 
 	return req, nil
 }
+
+func (a *OracleRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+	databaseNames := database.GetInstanceDatabaseNames()
+	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	req.SSHPublicKey = SSHPublicKey
+
+	// Default action arguments
+	actionArguments := map[string]string{
+		"listener_port":           "1521",
+		"db_password":             dbPassword,
+		"database_names":          databaseNames,
+		"auto_tune_staging_drive": "true",
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
+}

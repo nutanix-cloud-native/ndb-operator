@@ -144,8 +144,10 @@ func GetRequestAppender(databaseType string) (requestAppender RequestAppender, e
 		requestAppender = &MongoDbRequestAppender{}
 	case common.DATABASE_TYPE_MSSQL:
 		requestAppender = &MSSQLRequestAppender{}
+	case common.DATABASE_TYPE_ORACLE:
+		requestAppender = &OracleRequestAppender{}
 	default:
-		return nil, errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb")
+		return nil, errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb, oracle")
 	}
 	return
 }
