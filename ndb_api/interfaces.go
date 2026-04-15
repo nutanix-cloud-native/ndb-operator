@@ -33,6 +33,27 @@ type ProfileResolver interface {
 
 type ProfileResolvers map[string]ProfileResolver
 
+// HANodeConfig describes a single node's placement and role within an HA cluster.
+// Defined here (in ndb_api) to avoid a circular import with api/v1alpha1.
+type HANodeConfig struct {
+	VmName       string
+	NodeType     string
+	Role         string
+	ClusterId    string
+	FailoverMode string
+}
+
+// HAConfig carries the HA provisioning parameters surfaced through DatabaseInterface.
+type HAConfig struct {
+	PatroniClusterName    string
+	ClusterName           string
+	EnableSynchronousMode bool
+	WritePort             int32
+	ReadPort              int32
+	ProvisionVirtualIP    bool
+	Nodes                 []HANodeConfig
+}
+
 type DatabaseInterface interface {
 	IsClone() bool
 	GetName() string
@@ -49,6 +70,10 @@ type DatabaseInterface interface {
 	GetCloneSourceDBId() string
 	GetCloneSnapshotId() string
 	GetAdditionalArguments() map[string]string
+	// IsPostgresHA returns true when this is a non-clone Postgres instance with haConfig set.
+	IsPostgresHA() bool
+	// GetInstanceHAConfig returns the HA configuration, or nil for non-HA instances.
+	GetInstanceHAConfig() *HAConfig
 }
 
 // Internal Interfaces

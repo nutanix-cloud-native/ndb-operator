@@ -92,7 +92,7 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		},
 		Nodes: []Node{
 			{
-				Properties: make([]string, 0),
+				Properties: make([]NodeProperty, 0),
 				VmName:     database.GetName() + "_VM",
 			},
 		},
@@ -106,6 +106,58 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 				Value: strconv.Itoa(database.GetInstanceSize()),
 			},
 		},
+	}
+
+	// Override request fields for HA postgres instances
+	if database.IsPostgresHA() {
+		haConfig := database.GetInstanceHAConfig()
+		requestBody.Clustered = true
+		requestBody.NodeCount = len(haConfig.Nodes)
+
+		// Build the per-node entries from the HA config
+		haNodes := make([]Node, 0, len(haConfig.Nodes))
+		for _, n := range haConfig.Nodes {
+			node := Node{
+				VmName:      n.VmName,
+				NxClusterId: n.ClusterId,
+			}
+			if n.NodeType == "haproxy" {
+				node.Properties = []NodeProperty{
+					{Name: "node_type", Value: "haproxy"},
+				}
+			} else {
+				// database node
+				node.NetworkProfileId = profilesMap[common.PROFILE_TYPE_NETWORK].Id
+				node.ComputeProfileId = profilesMap[common.PROFILE_TYPE_COMPUTE].Id
+				node.Properties = []NodeProperty{
+					{Name: "role", Value: n.Role},
+					{Name: "failover_mode", Value: n.FailoverMode},
+					{Name: "node_type", Value: "database"},
+					{Name: "remote_archive_destination", Value: ""},
+				}
+			}
+			haNodes = append(haNodes, node)
+		}
+		requestBody.Nodes = haNodes
+
+		// Collect unique cluster IDs across all HA nodes for the TM SLA details
+		clusterIdSet := make(map[string]struct{})
+		for _, n := range haConfig.Nodes {
+			if n.ClusterId != "" {
+				clusterIdSet[n.ClusterId] = struct{}{}
+			}
+		}
+		clusterIds := make([]string, 0, len(clusterIdSet))
+		for id := range clusterIdSet {
+			clusterIds = append(clusterIds, id)
+		}
+		requestBody.TimeMachineInfo.SlaId = ""
+		requestBody.TimeMachineInfo.SlaDetails = &SlaDetails{
+			PrimarySla: PrimarySlaDetails{
+				SlaId:        sla.Id,
+				NxClusterIds: clusterIds,
+			},
+		}
 	}
 
 	// Appending request body based on database type
@@ -281,7 +333,7 @@ func (a *PostgresRequestAppender) appendProvisioningRequest(req *DatabaseProvisi
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	req.SSHPublicKey = SSHPublicKey
 
-	// Default action arguments
+	// Default action arguments — write/read ports are overridden below for HA instances
 	actionArguments := map[string]string{
 		"proxy_read_port":         "5001",
 		"listener_port":           "5432",
@@ -296,6 +348,39 @@ func (a *PostgresRequestAppender) appendProvisioningRequest(req *DatabaseProvisi
 	// Appending/overwriting database actionArguments to actionArguments
 	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
 		return nil, err
+	}
+
+	// HA-specific action arguments (override defaults where needed)
+	if database.IsPostgresHA() {
+		haConfig := database.GetInstanceHAConfig()
+		syncMode := "false"
+		if haConfig.EnableSynchronousMode {
+			syncMode = "true"
+		}
+		provisionVIP := "false"
+		if haConfig.ProvisionVirtualIP {
+			provisionVIP = "true"
+		}
+		haActionArguments := map[string]string{
+			"proxy_write_port":            fmt.Sprintf("%d", haConfig.WritePort),
+			"proxy_read_port":             fmt.Sprintf("%d", haConfig.ReadPort),
+			"provision_virtual_ip":        provisionVIP,
+			"deploy_haproxy":              "true",
+			"failover_mode":               "Automatic",
+			"enable_synchronous_mode":     syncMode,
+			"patroni_cluster_name":        haConfig.PatroniClusterName,
+			"cluster_name":                haConfig.ClusterName,
+			"allocate_pg_hugepage":        "false",
+			"cluster_database":            "false",
+			"cte_intent":                  "false",
+			"archive_wal_expire_days":     "2",
+			"enable_peer_auth":            "false",
+			"ensure_vm_host_distribution": "false",
+			"db_user":                     "postgres",
+		}
+		for k, v := range haActionArguments {
+			actionArguments[k] = v
+		}
 	}
 
 	// Converting action arguments map to list and appending to req.ActionArguments

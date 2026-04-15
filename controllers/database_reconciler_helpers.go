@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -113,8 +114,52 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 		}
 
 	} else if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
-		instanceManager.deleteDatabaseServer(ctx, r, ndbClient, database)
-		// remove our finalizer from the list and update it.
+		isHA := database.Spec.Instance != nil && database.Spec.Instance.HAConfig != nil
+
+		if isHA {
+			// For HA databases: fire a single DELETE /dpcs/{clusterId} call the first time,
+			// then poll the returned operation ID until complete before removing the finalizer.
+			if len(database.Status.DBServerDeletionOperationIds) == 0 {
+				// Start phase: fire the DPC deletion and store the operation ID.
+				opIds, err := ndb_api.DeprovisionHADatabaseServers(ctx, ndbClient, database.Status.DatabaseServerId)
+				if err != nil {
+					log.Error(err, "Failed to deprovision one or more HA database servers")
+					r.recorder.Eventf(database, "Warning", EVENT_DEREGISTRATION_FAILED, "Error: %s", err.Error())
+				}
+				database.Status.DBServerDeletionOperationIds = opIds
+				if err := r.Status().Update(ctx, database); err != nil {
+					return requeueOnErr(err)
+				}
+				return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
+			}
+
+			// Poll phase: check every operation; requeue until all are done.
+			allDone := true
+			for _, opId := range database.Status.DBServerDeletionOperationIds {
+				op, err := ndb_api.GetOperationById(ctx, ndbClient, opId)
+				if err != nil {
+					log.Error(err, "Failed to fetch HA server deletion operation", "operationId", opId)
+					allDone = false
+					continue
+				}
+				switch ndb_api.GetOperationStatus(op) {
+				case ndb_api.OPERATION_STATUS_PASSED:
+					log.Info("HA server deletion operation completed", "operationId", opId)
+				case ndb_api.OPERATION_STATUS_FAILED:
+					log.Info("HA server deletion operation failed", "operationId", opId, "message", op.Message)
+				default:
+					allDone = false
+				}
+			}
+			if !allDone {
+				return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
+			}
+		} else {
+			// Non-HA: fire-and-forget, unchanged behaviour.
+			instanceManager.deleteDatabaseServer(ctx, r, ndbClient, database)
+		}
+
+		// All server deletions complete (or non-HA fire-and-forget done): remove finalizer.
 		log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_SERVER)
 		controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_SERVER)
 		if err := r.Update(ctx, database); err != nil {
@@ -186,7 +231,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 				// Do nothing, we do not care about other statuses
 			}
 		}
-	} else if dbInfo != (ndbv1alpha1.NDBServerDatabaseInfo{}) {
+	} else if dbInfo.Id != "" {
 		databaseStatus.Status = dbInfo.Status
 		databaseStatus.Id = dbInfo.Id
 		databaseStatus.IPAddress = dbInfo.IPAddress
@@ -258,8 +303,58 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *ndbv1alpha1.Database, req ctrl.Request) (err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.setupConnectivity")
-	// The 'service' and 'endpoint' objects should have the
-	// same name for the service to map to the enpoint.
+
+	// For HA instances: create two service+endpoint pairs — one for writes (primary)
+	// and one for reads (replicas). Both point to the HAProxy IPs on different ports.
+	if database.Spec.Instance != nil && database.Spec.Instance.HAConfig != nil {
+		haCfg := database.Spec.Instance.HAConfig
+		writePort := haCfg.WritePort
+		if writePort == 0 {
+			writePort = 5000
+		}
+		readPort := haCfg.ReadPort
+		if readPort == 0 {
+			readPort = 5001
+		}
+
+		writeName := database.Name + "-svc"
+		writeNN := types.NamespacedName{Name: writeName, Namespace: req.Namespace}
+		writeMeta := metav1.ObjectMeta{Name: writeName, Namespace: req.Namespace}
+		if err = r.setupService(ctx, database, writeNN, writeMeta, writePort); err != nil {
+			errStatement := "Failed to setup write service for HA database"
+			log.Error(err, errStatement)
+			r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED, "Error: %s.", errStatement, err.Error())
+			return
+		}
+		if err = r.setupEndpoints(ctx, database, writeNN, writeMeta, writePort); err != nil {
+			errStatement := "Failed to setup write endpoints for HA database"
+			log.Error(err, errStatement)
+			r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
+			return
+		}
+
+		readName := database.Name + "-ro-svc"
+		readNN := types.NamespacedName{Name: readName, Namespace: req.Namespace}
+		readMeta := metav1.ObjectMeta{Name: readName, Namespace: req.Namespace}
+		if err = r.setupService(ctx, database, readNN, readMeta, readPort); err != nil {
+			errStatement := "Failed to setup read-only service for HA database"
+			log.Error(err, errStatement)
+			r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED, "Error: %s.", errStatement, err.Error())
+			return
+		}
+		if err = r.setupEndpoints(ctx, database, readNN, readMeta, readPort); err != nil {
+			errStatement := "Failed to setup read-only endpoints for HA database"
+			log.Error(err, errStatement)
+			r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
+			return
+		}
+
+		log.Info("Returning from database_reconciler_helpers.setupConnectivity")
+		return
+	}
+
+	// Non-HA: single service+endpoint on the standard database port.
+	// The 'service' and 'endpoint' objects must share the same name for the service to map to the endpoint.
 	commonMetadata := metav1.ObjectMeta{
 		Name:      database.Name + "-svc",
 		Namespace: req.Namespace,
@@ -326,20 +421,60 @@ func (r *DatabaseReconciler) setupService(ctx context.Context, database *ndbv1al
 	return
 }
 
-// Checks and creates an endpoints object for the service if it does not already exists.
-// If it is already present, syncs the IP address with the Database.Status.IPAddress if out of sync.
+// buildEndpointAddresses returns the list of endpoint addresses for the database.
+// For HA databases ipAddress holds comma-separated HAProxy IPs; each is returned
+// as a separate EndpointAddress so kube-proxy load-balances across all of them.
+// For single-instance databases the single ipAddress is used directly.
+func buildEndpointAddresses(database *ndbv1alpha1.Database) []corev1.EndpointAddress {
+	ips := strings.Split(database.Status.IPAddress, ",")
+	addrs := make([]corev1.EndpointAddress, 0, len(ips))
+	for _, ip := range ips {
+		ip = strings.TrimSpace(ip)
+		if ip != "" {
+			addrs = append(addrs, corev1.EndpointAddress{IP: ip})
+		}
+	}
+	return addrs
+}
+
+// endpointAddressesInSync returns true when the existing endpoint subsets already
+// contain exactly the addresses we want (order-independent).
+func endpointAddressesInSync(existing []corev1.EndpointSubset, desired []corev1.EndpointAddress) bool {
+	existingSet := make(map[string]struct{})
+	for _, subset := range existing {
+		for _, addr := range subset.Addresses {
+			existingSet[addr.IP] = struct{}{}
+		}
+	}
+	if len(existingSet) != len(desired) {
+		return false
+	}
+	for _, addr := range desired {
+		if _, ok := existingSet[addr.IP]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// Checks and creates an endpoints object for the service if it does not already exist.
+// If it is already present, syncs addresses with the Database.Status IP(s) if out of sync.
+// For HA databases all HAProxy IPs are registered; for single-instance the single IPAddress is used.
 func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1alpha1.Database, namespacedName types.NamespacedName, metadata metav1.ObjectMeta, targetPort int32) (err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.setupEndpoints")
-	foundEndpoint := &corev1.Endpoints{}
+
+	desiredAddresses := buildEndpointAddresses(database)
 	endpointSubsets := []corev1.EndpointSubset{
 		{
-			Addresses: []corev1.EndpointAddress{{IP: database.Status.IPAddress}},
+			Addresses: desiredAddresses,
 			Ports:     []corev1.EndpointPort{{Port: targetPort}},
 		},
 	}
+
+	foundEndpoint := &corev1.Endpoints{}
 	err = r.Get(ctx, namespacedName, foundEndpoint)
-	// Create an endpoint if it does not exists.
+	// Create an endpoint if it does not exist.
 	if err != nil && errors.IsNotFound(err) {
 		log.Info("No endpoint found, creating a new endpoint")
 		endpoint := &corev1.Endpoints{
@@ -355,17 +490,12 @@ func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1
 		}
 		log.Info("Created a new endpoint", "endpoint name", endpoint.GetName())
 	} else {
-		// If endpoint exists, check if the IP has changed.
-		// If changed, sync with the latest IP in the database CR status.
-		for _, subset := range foundEndpoint.Subsets {
-			for _, address := range subset.Addresses {
-				if address.IP == database.Status.IPAddress {
-					// IP has not changed, no need to update endpoint
-					return
-				}
-			}
+		// If endpoint exists, check if the addresses have changed.
+		// If changed, sync with the latest IPs from the database CR status.
+		if endpointAddressesInSync(foundEndpoint.Subsets, desiredAddresses) {
+			return
 		}
-		log.Info("Endpoint found with a different IP address, updating.")
+		log.Info("Endpoint found with different addresses, updating.")
 		foundEndpoint.Subsets = endpointSubsets
 		err = r.Update(ctx, foundEndpoint)
 		if err != nil {

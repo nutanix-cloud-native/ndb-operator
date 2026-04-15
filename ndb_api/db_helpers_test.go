@@ -135,6 +135,8 @@ func TestPostgresProvisionRequestAppender_withoutAdditionalArguments_positiveWor
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsPostgresHA").Return(false)
+	mockDatabase.On("GetInstanceHAConfig").Return((*HAConfig)(nil))
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "proxy_read_port",
@@ -216,6 +218,8 @@ func TestPostgresProvisionRequestAppender_withAdditionalArguments_positiveWorkfl
 		"listener_port": "0000",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsPostgresHA").Return(false)
+	mockDatabase.On("GetInstanceHAConfig").Return((*HAConfig)(nil))
 
 	expectedActionArgs := []ActionArgument{
 		{
@@ -315,6 +319,113 @@ func TestPostgresProvisionRequestAppender_withAdditionalArguments_negativeWorkfl
 
 	// Verify that the mock method was called with the expected arguments
 	mockDatabase.AssertCalled(t, "GetInstanceDatabaseNames")
+}
+
+// Tests PostgresProvisionRequestAppender for HA (multi-cluster) positive workflow.
+// Verifies that HA-specific action arguments are appended when IsPostgresHA returns true.
+func TestPostgresProvisionRequestAppender_HA_positiveWorkflow(t *testing.T) {
+	baseRequest := &DatabaseProvisionRequest{}
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	haConfig := &HAConfig{
+		PatroniClusterName:    "test-patroni-cluster",
+		ClusterName:           "test-ha-cluster",
+		EnableSynchronousMode: true,
+		ProvisionVirtualIP:    true,
+	}
+
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsPostgresHA").Return(true)
+	mockDatabase.On("GetInstanceHAConfig").Return(haConfig)
+
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
+
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	// Build a lookup map for the resulting action arguments
+	argMap := make(map[string]string)
+	for _, arg := range resultRequest.ActionArguments {
+		argMap[arg.Name] = arg.Value
+	}
+
+	// Verify HA-specific arguments are present
+	haExpected := map[string]string{
+		"provision_virtual_ip":    "true",
+		"deploy_haproxy":          "true",
+		"failover_mode":           "Automatic",
+		"enable_synchronous_mode": "true",
+		"patroni_cluster_name":    "test-patroni-cluster",
+		"cluster_name":            "test-ha-cluster",
+		"cluster_database":        "false",
+		"db_user":                 "postgres",
+	}
+	for k, v := range haExpected {
+		if got, ok := argMap[k]; !ok {
+			t.Errorf("Missing expected HA action argument: %s", k)
+		} else if got != v {
+			t.Errorf("Action argument %s: expected %s, got %s", k, v, got)
+		}
+	}
+
+	// Verify SSH key was set
+	if resultRequest.SSHPublicKey != TEST_SSHKEY {
+		t.Errorf("Unexpected SSHPublicKey. Expected: %s, Got: %s", TEST_SSHKEY, resultRequest.SSHPublicKey)
+	}
+}
+
+// Verifies that provision_virtual_ip is "false" when ProvisionVirtualIP is not set (cross-cluster HAProxy).
+func TestPostgresProvisionRequestAppender_HA_noVirtualIP(t *testing.T) {
+	baseRequest := &DatabaseProvisionRequest{}
+	mockDatabase := &MockDatabaseInterface{}
+
+	reqData := map[string]interface{}{
+		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
+		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+	}
+
+	haConfig := &HAConfig{
+		PatroniClusterName:    "test-patroni-cluster",
+		ClusterName:           "test-ha-cluster",
+		EnableSynchronousMode: false,
+		ProvisionVirtualIP:    false, // HAProxy nodes on different PE clusters
+	}
+
+	mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
+	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_POSTGRES)
+	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsPostgresHA").Return(true)
+	mockDatabase.On("GetInstanceHAConfig").Return(haConfig)
+
+	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_POSTGRES)
+	resultRequest, err := requestAppender.appendProvisioningRequest(baseRequest, mockDatabase, reqData)
+
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	argMap := make(map[string]string)
+	for _, arg := range resultRequest.ActionArguments {
+		argMap[arg.Name] = arg.Value
+	}
+
+	if got := argMap["provision_virtual_ip"]; got != "false" {
+		t.Errorf("provision_virtual_ip: expected false, got %s", got)
+	}
+	if got := argMap["deploy_haproxy"]; got != "true" {
+		t.Errorf("deploy_haproxy: expected true, got %s", got)
+	}
 }
 
 // Tests MSSQLProvisionRequestAppender(), without additional arguments, positive workflow
@@ -1294,6 +1405,8 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetInstanceDatabaseNames").Return(TEST_DB_NAMES)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 		mockDatabase.On("IsClone").Return(false)
+		mockDatabase.On("IsPostgresHA").Return(false)
+		mockDatabase.On("GetInstanceHAConfig").Return((*HAConfig)(nil))
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, &mockDatabase, tc.reqData)

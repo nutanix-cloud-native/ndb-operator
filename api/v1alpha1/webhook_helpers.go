@@ -243,6 +243,53 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 		*errors = append(*errors, field.Invalid(instancePath.Child("additionalArguments"), instance.AdditionalArguments, err.Error()))
 	}
 
+	// HA config validation
+	if instance.HAConfig != nil {
+		haPath := instancePath.Child("haConfig")
+
+		if instance.Type != common.DATABASE_TYPE_POSTGRES {
+			*errors = append(*errors, field.Invalid(haPath, instance.HAConfig, "haConfig is only supported for postgres database type"))
+		}
+
+		if instance.HAConfig.PatroniClusterName == "" {
+			*errors = append(*errors, field.Invalid(haPath.Child("patroniClusterName"), instance.HAConfig.PatroniClusterName, "patroniClusterName must be specified in haConfig"))
+		}
+
+		if instance.HAConfig.ClusterName == "" {
+			*errors = append(*errors, field.Invalid(haPath.Child("clusterName"), instance.HAConfig.ClusterName, "clusterName must be specified in haConfig"))
+		}
+
+		if len(instance.HAConfig.Nodes) == 0 {
+			*errors = append(*errors, field.Invalid(haPath.Child("nodes"), instance.HAConfig.Nodes, "at least one node must be specified in haConfig"))
+		}
+
+		primaryCount := 0
+		for i, node := range instance.HAConfig.Nodes {
+			nodePath := haPath.Child("nodes").Index(i)
+			if node.VmName == "" {
+				*errors = append(*errors, field.Invalid(nodePath.Child("vmName"), node.VmName, "vmName must be specified for each HA node"))
+			}
+			if node.NodeType != "haproxy" && node.NodeType != "database" {
+				*errors = append(*errors, field.Invalid(nodePath.Child("nodeType"), node.NodeType, "nodeType must be either 'haproxy' or 'database'"))
+			}
+			if node.ClusterId == "" && node.ClusterName == "" {
+				*errors = append(*errors, field.Invalid(nodePath, node, "either clusterId or clusterName must be provided for each HA node"))
+			}
+			if node.ClusterId != "" {
+				if err := util.ValidateUUID(node.ClusterId); err != nil {
+					*errors = append(*errors, field.Invalid(nodePath.Child("clusterId"), node.ClusterId, "clusterId must be a valid UUID"))
+				}
+			}
+			if node.NodeType == "database" && node.Role == "Primary" {
+				primaryCount++
+			}
+		}
+
+		if len(instance.HAConfig.Nodes) > 0 && primaryCount != 1 {
+			*errors = append(*errors, field.Invalid(haPath.Child("nodes"), instance.HAConfig.Nodes, "exactly one database node must have role 'Primary'"))
+		}
+	}
+
 	databaselog.Info("Exiting validateCreate for provisioning")
 }
 

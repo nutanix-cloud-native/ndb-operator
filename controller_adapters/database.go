@@ -232,3 +232,50 @@ func (d *Database) GetCloneSourceDBId() string {
 func (d *Database) GetCloneSnapshotId() string {
 	return d.Spec.Clone.SnapshotId
 }
+
+// IsPostgresHA returns true when this is a non-clone Postgres instance with haConfig specified.
+func (d *Database) IsPostgresHA() bool {
+	return !d.IsClone() &&
+		d.Spec.Instance.Type == common.DATABASE_TYPE_POSTGRES &&
+		d.Spec.Instance.HAConfig != nil
+}
+
+// GetInstanceHAConfig converts the v1alpha1.InstanceHAConfig into the ndb_api.HAConfig
+// representation used within the ndb_api package. Returns nil for non-HA instances.
+func (d *Database) GetInstanceHAConfig() *ndb_api.HAConfig {
+	if !d.IsPostgresHA() {
+		return nil
+	}
+	src := d.Spec.Instance.HAConfig
+	nodes := make([]ndb_api.HANodeConfig, len(src.Nodes))
+	for i, n := range src.Nodes {
+		fm := n.FailoverMode
+		if fm == "" {
+			fm = "Automatic"
+		}
+		nodes[i] = ndb_api.HANodeConfig{
+			VmName:       n.VmName,
+			NodeType:     n.NodeType,
+			Role:         n.Role,
+			ClusterId:    n.ClusterId,
+			FailoverMode: fm,
+		}
+	}
+	writePort := src.WritePort
+	if writePort == 0 {
+		writePort = 5000
+	}
+	readPort := src.ReadPort
+	if readPort == 0 {
+		readPort = 5001
+	}
+	return &ndb_api.HAConfig{
+		PatroniClusterName:    src.PatroniClusterName,
+		ClusterName:           src.ClusterName,
+		EnableSynchronousMode: src.EnableSynchronousMode,
+		WritePort:             writePort,
+		ReadPort:              readPort,
+		ProvisionVirtualIP:    src.ProvisionVirtualIP,
+		Nodes:                 nodes,
+	}
+}

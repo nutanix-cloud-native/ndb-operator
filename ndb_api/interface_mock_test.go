@@ -130,6 +130,21 @@ func (m *MockProfileResolverInterface) Resolve(ctx context.Context, allProfiles 
 	return args.Get(0).(ProfileResponse), args.Error(1)
 }
 
+// IsPostgresHA is a mock implementation of the IsPostgresHA method in the Database interface
+func (m *MockDatabaseInterface) IsPostgresHA() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
+
+// GetInstanceHAConfig is a mock implementation of the GetInstanceHAConfig method in the Database interface
+func (m *MockDatabaseInterface) GetInstanceHAConfig() *HAConfig {
+	args := m.Called()
+	if cfg, ok := args.Get(0).(*HAConfig); ok {
+		return cfg
+	}
+	return nil
+}
+
 // GetAdditionalArguments is a mock implementation of the GetAdditionalArguments method in the Database interface
 func (m *MockDatabaseInterface) GetAdditionalArguments() map[string]string {
 	args := m.Called()

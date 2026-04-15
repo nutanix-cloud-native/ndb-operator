@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"strings"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -39,14 +40,68 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 		}
 		if len(db.DatabaseNodes) > 0 {
 			databaseInfo.DBServerId = db.DatabaseNodes[0].DatabaseServerId
-			if len(db.DatabaseNodes[0].DbServer.IPAddresses) > 0 {
+
+			for _, n := range db.DatabaseNodes {
+				log.Info("DatabaseNode", "db", db.Name, "node", n.Name, "serverName", n.DbServer.Name, "ips", n.DbServer.IPAddresses, "properties", n.Properties)
+			}
+
+			// First try to find HAProxy nodes from the databaseNodes list (properties or name match).
+			// NDB does not include HAProxy nodes in databaseNodes[], so this will usually be empty for HA.
+			haProxyIPs := collectHAProxyIPs(db.DatabaseNodes)
+
+			// Fallback: if no HAProxy found in databaseNodes, query /dbservers to find cluster members
+			// whose name contains "haproxy". This handles the common NDB behavior where HAProxy VMs are
+			// not returned in databaseNodes but are discoverable via the dbserverClusterId.
+			if len(haProxyIPs) == 0 && db.DatabaseNodes[0].DatabaseServerId != "" {
+				clusterHAProxyIPs, err := ndb_api.GetHAProxyIPsForCluster(ctx, ndbClient, db.DatabaseNodes[0].DatabaseServerId)
+				if err != nil {
+					log.Error(err, "Failed to look up HAProxy IPs via dbservers API", "db", db.Name)
+				} else {
+					haProxyIPs = clusterHAProxyIPs
+				}
+			}
+
+			if len(haProxyIPs) > 0 {
+				databaseInfo.IPAddress = strings.Join(haProxyIPs, ",")
+				log.Info("HA database: using HAProxy IPs", "db", db.Name, "ips", databaseInfo.IPAddress)
+			} else if len(db.DatabaseNodes[0].DbServer.IPAddresses) > 0 {
 				databaseInfo.IPAddress = db.DatabaseNodes[0].DbServer.IPAddresses[0]
+				log.Info("Non-HA or no HAProxy found: using first node IP", "db", db.Name, "ip", databaseInfo.IPAddress)
 			}
 		}
 		databases[i] = databaseInfo
 	}
 	log.Info("Returning from ndbserver_controller_helpers.getNDBServerDatabasesInfo")
 	return
+}
+
+// collectHAProxyIPs returns the IP addresses of all HAProxy nodes in the node list.
+// It first checks the node's properties for {name: "node_type", value: "haproxy"}.
+// If no properties match (NDB may not echo them back in GET responses), it falls
+// back to matching by server name containing "haproxy" (case-insensitive), which
+// is the naming convention NDB uses for HA load-balancer VMs.
+func collectHAProxyIPs(nodes []ndb_api.DatabaseNode) []string {
+	var ips []string
+	for _, node := range nodes {
+		isHAProxy := false
+
+		for _, prop := range node.Properties {
+			if prop.Name == "node_type" && prop.Value == "haproxy" {
+				isHAProxy = true
+				break
+			}
+		}
+
+		// Fallback: match by server name when NDB does not return node_type in properties.
+		if !isHAProxy && strings.Contains(strings.ToLower(node.DbServer.Name), "haproxy") {
+			isHAProxy = true
+		}
+
+		if isHAProxy && len(node.DbServer.IPAddresses) > 0 {
+			ips = append(ips, node.DbServer.IPAddresses[0])
+		}
+	}
+	return ips
 }
 
 // Returns the NDBServerStatus after performing the following steps:

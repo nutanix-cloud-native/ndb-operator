@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
+	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/stretchr/testify/assert"
 )
@@ -470,4 +471,99 @@ func TestDatabase_GetInstanceTMDetails(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDatabase_IsPostgresHA(t *testing.T) {
+	tests := []struct {
+		name   string
+		db     Database
+		wantHA bool
+	}{
+		{
+			name: "postgres with haConfig returns true",
+			db: Database{Database: v1alpha1.Database{Spec: v1alpha1.DatabaseSpec{
+				Instance: &v1alpha1.Instance{
+					Type:     common.DATABASE_TYPE_POSTGRES,
+					HAConfig: &v1alpha1.InstanceHAConfig{PatroniClusterName: "test"},
+				},
+			}}},
+			wantHA: true,
+		},
+		{
+			name: "postgres without haConfig returns false",
+			db: Database{Database: v1alpha1.Database{Spec: v1alpha1.DatabaseSpec{
+				Instance: &v1alpha1.Instance{Type: common.DATABASE_TYPE_POSTGRES},
+			}}},
+			wantHA: false,
+		},
+		{
+			name: "non-postgres type with haConfig returns false",
+			db: Database{Database: v1alpha1.Database{Spec: v1alpha1.DatabaseSpec{
+				Instance: &v1alpha1.Instance{
+					Type:     common.DATABASE_TYPE_MYSQL,
+					HAConfig: &v1alpha1.InstanceHAConfig{PatroniClusterName: "test"},
+				},
+			}}},
+			wantHA: false,
+		},
+		{
+			name: "clone with haConfig returns false",
+			db: Database{Database: v1alpha1.Database{Spec: v1alpha1.DatabaseSpec{
+				IsClone:  true,
+				Instance: &v1alpha1.Instance{Type: common.DATABASE_TYPE_POSTGRES, HAConfig: &v1alpha1.InstanceHAConfig{}},
+				Clone:    &v1alpha1.Clone{Type: common.DATABASE_TYPE_POSTGRES},
+			}}},
+			wantHA: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.wantHA, tt.db.IsPostgresHA())
+		})
+	}
+}
+
+func TestDatabase_GetInstanceHAConfig(t *testing.T) {
+	haNodes := []v1alpha1.InstanceHANode{
+		{VmName: "haproxy1", NodeType: "haproxy", ClusterId: "cluster-a"},
+		{VmName: "db1", NodeType: "database", Role: "Primary", ClusterId: "cluster-a"},
+		{VmName: "db2", NodeType: "database", Role: "Secondary", ClusterId: "cluster-b"},
+	}
+	db := Database{Database: v1alpha1.Database{Spec: v1alpha1.DatabaseSpec{
+		Instance: &v1alpha1.Instance{
+			Type: common.DATABASE_TYPE_POSTGRES,
+			HAConfig: &v1alpha1.InstanceHAConfig{
+				PatroniClusterName:    "patroni-test",
+				ClusterName:           "ha-cluster",
+				EnableSynchronousMode: true,
+				Nodes:                 haNodes,
+			},
+		},
+	}}}
+
+	got := db.GetInstanceHAConfig()
+
+	assert.NotNil(t, got)
+	assert.Equal(t, "patroni-test", got.PatroniClusterName)
+	assert.Equal(t, "ha-cluster", got.ClusterName)
+	assert.True(t, got.EnableSynchronousMode)
+	assert.Len(t, got.Nodes, 3)
+
+	// HAProxy node
+	assert.Equal(t, ndb_api.HANodeConfig{
+		VmName: "haproxy1", NodeType: "haproxy", ClusterId: "cluster-a",
+		Role: "", FailoverMode: "Automatic",
+	}, got.Nodes[0])
+
+	// Primary DB node
+	assert.Equal(t, ndb_api.HANodeConfig{
+		VmName: "db1", NodeType: "database", Role: "Primary", ClusterId: "cluster-a",
+		FailoverMode: "Automatic",
+	}, got.Nodes[1])
+
+	// Returns nil for non-HA
+	nonHA := Database{Database: v1alpha1.Database{Spec: v1alpha1.DatabaseSpec{
+		Instance: &v1alpha1.Instance{Type: common.DATABASE_TYPE_POSTGRES},
+	}}}
+	assert.Nil(t, nonHA.GetInstanceHAConfig())
 }

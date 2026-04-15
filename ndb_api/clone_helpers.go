@@ -85,7 +85,7 @@ func GenerateCloningRequest(ctx context.Context, ndb_client ndb_client.NDBClient
 				NetworkProfileId:    profilesMap[common.PROFILE_TYPE_NETWORK].Id,
 				NewDbServerTimeZone: "",
 				NxClusterId:         database.GetClusterId(),
-				Properties:          make([]string, 0),
+				Properties:          make([]NodeProperty, 0),
 			},
 		},
 		// Added by request appenders as per the engine
