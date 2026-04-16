@@ -47,9 +47,54 @@ func ResolveProfiles(ctx context.Context, ndb_client ndb_client.NDBClientHTTPInt
 	// profiles need to be in the ready state
 	activeProfiles := util.Filter(allProfiles, func(p ProfileResponse) bool { return p.Status == common.PROFILE_STATUS_READY })
 
+	expectedEngine := GetDatabaseEngineName(databaseType)
 	dbEngineSpecific := util.Filter(activeProfiles, func(p ProfileResponse) bool {
-		return p.EngineType == GetDatabaseEngineName(databaseType)
+		return p.EngineType == expectedEngine
 	})
+
+	// #region agent log - H8: Check profile filtering
+	func() {
+		f, _ := os.OpenFile("/Users/sasikanth.masini/ndb-operator/.cursor/debug-8a3458.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if f != nil {
+			defer f.Close()
+			softwareProfiles := []map[string]string{}
+			for _, p := range activeProfiles {
+				if p.Type == common.PROFILE_TYPE_SOFTWARE {
+					softwareProfiles = append(softwareProfiles, map[string]string{
+						"id": p.Id, "name": p.Name, "engineType": p.EngineType, "status": p.Status,
+					})
+				}
+			}
+			filteredProfiles := []map[string]string{}
+			for _, p := range dbEngineSpecific {
+				if p.Type == common.PROFILE_TYPE_SOFTWARE {
+					filteredProfiles = append(filteredProfiles, map[string]string{
+						"id": p.Id, "name": p.Name, "engineType": p.EngineType,
+					})
+				}
+			}
+			payload := map[string]interface{}{
+				"sessionId": "8a3458",
+				"location":  "profile_helpers.go:profileFiltering",
+				"message":   "Profile filtering for database type",
+				"data": map[string]interface{}{
+					"databaseType":             databaseType,
+					"expectedEngineType":       expectedEngine,
+					"totalActiveProfiles":      len(activeProfiles),
+					"filteredProfiles":         len(dbEngineSpecific),
+					"allSoftwareProfiles":      softwareProfiles,
+					"filteredSoftwareProfiles": filteredProfiles,
+				},
+				"timestamp":    time.Now().UnixMilli(),
+				"hypothesisId": "H8",
+			}
+			if b, e := json.Marshal(payload); e == nil {
+				f.Write(b)
+				f.WriteString("\n")
+			}
+		}
+	}()
+	// #endregion
 
 	computeProfileResolver := profileResolvers[common.PROFILE_TYPE_COMPUTE]
 	softwareProfileResolver := profileResolvers[common.PROFILE_TYPE_SOFTWARE]
