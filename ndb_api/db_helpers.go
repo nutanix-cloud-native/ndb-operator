@@ -347,24 +347,26 @@ func (a *OracleRequestAppender) appendProvisioningRequest(req *DatabaseProvision
 	}()
 	// #endregion
 
-	// Oracle uses req.DatabaseName (like MSSQL), not database_names in action arguments
-	req.DatabaseName = string(database.GetInstanceDatabaseNames())
-	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+	// Oracle uses req.DatabaseName for SID (like MSSQL pattern)
+	databaseNames := database.GetInstanceDatabaseNames()
+	req.DatabaseName = databaseNames // This becomes the SID for Oracle
+	adminPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	req.SSHPublicKey = SSHPublicKey
 
-	// Default action arguments (removed database_names - it goes in req.DatabaseName)
+	// Oracle-specific action arguments (following MSSQL pattern)
 	actionArguments := map[string]string{
-		"listener_port":           "1521",
-		"db_password":             dbPassword,
-		"auto_tune_staging_drive": "true",
+		"listener_port":              "1521",
+		"vm_dbserver_admin_password": adminPassword, // Match MSSQL pattern, not db_password
+		"auto_tune_staging_drive":    "true",
+		"dbserver_name":              database.GetName(),
 	}
 	// #region agent log
 	func() {
 		f, _ := os.OpenFile("/Users/sasikanth.masini/ndb-operator/.cursor/debug-8a3458.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if f != nil {
 			defer f.Close()
-			payload := map[string]interface{}{"sessionId": "8a3458", "location": "db_helpers.go:appendProvisioningRequest:actionArgs", "message": "Oracle action arguments prepared", "data": map[string]interface{}{"actionArguments": actionArguments, "reqDatabaseName": req.DatabaseName}, "timestamp": time.Now().UnixMilli(), "hypothesisId": "H7"}
+			payload := map[string]interface{}{"sessionId": "8a3458", "location": "db_helpers.go:appendProvisioningRequest:actionArgs", "message": "Oracle action arguments prepared", "data": map[string]interface{}{"actionArguments": actionArguments, "reqDatabaseName": req.DatabaseName, "databaseNames": databaseNames}, "timestamp": time.Now().UnixMilli(), "hypothesisId": "H9"}
 			if b, e := json.Marshal(payload); e == nil {
 				f.Write(b)
 				f.WriteString("\n")
