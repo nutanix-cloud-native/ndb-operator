@@ -7,10 +7,12 @@ var AllowedDatabaseTypes = map[string]bool{
 	"postgres": true,
 	"mongodb":  true,
 	"mssql":    true,
+	"oracle":   true,
 }
 
 var ClosedSourceDatabaseTypes = map[string]bool{
-	"mssql": true,
+	"mssql":  true,
+	"oracle": true,
 }
 
 var AllowedLogCatchupFrequencyInMinutes = map[int]bool{
