@@ -1227,7 +1227,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 				common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
 				common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
 			},
-			expectedError: errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb"),
+			expectedError: errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb, oracle"),
 		},
 	}
 
