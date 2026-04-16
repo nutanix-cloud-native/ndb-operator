@@ -188,7 +188,6 @@ func (a *PostgresRequestAppender) appendCloningRequest(req *DatabaseCloneRequest
 
 	// Default action arguments
 	actionArguments := map[string]string{
-		/* Non-Configurable from additionalArguments*/
 		"vm_name":              database.GetName(),
 		"dbserver_description": "DB Server VM for " + database.GetName(),
 		"db_password":          dbPassword,
@@ -278,7 +277,7 @@ func (a *OracleRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, 
 func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArguments map[string]string) error {
 	errMsg := "appendLCMConfigDetailsToRequest() failed!"
 
-	// expiryDetails appender
+	// expiryDetails appender - only populated when all three fields are present
 	databaseLcmConfigProperties := []string{"expireInDays", "expiryDateTimezone", "deleteDatabase"}
 	databaseLcmConfigCount := 0
 	for _, property := range databaseLcmConfigProperties {
@@ -287,7 +286,7 @@ func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArgume
 		}
 	}
 
-	// refreshDetails appender (check first)
+	// refreshDetails appender - only populated when all three fields are present
 	refreshDetailsProperties := []string{"refreshInDays", "refreshTime", "refreshDateTimezone"}
 	refreshDetailsCount := 0
 	for _, property := range refreshDetailsProperties {
@@ -296,15 +295,10 @@ func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArgume
 		}
 	}
 
-	// Only initialize LcmConfig if we have LCM params
-	if databaseLcmConfigCount > 0 || refreshDetailsCount > 0 {
+	if databaseLcmConfigCount == 3 {
 		if req.LcmConfig == nil {
 			req.LcmConfig = &LcmConfig{}
 		}
-	}
-
-	// Process expiry details
-	if databaseLcmConfigCount == 3 {
 		req.LcmConfig.DatabaseLCMConfig = DatabaseLCMConfig{
 			ExpiryDetails: ExpiryDetails{
 				ExpireInDays:       additionalArguments["expireInDays"],
@@ -316,8 +310,10 @@ func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArgume
 		return fmt.Errorf("%s. Ensure expireInDays, expiryDateTimezone, and deleteDatabase are all specified. You only have %d/3 specified", errMsg, databaseLcmConfigCount)
 	}
 
-	// Process refresh details
 	if refreshDetailsCount == 3 {
+		if req.LcmConfig == nil {
+			req.LcmConfig = &LcmConfig{}
+		}
 		req.LcmConfig.DatabaseLCMConfig.RefreshDetails = RefreshDetails{
 			RefreshInDays:       additionalArguments["refreshInDays"],
 			RefreshTime:         additionalArguments["refreshTime"],

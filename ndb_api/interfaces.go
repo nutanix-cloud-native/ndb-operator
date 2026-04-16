@@ -72,7 +72,8 @@ type DatabaseInterface interface {
 	GetAdditionalArguments() map[string]string
 	// IsPostgresHA returns true when this is a non-clone Postgres instance with haConfig set.
 	IsPostgresHA() bool
-	// GetInstanceHAConfig returns the HA configuration, or nil for non-HA instances.
+	// GetInstanceHAConfig returns the HA configuration for HA instances.
+	// Returns nil for clones and non-HA instances.
 	GetInstanceHAConfig() *HAConfig
 }
 

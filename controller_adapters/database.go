@@ -241,12 +241,16 @@ func (d *Database) IsPostgresHA() bool {
 }
 
 // GetInstanceHAConfig converts the v1alpha1.InstanceHAConfig into the ndb_api.HAConfig
-// representation used within the ndb_api package. Returns nil for non-HA instances.
+// representation used within the ndb_api package.
+// Returns nil for clones and non-HA instances.
 func (d *Database) GetInstanceHAConfig() *ndb_api.HAConfig {
 	if !d.IsPostgresHA() {
 		return nil
 	}
 	src := d.Spec.Instance.HAConfig
+	if src == nil {
+		return nil
+	}
 	nodes := make([]ndb_api.HANodeConfig, len(src.Nodes))
 	for i, n := range src.Nodes {
 		fm := n.FailoverMode
