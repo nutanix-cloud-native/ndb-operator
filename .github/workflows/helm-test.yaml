@@ -9,7 +9,33 @@ permissions:
   contents: read
 
 jobs:
+  check-helm-only:
+    runs-on: ubuntu-latest
+    outputs:
+      helm-only: ${{ steps.check.outputs.helm-only }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Check if only helm files changed
+        id: check
+        run: |
+          changed_files=$(git diff --name-only origin/main...HEAD)
+          echo "Changed files:"
+          echo "$changed_files"
+          non_helm=$(echo "$changed_files" | grep -v '^deploy/helm/' || true)
+          if [ -z "$non_helm" ]; then
+            echo "helm-only=true" >> $GITHUB_OUTPUT
+            echo "Only helm files changed - running helm jobs"
+          else
+            echo "helm-only=false" >> $GITHUB_OUTPUT
+            echo "Non-helm files also changed - skipping helm jobs"
+          fi
+
   lint-test:
+    needs: check-helm-only
+    if: needs.check-helm-only.outputs.helm-only == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
