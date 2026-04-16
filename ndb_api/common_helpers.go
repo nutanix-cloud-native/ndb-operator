@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
@@ -141,6 +143,19 @@ func GetDatabasePortByType(dbType string) int32 {
 
 // Get specific implementation of the DBProvisionRequestAppender interface based on the provided databaseType
 func GetRequestAppender(databaseType string) (requestAppender RequestAppender, err error) {
+	// #region agent log
+	func() {
+		f, _ := os.OpenFile("/Users/sasikanth.masini/ndb-operator/.cursor/debug-8a3458.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if f != nil {
+			defer f.Close()
+			payload := map[string]interface{}{"sessionId": "8a3458", "location": "common_helpers.go:GetRequestAppender:entry", "message": "GetRequestAppender called", "data": map[string]interface{}{"databaseType": databaseType}, "timestamp": time.Now().UnixMilli(), "hypothesisId": "H4"}
+			if b, e := json.Marshal(payload); e == nil {
+				f.Write(b)
+				f.WriteString("\n")
+			}
+		}
+	}()
+	// #endregion
 	switch databaseType {
 	case common.DATABASE_TYPE_MYSQL:
 		requestAppender = &MySqlRequestAppender{}
@@ -152,6 +167,19 @@ func GetRequestAppender(databaseType string) (requestAppender RequestAppender, e
 		requestAppender = &MSSQLRequestAppender{}
 	case common.DATABASE_TYPE_ORACLE:
 		requestAppender = &OracleRequestAppender{}
+		// #region agent log
+		func() {
+			f, _ := os.OpenFile("/Users/sasikanth.masini/ndb-operator/.cursor/debug-8a3458.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if f != nil {
+				defer f.Close()
+				payload := map[string]interface{}{"sessionId": "8a3458", "location": "common_helpers.go:GetRequestAppender:oracle", "message": "Oracle request appender created", "data": map[string]interface{}{"appenderType": "OracleRequestAppender"}, "timestamp": time.Now().UnixMilli(), "hypothesisId": "H4"}
+				if b, e := json.Marshal(payload); e == nil {
+					f.Write(b)
+					f.WriteString("\n")
+				}
+			}
+		}()
+		// #endregion
 	default:
 		return nil, errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb, oracle")
 	}

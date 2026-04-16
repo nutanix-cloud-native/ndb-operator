@@ -18,9 +18,12 @@ package ndb_api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
@@ -330,6 +333,19 @@ func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionR
 }
 
 func (a *OracleRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
+	// #region agent log
+	func() {
+		f, _ := os.OpenFile("/Users/sasikanth.masini/ndb-operator/.cursor/debug-8a3458.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if f != nil {
+			defer f.Close()
+			payload := map[string]interface{}{"sessionId": "8a3458", "location": "db_helpers.go:appendProvisioningRequest:entry", "message": "Oracle appendProvisioningRequest called", "data": map[string]interface{}{"dbName": database.GetName(), "dbType": database.GetInstanceType()}, "timestamp": time.Now().UnixMilli(), "hypothesisId": "H1"}
+			if b, e := json.Marshal(payload); e == nil {
+				f.Write(b)
+				f.WriteString("\n")
+			}
+		}
+	}()
+	// #endregion
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
@@ -342,6 +358,19 @@ func (a *OracleRequestAppender) appendProvisioningRequest(req *DatabaseProvision
 		"database_names":          databaseNames,
 		"auto_tune_staging_drive": "true",
 	}
+	// #region agent log
+	func() {
+		f, _ := os.OpenFile("/Users/sasikanth.masini/ndb-operator/.cursor/debug-8a3458.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if f != nil {
+			defer f.Close()
+			payload := map[string]interface{}{"sessionId": "8a3458", "location": "db_helpers.go:appendProvisioningRequest:actionArgs", "message": "Oracle action arguments prepared", "data": map[string]interface{}{"actionArguments": actionArguments, "databaseNames": databaseNames}, "timestamp": time.Now().UnixMilli(), "hypothesisId": "H3"}
+			if b, e := json.Marshal(payload); e == nil {
+				f.Write(b)
+				f.WriteString("\n")
+			}
+		}
+	}()
+	// #endregion
 
 	// Appending/overwriting database actionArguments to actionArguments
 	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
