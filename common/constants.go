@@ -36,7 +36,7 @@ const (
 	DATABASE_ENGINE_TYPE_MONGODB  = "mongodb_database"
 	DATABASE_ENGINE_TYPE_MSSQL    = "sqlserver_database"
 	DATABASE_ENGINE_TYPE_MYSQL    = "mysql_database"
-	DATABASE_ENGINE_TYPE_ORACLE   = "Oracle" // NDB returns "Oracle" not "oracle_database"
+	DATABASE_ENGINE_TYPE_ORACLE   = "oracle_database" // NDB API returns "oracle_database"
 	DATABASE_ENGINE_TYPE_POSTGRES = "postgres_database"
 
 	DATABASE_RECONCILE_INTERVAL_SECONDS = 15
