@@ -347,26 +347,24 @@ func (a *OracleRequestAppender) appendProvisioningRequest(req *DatabaseProvision
 	}()
 	// #endregion
 
-	// Oracle uses req.DatabaseName for SID (like MSSQL pattern)
+	// Oracle uses req.DatabaseName for SID
 	databaseNames := database.GetInstanceDatabaseNames()
 	req.DatabaseName = databaseNames // This becomes the SID for Oracle
-	adminPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	req.SSHPublicKey = SSHPublicKey
 
-	// Oracle-specific action arguments (following MSSQL pattern)
+	// Oracle action arguments - NO password in action args (unlike other DBs)
+	// Password likely goes through SSH or database parameter profile
 	actionArguments := map[string]string{
-		"listener_port":              "1521",
-		"vm_dbserver_admin_password": adminPassword, // Match MSSQL pattern, not db_password
-		"auto_tune_staging_drive":    "true",
-		"dbserver_name":              database.GetName(),
+		"listener_port":           "1521",
+		"auto_tune_staging_drive": "true",
 	}
 	// #region agent log
 	func() {
 		f, _ := os.OpenFile("/Users/sasikanth.masini/ndb-operator/.cursor/debug-8a3458.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if f != nil {
 			defer f.Close()
-			payload := map[string]interface{}{"sessionId": "8a3458", "location": "db_helpers.go:appendProvisioningRequest:actionArgs", "message": "Oracle action arguments prepared", "data": map[string]interface{}{"actionArguments": actionArguments, "reqDatabaseName": req.DatabaseName, "databaseNames": databaseNames}, "timestamp": time.Now().UnixMilli(), "hypothesisId": "H9"}
+			payload := map[string]interface{}{"sessionId": "8a3458", "location": "db_helpers.go:appendProvisioningRequest:actionArgs", "message": "Oracle action arguments (no password in action args)", "data": map[string]interface{}{"actionArguments": actionArguments, "reqDatabaseName": req.DatabaseName, "databaseNames": databaseNames}, "timestamp": time.Now().UnixMilli(), "hypothesisId": "H10"}
 			if b, e := json.Marshal(payload); e == nil {
 				f.Write(b)
 				f.WriteString("\n")
