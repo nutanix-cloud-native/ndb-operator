@@ -42,17 +42,17 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 			databaseInfo.DBServerId = db.DatabaseNodes[0].DatabaseServerId
 
 			for _, n := range db.DatabaseNodes {
-				log.Info("DatabaseNode", "db", db.Name, "node", n.Name, "serverName", n.DbServer.Name, "ips", n.DbServer.IPAddresses, "properties", n.Properties)
+				log.V(1).Info("DatabaseNode", "db", db.Name, "node", n.Name, "serverName", n.DbServer.Name, "ips", n.DbServer.IPAddresses, "properties", n.Properties)
 			}
 
 			// First try to find HAProxy nodes from the databaseNodes list (properties or name match).
 			// NDB does not include HAProxy nodes in databaseNodes[], so this will usually be empty for HA.
 			haProxyIPs := collectHAProxyIPs(db.DatabaseNodes)
 
-			// Fallback: if no HAProxy found in databaseNodes, query /dbservers to find cluster members
-			// whose name contains "haproxy". This handles the common NDB behavior where HAProxy VMs are
-			// not returned in databaseNodes but are discoverable via the dbserverClusterId.
-			if len(haProxyIPs) == 0 && db.DatabaseNodes[0].DatabaseServerId != "" {
+			// Fallback: only attempt the DPC lookup when there are multiple database nodes, which
+			// indicates an HA cluster (SI databases always have exactly one node). This avoids an
+			// extra GET /dbservers/{id} call on every sync cycle for every non-HA database.
+			if len(haProxyIPs) == 0 && len(db.DatabaseNodes) > 1 && db.DatabaseNodes[0].DatabaseServerId != "" {
 				clusterHAProxyIPs, err := ndb_api.GetHAProxyIPsForCluster(ctx, ndbClient, db.DatabaseNodes[0].DatabaseServerId)
 				if err != nil {
 					log.Error(err, "Failed to look up HAProxy IPs via dbservers API", "db", db.Name)
