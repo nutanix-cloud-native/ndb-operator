@@ -371,6 +371,84 @@ spec:
       expireInDays: 3
 
 ```
+#### Creating Postgres HA instance resource
+```
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: Postgres-HA-K8s-resource
+  namespace: default
+spec:
+  ndbRef: ndbserver
+  databaseInstance:
+    name: "PGHA_instance_DB"
+    description: "Postgres HA instance"
+    # defaultsConfigMapRef: pgha-defaults   # injects timezone, profiles, timeMachine from ConfigMap
+    type: postgres
+    credentialSecret: pgha-db-secret
+    size: 200
+    clusterName: "<PE cluster name (as shown in NDB UI)>" # This is often the Primary PE cluster
+    # ClusterID: "UUID of the PE cluster"
+    databaseNames:
+      - PGHA_instance
+    timeMachine:
+      name: "PGHA_TM"
+      description: "TM for Postgres HA"
+    haConfig:
+      patroniClusterName: "pgha-patroni" # any desired name
+      clusterName: "PGHA_cluster" # any desired name
+      enableSynchronousMode: true # default is false, This is or data replication across DB nodes
+      # provisionVirtualIP: true # default is false, keep this true if in case having stretched VLAN and need to privision VirtualIP
+      # writePort: 5000   # defaults to 5000 if omitted
+      # readPort: 5001    # defaults to 5001 if omitted
+      nodes:
+        - vmName: "PGHA_haproxy1" # any desired name
+          nodeType: "haproxy"
+          clusterName: "<PE cluster name (as shown in NDB UI)>"
+          # clusterId: "UUID of the PE cluster"
+        - vmName: "PGHA_haproxy2" # any desired name
+          nodeType: "haproxy"
+          clusterName: "<PE cluster name (as shown in NDB UI)>"
+          # clusterId: "UUID of the PE cluster"
+        - vmName: "PGHA_DB-1" # any desired name
+          nodeType: "database"
+          role: "Primary"
+          clusterName: "<PE cluster name (as shown in NDB UI)>"
+          # clusterId: "UUID of the PE cluster"
+        - vmName: "PGHA_DB-2" # any desired name
+          nodeType: "database"
+          role: "Secondary"
+          clusterName: "<PE cluster name (as shown in NDB UI)>"
+          # clusterId: "UUID of the PE cluster"
+        - vmName: "PGHA_DB-3" # any desired name
+          nodeType: "database"
+          role: "Secondary"
+          clusterName: "<PE cluster name (as shown in NDB UI)>"
+          # clusterId: "UUID of the PE cluster"
+
+```
+### Example Defaults configmap for HA instance
+```
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgha-defaults
+  namespace: default
+data:
+  timezone: "UTC"
+  # postgres-prefixed keys take priority over unprefixed keys for postgres databases
+  postgres.profiles.software.name: "POSTGRES_15.6_HA_ENABLED_ROCKY_LINUX_8_OOB"
+  postgres.profiles.compute.name: "DEFAULT_HA_COMPUTE"
+  postgres.profiles.network.name: "PGHA_VLAN"
+  postgres.profiles.dbParam.name: "DEFAULT_POSTGRES_HA_PARAMS"
+  postgres.timeMachine.sla: "DEFAULT_OOB_BRONZE_SLA"
+  postgres.timeMachine.dailySnapshotTime: "10:00:00"
+  postgres.timeMachine.snapshotsPerDay: "1"
+  postgres.timeMachine.logCatchUpFrequency: "120"
+  postgres.timeMachine.weeklySnapshotDay: "WEDNESDAY"
+  postgres.timeMachine.monthlySnapshotDay: "8"
+  postgres.timeMachine.quarterlySnapshotMonth: "Jan"
+```
 
 Create the Database resource:
 ```sh
