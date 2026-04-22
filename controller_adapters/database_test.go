@@ -484,7 +484,7 @@ func TestDatabase_IsPostgresHA(t *testing.T) {
 			db: Database{Database: v1alpha1.Database{Spec: v1alpha1.DatabaseSpec{
 				Instance: &v1alpha1.Instance{
 					Type:     common.DATABASE_TYPE_POSTGRES,
-					HAConfig: &v1alpha1.InstanceHAConfig{PatroniClusterName: "test"},
+					HAConfig: &v1alpha1.InstanceHAConfig{Postgres: &v1alpha1.PostgresHAConfig{PatroniClusterName: "test"}},
 				},
 			}}},
 			wantHA: true,
@@ -501,7 +501,7 @@ func TestDatabase_IsPostgresHA(t *testing.T) {
 			db: Database{Database: v1alpha1.Database{Spec: v1alpha1.DatabaseSpec{
 				Instance: &v1alpha1.Instance{
 					Type:     common.DATABASE_TYPE_MYSQL,
-					HAConfig: &v1alpha1.InstanceHAConfig{PatroniClusterName: "test"},
+					HAConfig: &v1alpha1.InstanceHAConfig{Postgres: &v1alpha1.PostgresHAConfig{PatroniClusterName: "test"}},
 				},
 			}}},
 			wantHA: false,
@@ -524,19 +524,24 @@ func TestDatabase_IsPostgresHA(t *testing.T) {
 }
 
 func TestDatabase_GetInstanceHAConfig(t *testing.T) {
+	// Nodes with defaults pre-applied, as the mutating webhook would do at admission time.
 	haNodes := []v1alpha1.InstanceHANode{
-		{VmName: "haproxy1", NodeType: "haproxy", ClusterId: "cluster-a"},
-		{VmName: "db1", NodeType: "database", Role: "Primary", ClusterId: "cluster-a"},
-		{VmName: "db2", NodeType: "database", Role: "Secondary", ClusterId: "cluster-b"},
+		{VmName: "haproxy1", NodeType: common.HA_NODE_TYPE_HAPROXY, ClusterId: "cluster-a", FailoverMode: common.HA_NODE_FAILOVER_MODE_AUTOMATIC},
+		{VmName: "db1", NodeType: common.HA_NODE_TYPE_DATABASE, Role: common.HA_NODE_ROLE_PRIMARY, ClusterId: "cluster-a", FailoverMode: common.HA_NODE_FAILOVER_MODE_AUTOMATIC},
+		{VmName: "db2", NodeType: common.HA_NODE_TYPE_DATABASE, Role: common.HA_NODE_ROLE_SECONDARY, ClusterId: "cluster-b", FailoverMode: common.HA_NODE_FAILOVER_MODE_AUTOMATIC},
 	}
 	db := Database{Database: v1alpha1.Database{Spec: v1alpha1.DatabaseSpec{
 		Instance: &v1alpha1.Instance{
 			Type: common.DATABASE_TYPE_POSTGRES,
 			HAConfig: &v1alpha1.InstanceHAConfig{
-				PatroniClusterName:    "patroni-test",
 				ClusterName:           "ha-cluster",
 				EnableSynchronousMode: true,
 				Nodes:                 haNodes,
+				Postgres: &v1alpha1.PostgresHAConfig{
+					PatroniClusterName: "patroni-test",
+					WritePort:          common.HA_PROXY_DEFAULT_WRITE_PORT,
+					ReadPort:           common.HA_PROXY_DEFAULT_READ_PORT,
+				},
 			},
 		},
 	}}}
@@ -551,14 +556,14 @@ func TestDatabase_GetInstanceHAConfig(t *testing.T) {
 
 	// HAProxy node
 	assert.Equal(t, ndb_api.HANodeConfig{
-		VmName: "haproxy1", NodeType: "haproxy", ClusterId: "cluster-a",
-		Role: "", FailoverMode: "Automatic",
+		VmName: "haproxy1", NodeType: common.HA_NODE_TYPE_HAPROXY, ClusterId: "cluster-a",
+		Role: "", FailoverMode: common.HA_NODE_FAILOVER_MODE_AUTOMATIC,
 	}, got.Nodes[0])
 
 	// Primary DB node
 	assert.Equal(t, ndb_api.HANodeConfig{
-		VmName: "db1", NodeType: "database", Role: "Primary", ClusterId: "cluster-a",
-		FailoverMode: "Automatic",
+		VmName: "db1", NodeType: common.HA_NODE_TYPE_DATABASE, Role: common.HA_NODE_ROLE_PRIMARY, ClusterId: "cluster-a",
+		FailoverMode: common.HA_NODE_FAILOVER_MODE_AUTOMATIC,
 	}, got.Nodes[1])
 
 	// Returns nil for non-HA

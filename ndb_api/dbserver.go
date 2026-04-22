@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -135,7 +136,7 @@ func GetHAProxyIPsForCluster(ctx context.Context, ndbClient ndb_client.NDBClient
 		}
 		for _, s := range allServers {
 			if s.DbserverClusterId == server.DbserverClusterId &&
-				strings.Contains(strings.ToLower(s.Name), "haproxy") {
+				strings.Contains(strings.ToLower(s.Name), common.HA_NODE_TYPE_HAPROXY) {
 				ips = append(ips, s.IPAddresses...)
 			}
 		}

@@ -230,29 +230,38 @@ spec:
                           - vmName
                           type: object
                         type: array
-                      patroniClusterName:
-                        description: Name used by Patroni for cluster coordination
-                        type: string
-                      provisionVirtualIP:
+                      postgres:
                         description: |-
-                          ProvisionVirtualIP controls whether NDB provisions a Virtual IP for the HAProxy layer.
-                          Set to true only when all HAProxy VMs are on the same Nutanix cluster (non-stretched VLAN).
-                          Defaults to false; use false when HAProxy nodes span multiple PE clusters.
-                        type: boolean
-                      readPort:
-                        default: 5001
-                        description: HAProxy read (replica) port. Defaults to 5001.
-                        format: int32
-                        type: integer
-                      writePort:
-                        default: 5000
-                        description: HAProxy write (primary) port. Defaults to 5000.
-                        format: int32
-                        type: integer
+                          Postgres contains Patroni and HAProxy settings specific to Postgres HA.
+                          Required when the database type is "postgres".
+                        properties:
+                          patroniClusterName:
+                            description: Name used by Patroni for DCS cluster coordination
+                            type: string
+                          provisionVirtualIP:
+                            description: |-
+                              ProvisionVirtualIP controls whether NDB provisions a Virtual IP for the HAProxy layer.
+                              Set to true only when all HAProxy VMs are on the same Nutanix cluster (non-stretched VLAN).
+                              Defaults to false; use false when HAProxy nodes span multiple PE clusters.
+                            type: boolean
+                          readPort:
+                            default: 5001
+                            description: HAProxy read (replica) port. Defaults to
+                              5001.
+                            format: int32
+                            type: integer
+                          writePort:
+                            default: 5000
+                            description: HAProxy write (primary) port. Defaults to
+                              5000.
+                            format: int32
+                            type: integer
+                        required:
+                        - patroniClusterName
+                        type: object
                     required:
                     - clusterName
                     - nodes
-                    - patroniClusterName
                     type: object
                   name:
                     description: Name of the database instance

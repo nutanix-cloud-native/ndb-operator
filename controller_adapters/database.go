@@ -253,33 +253,31 @@ func (d *Database) GetInstanceHAConfig() *ndb_api.HAConfig {
 	}
 	nodes := make([]ndb_api.HANodeConfig, len(src.Nodes))
 	for i, n := range src.Nodes {
-		fm := n.FailoverMode
-		if fm == "" {
-			fm = "Automatic"
-		}
 		nodes[i] = ndb_api.HANodeConfig{
 			VmName:       n.VmName,
 			NodeType:     n.NodeType,
 			Role:         n.Role,
 			ClusterId:    n.ClusterId,
-			FailoverMode: fm,
+			FailoverMode: n.FailoverMode,
 		}
 	}
-	writePort := src.WritePort
-	if writePort == 0 {
-		writePort = 5000
-	}
-	readPort := src.ReadPort
-	if readPort == 0 {
-		readPort = 5001
+
+	var patroniClusterName string
+	var writePort, readPort int32
+	var provisionVirtualIP bool
+	if pg := src.Postgres; pg != nil {
+		patroniClusterName = pg.PatroniClusterName
+		writePort = pg.WritePort
+		readPort = pg.ReadPort
+		provisionVirtualIP = pg.ProvisionVirtualIP
 	}
 	return &ndb_api.HAConfig{
-		PatroniClusterName:    src.PatroniClusterName,
+		PatroniClusterName:    patroniClusterName,
 		ClusterName:           src.ClusterName,
 		EnableSynchronousMode: src.EnableSynchronousMode,
 		WritePort:             writePort,
 		ReadPort:              readPort,
-		ProvisionVirtualIP:    src.ProvisionVirtualIP,
+		ProvisionVirtualIP:    provisionVirtualIP,
 		Nodes:                 nodes,
 	}
 }

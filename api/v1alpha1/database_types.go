@@ -112,17 +112,31 @@ type InstanceHANode struct {
 	FailoverMode string `json:"failoverMode,omitempty"`
 }
 
-// InstanceHAConfig holds the configuration for a Postgres HA instance.
+// InstanceHAConfig holds the HA provisioning configuration for a database instance.
+// Generic fields (ClusterName, EnableSynchronousMode, Nodes) apply to all HA engines.
+// Engine-specific settings are nested under the corresponding engine field (e.g. Postgres).
+// Exactly one engine field must be set, matching the instance.type.
 type InstanceHAConfig struct {
-	// Name used by Patroni for cluster coordination
-	// +kubebuilder:validation:Required
-	PatroniClusterName string `json:"patroniClusterName"`
 	// Display name for the NDB HA cluster
 	// +kubebuilder:validation:Required
 	ClusterName string `json:"clusterName"`
 	// Enable synchronous replication mode
 	// +optional
 	EnableSynchronousMode bool `json:"enableSynchronousMode,omitempty"`
+	// Node placement and role definitions for all VMs in the HA cluster
+	// +kubebuilder:validation:Required
+	Nodes []InstanceHANode `json:"nodes"`
+	// Postgres contains Patroni and HAProxy settings specific to Postgres HA.
+	// Required when the database type is "postgres".
+	// +optional
+	Postgres *PostgresHAConfig `json:"postgres,omitempty"`
+}
+
+// PostgresHAConfig holds Patroni and HAProxy settings specific to a Postgres HA instance.
+type PostgresHAConfig struct {
+	// Name used by Patroni for DCS cluster coordination
+	// +kubebuilder:validation:Required
+	PatroniClusterName string `json:"patroniClusterName"`
 	// HAProxy write (primary) port. Defaults to 5000.
 	// +optional
 	// +kubebuilder:default=5000
@@ -136,9 +150,6 @@ type InstanceHAConfig struct {
 	// Defaults to false; use false when HAProxy nodes span multiple PE clusters.
 	// +optional
 	ProvisionVirtualIP bool `json:"provisionVirtualIP,omitempty"`
-	// Node placement and role definitions for all VMs in the HA cluster
-	// +kubebuilder:validation:Required
-	Nodes []InstanceHANode `json:"nodes"`
 }
 
 // Database instance specific details

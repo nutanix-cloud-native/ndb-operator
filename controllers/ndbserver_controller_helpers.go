@@ -9,13 +9,13 @@ import (
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // Fetches all databases from the NDB API and converts them to
 // NDBServerDatabaseInfo type object (to be consumed by the NDBServer CR)
 func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBClient) (databases []ndbv1alpha1.NDBServerDatabaseInfo, err error) {
-	log := log.FromContext(ctx)
+	log := ctrllog.FromContext(ctx)
 	log.Info("Fetching and converting databases from NDB")
 	databasesResponse, err := ndb_api.GetAllDatabases(ctx, ndbClient)
 	if err != nil {
@@ -45,28 +45,24 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 				log.V(1).Info("DatabaseNode", "db", db.Name, "node", n.Name, "serverName", n.DbServer.Name, "ips", n.DbServer.IPAddresses, "properties", n.Properties)
 			}
 
-			// First try to find HAProxy nodes from the databaseNodes list (properties or name match).
-			// NDB does not include HAProxy nodes in databaseNodes[], so this will usually be empty for HA.
-			haProxyIPs := collectHAProxyIPs(db.DatabaseNodes)
-
-			// Fallback: only attempt the DPC lookup when there are multiple database nodes, which
-			// indicates an HA cluster (SI databases always have exactly one node). This avoids an
-			// extra GET /dbservers/{id} call on every sync cycle for every non-HA database.
-			if len(haProxyIPs) == 0 && len(db.DatabaseNodes) > 1 && db.DatabaseNodes[0].DatabaseServerId != "" {
-				clusterHAProxyIPs, err := ndb_api.GetHAProxyIPsForCluster(ctx, ndbClient, db.DatabaseNodes[0].DatabaseServerId)
-				if err != nil {
-					log.Error(err, "Failed to look up HAProxy IPs via dbservers API", "db", db.Name)
-				} else {
-					haProxyIPs = clusterHAProxyIPs
+			// Resolve connection IPs via an engine-specific HAIPResolver when available and
+			// the database has multiple nodes (single-node instances are always non-HA).
+			// Falls back to the first database node's IP for non-HA or unresolved cases.
+			dbType := ndb_api.GetDatabaseTypeFromEngine(db.Type)
+			resolver, isHA := haIPResolvers[dbType]
+			if isHA && len(db.DatabaseNodes) > 1 {
+				haIPs, resolveErr := resolver.ResolveIPs(ctx, ndbClient, db)
+				if resolveErr != nil {
+					log.Error(resolveErr, "Failed to resolve HA IPs", "db", db.Name)
+				} else if len(haIPs) > 0 {
+					databaseInfo.IPAddress = strings.Join(haIPs, ",")
+					log.Info("HA database: using engine-resolved IPs", "db", db.Name, "ips", databaseInfo.IPAddress)
 				}
 			}
 
-			if len(haProxyIPs) > 0 {
-				databaseInfo.IPAddress = strings.Join(haProxyIPs, ",")
-				log.Info("HA database: using HAProxy IPs", "db", db.Name, "ips", databaseInfo.IPAddress)
-			} else if len(db.DatabaseNodes[0].DbServer.IPAddresses) > 0 {
+			if databaseInfo.IPAddress == "" && len(db.DatabaseNodes[0].DbServer.IPAddresses) > 0 {
 				databaseInfo.IPAddress = db.DatabaseNodes[0].DbServer.IPAddresses[0]
-				log.Info("Non-HA or no HAProxy found: using first node IP", "db", db.Name, "ip", databaseInfo.IPAddress)
+				log.Info("Using first node IP", "db", db.Name, "ip", databaseInfo.IPAddress)
 			}
 		}
 		databases[i] = databaseInfo
@@ -75,41 +71,12 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 	return
 }
 
-// collectHAProxyIPs returns the IP addresses of all HAProxy nodes in the node list.
-// It first checks the node's properties for {name: "node_type", value: "haproxy"}.
-// If no properties match (NDB may not echo them back in GET responses), it falls
-// back to matching by server name containing "haproxy" (case-insensitive), which
-// is the naming convention NDB uses for HA load-balancer VMs.
-func collectHAProxyIPs(nodes []ndb_api.DatabaseNode) []string {
-	var ips []string
-	for _, node := range nodes {
-		isHAProxy := false
-
-		for _, prop := range node.Properties {
-			if prop.Name == "node_type" && prop.Value == "haproxy" {
-				isHAProxy = true
-				break
-			}
-		}
-
-		// Fallback: match by server name when NDB does not return node_type in properties.
-		if !isHAProxy && strings.Contains(strings.ToLower(node.DbServer.Name), "haproxy") {
-			isHAProxy = true
-		}
-
-		if isHAProxy && len(node.DbServer.IPAddresses) > 0 {
-			ips = append(ips, node.DbServer.IPAddresses[0])
-		}
-	}
-	return ips
-}
-
 // Returns the NDBServerStatus after performing the following steps:
 // 1. Checks and fetch data if dbcounter is zero (we fetch data only when counter hits 0).
 // 2. TODO: Filter and set the required list of databases (we only want to store the databases managed by the operator).
 // 3. Update the counter value.
 func getNDBServerStatus(ctx context.Context, status *ndbv1alpha1.NDBServerStatus, ndbClient *ndb_client.NDBClient) *ndbv1alpha1.NDBServerStatus {
-	log := log.FromContext(ctx)
+	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndbserver_controller_helpers.getNDBServerStatus")
 
 	dbCounter := status.ReconcileCounter.Database

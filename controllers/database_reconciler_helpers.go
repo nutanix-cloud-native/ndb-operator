@@ -300,85 +300,59 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 // Sets up a kubernetes networking service (Without selectors)
 // Then sets up an endpoint with the same name as the service
 // to map to an external endpoint (NDB database instance in our scenario).
+// Every database gets a primary -svc. HA databases additionally get engine-specific
+// extra services (e.g. -ro-svc for Postgres) via the HAConnectivityManager registry.
 func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *ndbv1alpha1.Database, req ctrl.Request) (err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.setupConnectivity")
 
-	// For HA instances: create two service+endpoint pairs — one for writes (primary)
-	// and one for reads (replicas). Both point to the HAProxy IPs on different ports.
+	// Determine the port for the primary -svc and whether an HA manager is needed.
+	// HA databases use the engine-specific write port; non-HA use the standard DB port.
+	primaryPort := ndb_api.GetDatabasePortByType(database.Status.Type)
+	var haManager HAConnectivityManager
 	if database.Spec.Instance != nil && database.Spec.Instance.HAConfig != nil {
-		haCfg := database.Spec.Instance.HAConfig
-		writePort := haCfg.WritePort
-		if writePort == 0 {
-			writePort = 5000
-		}
-		readPort := haCfg.ReadPort
-		if readPort == 0 {
-			readPort = 5001
-		}
-
-		writeName := database.Name + "-svc"
-		writeNN := types.NamespacedName{Name: writeName, Namespace: req.Namespace}
-		writeMeta := metav1.ObjectMeta{Name: writeName, Namespace: req.Namespace}
-		if err = r.setupService(ctx, database, writeNN, writeMeta, writePort); err != nil {
-			errStatement := "Failed to setup write service for HA database"
-			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED, "Error: %s.", errStatement, err.Error())
-			return
-		}
-		if err = r.setupEndpoints(ctx, database, writeNN, writeMeta, writePort); err != nil {
-			errStatement := "Failed to setup write endpoints for HA database"
-			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
-			return
-		}
-
-		readName := database.Name + "-ro-svc"
-		readNN := types.NamespacedName{Name: readName, Namespace: req.Namespace}
-		readMeta := metav1.ObjectMeta{Name: readName, Namespace: req.Namespace}
-		if err = r.setupService(ctx, database, readNN, readMeta, readPort); err != nil {
-			errStatement := "Failed to setup read-only service for HA database"
-			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED, "Error: %s.", errStatement, err.Error())
-			return
-		}
-		if err = r.setupEndpoints(ctx, database, readNN, readMeta, readPort); err != nil {
-			errStatement := "Failed to setup read-only endpoints for HA database"
-			log.Error(err, errStatement)
-			r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
-			return
-		}
-
-		log.Info("Returning from database_reconciler_helpers.setupConnectivity")
-		return
+		haManager = haConnectivityManagers[database.Spec.Instance.Type]
+		primaryPort = haManager.PrimaryPort(database.Spec.Instance.HAConfig)
 	}
 
-	// Non-HA: single service+endpoint on the standard database port.
-	// The 'service' and 'endpoint' objects must share the same name for the service to map to the endpoint.
-	commonMetadata := metav1.ObjectMeta{
-		Name:      database.Name + "-svc",
-		Namespace: req.Namespace,
-	}
-	commonNamespacedName := types.NamespacedName{
-		Name:      database.Name + "-svc",
-		Namespace: req.Namespace,
-	}
-	targetPort := ndb_api.GetDatabasePortByType(database.Status.Type)
-
-	err = r.setupService(ctx, database, commonNamespacedName, commonMetadata, targetPort)
-	if err != nil {
-		errStatement := "Failed to setup kubernetes service for database custom resource"
+	// All databases get a primary -svc.
+	svcName := database.Name + "-svc"
+	svcNN := types.NamespacedName{Name: svcName, Namespace: req.Namespace}
+	svcMeta := metav1.ObjectMeta{Name: svcName, Namespace: req.Namespace}
+	if err = r.setupService(ctx, database, svcNN, svcMeta, primaryPort); err != nil {
+		errStatement := "Failed to setup kubernetes service for database"
 		log.Error(err, errStatement)
 		r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED, "Error: %s.", errStatement, err.Error())
 		return
 	}
-	err = r.setupEndpoints(ctx, database, commonNamespacedName, commonMetadata, targetPort)
-	if err != nil {
-		errStatement := "Failed to setup kubernetes endpoints for database custom resource"
+	if err = r.setupEndpoints(ctx, database, svcNN, svcMeta, primaryPort); err != nil {
+		errStatement := "Failed to setup kubernetes endpoints for database"
 		log.Error(err, errStatement)
 		r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
 		return
 	}
+
+	// HA databases additionally get engine-specific extra services (e.g. -ro-svc for Postgres).
+	if haManager != nil {
+		for _, svcSpec := range haManager.AdditionalServices(database.Spec.Instance.HAConfig) {
+			name := database.Name + svcSpec.NameSuffix
+			nn := types.NamespacedName{Name: name, Namespace: req.Namespace}
+			meta := metav1.ObjectMeta{Name: name, Namespace: req.Namespace}
+			if err = r.setupService(ctx, database, nn, meta, svcSpec.Port); err != nil {
+				errStatement := "Failed to setup additional HA service for database"
+				log.Error(err, errStatement)
+				r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED, "Error: %s.", errStatement, err.Error())
+				return
+			}
+			if err = r.setupEndpoints(ctx, database, nn, meta, svcSpec.Port); err != nil {
+				errStatement := "Failed to setup additional HA endpoints for database"
+				log.Error(err, errStatement)
+				r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
+				return
+			}
+		}
+	}
+
 	log.Info("Returning from database_reconciler_helpers.setupConnectivity")
 	return
 }

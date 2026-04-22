@@ -121,9 +121,9 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 				VmName:      n.VmName,
 				NxClusterId: n.ClusterId,
 			}
-			if n.NodeType == "haproxy" {
+			if n.NodeType == common.HA_NODE_TYPE_HAPROXY {
 				node.Properties = []NodeProperty{
-					{Name: "node_type", Value: "haproxy"},
+					{Name: "node_type", Value: common.HA_NODE_TYPE_HAPROXY},
 				}
 			} else {
 				// database node
@@ -366,7 +366,7 @@ func (a *PostgresRequestAppender) appendProvisioningRequest(req *DatabaseProvisi
 			"proxy_read_port":             fmt.Sprintf("%d", haConfig.ReadPort),
 			"provision_virtual_ip":        provisionVIP,
 			"deploy_haproxy":              "true",
-			"failover_mode":               "Automatic",
+			"failover_mode":               common.HA_NODE_FAILOVER_MODE_AUTOMATIC,
 			"enable_synchronous_mode":     syncMode,
 			"patroni_cluster_name":        haConfig.PatroniClusterName,
 			"cluster_name":                haConfig.ClusterName,
