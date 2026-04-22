@@ -250,6 +250,7 @@ func (a *OracleRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, 
 		"vm_name":              database.GetName(),
 		"dbserver_description": "DB Server VM for " + database.GetName(),
 		"db_password":          dbPassword,
+		"oracle_sid":           database.GetName(),
 	}
 
 	// Appending/overwriting database actionArguments to actionArguments
