@@ -37,6 +37,50 @@ import (
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// updateStatusWithRetry applies applyFn to database and persists the status subresource,
+// retrying exactly once on failure. On the retry it re-fetches the latest object first
+// (resolving the 409 Conflict / stale resourceVersion that causes most update failures),
+// then calls applyFn again before the second attempt.
+// applyFn must be idempotent — it will be called before each attempt.
+// If both attempts fail, criticalMsg is logged as an error before returning.
+func (r *DatabaseReconciler) updateStatusWithRetry(ctx context.Context, req ctrl.Request, database *ndbv1alpha1.Database, applyFn func(), criticalMsg string) error {
+	log := ctrllog.FromContext(ctx)
+	applyFn()
+	if err := r.Status().Update(ctx, database); err == nil {
+		return nil
+	}
+	log.Info("Status update conflict, re-fetching and retrying once")
+	if fetchErr := r.Get(ctx, req.NamespacedName, database); fetchErr != nil {
+		return fetchErr
+	}
+	applyFn()
+	if retryErr := r.Status().Update(ctx, database); retryErr != nil {
+		log.Error(retryErr, criticalMsg)
+		return retryErr
+	}
+	return nil
+}
+
+// persistHADeletionOpIds persists the HA DPC deletion operation IDs into status.
+// Uses updateStatusWithRetry because these IDs must survive across reconcile cycles;
+// losing them would cause the next reconcile to re-fire the destructive DELETE /dpcs call.
+func (r *DatabaseReconciler) persistHADeletionOpIds(ctx context.Context, req ctrl.Request, database *ndbv1alpha1.Database, opIds []string) error {
+	return r.updateStatusWithRetry(ctx, req, database,
+		func() { database.Status.DBServerDeletionOperationIds = opIds },
+		"CRITICAL: HA DPC deletion was fired but operation IDs could not be persisted after retry; next reconcile may re-fire the delete",
+	)
+}
+
+// persistDeregistrationOpId persists the deregistration operation ID into status.
+// Uses updateStatusWithRetry because losing the ID would cause the next reconcile to
+// re-fire the deregistration call against an already-deregistering database instance.
+func (r *DatabaseReconciler) persistDeregistrationOpId(ctx context.Context, req ctrl.Request, database *ndbv1alpha1.Database, opId string) error {
+	return r.updateStatusWithRetry(ctx, req, database,
+		func() { database.Status.DeregistrationOperationId = opId },
+		"CRITICAL: deregistration was triggered but the operation ID could not be persisted after retry; next reconcile may re-fire deregistration",
+	)
+}
+
 func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request, finalizer string, database *ndbv1alpha1.Database) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Fetching the most recent version of the database CR")
@@ -68,7 +112,7 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 //
 //	a. Database instance
 //	b. Database server
-func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient) (ctrl.Result, error) {
+func (r *DatabaseReconciler) handleDelete(ctx context.Context, req ctrl.Request, database *ndbv1alpha1.Database, ndbClient *ndb_client.NDBClient) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Database CR is being deleted")
 	instanceManager := getInstanceManager(*database)
@@ -83,9 +127,7 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 				// Not logging here, already done in the deregister function
 				return requeueOnErr(err)
 			}
-			database.Status.DeregistrationOperationId = deregistrationOp.OperationId
-			if err := r.Status().Update(ctx, database); err != nil {
-				log.Error(err, "An error occurred while updating the CR.")
+			if err := r.persistDeregistrationOpId(ctx, req, database, deregistrationOp.OperationId); err != nil {
 				return requeueOnErr(err)
 			}
 		} else {
@@ -120,14 +162,18 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, database *ndbv1al
 			// For HA databases: fire a single DELETE /dpcs/{clusterId} call the first time,
 			// then poll the returned operation ID until complete before removing the finalizer.
 			if len(database.Status.DBServerDeletionOperationIds) == 0 {
-				// Start phase: fire the DPC deletion and store the operation ID.
+				// Start phase: fire the DPC deletion and store the operation IDs.
+				// IMPORTANT: opIds must be persisted before this reconcile exits.
+				// If they are lost, the next reconcile will re-fire the DELETE against an
+				// already-deleting DPC. persistHADeletionOpIds retries once on conflict before
+				// giving up, making it robust against the common 409-Conflict case.
 				opIds, err := ndb_api.DeprovisionHADatabaseServers(ctx, ndbClient, database.Status.DatabaseServerId)
 				if err != nil {
 					log.Error(err, "Failed to deprovision one or more HA database servers")
 					r.recorder.Eventf(database, "Warning", EVENT_DEREGISTRATION_FAILED, "Error: %s", err.Error())
+					return requeueOnErr(err)
 				}
-				database.Status.DBServerDeletionOperationIds = opIds
-				if err := r.Status().Update(ctx, database); err != nil {
+				if err := r.persistHADeletionOpIds(ctx, req, database, opIds); err != nil {
 					return requeueOnErr(err)
 				}
 				return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
@@ -285,7 +331,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			r.recorder.Event(database, "Warning", EVENT_WAITING_FOR_IP_ADDRESS, message)
 		}
 	case common.DATABASE_CR_STATUS_DELETING:
-		return r.handleDelete(ctx, database, ndbClient)
+		return r.handleDelete(ctx, req, database, ndbClient)
 	case common.DATABASE_CR_STATUS_NOT_FOUND:
 		r.recorder.Eventf(database, "Warning", EVENT_EXTERNAL_DELETE, "Error: Resource not found on NDB")
 	case common.DATABASE_CR_STATUS_CREATION_ERROR:

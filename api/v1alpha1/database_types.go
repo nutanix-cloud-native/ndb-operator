@@ -175,7 +175,7 @@ type Instance struct {
 	// default UTC
 	TimeZone string `json:"timezone"`
 	// +optional
-	// Name(s) of the database(s) to be provisiond inside the database instance
+	// Name(s) of the database(s) to be provisioned inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
 	DatabaseNames []string `json:"databaseNames"`
 	// Size of the database instance, minimum 10 (GBs)

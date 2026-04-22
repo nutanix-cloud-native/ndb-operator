@@ -29,7 +29,7 @@ import (
 
 // FetchConfigMapDefaults fetches a ConfigMap and returns its data as a map.
 // Used by the defaulter webhook to inject values before validation.
-func FetchConfigMapDefaults(ctx context.Context, k8sClient client.Client, namespace, configMapName string) (map[string]string, error) {
+func FetchConfigMapDefaults(ctx context.Context, k8sClient client.Reader, namespace, configMapName string) (map[string]string, error) {
 	log := logf.FromContext(ctx)
 	log.Info("Fetching defaults ConfigMap", "namespace", namespace, "configMapName", configMapName)
 

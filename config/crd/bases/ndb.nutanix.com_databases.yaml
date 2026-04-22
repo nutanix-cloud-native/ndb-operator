@@ -172,7 +172,7 @@ spec:
                     type: string
                   databaseNames:
                     description: |-
-                      Name(s) of the database(s) to be provisiond inside the database instance
+                      Name(s) of the database(s) to be provisioned inside the database instance
                       default [ "database_one", "database_two", "database_three" ]
                     items:
                       type: string
