@@ -243,14 +243,17 @@ func (a *OracleRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, 
 	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 
-	// Default action arguments
+	// Default action arguments - Oracle requires SID and related identifiers
 	actionArguments := map[string]string{
 		/* Non-Configurable */
 		/* Configurable */
 		"vm_name":              database.GetName(),
 		"dbserver_description": "DB Server VM for " + database.GetName(),
 		"db_password":          dbPassword,
+		// Oracle-specific identifiers (all may be required for clones)
 		"oracle_sid":           database.GetName(),
+		"global_database_name": database.GetName(),
+		"db_unique_name":       database.GetName(),
 	}
 
 	// Appending/overwriting database actionArguments to actionArguments

@@ -18,12 +18,9 @@ package ndb_api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
-	"time"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
@@ -52,50 +49,6 @@ func ResolveProfiles(ctx context.Context, ndb_client ndb_client.NDBClientHTTPInt
 		return p.EngineType == expectedEngine
 	})
 
-	// #region agent log - H8: Check profile filtering
-	func() {
-		f, _ := os.OpenFile("/Users/sasikanth.masini/ndb-operator/.cursor/debug-8a3458.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if f != nil {
-			defer f.Close()
-			softwareProfiles := []map[string]string{}
-			for _, p := range activeProfiles {
-				if p.Type == common.PROFILE_TYPE_SOFTWARE {
-					softwareProfiles = append(softwareProfiles, map[string]string{
-						"id": p.Id, "name": p.Name, "engineType": p.EngineType, "status": p.Status,
-					})
-				}
-			}
-			filteredProfiles := []map[string]string{}
-			for _, p := range dbEngineSpecific {
-				if p.Type == common.PROFILE_TYPE_SOFTWARE {
-					filteredProfiles = append(filteredProfiles, map[string]string{
-						"id": p.Id, "name": p.Name, "engineType": p.EngineType,
-					})
-				}
-			}
-			payload := map[string]interface{}{
-				"sessionId": "8a3458",
-				"location":  "profile_helpers.go:profileFiltering",
-				"message":   "Profile filtering for database type",
-				"data": map[string]interface{}{
-					"databaseType":             databaseType,
-					"expectedEngineType":       expectedEngine,
-					"totalActiveProfiles":      len(activeProfiles),
-					"filteredProfiles":         len(dbEngineSpecific),
-					"allSoftwareProfiles":      softwareProfiles,
-					"filteredSoftwareProfiles": filteredProfiles,
-				},
-				"timestamp":    time.Now().UnixMilli(),
-				"hypothesisId": "H8",
-			}
-			if b, e := json.Marshal(payload); e == nil {
-				f.Write(b)
-				f.WriteString("\n")
-			}
-		}
-	}()
-	// #endregion
-
 	computeProfileResolver := profileResolvers[common.PROFILE_TYPE_COMPUTE]
 	softwareProfileResolver := profileResolvers[common.PROFILE_TYPE_SOFTWARE]
 	networkProfileResolver := profileResolvers[common.PROFILE_TYPE_NETWORK]
@@ -112,19 +65,6 @@ func ResolveProfiles(ctx context.Context, ndb_client ndb_client.NDBClientHTTPInt
 	// Software Profile
 	// validation of software profile for closed-source db engines
 	isClosedSourceEngine := (databaseType == common.DATABASE_TYPE_ORACLE) || (databaseType == common.DATABASE_TYPE_MSSQL)
-	// #region agent log
-	func() {
-		f, _ := os.OpenFile("/Users/sasikanth.masini/ndb-operator/.cursor/debug-8a3458.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if f != nil {
-			defer f.Close()
-			payload := map[string]interface{}{"sessionId": "8a3458", "location": "profile_helpers.go:softwareProfileCheck", "message": "Software profile validation", "data": map[string]interface{}{"databaseType": databaseType, "isClosedSource": isClosedSourceEngine, "profileId": softwareProfileResolver.GetId(), "profileName": softwareProfileResolver.GetName()}, "timestamp": time.Now().UnixMilli(), "hypothesisId": "H2"}
-			if b, e := json.Marshal(payload); e == nil {
-				f.Write(b)
-				f.WriteString("\n")
-			}
-		}
-	}()
-	// #endregion
 	if isClosedSourceEngine {
 		if softwareProfileResolver.GetId() == "" && softwareProfileResolver.GetName() == "" {
 			log.Error(errors.New("software profile not provided"), "Provide software profile info", "dbType", databaseType)
@@ -135,19 +75,6 @@ func ResolveProfiles(ctx context.Context, ndb_client ndb_client.NDBClientHTTPInt
 
 	software, err := softwareProfileResolver.Resolve(ctx, dbEngineSpecific, SoftwareOOBProfileResolverForSingleInstance)
 	if err != nil {
-		// #region agent log
-		func() {
-			f, _ := os.OpenFile("/Users/sasikanth.masini/ndb-operator/.cursor/debug-8a3458.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if f != nil {
-				defer f.Close()
-				payload := map[string]interface{}{"sessionId": "8a3458", "location": "profile_helpers.go:softwareProfileError", "message": "Software profile resolution failed", "data": map[string]interface{}{"err": err.Error(), "profileName": softwareProfileResolver.GetName()}, "timestamp": time.Now().UnixMilli(), "hypothesisId": "H2"}
-				if b, e := json.Marshal(payload); e == nil {
-					f.Write(b)
-					f.WriteString("\n")
-				}
-			}
-		}()
-		// #endregion
 		log.Error(err, "Software Profile could not be resolved or is not in READY state", "Input Profile", softwareProfileResolver)
 		return
 	}
