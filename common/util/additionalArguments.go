@@ -76,7 +76,17 @@ func GetAllowedAdditionalArgumentsForClone(dbType string) (map[string]bool, erro
 		}, nil
 	case common.DATABASE_TYPE_ORACLE:
 		return map[string]bool{
-			/* No default */
+			/* Has defaults (added programmatically in clone_helpers.go) */
+			"vm_name":                   true, // Action argument
+			"dbserver_description":      true, // Action argument
+			"db_password":               true, // Action argument
+			"new_db_sid":                true, // Action argument - REQUIRED for Oracle clones (not oracle_sid!)
+			"listener_port":             true, // Action argument
+			"enable_ha":                 true, // Action argument
+			"scan_port":                 true, // Action argument
+			"delete_logs_post_recovery": true, // Action argument
+			"asm_driver":                true, // Action argument
+			/* No default - LCM configs */
 			"expireInDays":        false, // In lcmConfig.databaseLCMConfig.expiryDetails
 			"expiryDateTimezone":  false, // In lcmConfig.databaseLCMConfig.expiryDetails
 			"deleteDatabase":      false, // In lcmConfig.databaseLCMConfig.expiryDetails
