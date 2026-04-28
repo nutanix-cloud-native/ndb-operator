@@ -44,9 +44,8 @@ func ResolveProfiles(ctx context.Context, ndb_client ndb_client.NDBClientHTTPInt
 	// profiles need to be in the ready state
 	activeProfiles := util.Filter(allProfiles, func(p ProfileResponse) bool { return p.Status == common.PROFILE_STATUS_READY })
 
-	expectedEngine := GetDatabaseEngineName(databaseType)
 	dbEngineSpecific := util.Filter(activeProfiles, func(p ProfileResponse) bool {
-		return p.EngineType == expectedEngine
+		return p.EngineType == GetDatabaseEngineName(databaseType)
 	})
 
 	computeProfileResolver := profileResolvers[common.PROFILE_TYPE_COMPUTE]
