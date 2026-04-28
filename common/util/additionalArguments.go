@@ -134,7 +134,27 @@ func GetAllowedAdditionalArgumentsForDatabase(dbType string) (map[string]bool, e
 		}, nil
 	case common.DATABASE_TYPE_ORACLE:
 		return map[string]bool{
-			"listener_port": true,
+			/* Has defaults - users can override these */
+			"listener_port":                 true, // Action argument
+			"dbserver_name":                 true, // Action argument
+			"oracle_sid":                    true, // Action argument
+			"global_database_name":          true, // Action argument
+			"db_unique_name":                true, // Action argument
+			"sys_password":                  true, // Action argument
+			"system_password":               true, // Action argument
+			"db_character_set":              true, // Action argument
+			"national_character_set":        true, // Action argument
+			"database_fra_size":             true, // Action argument
+			"enable_cdb":                    true, // Action argument - Container Database
+			"enable_tde":                    true, // Action argument - Transparent Data Encryption
+			"enable_ha":                     true, // Action argument - High Availability
+			"auto_tune_staging_drive":       true, // Action argument
+			"working_dir":                   true, // Action argument
+			"delete_logs_older_than":        true, // Action argument
+			"ensure_vm_host_distribution":   true, // Action argument
+			"pre_create_script":             true, // Action argument
+			"post_create_script":            true, // Action argument
+			"dbserver_description":          true, // Action argument (from base, but Oracle can override)
 		}, nil
 	default:
 		return map[string]bool{}, fmt.Errorf("could not find allowed additional arguments for database of type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES)
