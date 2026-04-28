@@ -247,7 +247,7 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 	if instance.HAConfig != nil {
 		haPath := instancePath.Child("haConfig")
 
-		validator, supported := getHAValidator(instance.Type)
+		haValidator, supported := getHAValidator(instance.Type)
 		if !supported {
 			*errors = append(*errors, field.Invalid(haPath, instance.HAConfig,
 				"haConfig is not supported for database type "+instance.Type))
@@ -282,7 +282,7 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 			}
 
 			// Engine-specific checks: nodeType values, role constraints, engine config block
-			validator.Validate(instance.HAConfig, haPath, errors)
+			haValidator.Validate(instance.HAConfig, haPath, errors)
 		}
 	}
 

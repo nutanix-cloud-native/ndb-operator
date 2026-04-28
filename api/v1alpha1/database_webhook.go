@@ -51,9 +51,12 @@ func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	// In controller-runtime v0.21.0+, you must explicitly set the defaulter and validator
 	// The For() method alone does not automatically detect these interfaces
 	// Use GetAPIReader (direct, non-cached client) instead of GetClient (cache-backed).
-	// The webhook only reads a ConfigMap on each admission event, so caching adds no value.
-	// A cache-backed client would set up a cluster-wide ConfigMap watch, which requires the
-	// 'watch' verb; GetAPIReader only needs 'get', which we already have.
+	// The webhook reads a ConfigMap only on admission events, not in a hot reconcile loop,
+	// so a local cache adds no value — we always want the current value at admission time.
+	// A cache-backed client would open a persistent cluster-wide Watch on ConfigMaps for the
+	// entire operator lifetime, requiring the 'watch' RBAC verb and consuming a continuous
+	// server-side connection. GetAPIReader issues a single GET per admission call instead,
+	// keeping the permission surface minimal and avoiding unnecessary background load.
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
 		WithDefaulter(&DatabaseCustomDefaulter{Client: mgr.GetAPIReader()}).

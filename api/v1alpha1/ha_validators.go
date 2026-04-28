@@ -47,6 +47,11 @@ func getHAValidator(dbType string) (HAParamsValidator, bool) {
 // +kubebuilder:object:generate=false
 type PostgresHAParamsValidator struct{}
 
+// Validate checks Postgres-specific HA constraints. Fields validated:
+//   - haConfig.postgres         — must be present (required)
+//   - haConfig.postgres.patroniClusterName — must be non-empty
+//   - haConfig.nodes[*].nodeType — must be "haproxy" or "database"
+//   - haConfig.nodes            — exactly one database node must have role "Primary"
 func (v *PostgresHAParamsValidator) Validate(haConfig *InstanceHAConfig, haPath *field.Path, errors *field.ErrorList) {
 	pgPath := haPath.Child("postgres")
 

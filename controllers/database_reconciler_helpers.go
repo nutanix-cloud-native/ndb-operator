@@ -43,14 +43,17 @@ import (
 // then calls applyFn again before the second attempt.
 // applyFn must be idempotent — it will be called before each attempt.
 // If both attempts fail, criticalMsg is logged as an error before returning.
-func (r *DatabaseReconciler) updateStatusWithRetry(ctx context.Context, req ctrl.Request, database *ndbv1alpha1.Database, applyFn func(), criticalMsg string) error {
+func (r *DatabaseReconciler) updateStatusWithRetry(ctx context.Context, database *ndbv1alpha1.Database, applyFn func(), criticalMsg string) error {
 	log := ctrllog.FromContext(ctx)
 	applyFn()
 	if err := r.Status().Update(ctx, database); err == nil {
 		return nil
 	}
 	log.Info("Status update conflict, re-fetching and retrying once")
-	if fetchErr := r.Get(ctx, req.NamespacedName, database); fetchErr != nil {
+	// r.Get overwrites *database in place with the latest version from the API server,
+	// giving us a fresh resourceVersion but also discarding the changes applyFn made above.
+	// applyFn must be called again to re-apply those changes on top of the refreshed object.
+	if fetchErr := r.Get(ctx, types.NamespacedName{Name: database.Name, Namespace: database.Namespace}, database); fetchErr != nil {
 		return fetchErr
 	}
 	applyFn()
@@ -64,8 +67,8 @@ func (r *DatabaseReconciler) updateStatusWithRetry(ctx context.Context, req ctrl
 // persistHADeletionOpIds persists the HA DPC deletion operation IDs into status.
 // Uses updateStatusWithRetry because these IDs must survive across reconcile cycles;
 // losing them would cause the next reconcile to re-fire the destructive DELETE /dpcs call.
-func (r *DatabaseReconciler) persistHADeletionOpIds(ctx context.Context, req ctrl.Request, database *ndbv1alpha1.Database, opIds []string) error {
-	return r.updateStatusWithRetry(ctx, req, database,
+func (r *DatabaseReconciler) persistHADeletionOpIds(ctx context.Context, database *ndbv1alpha1.Database, opIds []string) error {
+	return r.updateStatusWithRetry(ctx, database,
 		func() { database.Status.DBServerDeletionOperationIds = opIds },
 		"CRITICAL: HA DPC deletion was fired but operation IDs could not be persisted after retry; next reconcile may re-fire the delete",
 	)
@@ -74,8 +77,8 @@ func (r *DatabaseReconciler) persistHADeletionOpIds(ctx context.Context, req ctr
 // persistDeregistrationOpId persists the deregistration operation ID into status.
 // Uses updateStatusWithRetry because losing the ID would cause the next reconcile to
 // re-fire the deregistration call against an already-deregistering database instance.
-func (r *DatabaseReconciler) persistDeregistrationOpId(ctx context.Context, req ctrl.Request, database *ndbv1alpha1.Database, opId string) error {
-	return r.updateStatusWithRetry(ctx, req, database,
+func (r *DatabaseReconciler) persistDeregistrationOpId(ctx context.Context, database *ndbv1alpha1.Database, opId string) error {
+	return r.updateStatusWithRetry(ctx, database,
 		func() { database.Status.DeregistrationOperationId = opId },
 		"CRITICAL: deregistration was triggered but the operation ID could not be persisted after retry; next reconcile may re-fire deregistration",
 	)
@@ -127,7 +130,7 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, req ctrl.Request,
 				// Not logging here, already done in the deregister function
 				return requeueOnErr(err)
 			}
-			if err := r.persistDeregistrationOpId(ctx, req, database, deregistrationOp.OperationId); err != nil {
+			if err := r.persistDeregistrationOpId(ctx, database, deregistrationOp.OperationId); err != nil {
 				return requeueOnErr(err)
 			}
 		} else {
@@ -156,56 +159,15 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, req ctrl.Request,
 		}
 
 	} else if controllerutil.ContainsFinalizer(database, common.FINALIZER_DATABASE_SERVER) {
-		isHA := database.Spec.Instance != nil && database.Spec.Instance.HAConfig != nil
-
-		if isHA {
-			// For HA databases: fire a single DELETE /dpcs/{clusterId} call the first time,
-			// then poll the returned operation ID until complete before removing the finalizer.
-			if len(database.Status.DBServerDeletionOperationIds) == 0 {
-				// Start phase: fire the DPC deletion and store the operation IDs.
-				// IMPORTANT: opIds must be persisted before this reconcile exits.
-				// If they are lost, the next reconcile will re-fire the DELETE against an
-				// already-deleting DPC. persistHADeletionOpIds retries once on conflict before
-				// giving up, making it robust against the common 409-Conflict case.
-				opIds, err := ndb_api.DeprovisionHADatabaseServers(ctx, ndbClient, database.Status.DatabaseServerId)
-				if err != nil {
-					log.Error(err, "Failed to deprovision one or more HA database servers")
-					r.recorder.Eventf(database, "Warning", EVENT_DEREGISTRATION_FAILED, "Error: %s", err.Error())
-					return requeueOnErr(err)
-				}
-				if err := r.persistHADeletionOpIds(ctx, req, database, opIds); err != nil {
-					return requeueOnErr(err)
-				}
-				return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
-			}
-
-			// Poll phase: check every operation; requeue until all are done.
-			allDone := true
-			for _, opId := range database.Status.DBServerDeletionOperationIds {
-				op, err := ndb_api.GetOperationById(ctx, ndbClient, opId)
-				if err != nil {
-					log.Error(err, "Failed to fetch HA server deletion operation", "operationId", opId)
-					allDone = false
-					continue
-				}
-				switch ndb_api.GetOperationStatus(op) {
-				case ndb_api.OPERATION_STATUS_PASSED:
-					log.Info("HA server deletion operation completed", "operationId", opId)
-				case ndb_api.OPERATION_STATUS_FAILED:
-					log.Info("HA server deletion operation failed", "operationId", opId, "message", op.Message)
-				default:
-					allDone = false
-				}
-			}
-			if !allDone {
-				return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
-			}
-		} else {
-			// Non-HA: fire-and-forget, unchanged behaviour.
-			instanceManager.deleteDatabaseServer(ctx, r, ndbClient, database)
+		done, err := instanceManager.deleteDatabaseServer(ctx, r, ndbClient, database)
+		if err != nil {
+			return requeueOnErr(err)
+		}
+		if !done {
+			return requeueWithTimeout(common.DATABASE_RECONCILE_INTERVAL_SECONDS)
 		}
 
-		// All server deletions complete (or non-HA fire-and-forget done): remove finalizer.
+		// deleteDatabaseServer signalled done: remove finalizer.
 		log.Info("Removing Finalizer " + common.FINALIZER_DATABASE_SERVER)
 		controllerutil.RemoveFinalizer(database, common.FINALIZER_DATABASE_SERVER)
 		if err := r.Update(ctx, database); err != nil {
@@ -321,7 +283,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			}
 		}
 		if databaseStatus.IPAddress != "" {
-			r.setupConnectivity(ctx, database, req)
+			r.setupConnectivity(ctx, database)
 		} else {
 			// The database is in "READY" state on NDB, but the API responses sometimes do not have
 			// an IP address in the response right after reaching the READY state. We only setup connectivity
@@ -348,9 +310,11 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 // to map to an external endpoint (NDB database instance in our scenario).
 // Every database gets a primary -svc. HA databases additionally get engine-specific
 // extra services (e.g. -ro-svc for Postgres) via the HAConnectivityManager registry.
-func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *ndbv1alpha1.Database, req ctrl.Request) (err error) {
+func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *ndbv1alpha1.Database) (err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.setupConnectivity")
+
+	ns := database.Namespace
 
 	// Determine the port for the primary -svc and whether an HA manager is needed.
 	// HA databases use the engine-specific write port; non-HA use the standard DB port.
@@ -362,38 +326,14 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 	}
 
 	// All databases get a primary -svc.
-	svcName := database.Name + "-svc"
-	svcNN := types.NamespacedName{Name: svcName, Namespace: req.Namespace}
-	svcMeta := metav1.ObjectMeta{Name: svcName, Namespace: req.Namespace}
-	if err = r.setupService(ctx, database, svcNN, svcMeta, primaryPort); err != nil {
-		errStatement := "Failed to setup kubernetes service for database"
-		log.Error(err, errStatement)
-		r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED, "Error: %s.", errStatement, err.Error())
-		return
-	}
-	if err = r.setupEndpoints(ctx, database, svcNN, svcMeta, primaryPort); err != nil {
-		errStatement := "Failed to setup kubernetes endpoints for database"
-		log.Error(err, errStatement)
-		r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
+	if err = r.setupServiceAndEndpoints(ctx, database, database.Name+"-svc", ns, primaryPort); err != nil {
 		return
 	}
 
 	// HA databases additionally get engine-specific extra services (e.g. -ro-svc for Postgres).
 	if haManager != nil {
 		for _, svcSpec := range haManager.AdditionalServices(database.Spec.Instance.HAConfig) {
-			name := database.Name + svcSpec.NameSuffix
-			nn := types.NamespacedName{Name: name, Namespace: req.Namespace}
-			meta := metav1.ObjectMeta{Name: name, Namespace: req.Namespace}
-			if err = r.setupService(ctx, database, nn, meta, svcSpec.Port); err != nil {
-				errStatement := "Failed to setup additional HA service for database"
-				log.Error(err, errStatement)
-				r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED, "Error: %s.", errStatement, err.Error())
-				return
-			}
-			if err = r.setupEndpoints(ctx, database, nn, meta, svcSpec.Port); err != nil {
-				errStatement := "Failed to setup additional HA endpoints for database"
-				log.Error(err, errStatement)
-				r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
+			if err = r.setupServiceAndEndpoints(ctx, database, database.Name+svcSpec.NameSuffix, ns, svcSpec.Port); err != nil {
 				return
 			}
 		}
@@ -401,6 +341,29 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 
 	log.Info("Returning from database_reconciler_helpers.setupConnectivity")
 	return
+}
+
+// setupServiceAndEndpoints creates (or reconciles) a single Kubernetes Service and its
+// matching Endpoints object for the given database. It is the unit of work called for both
+// the primary -svc and each additional HA service (e.g. -ro-svc).
+func (r *DatabaseReconciler) setupServiceAndEndpoints(ctx context.Context, database *ndbv1alpha1.Database, name, namespace string, port int32) error {
+	log := ctrllog.FromContext(ctx)
+	nn := types.NamespacedName{Name: name, Namespace: namespace}
+	meta := metav1.ObjectMeta{Name: name, Namespace: namespace}
+
+	if err := r.setupService(ctx, database, nn, meta, port); err != nil {
+		errStatement := "Failed to setup kubernetes service for database"
+		log.Error(err, errStatement)
+		r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
+		return err
+	}
+	if err := r.setupEndpoints(ctx, database, nn, meta, port); err != nil {
+		errStatement := "Failed to setup kubernetes endpoints for database"
+		log.Error(err, errStatement)
+		r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
+		return err
+	}
+	return nil
 }
 
 // Checks and creates a new service (without label selectors) if it does not exists
