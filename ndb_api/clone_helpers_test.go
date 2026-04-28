@@ -182,30 +182,30 @@ func TestAppendLCMConfigDetailsToRequest(t *testing.T) {
 
 func TestOracleRequestAppender_appendCloningRequest(t *testing.T) {
 	appender := &OracleRequestAppender{}
-	
+
 	t.Run("Oracle clone request has correct default action arguments", func(t *testing.T) {
 		mockDatabase := &MockDatabaseInterface{}
 		mockDatabase.On("GetName").Return("oraclone1")
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
-		
+
 		req := &DatabaseCloneRequest{}
 		reqData := map[string]interface{}{
 			"password":       "TestPassword123",
 			"ssh_public_key": "ssh-rsa test-key",
 		}
-		
+
 		result, err := appender.appendCloningRequest(req, mockDatabase, reqData)
-		
+
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		assert.Equal(t, "ssh-rsa test-key", result.SSHPublicKey)
-		
+
 		// Check that required Oracle clone action arguments are present
 		actionArgsMap := make(map[string]string)
 		for _, arg := range result.ActionArguments {
 			actionArgsMap[arg.Name] = arg.Value
 		}
-		
+
 		// Verify Oracle-specific clone parameters
 		assert.Equal(t, "oraclone1", actionArgsMap["vm_name"])
 		assert.Equal(t, "DB Server VM for oraclone1", actionArgsMap["dbserver_description"])
@@ -217,7 +217,7 @@ func TestOracleRequestAppender_appendCloningRequest(t *testing.T) {
 		assert.Equal(t, "false", actionArgsMap["delete_logs_post_recovery"])
 		assert.Equal(t, "None", actionArgsMap["asm_driver"])
 	})
-	
+
 	t.Run("Oracle clone request allows overriding defaults via additionalArguments", func(t *testing.T) {
 		mockDatabase := &MockDatabaseInterface{}
 		mockDatabase.On("GetName").Return("oraclone2")
@@ -225,30 +225,30 @@ func TestOracleRequestAppender_appendCloningRequest(t *testing.T) {
 			"listener_port": "1522",
 			"enable_ha":     "true",
 		})
-		
+
 		req := &DatabaseCloneRequest{}
 		reqData := map[string]interface{}{
 			"password":       "Password456",
 			"ssh_public_key": "ssh-rsa another-key",
 		}
-		
+
 		result, err := appender.appendCloningRequest(req, mockDatabase, reqData)
-		
+
 		require.NoError(t, err)
 		require.NotNil(t, result)
-		
+
 		actionArgsMap := make(map[string]string)
 		for _, arg := range result.ActionArguments {
 			actionArgsMap[arg.Name] = arg.Value
 		}
-		
+
 		// Verify overridden values
 		assert.Equal(t, "1522", actionArgsMap["listener_port"])
 		assert.Equal(t, "true", actionArgsMap["enable_ha"])
 		// Verify defaults remain
 		assert.Equal(t, "oraclone2", actionArgsMap["new_db_sid"])
 	})
-	
+
 	t.Run("Oracle clone with LCM config", func(t *testing.T) {
 		mockDatabase := &MockDatabaseInterface{}
 		mockDatabase.On("GetName").Return("oraclone3")
@@ -257,15 +257,15 @@ func TestOracleRequestAppender_appendCloningRequest(t *testing.T) {
 			"expiryDateTimezone": "UTC",
 			"deleteDatabase":     "true",
 		})
-		
+
 		req := &DatabaseCloneRequest{}
 		reqData := map[string]interface{}{
 			"password":       "Pass789",
 			"ssh_public_key": "ssh-rsa lcm-key",
 		}
-		
+
 		result, err := appender.appendCloningRequest(req, mockDatabase, reqData)
-		
+
 		require.NoError(t, err)
 		require.NotNil(t, result)
 		require.NotNil(t, result.LcmConfig)
@@ -274,4 +274,3 @@ func TestOracleRequestAppender_appendCloningRequest(t *testing.T) {
 		assert.Equal(t, "true", result.LcmConfig.DatabaseLCMConfig.ExpiryDetails.DeleteDatabase)
 	})
 }
-

@@ -251,12 +251,12 @@ func (a *OracleRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, 
 		"dbserver_description": "DB Server VM for " + database.GetName(),
 		"db_password":          dbPassword,
 		// Oracle clone uses "new_db_sid" (not "oracle_sid" like provisioning)
-		"new_db_sid":           database.GetName(),
-		"listener_port":        "1521",
-		"enable_ha":            "false",
-		"scan_port":            "1521",
+		"new_db_sid":                database.GetName(),
+		"listener_port":             "1521",
+		"enable_ha":                 "false",
+		"scan_port":                 "1521",
 		"delete_logs_post_recovery": "false",
-		"asm_driver":           "None",
+		"asm_driver":                "None",
 	}
 
 	// Appending/overwriting database actionArguments to actionArguments
@@ -286,7 +286,7 @@ func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArgume
 			databaseLcmConfigCount += 1
 		}
 	}
-	
+
 	// refreshDetails appender (check first)
 	refreshDetailsProperties := []string{"refreshInDays", "refreshTime", "refreshDateTimezone"}
 	refreshDetailsCount := 0

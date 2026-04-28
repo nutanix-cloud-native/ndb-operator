@@ -76,17 +76,26 @@ func GetAllowedAdditionalArgumentsForClone(dbType string) (map[string]bool, erro
 		}, nil
 	case common.DATABASE_TYPE_ORACLE:
 		return map[string]bool{
-			/* Has defaults (added programmatically in clone_helpers.go) */
-			"vm_name":                   true, // Action argument
-			"dbserver_description":      true, // Action argument
-			"db_password":               true, // Action argument
-			"new_db_sid":                true, // Action argument - REQUIRED for Oracle clones (not oracle_sid!)
-			"listener_port":             true, // Action argument
-			"enable_ha":                 true, // Action argument
-			"scan_port":                 true, // Action argument
-			"delete_logs_post_recovery": true, // Action argument
-			"asm_driver":                true, // Action argument
-			/* No default - LCM configs */
+			/* Core - Has defaults (added programmatically in clone_helpers.go) */
+			"vm_name":                   true, // VM name for the clone
+			"dbserver_description":      true, // DB server description
+			"db_password":               true, // Password for SYS user (replaces sys_password in provisioning)
+			"new_db_sid":                true, // New Oracle SID for clone (max 8 chars, our successful manual test used this)
+			"oracle_sid":                true, // Some NDB versions may use this instead of new_db_sid
+			"listener_port":             true, // Listener port
+			"enable_ha":                 true, // High Availability (RAC)
+			"scan_port":                 true, // SCAN port for RAC
+			"delete_logs_post_recovery": true, // Delete archive logs after recovery
+			"asm_driver":                true, // ASM driver type
+			/* Additional Oracle clone-specific parameters */
+			"sys_asm_password":     false, // ASM password (required if using ASM/Grid)
+			"client_public_key":    false, // SSH key for oracle/grid users
+			"guest_os":             false, // Guest OS identifier
+			"working_dir":          false, // Temporary working directory
+			"delete_vm_on_failure": false, // Delete VM if clone fails
+			"pre_clone_cmd":        false, // Pre-clone script hook
+			"post_clone_cmd":       false, // Post-clone script hook
+			/* LCM configs */
 			"expireInDays":        false, // In lcmConfig.databaseLCMConfig.expiryDetails
 			"expiryDateTimezone":  false, // In lcmConfig.databaseLCMConfig.expiryDetails
 			"deleteDatabase":      false, // In lcmConfig.databaseLCMConfig.expiryDetails
@@ -134,27 +143,55 @@ func GetAllowedAdditionalArgumentsForDatabase(dbType string) (map[string]bool, e
 		}, nil
 	case common.DATABASE_TYPE_ORACLE:
 		return map[string]bool{
-			/* Has defaults - users can override these */
-			"listener_port":                 true, // Action argument
-			"dbserver_name":                 true, // Action argument
-			"oracle_sid":                    true, // Action argument
-			"global_database_name":          true, // Action argument
-			"db_unique_name":                true, // Action argument
-			"sys_password":                  true, // Action argument
-			"system_password":               true, // Action argument
-			"db_character_set":              true, // Action argument
-			"national_character_set":        true, // Action argument
-			"database_fra_size":             true, // Action argument
-			"enable_cdb":                    true, // Action argument - Container Database
-			"enable_tde":                    true, // Action argument - Transparent Data Encryption
-			"enable_ha":                     true, // Action argument - High Availability
-			"auto_tune_staging_drive":       true, // Action argument
-			"working_dir":                   true, // Action argument
-			"delete_logs_older_than":        true, // Action argument
-			"ensure_vm_host_distribution":   true, // Action argument
-			"pre_create_script":             true, // Action argument
-			"post_create_script":            true, // Action argument
-			"dbserver_description":          true, // Action argument (from base, but Oracle can override)
+			/* Core - Has defaults, users can override */
+			"listener_port":           true,
+			"dbserver_name":           true,
+			"oracle_sid":              true,
+			"global_database_name":    true,
+			"db_unique_name":          true,
+			"database_size":           true,
+			"sys_password":            true,
+			"system_password":         true,
+			"db_character_set":        true,
+			"national_character_set":  true,
+			"database_fra_size":       true,
+			"enable_cdb":              true,
+			"enable_tde":              true,
+			"enable_ha":               true,
+			"auto_tune_staging_drive": true,
+			"working_dir":             true,
+			"delete_logs_older_than":  true,
+			"dbserver_description":    true,
+			/* Additional Oracle-specific parameters */
+			"sys_asm_password":            false, // ASM password (required if using ASM/Grid)
+			"tde_encryption_passphrase":   false, // TDE passphrase (required if enable_tde=true)
+			"client_public_key":           false, // SSH key for oracle/grid users
+			"dbserver_timezone":           false,
+			"cluster_name":                false, // RAC cluster name
+			"scan_name":                   false, // RAC SCAN name
+			"nodes":                       false, // Number of RAC nodes
+			"asm_driver":                  false, // ASM driver type (None, asmlib, afd)
+			"provision_type":              false, // "pdb" for pluggable database
+			"pdb_name":                    false, // Pluggable database name
+			"application_id":              false, // Parent CDB UUID for PDB
+			"redo_log_size":               false,
+			"no_of_redo_log_groups":       false,
+			"pre_create_script":           false,
+			"post_create_script":          false,
+			"pre_rollback_command":        false,
+			"ensure_vm_host_distribution": false,
+			/* Data Guard specific */
+			"mount_mode":      false,
+			"protection_mode": false,
+			"DelayMins":       false,
+			/* Oracle parameter overrides */
+			"pga_aggregate_target": false,
+			"pga_aggregate_limit":  false,
+			"sga_target":           false,
+			"sga_min_size":         false,
+			"shared_servers":       false,
+			"undo_tablespace":      false,
+			"cpu_count":            false,
 		}, nil
 	default:
 		return map[string]bool{}, fmt.Errorf("could not find allowed additional arguments for database of type: %s. Please ensure database type is one of the following: %s ", dbType, common.DATABASE_TYPES)
