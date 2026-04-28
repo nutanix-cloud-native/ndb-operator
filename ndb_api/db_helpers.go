@@ -341,7 +341,6 @@ func (a *OracleRequestAppender) appendProvisioningRequest(req *DatabaseProvision
 	actionArguments := map[string]string{
 		// Basic configuration
 		"listener_port":           "1521",
-		"database_size":           fmt.Sprintf("%d", database.GetInstanceSize()),
 		"auto_tune_staging_drive": "true",
 		"working_dir":             "/tmp",
 
