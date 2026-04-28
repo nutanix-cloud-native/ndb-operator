@@ -100,18 +100,16 @@ func TestGenerateCloningRequest(t *testing.T) {
 }
 
 func TestAppendLCMConfigDetailsToRequest(t *testing.T) {
-	t.Run("nil additionalArguments is treated like empty", func(t *testing.T) {
+	t.Run("nil additionalArguments does not initialize LcmConfig", func(t *testing.T) {
 		req := &DatabaseCloneRequest{}
 		require.NoError(t, appendLCMConfigDetailsToRequest(req, nil))
-		require.NotNil(t, req.LcmConfig)
-		assert.Equal(t, ExpiryDetails{}, req.LcmConfig.DatabaseLCMConfig.ExpiryDetails)
-		assert.Equal(t, RefreshDetails{}, req.LcmConfig.DatabaseLCMConfig.RefreshDetails)
+		require.Nil(t, req.LcmConfig)
 	})
 
-	t.Run("empty map only initializes LcmConfig", func(t *testing.T) {
+	t.Run("empty map does not initialize LcmConfig", func(t *testing.T) {
 		req := &DatabaseCloneRequest{}
 		require.NoError(t, appendLCMConfigDetailsToRequest(req, map[string]string{}))
-		require.NotNil(t, req.LcmConfig)
+		require.Nil(t, req.LcmConfig)
 	})
 
 	t.Run("all three expiry fields set ExpiryDetails", func(t *testing.T) {
@@ -187,6 +185,8 @@ func TestOracleRequestAppender_appendCloningRequest(t *testing.T) {
 		mockDatabase := &MockDatabaseInterface{}
 		mockDatabase.On("GetName").Return("oraclone1")
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("IsClone").Return(true)
+		mockDatabase.On("GetInstanceType").Return("oracle")
 
 		req := &DatabaseCloneRequest{}
 		reqData := map[string]interface{}{
@@ -225,6 +225,8 @@ func TestOracleRequestAppender_appendCloningRequest(t *testing.T) {
 			"listener_port": "1522",
 			"enable_ha":     "true",
 		})
+		mockDatabase.On("IsClone").Return(true)
+		mockDatabase.On("GetInstanceType").Return("oracle")
 
 		req := &DatabaseCloneRequest{}
 		reqData := map[string]interface{}{
@@ -257,6 +259,8 @@ func TestOracleRequestAppender_appendCloningRequest(t *testing.T) {
 			"expiryDateTimezone": "UTC",
 			"deleteDatabase":     "true",
 		})
+		mockDatabase.On("IsClone").Return(true)
+		mockDatabase.On("GetInstanceType").Return("oracle")
 
 		req := &DatabaseCloneRequest{}
 		reqData := map[string]interface{}{

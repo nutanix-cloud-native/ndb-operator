@@ -176,8 +176,8 @@ func GetAllowedAdditionalArgumentsForDatabase(dbType string) (map[string]bool, e
 			"application_id":              false, // Parent CDB UUID for PDB
 			"redo_log_size":               false,
 			"no_of_redo_log_groups":       false,
-			"pre_create_script":           false,
-			"post_create_script":          false,
+			"pre_create_script":           true, // Pre-create script (action argument with default)
+			"post_create_script":          true, // Post-create script (action argument with default)
 			"pre_rollback_command":        false,
 			"ensure_vm_host_distribution": false,
 			/* Data Guard specific */

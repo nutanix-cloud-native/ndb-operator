@@ -9,6 +9,8 @@ import (
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Test constants
@@ -1322,6 +1324,8 @@ func TestOracleRequestAppender_appendProvisioningRequest(t *testing.T) {
 		mockDatabase.On("GetInstanceDatabaseNames").Return("oradb1")
 		mockDatabase.On("GetInstanceSize").Return(50)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("IsClone").Return(false)
+		mockDatabase.On("GetInstanceType").Return("oracle")
 
 		req := &DatabaseProvisionRequest{}
 		reqData := map[string]interface{}{
@@ -1372,6 +1376,8 @@ func TestOracleRequestAppender_appendProvisioningRequest(t *testing.T) {
 			"pre_create_script":  "echo 'Pre-create'",
 			"post_create_script": "echo 'Post-create'",
 		})
+		mockDatabase.On("IsClone").Return(false)
+		mockDatabase.On("GetInstanceType").Return("oracle")
 
 		req := &DatabaseProvisionRequest{}
 		reqData := map[string]interface{}{
@@ -1406,6 +1412,8 @@ func TestOracleRequestAppender_appendProvisioningRequest(t *testing.T) {
 		mockDatabase.On("GetInstanceDatabaseNames").Return("CustomOraDB")
 		mockDatabase.On("GetInstanceSize").Return(75)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("IsClone").Return(false)
+		mockDatabase.On("GetInstanceType").Return("oracle")
 
 		req := &DatabaseProvisionRequest{}
 		reqData := map[string]interface{}{
