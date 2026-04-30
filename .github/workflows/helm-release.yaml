@@ -23,7 +23,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Helm
-        uses: jdx/mise-action@v3
+        uses: jdx/mise-action@v4
         with:
           tool_versions: |
             helm: latest
