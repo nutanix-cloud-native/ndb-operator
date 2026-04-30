@@ -16,25 +16,18 @@ limitations under the License.
 
 package ndb_api
 
-const OPERATION_STATUS_FAILED = "FAILED"
-const OPERATION_STATUS_PASSED = "PASSED"
-
-// Returns an operation status string
-func GetOperationStatus(o *OperationResponse) string {
-	status := ""
-	// Statuses on NDB
-	// 2: STOPPED
-	// 3: SUSPENDED
-	// 4: FAILED
-	// 5: PASSED
-	// 17: PASSED_WITH_WARNING (e.g. HA provisioning completed with a non-critical warning)
-	switch o.Status {
-	case "2", "3", "4":
-		status = OPERATION_STATUS_FAILED
-	case "5", "17":
-		status = OPERATION_STATUS_PASSED
-	default:
-		status = ""
+// GenerateDeprovisionDPCRequest returns a request that fully deletes
+// a DBServerCluster (DPC) and all its member VMs from NDB and Nutanix.
+func GenerateDeprovisionDPCRequest() *DPCDeprovisionRequest {
+	return &DPCDeprovisionRequest{
+		Delete:     true,
+		Remove:     false,
+		SoftRemove: false,
+		Forced:     false,
+		DBServers: DPCDBServersOptions{
+			Delete:            true,
+			DeleteVgs:         true,
+			DeleteVmSnapshots: true,
+		},
 	}
-	return status
 }

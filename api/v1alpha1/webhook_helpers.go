@@ -243,6 +243,49 @@ func (v *ProvisioningWebhookHandler) validateCreate(spec *DatabaseSpec, errors *
 		*errors = append(*errors, field.Invalid(instancePath.Child("additionalArguments"), instance.AdditionalArguments, err.Error()))
 	}
 
+	// HA config validation
+	if instance.HAConfig != nil {
+		haPath := instancePath.Child("haConfig")
+
+		haValidator, supported := getHAValidator(instance.Type)
+		if !supported {
+			*errors = append(*errors, field.Invalid(haPath, instance.HAConfig,
+				"haConfig is not supported for database type "+instance.Type))
+		} else {
+			// Generic checks: apply to every HA engine
+			if instance.HAConfig.ClusterName == "" {
+				*errors = append(*errors, field.Invalid(haPath.Child("clusterName"),
+					instance.HAConfig.ClusterName, "clusterName must be specified in haConfig"))
+			}
+
+			if len(instance.HAConfig.Nodes) == 0 {
+				*errors = append(*errors, field.Invalid(haPath.Child("nodes"),
+					instance.HAConfig.Nodes, "at least one node must be specified in haConfig"))
+			}
+
+			for i, node := range instance.HAConfig.Nodes {
+				nodePath := haPath.Child("nodes").Index(i)
+				if node.VmName == "" {
+					*errors = append(*errors, field.Invalid(nodePath.Child("vmName"),
+						node.VmName, "vmName must be specified for each HA node"))
+				}
+				if node.ClusterId == "" && node.ClusterName == "" {
+					*errors = append(*errors, field.Invalid(nodePath, node,
+						"either clusterId or clusterName must be provided for each HA node"))
+				}
+				if node.ClusterId != "" {
+					if err := util.ValidateUUID(node.ClusterId); err != nil {
+						*errors = append(*errors, field.Invalid(nodePath.Child("clusterId"),
+							node.ClusterId, "clusterId must be a valid UUID"))
+					}
+				}
+			}
+
+			// Engine-specific checks: nodeType values, role constraints, engine config block
+			haValidator.Validate(instance.HAConfig, haPath, errors)
+		}
+	}
+
 	databaselog.Info("Exiting validateCreate for provisioning")
 }
 
@@ -269,6 +312,23 @@ func initializeObjects(spec *DatabaseSpec) {
 	if spec.Instance.AdditionalArguments == nil {
 		databaselog.Info("Initializing Instance AdditionalArguments")
 		spec.Instance.AdditionalArguments = map[string]string{}
+	}
+
+	// Apply HA defaults when haConfig is present
+	if spec.Instance.HAConfig != nil {
+		for i := range spec.Instance.HAConfig.Nodes {
+			if spec.Instance.HAConfig.Nodes[i].FailoverMode == "" {
+				spec.Instance.HAConfig.Nodes[i].FailoverMode = common.HA_NODE_FAILOVER_MODE_AUTOMATIC
+			}
+		}
+		if pg := spec.Instance.HAConfig.Postgres; pg != nil {
+			if pg.WritePort == 0 {
+				pg.WritePort = common.HA_PROXY_DEFAULT_WRITE_PORT
+			}
+			if pg.ReadPort == 0 {
+				pg.ReadPort = common.HA_PROXY_DEFAULT_READ_PORT
+			}
+		}
 	}
 
 	// Initialize Clone properties

@@ -39,8 +39,10 @@ var databaselog = logf.Log.WithName("database-resource")
 // +kubebuilder:object:generate=false
 // DatabaseCustomDefaulter injects ConfigMap defaults into the Database CR before validation.
 // This ensures validation sees the fully populated CR and we don't need to relax validation.
+// Client is a client.Reader (not client.Client) so that a direct API reader can be injected,
+// avoiding a cluster-wide ConfigMap watch just to serve occasional webhook admission calls.
 type DatabaseCustomDefaulter struct {
-	Client client.Client
+	Client client.Reader
 }
 
 var _ admission.CustomDefaulter = &DatabaseCustomDefaulter{}
@@ -48,9 +50,16 @@ var _ admission.CustomDefaulter = &DatabaseCustomDefaulter{}
 func (r *Database) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	// In controller-runtime v0.21.0+, you must explicitly set the defaulter and validator
 	// The For() method alone does not automatically detect these interfaces
+	// Use GetAPIReader (direct, non-cached client) instead of GetClient (cache-backed).
+	// The webhook reads a ConfigMap only on admission events, not in a hot reconcile loop,
+	// so a local cache adds no value — we always want the current value at admission time.
+	// A cache-backed client would open a persistent cluster-wide Watch on ConfigMaps for the
+	// entire operator lifetime, requiring the 'watch' RBAC verb and consuming a continuous
+	// server-side connection. GetAPIReader issues a single GET per admission call instead,
+	// keeping the permission surface minimal and avoiding unnecessary background load.
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
-		WithDefaulter(&DatabaseCustomDefaulter{Client: mgr.GetClient()}).
+		WithDefaulter(&DatabaseCustomDefaulter{Client: mgr.GetAPIReader()}).
 		WithValidator(r).
 		Complete()
 }

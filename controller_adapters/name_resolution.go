@@ -41,12 +41,23 @@ func ResolveNamesToUUIDs(ctx context.Context, ndbClient *ndb_client.NDBClient, d
 // resolveInstanceNamesToUUIDs resolves names to UUIDs for provisioning instances.
 // This function resolves the following fields:
 //   - clusterName -> clusterId (if clusterId is not provided)
+//   - for HA instances: each node's clusterName -> clusterId (if clusterId is not provided)
 func resolveInstanceNamesToUUIDs(ctx context.Context, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) error {
 	instance := database.Spec.Instance
 
-	// Resolve cluster name to ID if needed
+	// Resolve top-level cluster name to ID if needed
 	if err := resolveClusterNameToId(ctx, ndbClient, instance.ClusterId, instance.ClusterName, &instance.ClusterId); err != nil {
 		return err
+	}
+
+	// Resolve per-node cluster names for HA instances
+	if instance.HAConfig != nil {
+		for i := range instance.HAConfig.Nodes {
+			node := &instance.HAConfig.Nodes[i]
+			if err := resolveClusterNameToId(ctx, ndbClient, node.ClusterId, node.ClusterName, &node.ClusterId); err != nil {
+				return fmt.Errorf("failed to resolve cluster for HA node '%s': %w", node.VmName, err)
+			}
+		}
 	}
 
 	return nil

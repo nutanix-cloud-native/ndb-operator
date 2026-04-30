@@ -172,7 +172,7 @@ spec:
                     type: string
                   databaseNames:
                     description: |-
-                      Name(s) of the database(s) to be provisiond inside the database instance
+                      Name(s) of the database(s) to be provisioned inside the database instance
                       default [ "database_one", "database_two", "database_three" ]
                     items:
                       type: string
@@ -180,6 +180,89 @@ spec:
                   description:
                     description: Description of the database instance
                     type: string
+                  haConfig:
+                    description: |-
+                      HA configuration for Postgres HA instances (multi-cluster topology).
+                      When set, provisions a clustered Postgres instance with HAProxy and Patroni.
+                    properties:
+                      clusterName:
+                        description: Display name for the NDB HA cluster
+                        type: string
+                      enableSynchronousMode:
+                        description: Enable synchronous replication mode
+                        type: boolean
+                      nodes:
+                        description: Node placement and role definitions for all VMs
+                          in the HA cluster
+                        items:
+                          description: InstanceHANode describes the placement and
+                            role of a single VM in an HA cluster.
+                          properties:
+                            clusterId:
+                              description: |-
+                                Id of the PE cluster this node should be placed on.
+                                Either clusterId or clusterName must be provided.
+                              type: string
+                            clusterName:
+                              description: |-
+                                Name of the PE cluster this node should be placed on.
+                                Either clusterId or clusterName must be provided.
+                              type: string
+                            failoverMode:
+                              description: Failover mode for database nodes (default
+                                "Automatic")
+                              type: string
+                            nodeType:
+                              description: 'Type of this node: "haproxy" or "database"'
+                              enum:
+                              - haproxy
+                              - database
+                              type: string
+                            role:
+                              description: 'Role of this node (database nodes only):
+                                "Primary" or "Secondary"'
+                              type: string
+                            vmName:
+                              description: Name of the VM to be created
+                              type: string
+                          required:
+                          - nodeType
+                          - vmName
+                          type: object
+                        type: array
+                      postgres:
+                        description: |-
+                          Postgres contains Patroni and HAProxy settings specific to Postgres HA.
+                          Required when the database type is "postgres".
+                        properties:
+                          patroniClusterName:
+                            description: Name used by Patroni for DCS cluster coordination
+                            type: string
+                          provisionVirtualIP:
+                            description: |-
+                              ProvisionVirtualIP controls whether NDB provisions a Virtual IP for the HAProxy layer.
+                              Set to true only when all HAProxy VMs are on the same Nutanix cluster (non-stretched VLAN).
+                              Defaults to false; use false when HAProxy nodes span multiple PE clusters.
+                            type: boolean
+                          readPort:
+                            default: 5001
+                            description: HAProxy read (replica) port. Defaults to
+                              5001.
+                            format: int32
+                            type: integer
+                          writePort:
+                            default: 5000
+                            description: HAProxy write (primary) port. Defaults to
+                              5000.
+                            format: int32
+                            type: integer
+                        required:
+                        - patroniClusterName
+                        type: object
+                    required:
+                    - clusterName
+                    - nodes
+                    type: object
                   name:
                     description: Name of the database instance
                     type: string
@@ -288,6 +371,13 @@ spec:
             properties:
               creationOperationId:
                 type: string
+              dbServerDeletionOperationIds:
+                description: |-
+                  DBServerDeletionOperationIds holds the NDB operation ID returned by the DPC (DBServerCluster) deletion.
+                  Populated when HA deletion starts; polled until the operation completes before the finalizer is removed.
+                items:
+                  type: string
+                type: array
               dbServerId:
                 type: string
               deregistrationOperationId:

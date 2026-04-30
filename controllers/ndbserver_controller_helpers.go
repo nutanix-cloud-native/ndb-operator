@@ -2,19 +2,20 @@ package controllers
 
 import (
 	"context"
+	"strings"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // Fetches all databases from the NDB API and converts them to
 // NDBServerDatabaseInfo type object (to be consumed by the NDBServer CR)
 func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBClient) (databases []ndbv1alpha1.NDBServerDatabaseInfo, err error) {
-	log := log.FromContext(ctx)
+	log := ctrllog.FromContext(ctx)
 	log.Info("Fetching and converting databases from NDB")
 	databasesResponse, err := ndb_api.GetAllDatabases(ctx, ndbClient)
 	if err != nil {
@@ -39,8 +40,32 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 		}
 		if len(db.DatabaseNodes) > 0 {
 			databaseInfo.DBServerId = db.DatabaseNodes[0].DatabaseServerId
-			if len(db.DatabaseNodes[0].DbServer.IPAddresses) > 0 {
+
+			// V(1) logs are emitted only when the controller-manager is started with --zap-log-level=1
+			// (or higher). To enable: set the ZAP_LOG_LEVEL env var to "1" in the operator deployment,
+			// or pass --zap-log-level=1 as an extra arg to the manager container.
+			for _, n := range db.DatabaseNodes {
+				log.V(1).Info("DatabaseNode", "db", db.Name, "node", n.Name, "serverName", n.DbServer.Name, "ips", n.DbServer.IPAddresses, "properties", n.Properties)
+			}
+
+			// Resolve connection IPs via an engine-specific HAIPResolver when available and
+			// the database has multiple nodes (single-node instances are always non-HA).
+			// Falls back to the first database node's IP for non-HA or unresolved cases.
+			dbType := ndb_api.GetDatabaseTypeFromEngine(db.Type)
+			resolver, isHA := haIPResolvers[dbType]
+			if isHA && len(db.DatabaseNodes) > 1 {
+				haIPs, resolveErr := resolver.ResolveIPs(ctx, ndbClient, db)
+				if resolveErr != nil {
+					log.Error(resolveErr, "Failed to resolve HA IPs", "db", db.Name)
+				} else if len(haIPs) > 0 {
+					databaseInfo.IPAddress = strings.Join(haIPs, ",")
+					log.Info("HA database: using engine-resolved IPs", "db", db.Name, "ips", databaseInfo.IPAddress)
+				}
+			}
+
+			if databaseInfo.IPAddress == "" && len(db.DatabaseNodes[0].DbServer.IPAddresses) > 0 {
 				databaseInfo.IPAddress = db.DatabaseNodes[0].DbServer.IPAddresses[0]
+				log.Info("Using first node IP", "db", db.Name, "ip", databaseInfo.IPAddress)
 			}
 		}
 		databases[i] = databaseInfo
@@ -54,7 +79,7 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 // 2. TODO: Filter and set the required list of databases (we only want to store the databases managed by the operator).
 // 3. Update the counter value.
 func getNDBServerStatus(ctx context.Context, status *ndbv1alpha1.NDBServerStatus, ndbClient *ndb_client.NDBClient) *ndbv1alpha1.NDBServerStatus {
-	log := log.FromContext(ctx)
+	log := ctrllog.FromContext(ctx)
 	log.Info("Entered ndbserver_controller_helpers.getNDBServerStatus")
 
 	dbCounter := status.ReconcileCounter.Database

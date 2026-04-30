@@ -21,6 +21,7 @@ type DatabaseNode struct {
 	Name             string         `json:"name"`
 	DatabaseServerId string         `json:"dbServerId"`
 	DbServer         DatabaseServer `json:"dbserver"`
+	Properties       []Property     `json:"properties"`
 }
 
 type DatabaseServer struct {
@@ -30,13 +31,34 @@ type DatabaseServer struct {
 	NxClusterId string   `json:"nxClusterId"`
 }
 
+// DBServerDetails represents a DB server entry returned by GET /dbservers or GET /dbservers/{id}.
+// DbserverClusterId is populated for HA instances (all nodes in a cluster share the same value).
+type DBServerDetails struct {
+	Id                string   `json:"id"`
+	Name              string   `json:"name"`
+	IPAddresses       []string `json:"ipAddresses"`
+	DbserverClusterId string   `json:"dbserverClusterId"`
+}
+
+// PrimarySlaDetails holds the SLA and cluster scope for multi-cluster HA Time Machines.
+type PrimarySlaDetails struct {
+	SlaId        string   `json:"slaId"`
+	NxClusterIds []string `json:"nxClusterIds"`
+}
+
+// SlaDetails wraps PrimarySlaDetails for the timeMachineInfo payload (used in HA provisioning).
+type SlaDetails struct {
+	PrimarySla PrimarySlaDetails `json:"primarySla"`
+}
+
 type TimeMachineInfo struct {
-	Name             string   `json:"name"`
-	Description      string   `json:"description"`
-	SlaId            string   `json:"slaId"`
-	Schedule         Schedule `json:"schedule"`
-	Tags             []string `json:"tags"`
-	AutoTuneLogDrive bool     `json:"autoTuneLogDrive"`
+	Name             string      `json:"name"`
+	Description      string      `json:"description"`
+	SlaId            string      `json:"slaId,omitempty"`
+	SlaDetails       *SlaDetails `json:"slaDetails,omitempty"`
+	Schedule         Schedule    `json:"schedule"`
+	Tags             []string    `json:"tags"`
+	AutoTuneLogDrive bool        `json:"autoTuneLogDrive"`
 }
 
 type Schedule struct {
@@ -87,15 +109,23 @@ type ActionArgument struct {
 	Value string `json:"value"`
 }
 
-type Node struct {
-	VmName              string   `json:"vmName"`
-	ComputeProfileId    string   `json:"computeProfileId,omitempty"`
-	NetworkProfileId    string   `json:"networkProfileId,omitempty"`
-	NewDbServerTimeZone string   `json:"newDbServerTimeZone,omitempty"`
-	NxClusterId         string   `json:"nxClusterId,omitempty"`
-	Properties          []string `json:"properties"`
+// NodeProperty is used in outgoing provisioning request node entries.
+// It is intentionally lightweight (no Description) to match the NDB API shape.
+type NodeProperty struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
+type Node struct {
+	VmName              string         `json:"vmName"`
+	ComputeProfileId    string         `json:"computeProfileId,omitempty"`
+	NetworkProfileId    string         `json:"networkProfileId,omitempty"`
+	NewDbServerTimeZone string         `json:"newDbServerTimeZone,omitempty"`
+	NxClusterId         string         `json:"nxClusterId,omitempty"`
+	Properties          []NodeProperty `json:"properties"`
+}
+
+// Property is used in NDB API responses (includes Description).
 type Property struct {
 	Name        string `json:"name"`
 	Value       string `json:"value"`

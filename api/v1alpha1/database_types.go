@@ -52,6 +52,9 @@ type DatabaseStatus struct {
 	Type                      string `json:"type"`
 	CreationOperationId       string `json:"creationOperationId"`
 	DeregistrationOperationId string `json:"deregistrationOperationId"`
+	// DBServerDeletionOperationIds holds the NDB operation ID returned by the DPC (DBServerCluster) deletion.
+	// Populated when HA deletion starts; polled until the operation completes before the finalizer is removed.
+	DBServerDeletionOperationIds []string `json:"dbServerDeletionOperationIds,omitempty"`
 }
 
 // Database is the Schema for the databases API
@@ -84,6 +87,71 @@ func init() {
 // These are required to have a deep copy, object interface implementation
 // These are the structs for the Spec and Status
 
+// InstanceHANode describes the placement and role of a single VM in an HA cluster.
+type InstanceHANode struct {
+	// Name of the VM to be created
+	// +kubebuilder:validation:Required
+	VmName string `json:"vmName"`
+	// Type of this node: "haproxy" or "database"
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=haproxy;database
+	NodeType string `json:"nodeType"`
+	// Role of this node (database nodes only): "Primary" or "Secondary"
+	// +optional
+	Role string `json:"role,omitempty"`
+	// Id of the PE cluster this node should be placed on.
+	// Either clusterId or clusterName must be provided.
+	// +optional
+	ClusterId string `json:"clusterId,omitempty"`
+	// Name of the PE cluster this node should be placed on.
+	// Either clusterId or clusterName must be provided.
+	// +optional
+	ClusterName string `json:"clusterName,omitempty"`
+	// Failover mode for database nodes (default "Automatic")
+	// +optional
+	FailoverMode string `json:"failoverMode,omitempty"`
+}
+
+// InstanceHAConfig holds the HA provisioning configuration for a database instance.
+// Generic fields (ClusterName, EnableSynchronousMode, Nodes) apply to all HA engines.
+// Engine-specific settings are nested under the corresponding engine field (e.g. Postgres).
+// Exactly one engine field must be set, matching the instance.type.
+type InstanceHAConfig struct {
+	// Display name for the NDB HA cluster
+	// +kubebuilder:validation:Required
+	ClusterName string `json:"clusterName"`
+	// Enable synchronous replication mode
+	// +optional
+	EnableSynchronousMode bool `json:"enableSynchronousMode,omitempty"`
+	// Node placement and role definitions for all VMs in the HA cluster
+	// +kubebuilder:validation:Required
+	Nodes []InstanceHANode `json:"nodes"`
+	// Postgres contains Patroni and HAProxy settings specific to Postgres HA.
+	// Required when the database type is "postgres".
+	// +optional
+	Postgres *PostgresHAConfig `json:"postgres,omitempty"`
+}
+
+// PostgresHAConfig holds Patroni and HAProxy settings specific to a Postgres HA instance.
+type PostgresHAConfig struct {
+	// Name used by Patroni for DCS cluster coordination
+	// +kubebuilder:validation:Required
+	PatroniClusterName string `json:"patroniClusterName"`
+	// HAProxy write (primary) port. Defaults to 5000.
+	// +optional
+	// +kubebuilder:default=5000
+	WritePort int32 `json:"writePort,omitempty"`
+	// HAProxy read (replica) port. Defaults to 5001.
+	// +optional
+	// +kubebuilder:default=5001
+	ReadPort int32 `json:"readPort,omitempty"`
+	// ProvisionVirtualIP controls whether NDB provisions a Virtual IP for the HAProxy layer.
+	// Set to true only when all HAProxy VMs are on the same Nutanix cluster (non-stretched VLAN).
+	// Defaults to false; use false when HAProxy nodes span multiple PE clusters.
+	// +optional
+	ProvisionVirtualIP bool `json:"provisionVirtualIP,omitempty"`
+}
+
 // Database instance specific details
 type Instance struct {
 	// Name of the database instance
@@ -107,7 +175,7 @@ type Instance struct {
 	// default UTC
 	TimeZone string `json:"timezone"`
 	// +optional
-	// Name(s) of the database(s) to be provisiond inside the database instance
+	// Name(s) of the database(s) to be provisioned inside the database instance
 	// default [ "database_one", "database_two", "database_three" ]
 	DatabaseNames []string `json:"databaseNames"`
 	// Size of the database instance, minimum 10 (GBs)
@@ -119,6 +187,10 @@ type Instance struct {
 	// +optional
 	// Additional database engine specific arguments
 	AdditionalArguments map[string]string `json:"additionalArguments"`
+	// +optional
+	// HA configuration for Postgres HA instances (multi-cluster topology).
+	// When set, provisions a clustered Postgres instance with HAProxy and Patroni.
+	HAConfig *InstanceHAConfig `json:"haConfig,omitempty"`
 }
 
 type Clone struct {

@@ -24,7 +24,10 @@ func getInstanceManager(database ndbv1alpha1.Database) (instanceManager Instance
 type InstanceManager interface {
 	create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (task *ndb_api.TaskInfoSummaryResponse, err error)
 	deregister(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error)
-	deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error)
+	// deleteDatabaseServer deprovisions the underlying VM(s) for a database.
+	// Returns done=true when the caller should proceed to remove the finalizer,
+	// or done=false when the operation is still in progress and the caller should requeue.
+	deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (done bool, err error)
 }
 
 type DatabaseManager struct{}
@@ -105,8 +108,60 @@ func (dm *DatabaseManager) deregister(ctx context.Context, r *DatabaseReconciler
 	return
 }
 
-func (dm *DatabaseManager) deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error) {
-	return deleteDatabaseServer(ctx, r, ndbClient, database)
+func (dm *DatabaseManager) deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (done bool, err error) {
+	log := ctrllog.FromContext(ctx)
+
+	if database.Spec.Instance != nil && database.Spec.Instance.HAConfig != nil {
+		// HA path: two-phase start → poll to avoid re-firing a destructive API call
+		// on requeue. See persistHADeletionOpIds for details.
+		if len(database.Status.DBServerDeletionOperationIds) == 0 {
+			// Start phase: fire DELETE /dpcs/{clusterId} and persist the operation IDs.
+			// IMPORTANT: opIds must be persisted before this call returns.
+			// If they are lost, the next reconcile will re-fire the DELETE against an
+			// already-deleting DPC. persistHADeletionOpIds retries once on conflict
+			// before giving up, making it robust against the common 409-Conflict case.
+			opIds, apiErr := ndb_api.DeprovisionHADatabaseServers(ctx, ndbClient, database.Status.DatabaseServerId)
+			if apiErr != nil {
+				log.Error(apiErr, "Failed to deprovision one or more HA database servers")
+				r.recorder.Eventf(database, "Warning", EVENT_DEREGISTRATION_FAILED, "Error: %s", apiErr.Error())
+				return false, apiErr
+			}
+			if persistErr := r.persistHADeletionOpIds(ctx, database, opIds); persistErr != nil {
+				return false, persistErr
+			}
+			return false, nil // requeue to enter poll phase
+		}
+
+		// Poll phase: check every operation ID; signal done only when all are terminal.
+		allDone := true
+		for _, opId := range database.Status.DBServerDeletionOperationIds {
+			op, opErr := ndb_api.GetOperationById(ctx, ndbClient, opId)
+			if opErr != nil {
+				log.Error(opErr, "Failed to fetch HA server deletion operation", "operationId", opId)
+				allDone = false
+				continue
+			}
+			switch ndb_api.GetOperationStatus(op) {
+			case ndb_api.OPERATION_STATUS_PASSED:
+				log.Info("HA server deletion operation completed", "operationId", opId)
+			case ndb_api.OPERATION_STATUS_FAILED:
+				// The operation is terminal — setting allDone=false would cause an infinite
+				// requeue since NDB will never retry a FAILED operation. Treat it as done so
+				// the finalizer is removed, but surface the failure loudly for manual cleanup.
+				log.Error(fmt.Errorf("HA server deletion operation failed"), "operationId", opId, "message", op.Message)
+				r.recorder.Eventf(database, "Warning", EVENT_DEREGISTRATION_FAILED,
+					"HA server deletion operation %s failed: %s — manual cleanup of NDB resources may be required", opId, op.Message)
+			default:
+				allDone = false
+			}
+		}
+		return allDone, nil
+	}
+
+	// Non-HA: fire-and-forget (mirrors the existing behaviour — errors are logged
+	// and recorded inside deleteDatabaseServer; the caller proceeds immediately).
+	deleteDatabaseServer(ctx, r, ndbClient, database)
+	return true, nil
 }
 
 func (cm *CloneManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse *ndb_api.TaskInfoSummaryResponse, err error) {
@@ -171,8 +226,10 @@ func (cm *CloneManager) deregister(ctx context.Context, r *DatabaseReconciler, n
 	return
 }
 
-func (cm *CloneManager) deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error) {
-	return deleteDatabaseServer(ctx, r, ndbClient, database)
+func (cm *CloneManager) deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (done bool, err error) {
+	// Clones are never HA, so this is always fire-and-forget.
+	deleteDatabaseServer(ctx, r, ndbClient, database)
+	return true, nil
 }
 
 func deleteDatabaseServer(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database) (task *ndb_api.TaskInfoSummaryResponse, err error) {

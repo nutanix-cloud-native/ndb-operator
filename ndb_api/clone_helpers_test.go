@@ -100,16 +100,18 @@ func TestGenerateCloningRequest(t *testing.T) {
 }
 
 func TestAppendLCMConfigDetailsToRequest(t *testing.T) {
-	t.Run("nil additionalArguments does not initialize LcmConfig", func(t *testing.T) {
+	t.Run("nil additionalArguments leaves LcmConfig nil", func(t *testing.T) {
 		req := &DatabaseCloneRequest{}
 		require.NoError(t, appendLCMConfigDetailsToRequest(req, nil))
-		require.Nil(t, req.LcmConfig)
+		// LcmConfig must stay nil so the omitempty tag suppresses it in JSON,
+		// preventing NDB from rejecting the request with an empty timezone error.
+		assert.Nil(t, req.LcmConfig)
 	})
 
-	t.Run("empty map does not initialize LcmConfig", func(t *testing.T) {
+	t.Run("empty map leaves LcmConfig nil", func(t *testing.T) {
 		req := &DatabaseCloneRequest{}
 		require.NoError(t, appendLCMConfigDetailsToRequest(req, map[string]string{}))
-		require.Nil(t, req.LcmConfig)
+		assert.Nil(t, req.LcmConfig)
 	})
 
 	t.Run("all three expiry fields set ExpiryDetails", func(t *testing.T) {

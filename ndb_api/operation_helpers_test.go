@@ -32,6 +32,7 @@ func TestGetOperationStatus(t *testing.T) {
 		{"3", OPERATION_STATUS_FAILED},
 		{"4", OPERATION_STATUS_FAILED},
 		{"5", OPERATION_STATUS_PASSED},
+		{"17", OPERATION_STATUS_PASSED},
 		{"invalidStatus", ""},
 	}
 

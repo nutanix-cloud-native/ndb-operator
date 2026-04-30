@@ -52,6 +52,17 @@ const (
 	FINALIZER_DATABASE_SERVER = "ndb.nutanix.com/finalizerserver"
 	FINALIZER_INSTANCE        = "ndb.nutanix.com/finalizerinstance"
 
+	HA_NODE_FAILOVER_MODE_AUTOMATIC = "Automatic"
+
+	HA_NODE_TYPE_DATABASE = "database"
+	HA_NODE_TYPE_HAPROXY  = "haproxy"
+
+	HA_NODE_ROLE_PRIMARY   = "Primary"
+	HA_NODE_ROLE_SECONDARY = "Secondary"
+
+	HA_PROXY_DEFAULT_READ_PORT  = int32(5001)
+	HA_PROXY_DEFAULT_WRITE_PORT = int32(5000)
+
 	NDB_CR_STATUS_AUTHENTICATION_ERROR = "Authentication Error"
 	NDB_CR_STATUS_CREDENTIAL_ERROR     = "Credential Error"
 	NDB_CR_STATUS_ERROR                = "Error"
