@@ -41,6 +41,9 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 		if len(db.DatabaseNodes) > 0 {
 			databaseInfo.DBServerId = db.DatabaseNodes[0].DatabaseServerId
 
+			// V(1) logs are emitted only when the controller-manager is started with --zap-log-level=1
+			// (or higher). To enable: set the ZAP_LOG_LEVEL env var to "1" in the operator deployment,
+			// or pass --zap-log-level=1 as an extra arg to the manager container.
 			for _, n := range db.DatabaseNodes {
 				log.V(1).Info("DatabaseNode", "db", db.Name, "node", n.Name, "serverName", n.DbServer.Name, "ips", n.DbServer.IPAddresses, "properties", n.Properties)
 			}
