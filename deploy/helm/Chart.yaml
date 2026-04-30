@@ -2,8 +2,8 @@ apiVersion: v2
 name: ndb-operator
 description: A Helm chart for Nutanix Database Kubernetes Operator
 type: application
-version: 0.5.7
-appVersion: v0.5.4
+version: 0.5.8
+appVersion: v0.5.5
 maintainers:
   - name: mazin-s
     email: mazin.shaaeldin@nutanix.com
@@ -22,10 +22,14 @@ maintainers:
 icon: https://www.nutanix.com/content/dam/nutanix/global/icons/products/svg/Nutanix-Era-40.svg
 annotations:
   artifacthub.io/changes: |
+    - kind: added
+      description: "Chart 0.5.8: Add support for Postgres HA and Oracle SI."
     - kind: changed
-      description: "Chart 0.5.7: controller image v0.5.4."
+      description: "Chart 0.5.8: controller image v0.5.5."
+    - kind: security
+      description: "kube-rbac-proxy v0.22.0 (quay.io/brancz/kube-rbac-proxy)."
     - kind: changed
-      description: "Release details: https://github.com/nutanix-cloud-native/ndb-operator/releases/tag/v0.5.4"
+      description: "Release details: https://github.com/nutanix-cloud-native/ndb-operator/releases/tag/v0.5.5"
   artifacthub.io/containsSecurityUpdates: "true"
   artifacthub.io/license: Apache-2.0
   artifacthub.io/maintainers: |

@@ -1,7 +1,7 @@
 name: Linting Charts
 
 on:
-  push:
+  pull_request:
     paths:
       - 'deploy/helm/**'
 
