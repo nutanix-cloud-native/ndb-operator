@@ -9,6 +9,8 @@ import (
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Test constants
@@ -99,6 +101,9 @@ func TestGetRequestAppenderByType(t *testing.T) {
 		},
 		{databaseType: common.DATABASE_TYPE_MONGODB,
 			expected: &MongoDbRequestAppender{},
+		},
+		{databaseType: common.DATABASE_TYPE_ORACLE,
+			expected: &OracleRequestAppender{},
 		},
 		{databaseType: "test",
 			expected: nil,
@@ -1224,7 +1229,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 				common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
 				common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
 			},
-			expectedError: errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb"),
+			expectedError: errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb, oracle"),
 		},
 	}
 
@@ -1307,5 +1312,131 @@ func sortWantAndGotActionArgsByName(wantActionArgs, gotActionArgs []ActionArgume
 	})
 	sort.Slice(gotActionArgs, func(i, j int) bool {
 		return gotActionArgs[i].Name < gotActionArgs[j].Name
+	})
+}
+
+func TestOracleRequestAppender_appendProvisioningRequest(t *testing.T) {
+	appender := &OracleRequestAppender{}
+
+	t.Run("Oracle provision request has correct default action arguments", func(t *testing.T) {
+		mockDatabase := &MockDatabaseInterface{}
+		mockDatabase.On("GetName").Return("oradb1")
+		mockDatabase.On("GetInstanceDatabaseNames").Return("oradb1")
+		mockDatabase.On("GetInstanceSize").Return(50)
+		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("IsClone").Return(false)
+		mockDatabase.On("GetInstanceType").Return("oracle")
+
+		req := &DatabaseProvisionRequest{}
+		reqData := map[string]interface{}{
+			"password":       "OraclePassword123",
+			"ssh_public_key": "ssh-rsa oracle-key",
+		}
+
+		result, err := appender.appendProvisioningRequest(req, mockDatabase, reqData)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, "oradb1", result.DatabaseName)
+		assert.Equal(t, "ssh-rsa oracle-key", result.SSHPublicKey)
+
+		// Check that required Oracle provisioning action arguments are present
+		actionArgsMap := make(map[string]string)
+		for _, arg := range result.ActionArguments {
+			actionArgsMap[arg.Name] = arg.Value
+		}
+
+		// Verify Oracle-specific provisioning parameters
+		assert.Equal(t, "1521", actionArgsMap["listener_port"])
+		assert.Equal(t, "true", actionArgsMap["auto_tune_staging_drive"])
+		assert.Equal(t, "/tmp", actionArgsMap["working_dir"])
+		assert.Equal(t, "oradb1_VM", actionArgsMap["dbserver_name"])
+		assert.Equal(t, "oradb1", actionArgsMap["oracle_sid"])
+		assert.Equal(t, "oradb1", actionArgsMap["global_database_name"])
+		assert.Equal(t, "oradb1", actionArgsMap["db_unique_name"])
+		assert.Equal(t, "OraclePassword123", actionArgsMap["sys_password"])
+		assert.Equal(t, "OraclePassword123", actionArgsMap["system_password"])
+		assert.Equal(t, "AL32UTF8", actionArgsMap["db_character_set"])
+		assert.Equal(t, "AL16UTF16", actionArgsMap["national_character_set"])
+		assert.Equal(t, "50", actionArgsMap["database_fra_size"])
+		assert.Equal(t, "false", actionArgsMap["enable_cdb"])
+		assert.Equal(t, "false", actionArgsMap["enable_tde"])
+		assert.Equal(t, "false", actionArgsMap["enable_ha"])
+	})
+
+	t.Run("Oracle provision request allows overriding defaults via additionalArguments", func(t *testing.T) {
+		mockDatabase := &MockDatabaseInterface{}
+		mockDatabase.On("GetName").Return("oradb2")
+		mockDatabase.On("GetInstanceDatabaseNames").Return("oradb2")
+		mockDatabase.On("GetInstanceSize").Return(100)
+		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
+			"listener_port":      "1522",
+			"enable_tde":         "true",
+			"db_character_set":   "UTF8",
+			"pre_create_script":  "echo 'Pre-create'",
+			"post_create_script": "echo 'Post-create'",
+		})
+		mockDatabase.On("IsClone").Return(false)
+		mockDatabase.On("GetInstanceType").Return("oracle")
+
+		req := &DatabaseProvisionRequest{}
+		reqData := map[string]interface{}{
+			"password":       "CustomPass456",
+			"ssh_public_key": "ssh-rsa custom-key",
+		}
+
+		result, err := appender.appendProvisioningRequest(req, mockDatabase, reqData)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+
+		actionArgsMap := make(map[string]string)
+		for _, arg := range result.ActionArguments {
+			actionArgsMap[arg.Name] = arg.Value
+		}
+
+		// Verify overridden values
+		assert.Equal(t, "1522", actionArgsMap["listener_port"])
+		assert.Equal(t, "true", actionArgsMap["enable_tde"])
+		assert.Equal(t, "UTF8", actionArgsMap["db_character_set"])
+		assert.Equal(t, "echo 'Pre-create'", actionArgsMap["pre_create_script"])
+		assert.Equal(t, "echo 'Post-create'", actionArgsMap["post_create_script"])
+		// Verify defaults remain for non-overridden values
+		assert.Equal(t, "false", actionArgsMap["enable_cdb"])
+		assert.Equal(t, "oradb2", actionArgsMap["oracle_sid"])
+	})
+
+	t.Run("Oracle provision request correctly sets database names", func(t *testing.T) {
+		mockDatabase := &MockDatabaseInterface{}
+		mockDatabase.On("GetName").Return("oradb3")
+		mockDatabase.On("GetInstanceDatabaseNames").Return("CustomOraDB")
+		mockDatabase.On("GetInstanceSize").Return(75)
+		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("IsClone").Return(false)
+		mockDatabase.On("GetInstanceType").Return("oracle")
+
+		req := &DatabaseProvisionRequest{}
+		reqData := map[string]interface{}{
+			"password":       "Pass789",
+			"ssh_public_key": "ssh-rsa test-key",
+		}
+
+		result, err := appender.appendProvisioningRequest(req, mockDatabase, reqData)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+
+		// Verify top-level DatabaseName field
+		assert.Equal(t, "CustomOraDB", result.DatabaseName)
+
+		actionArgsMap := make(map[string]string)
+		for _, arg := range result.ActionArguments {
+			actionArgsMap[arg.Name] = arg.Value
+		}
+
+		// Verify all three Oracle identifiers use the custom database name
+		assert.Equal(t, "CustomOraDB", actionArgsMap["oracle_sid"])
+		assert.Equal(t, "CustomOraDB", actionArgsMap["global_database_name"])
+		assert.Equal(t, "CustomOraDB", actionArgsMap["db_unique_name"])
 	})
 }

@@ -239,13 +239,44 @@ func (a *MySqlRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, d
 	return req, nil
 }
 
+func (a *OracleRequestAppender) appendCloningRequest(req *DatabaseCloneRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseCloneRequest, error) {
+	req.SSHPublicKey = reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+
+	// Default action arguments - Oracle clones use different parameter names than provisions
+	actionArguments := map[string]string{
+		/* Non-Configurable */
+		/* Configurable */
+		"vm_name":              database.GetName(),
+		"dbserver_description": "DB Server VM for " + database.GetName(),
+		"db_password":          dbPassword,
+		// Oracle clone uses "new_db_sid" (not "oracle_sid" like provisioning)
+		"new_db_sid":                database.GetName(),
+		"listener_port":             "1521",
+		"enable_ha":                 "false",
+		"scan_port":                 "1521",
+		"delete_logs_post_recovery": "false",
+		"asm_driver":                "None",
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	// Appending LCMConfig Details if specified
+	if err := appendLCMConfigDetailsToRequest(req, database.GetAdditionalArguments()); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArguments map[string]string) error {
 	errMsg := "appendLCMConfigDetailsToRequest() failed!"
-
-	// Initialize LcmConfig before any access - req.LcmConfig is nil by default when creating DatabaseCloneRequest
-	if req.LcmConfig == nil {
-		req.LcmConfig = &LcmConfig{}
-	}
 
 	// expiryDetails appender
 	databaseLcmConfigProperties := []string{"expireInDays", "expiryDateTimezone", "deleteDatabase"}
@@ -255,6 +286,24 @@ func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArgume
 			databaseLcmConfigCount += 1
 		}
 	}
+
+	// refreshDetails appender (check first)
+	refreshDetailsProperties := []string{"refreshInDays", "refreshTime", "refreshDateTimezone"}
+	refreshDetailsCount := 0
+	for _, property := range refreshDetailsProperties {
+		if _, isPresent := additionalArguments[property]; isPresent {
+			refreshDetailsCount += 1
+		}
+	}
+
+	// Only initialize LcmConfig if we have LCM params
+	if databaseLcmConfigCount > 0 || refreshDetailsCount > 0 {
+		if req.LcmConfig == nil {
+			req.LcmConfig = &LcmConfig{}
+		}
+	}
+
+	// Process expiry details
 	if databaseLcmConfigCount == 3 {
 		req.LcmConfig.DatabaseLCMConfig = DatabaseLCMConfig{
 			ExpiryDetails: ExpiryDetails{
@@ -267,14 +316,7 @@ func appendLCMConfigDetailsToRequest(req *DatabaseCloneRequest, additionalArgume
 		return fmt.Errorf("%s. Ensure expireInDays, expiryDateTimezone, and deleteDatabase are all specified. You only have %d/3 specified", errMsg, databaseLcmConfigCount)
 	}
 
-	// refreshDetails appender
-	refreshDetailsProperties := []string{"refreshInDays", "refreshTime", "refreshDateTimezone"}
-	refreshDetailsCount := 0
-	for _, property := range refreshDetailsProperties {
-		if _, isPresent := additionalArguments[property]; isPresent {
-			refreshDetailsCount += 1
-		}
-	}
+	// Process refresh details
 	if refreshDetailsCount == 3 {
 		req.LcmConfig.DatabaseLCMConfig.RefreshDetails = RefreshDetails{
 			RefreshInDays:       additionalArguments["refreshInDays"],

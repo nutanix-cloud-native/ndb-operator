@@ -66,6 +66,13 @@ The container and bundle image creation steps can be skipped if existing images 
 
 **NDBServer and credentials:** The operator uses two custom resources—**NDBServer** (cluster-scoped) and **Database** (namespaced). **NDBServer** is cluster-scoped so that admins can store the NDB API credential secret in a restricted namespace (e.g. `ndb-credentials`) and set `credentialSecretRef` to point to it. Developers who create **Database** resources only need to reference the NDBServer by **name** in `ndbRef` (e.g. `ndbRef: ndb`); they can list and use cluster-scoped NDBServers without needing access to the secret's namespace.
 
+**Supported Database Engines:**
+- PostgreSQL
+- MySQL
+- MongoDB
+- Microsoft SQL Server
+- **Oracle Single Instance (SI)** - [See comprehensive Oracle guide](docs/ORACLE-SI-GUIDE.md)
+
 ###  Create secrets to be used by the NDBServer and Database resources using the manifest:
 
 - **NDB API credential secret:** Create this in a **restricted namespace** (e.g. `ndb-credentials`) so only admins need access. Create that namespace if it does not exist, then apply the secret there.
@@ -401,6 +408,31 @@ additionalArguments:
   windows_domain_profile_id: <domain-profile-id>   # NO Default. Must specify vm_db_server_user.
   vm_db_server_user: <vm-db-server-use>            # NO Default. Must specify windows_domain_profile_id.
   vm_win_license_key: <licenseKey>                 # NO Default.
+
+# Oracle
+additionalArguments:
+  # Core parameters (all have defaults)
+  listener_port: "1521"                            # Default: "1521"
+  oracle_sid: "ORCL"                               # Default: database name (max 8 chars, alphanumeric, starts with letter)
+  global_database_name: "ORCL.example.com"         # Default: database name
+  db_unique_name: "ORCL"                           # Default: database name
+  sys_password: "Password123"                      # Default: from database secret
+  system_password: "Password123"                   # Default: sys_password
+  db_character_set: "AL32UTF8"                     # Default: "AL32UTF8"
+  national_character_set: "AL16UTF16"              # Default: "AL16UTF16"
+  database_fra_size: "100"                         # Default: database size (Fast Recovery Area)
+  enable_cdb: "false"                              # Default: "false" (Container Database for multitenant)
+  enable_tde: "false"                              # Default: "false" (Transparent Data Encryption)
+  enable_ha: "false"                               # Default: "false" (High Availability/RAC)
+  auto_tune_staging_drive: "true"                  # Default: "true"
+  working_dir: "/tmp"                              # Default: "/tmp"
+  # Advanced parameters (optional)
+  pga_aggregate_target: "2G"                       # NO Default. Oracle PGA memory
+  sga_target: "4G"                                 # NO Default. Oracle SGA memory
+  tde_encryption_passphrase: "Passphrase123"       # NO Default. Required if enable_tde="true"
+  pre_create_script: "echo 'Pre-create'"           # Default: ""
+  post_create_script: "echo 'Post-create'"         # Default: ""
+  # For complete list of 64+ Oracle parameters, see docs/ORACLE-SI-GUIDE.md
 ```
 
 Cloning Additional Arguments: 
@@ -441,6 +473,27 @@ MySQL:
   refreshInDays                
   refreshTime                  
   refreshDateTimezone  
+
+Oracle:
+  # Core clone parameters (have defaults)
+  new_db_sid                   # New Oracle SID (max 8 chars) - Default: clone name
+  oracle_sid                   # Alternative to new_db_sid - Default: clone name  
+  db_password                  # SYS password - Default: from secret
+  listener_port                # Listener port - Default: "1521"
+  enable_ha                    # Enable HA/RAC - Default: "false"
+  scan_port                    # SCAN port for RAC - Default: "1521"
+  delete_logs_post_recovery    # Delete archive logs - Default: "false"
+  asm_driver                   # ASM driver type - Default: "None"
+  vm_name                      # VM name - Default: clone name
+  dbserver_description         # DB server description - Default: auto-generated
+  # Lifecycle Management (LCM) parameters  
+  expireInDays                 # Must specify all 3 expiry params together
+  expiryDateTimezone           
+  deleteDatabase               
+  refreshInDays                # Must specify all 3 refresh params together
+  refreshTime                  
+  refreshDateTimezone
+  # For complete list of Oracle clone parameters, see docs/ORACLE-SI-GUIDE.md
 ```
 
 

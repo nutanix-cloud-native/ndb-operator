@@ -98,6 +98,8 @@ func GetDatabaseEngineName(dbType string) string {
 		return common.DATABASE_ENGINE_TYPE_MONGODB
 	case common.DATABASE_TYPE_MSSQL:
 		return common.DATABASE_ENGINE_TYPE_MSSQL
+	case common.DATABASE_TYPE_ORACLE:
+		return common.DATABASE_ENGINE_TYPE_ORACLE
 	default:
 		return ""
 	}
@@ -113,6 +115,8 @@ func GetDatabaseTypeFromEngine(engine string) string {
 		return common.DATABASE_TYPE_MONGODB
 	case common.DATABASE_ENGINE_TYPE_MSSQL:
 		return common.DATABASE_TYPE_MSSQL
+	case common.DATABASE_ENGINE_TYPE_ORACLE:
+		return common.DATABASE_TYPE_ORACLE
 	default:
 		return ""
 	}
@@ -128,6 +132,8 @@ func GetDatabasePortByType(dbType string) int32 {
 		return common.DATABASE_DEFAULT_PORT_MYSQL
 	case common.DATABASE_TYPE_MSSQL:
 		return common.DATABASE_DEFAULT_PORT_MSSQL
+	case common.DATABASE_TYPE_ORACLE:
+		return common.DATABASE_DEFAULT_PORT_ORACLE
 	default:
 		return -1
 	}
@@ -144,8 +150,10 @@ func GetRequestAppender(databaseType string) (requestAppender RequestAppender, e
 		requestAppender = &MongoDbRequestAppender{}
 	case common.DATABASE_TYPE_MSSQL:
 		requestAppender = &MSSQLRequestAppender{}
+	case common.DATABASE_TYPE_ORACLE:
+		requestAppender = &OracleRequestAppender{}
 	default:
-		return nil, errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb")
+		return nil, errors.New("invalid database type: supported values: mssql, mysql, postgres, mongodb, oracle")
 	}
 	return
 }

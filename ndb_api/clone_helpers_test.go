@@ -100,18 +100,16 @@ func TestGenerateCloningRequest(t *testing.T) {
 }
 
 func TestAppendLCMConfigDetailsToRequest(t *testing.T) {
-	t.Run("nil additionalArguments is treated like empty", func(t *testing.T) {
+	t.Run("nil additionalArguments does not initialize LcmConfig", func(t *testing.T) {
 		req := &DatabaseCloneRequest{}
 		require.NoError(t, appendLCMConfigDetailsToRequest(req, nil))
-		require.NotNil(t, req.LcmConfig)
-		assert.Equal(t, ExpiryDetails{}, req.LcmConfig.DatabaseLCMConfig.ExpiryDetails)
-		assert.Equal(t, RefreshDetails{}, req.LcmConfig.DatabaseLCMConfig.RefreshDetails)
+		require.Nil(t, req.LcmConfig)
 	})
 
-	t.Run("empty map only initializes LcmConfig", func(t *testing.T) {
+	t.Run("empty map does not initialize LcmConfig", func(t *testing.T) {
 		req := &DatabaseCloneRequest{}
 		require.NoError(t, appendLCMConfigDetailsToRequest(req, map[string]string{}))
-		require.NotNil(t, req.LcmConfig)
+		require.Nil(t, req.LcmConfig)
 	})
 
 	t.Run("all three expiry fields set ExpiryDetails", func(t *testing.T) {
@@ -177,5 +175,106 @@ func TestAppendLCMConfigDetailsToRequest(t *testing.T) {
 		assert.Equal(t, "1", req.LcmConfig.DatabaseLCMConfig.ExpiryDetails.ExpireInDays)
 		assert.Equal(t, "2", req.LcmConfig.DatabaseLCMConfig.RefreshDetails.RefreshInDays)
 		assert.Equal(t, "America/New_York", req.LcmConfig.DatabaseLCMConfig.RefreshDetails.RefreshDateTimezone)
+	})
+}
+
+func TestOracleRequestAppender_appendCloningRequest(t *testing.T) {
+	appender := &OracleRequestAppender{}
+
+	t.Run("Oracle clone request has correct default action arguments", func(t *testing.T) {
+		mockDatabase := &MockDatabaseInterface{}
+		mockDatabase.On("GetName").Return("oraclone1")
+		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("IsClone").Return(true)
+		mockDatabase.On("GetInstanceType").Return("oracle")
+
+		req := &DatabaseCloneRequest{}
+		reqData := map[string]interface{}{
+			"password":       "TestPassword123",
+			"ssh_public_key": "ssh-rsa test-key",
+		}
+
+		result, err := appender.appendCloningRequest(req, mockDatabase, reqData)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, "ssh-rsa test-key", result.SSHPublicKey)
+
+		// Check that required Oracle clone action arguments are present
+		actionArgsMap := make(map[string]string)
+		for _, arg := range result.ActionArguments {
+			actionArgsMap[arg.Name] = arg.Value
+		}
+
+		// Verify Oracle-specific clone parameters
+		assert.Equal(t, "oraclone1", actionArgsMap["vm_name"])
+		assert.Equal(t, "DB Server VM for oraclone1", actionArgsMap["dbserver_description"])
+		assert.Equal(t, "TestPassword123", actionArgsMap["db_password"])
+		assert.Equal(t, "oraclone1", actionArgsMap["new_db_sid"]) // Oracle clones use new_db_sid, not oracle_sid
+		assert.Equal(t, "1521", actionArgsMap["listener_port"])
+		assert.Equal(t, "false", actionArgsMap["enable_ha"])
+		assert.Equal(t, "1521", actionArgsMap["scan_port"])
+		assert.Equal(t, "false", actionArgsMap["delete_logs_post_recovery"])
+		assert.Equal(t, "None", actionArgsMap["asm_driver"])
+	})
+
+	t.Run("Oracle clone request allows overriding defaults via additionalArguments", func(t *testing.T) {
+		mockDatabase := &MockDatabaseInterface{}
+		mockDatabase.On("GetName").Return("oraclone2")
+		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
+			"listener_port": "1522",
+			"enable_ha":     "true",
+		})
+		mockDatabase.On("IsClone").Return(true)
+		mockDatabase.On("GetInstanceType").Return("oracle")
+
+		req := &DatabaseCloneRequest{}
+		reqData := map[string]interface{}{
+			"password":       "Password456",
+			"ssh_public_key": "ssh-rsa another-key",
+		}
+
+		result, err := appender.appendCloningRequest(req, mockDatabase, reqData)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+
+		actionArgsMap := make(map[string]string)
+		for _, arg := range result.ActionArguments {
+			actionArgsMap[arg.Name] = arg.Value
+		}
+
+		// Verify overridden values
+		assert.Equal(t, "1522", actionArgsMap["listener_port"])
+		assert.Equal(t, "true", actionArgsMap["enable_ha"])
+		// Verify defaults remain
+		assert.Equal(t, "oraclone2", actionArgsMap["new_db_sid"])
+	})
+
+	t.Run("Oracle clone with LCM config", func(t *testing.T) {
+		mockDatabase := &MockDatabaseInterface{}
+		mockDatabase.On("GetName").Return("oraclone3")
+		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{
+			"expireInDays":       "7",
+			"expiryDateTimezone": "UTC",
+			"deleteDatabase":     "true",
+		})
+		mockDatabase.On("IsClone").Return(true)
+		mockDatabase.On("GetInstanceType").Return("oracle")
+
+		req := &DatabaseCloneRequest{}
+		reqData := map[string]interface{}{
+			"password":       "Pass789",
+			"ssh_public_key": "ssh-rsa lcm-key",
+		}
+
+		result, err := appender.appendCloningRequest(req, mockDatabase, reqData)
+
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		require.NotNil(t, result.LcmConfig)
+		assert.Equal(t, "7", result.LcmConfig.DatabaseLCMConfig.ExpiryDetails.ExpireInDays)
+		assert.Equal(t, "UTC", result.LcmConfig.DatabaseLCMConfig.ExpiryDetails.ExpiryDateTimezone)
+		assert.Equal(t, "true", result.LcmConfig.DatabaseLCMConfig.ExpiryDetails.DeleteDatabase)
 	})
 }

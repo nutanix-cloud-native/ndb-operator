@@ -44,6 +44,9 @@ func getDatabaseName(ctx context.Context, database *ndbv1alpha1.Database) (name 
 	case common.DATABASE_TYPE_POSTGRES:
 		databaseType = common.DATABASE_TYPE_POSTGRES
 		name, fromEnv = getDatabaseNameFromEnvElseDefault(automation.POSTGRES_SI_CLONING_NAME_ENV, automation.POSTGRES_SI_CLONING_NAME_DEFAULT)
+	case common.DATABASE_TYPE_ORACLE:
+		databaseType = common.DATABASE_TYPE_ORACLE
+		name, fromEnv = getDatabaseNameFromEnvElseDefault(automation.ORACLE_SI_CLONING_NAME_ENV, automation.ORACLE_SI_CLONING_NAME_DEFAULT)
 	default:
 		err = fmt.Errorf("Invalid database type: %s. Valid database types are: %s", database.Spec.Clone.Type, common.DATABASE_TYPES)
 	}

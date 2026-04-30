@@ -29,6 +29,7 @@ const (
 	DATABASE_DEFAULT_PORT_MONGODB  = 27017
 	DATABASE_DEFAULT_PORT_MSSQL    = 1433
 	DATABASE_DEFAULT_PORT_MYSQL    = 3306
+	DATABASE_DEFAULT_PORT_ORACLE   = 1521
 	DATABASE_DEFAULT_PORT_POSTGRES = 5432
 
 	DATABASE_ENGINE_TYPE_GENERIC  = "Generic"
@@ -46,7 +47,7 @@ const (
 	DATABASE_TYPE_MYSQL    = "mysql"
 	DATABASE_TYPE_ORACLE   = "oracle"
 	DATABASE_TYPE_POSTGRES = "postgres"
-	DATABASE_TYPES         = "mssql, mysql, postgres, mongodb"
+	DATABASE_TYPES         = "mssql, mysql, postgres, mongodb, oracle"
 
 	FINALIZER_DATABASE_SERVER = "ndb.nutanix.com/finalizerserver"
 	FINALIZER_INSTANCE        = "ndb.nutanix.com/finalizerinstance"

@@ -328,3 +328,60 @@ func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionR
 
 	return req, nil
 }
+
+func (a *OracleRequestAppender) appendProvisioningRequest(req *DatabaseProvisionRequest, database DatabaseInterface, reqData map[string]interface{}) (*DatabaseProvisionRequest, error) {
+	// Oracle uses req.DatabaseName for global database name
+	databaseNames := database.GetInstanceDatabaseNames()
+	req.DatabaseName = databaseNames
+	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
+	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	req.SSHPublicKey = SSHPublicKey
+
+	// Oracle REQUIRES extensive action arguments (verified from working manual API call)
+	actionArguments := map[string]string{
+		// Basic configuration
+		"listener_port":           "1521",
+		"auto_tune_staging_drive": "true",
+		"working_dir":             "/tmp",
+
+		// Database server naming
+		"dbserver_name": database.GetName() + "_VM",
+
+		// Oracle-specific identifiers (all required)
+		"oracle_sid":           databaseNames, // Same as database name
+		"global_database_name": databaseNames, // Same as database name
+		"db_unique_name":       databaseNames, // Same as database name
+
+		// Passwords (required for SYS and SYSTEM users)
+		"sys_password":    dbPassword,
+		"system_password": dbPassword,
+
+		// Character sets
+		"db_character_set":       "AL32UTF8",
+		"national_character_set": "AL16UTF16",
+
+		// Storage configuration
+		"database_fra_size": fmt.Sprintf("%d", database.GetInstanceSize()), // FRA = Fast Recovery Area
+
+		// Feature flags
+		"enable_cdb": "false", // Container Database (we're provisioning SI, not multitenant)
+		"enable_tde": "false", // Transparent Data Encryption
+		"enable_ha":  "false", // High Availability
+
+		// Cleanup
+		"delete_logs_older_than":      "0",
+		"ensure_vm_host_distribution": "false",
+		"pre_create_script":           "",
+		"post_create_script":          "",
+	}
+
+	// Appending/overwriting database actionArguments to actionArguments
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
+	}
+
+	// Converting action arguments map to list and appending to req.ActionArguments
+	req.ActionArguments = append(req.ActionArguments, convertMapToActionArguments(actionArguments)...)
+
+	return req, nil
+}

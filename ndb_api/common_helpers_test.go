@@ -181,6 +181,7 @@ func TestGetDatabaseEngineName(t *testing.T) {
 		{common.DATABASE_TYPE_MYSQL, common.DATABASE_ENGINE_TYPE_MYSQL},
 		{common.DATABASE_TYPE_MONGODB, common.DATABASE_ENGINE_TYPE_MONGODB},
 		{common.DATABASE_TYPE_MSSQL, common.DATABASE_ENGINE_TYPE_MSSQL},
+		{common.DATABASE_TYPE_ORACLE, common.DATABASE_ENGINE_TYPE_ORACLE},
 		{"invalidType", ""},
 	}
 
@@ -200,6 +201,7 @@ func TestGetDatabaseTypeFromEngine(t *testing.T) {
 		{common.DATABASE_ENGINE_TYPE_MYSQL, common.DATABASE_TYPE_MYSQL},
 		{common.DATABASE_ENGINE_TYPE_MONGODB, common.DATABASE_TYPE_MONGODB},
 		{common.DATABASE_ENGINE_TYPE_MSSQL, common.DATABASE_TYPE_MSSQL},
+		{common.DATABASE_ENGINE_TYPE_ORACLE, common.DATABASE_TYPE_ORACLE},
 		{"invalidEngine", ""},
 	}
 
@@ -219,6 +221,7 @@ func TestGetDatabasePortByType(t *testing.T) {
 		{common.DATABASE_TYPE_MYSQL, common.DATABASE_DEFAULT_PORT_MYSQL},
 		{common.DATABASE_TYPE_MONGODB, common.DATABASE_DEFAULT_PORT_MONGODB},
 		{common.DATABASE_TYPE_MSSQL, common.DATABASE_DEFAULT_PORT_MSSQL},
+		{common.DATABASE_TYPE_ORACLE, common.DATABASE_DEFAULT_PORT_ORACLE},
 		{"invalidType", -1},
 	}
 
@@ -238,6 +241,7 @@ func TestGetRequestAppender(t *testing.T) {
 		{common.DATABASE_TYPE_MYSQL, true},
 		{common.DATABASE_TYPE_MONGODB, true},
 		{common.DATABASE_TYPE_MSSQL, true},
+		{common.DATABASE_TYPE_ORACLE, true},
 		{"invalidType", false},
 	}
 
