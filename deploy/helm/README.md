@@ -6,7 +6,8 @@ NDB operator supports these functionalities:
 
 1. Provisioning and deprovisioning a single instance postgres, mssql, sql server, and mongodb database with or without time machine.
 2. Cloning support for the above database engines
-3. Creation of a service for the applications to consume the database within Kubernetes.
+3. Provisioning and deprovisioning Postgres High Availability (HA) instances.
+4. Creation of a service for the applications to consume the database within Kubernetes.
 
 ---
 
@@ -284,7 +285,7 @@ spec:
   defaultsConfigMapRef: ndb-database-defaults  # Reference the ConfigMap
   isClone: false
   databaseInstance:
-    type: postgres
+    type: #postgres,oracle,mysql,mssql,mongo
     name: my-app-db
     databaseNames: ["appdb"]
     credentialSecret: db-instance-secret-name
@@ -325,7 +326,7 @@ spec:
     credentialSecret: db-instance-secret-name
     size: 10
     timezone: "UTC"
-    type: postgres
+    type: #postgres,oracle,mysql,mssql,mongo
 
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
@@ -377,7 +378,7 @@ spec:
   # Clone specific details (that is to be provisioned)
   clone:
     # Type of the database to be cloned
-    type: postgres
+    type: #postgres,oracle,mysql,mssql,mongo
     # The clone instance name on NDB
     name: "Clone-Instance-Name"
     # The description of the clone instance
@@ -430,7 +431,86 @@ spec:
 
 ```
 
-Create the Database resource:
+
+#### Creating Postgres HA instance resource
+```yaml
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: Postgres-HA-K8s-resource
+  namespace: default
+spec:
+  ndbRef: ndbserver
+  databaseInstance:
+    name: "PGHA_instance_DB"
+    description: "Postgres HA instance"
+    # defaultsConfigMapRef: pgha-defaults   # injects timezone, profiles, timeMachine from ConfigMap
+    type: postgres
+    credentialSecret: pgha-db-secret
+    size: 200
+    clusterName: "<PE cluster name (as shown in NDB UI)>" # This is often the Primary PE cluster
+    # ClusterID: "UUID of the PE cluster"
+    databaseNames:
+      - PGHA_instance
+    timeMachine:
+      name: "PGHA_TM"
+      description: "TM for Postgres HA"
+    haConfig:
+      patroniClusterName: "pgha-patroni" # any desired name
+      clusterName: "PGHA_cluster" # any desired name
+      enableSynchronousMode: true # default is false, This is for data replication across DB nodes
+      # provisionVirtualIP: true # default is false, keep this true if having stretched VLAN and need to provision VirtualIP
+      # writePort: 5000   # defaults to 5000 if omitted
+      # readPort: 5001    # defaults to 5001 if omitted
+      nodes:
+        - vmName: "PGHA_haproxy1" # any desired name
+          nodeType: "haproxy"
+          clusterName: "<PE cluster name (as shown in NDB UI)>"
+          # clusterId: "UUID of the PE cluster"
+        - vmName: "PGHA_haproxy2" # any desired name
+          nodeType: "haproxy"
+          clusterName: "<PE cluster name (as shown in NDB UI)>"
+          # clusterId: "UUID of the PE cluster"
+        - vmName: "PGHA_DB-1" # any desired name
+          nodeType: "database"
+          role: "Primary"
+          clusterName: "<PE cluster name (as shown in NDB UI)>"
+          # clusterId: "UUID of the PE cluster"
+        - vmName: "PGHA_DB-2" # any desired name
+          nodeType: "database"
+          role: "Secondary"
+          clusterName: "<PE cluster name (as shown in NDB UI)>"
+          # clusterId: "UUID of the PE cluster"
+        - vmName: "PGHA_DB-3" # any desired name
+          nodeType: "database"
+          role: "Secondary"
+          clusterName: "<PE cluster name (as shown in NDB UI)>"
+          # clusterId: "UUID of the PE cluster"
+```
+
+### Example Defaults configmap for HA instance
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgha-defaults
+  namespace: default
+data:
+  timezone: "UTC"
+  # postgres-prefixed keys take priority over unprefixed keys for postgres databases
+  postgres.profiles.software.name: "POSTGRES_15.6_HA_ENABLED_ROCKY_LINUX_8_OOB"
+  postgres.profiles.compute.name: "DEFAULT_HA_COMPUTE"
+  postgres.profiles.network.name: "PGHA_VLAN"
+  postgres.profiles.dbParam.name: "DEFAULT_POSTGRES_HA_PARAMS"
+  postgres.timeMachine.sla: "DEFAULT_OOB_BRONZE_SLA"
+  postgres.timeMachine.dailySnapshotTime: "10:00:00"
+  postgres.timeMachine.snapshotsPerDay: "1"
+  postgres.timeMachine.logCatchUpFrequency: "120"
+  postgres.timeMachine.weeklySnapshotDay: "WEDNESDAY"
+  postgres.timeMachine.monthlySnapshotDay: "8"
+  postgres.timeMachine.quarterlySnapshotMonth: "Jan"
+```
+### Create the Database resource:
 
 ```sh
 kubectl apply -f <path/to/database-manifest.yaml>
@@ -469,6 +549,31 @@ additionalArguments:
   windows_domain_profile_id: <domain-profile-id>   # NO Default. Must specify vm_db_server_user.
   vm_db_server_user: <vm-db-server-use>            # NO Default. Must specify windows_domain_profile_id.
   vm_win_license_key: <licenseKey>                 # NO Default.
+
+# Oracle
+additionalArguments:
+  # Core parameters (all have defaults)
+  listener_port: "1521"                            # Default: "1521"
+  oracle_sid: "ORCL"                               # Default: database name (max 8 chars, alphanumeric, starts with letter)
+  global_database_name: "ORCL.example.com"         # Default: database name
+  db_unique_name: "ORCL"                           # Default: database name
+  sys_password: "Password123"                      # Default: from database secret
+  system_password: "Password123"                   # Default: sys_password
+  db_character_set: "AL32UTF8"                     # Default: "AL32UTF8"
+  national_character_set: "AL16UTF16"              # Default: "AL16UTF16"
+  database_fra_size: "100"                         # Default: database size (Fast Recovery Area)
+  enable_cdb: "false"                              # Default: "false" (Container Database for multitenant)
+  enable_tde: "false"                              # Default: "false" (Transparent Data Encryption)
+  enable_ha: "false"                               # Default: "false" (High Availability/RAC)
+  auto_tune_staging_drive: "true"                  # Default: "true"
+  working_dir: "/tmp"                              # Default: "/tmp"
+  # Advanced parameters (optional)
+  pga_aggregate_target: "2G"                       # NO Default. Oracle PGA memory
+  sga_target: "4G"                                 # NO Default. Oracle SGA memory
+  tde_encryption_passphrase: "Passphrase123"       # NO Default. Required if enable_tde="true"
+  pre_create_script: "echo 'Pre-create'"           # Default: ""
+  post_create_script: "echo 'Post-create'"         # Default: ""
+  # For complete list of 64+ Oracle parameters, see docs/ORACLE-SI-GUIDE.md
 ```
 
 Cloning Additional Arguments: 
@@ -510,6 +615,27 @@ MySQL:
   refreshInDays                
   refreshTime                  
   refreshDateTimezone  
+
+Oracle:
+  # Core clone parameters (have defaults)
+  new_db_sid                   # New Oracle SID (max 8 chars) - Default: clone name
+  oracle_sid                   # Alternative to new_db_sid - Default: clone name
+  db_password                  # SYS password - Default: from secret
+  listener_port                # Listener port - Default: "1521"
+  enable_ha                    # Enable HA/RAC - Default: "false"
+  scan_port                    # SCAN port for RAC - Default: "1521"
+  delete_logs_post_recovery    # Delete archive logs - Default: "false"
+  asm_driver                   # ASM driver type - Default: "None"
+  vm_name                      # VM name - Default: clone name
+  dbserver_description         # DB server description - Default: auto-generated
+  # Lifecycle Management (LCM) parameters
+  expireInDays                 # Must specify all 3 expiry params together
+  expiryDateTimezone           
+  deleteDatabase               
+  refreshInDays                # Must specify all 3 refresh params together
+  refreshTime                  
+  refreshDateTimezone
+  # For complete list of Oracle clone parameters, see docs/ORACLE-SI-GUIDE.md
 ```
 
 ### Deleting the Database resource

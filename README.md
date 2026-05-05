@@ -371,7 +371,73 @@ spec:
       expireInDays: 3
 
 ```
-#### Creating Postgres HA instance resource
+
+### Creating Oracle SI resource
+```
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: <Database name>
+  namespace: ""
+spec:
+  ndbRef: <name of NDBserver K8s resource>
+  isClone: false
+  databaseInstance:
+    name: <Database name>
+    databaseNames: [""]
+    credentialSecret: <oracle-secret-name>
+    type: oracle
+    size: 50
+    timezone: "UTC"
+    clusterId: "<cluster uuid>" # or use clusterName field to specify name
+    profiles:
+      software:
+        name: ""
+      compute:
+        name: ""
+      network:
+        name: ""
+      dbParam:
+        name: ""
+    timeMachine:
+      sla: "NAME of SLA"
+      dailySnapshotTime: "12:00:00"
+      snapshotsPerDay: 1
+      logCatchUpFrequency: 60
+      weeklySnapshotDay: "MONDAY"
+      monthlySnapshotDay: 15
+      quarterlySnapshotMonth: "Jan"
+```
+
+### Creating Oracle SI Clone
+```
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: Database
+metadata:
+  name: <Database name>
+  namespace: ""
+spec:
+  ndbRef: <name of NDBserver K8s resource>
+  isClone: true
+  clone:
+    name: < orabel db clone name>
+    sourceDatabaseName: "" # specify actual database name shown in NDB UI, not K8s resource name
+    timezone: "UTC"
+    clusterId: "<cluster-uuid>" # or use clusterName field
+    credentialSecret: <oracle db secret>
+    type: oracle
+    profiles:
+      software:
+        name: ""
+      compute:
+        name: ""
+      network:
+        name: ""
+      dbParam:
+        name: ""
+```
+
+### Creating Postgres HA instance resource
 ```
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
