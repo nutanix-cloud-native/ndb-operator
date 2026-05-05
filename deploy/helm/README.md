@@ -285,7 +285,7 @@ spec:
   defaultsConfigMapRef: ndb-database-defaults  # Reference the ConfigMap
   isClone: false
   databaseInstance:
-    type: postgres
+    type: #postgres,oracle,mysql,mssql,mongo
     name: my-app-db
     databaseNames: ["appdb"]
     credentialSecret: db-instance-secret-name
@@ -326,7 +326,7 @@ spec:
     credentialSecret: db-instance-secret-name
     size: 10
     timezone: "UTC"
-    type: postgres
+    type: #postgres,oracle,mysql,mssql,mongo
 
     # You can specify any (or none) of these types of profiles: compute, software, network, dbParam
     # If not specified, the corresponding Out-of-Box (OOB) profile will be used wherever applicable
@@ -378,7 +378,7 @@ spec:
   # Clone specific details (that is to be provisioned)
   clone:
     # Type of the database to be cloned
-    type: postgres
+    type: #postgres,oracle,mysql,mssql,mongo
     # The clone instance name on NDB
     name: "Clone-Instance-Name"
     # The description of the clone instance
@@ -429,71 +429,6 @@ spec:
     additionalArguments:                        # Optional block, can specify additional arguments that are unique to database engines.
       expireInDays: 3
 
-```
-
-### Creating Oracle SI resource
-```
-apiVersion: ndb.nutanix.com/v1alpha1
-kind: Database
-metadata:
-  name: <Database name>
-  namespace: ""
-spec:
-  ndbRef: <name of NDBserver K8s resource>
-  isClone: false
-  databaseInstance:
-    name: <Database name>
-    databaseNames: [""]
-    credentialSecret: <oracle-secret-name>
-    type: oracle
-    size: 50
-    timezone: "UTC"
-    clusterId: "<cluster uuid>" # or use clusterName field to specify name
-    profiles:
-      software:
-        name: ""
-      compute:
-        name: ""
-      network:
-        name: ""
-      dbParam:
-        name: ""
-    timeMachine:
-      sla: "NAME of SLA"
-      dailySnapshotTime: "12:00:00"
-      snapshotsPerDay: 1
-      logCatchUpFrequency: 60
-      weeklySnapshotDay: "MONDAY"
-      monthlySnapshotDay: 15
-      quarterlySnapshotMonth: "Jan"
-```
-
-### Creating Oracle SI Clone
-```
-apiVersion: ndb.nutanix.com/v1alpha1
-kind: Database
-metadata:
-  name: <Database name>
-  namespace: ""
-spec:
-  ndbRef: <name of NDBserver K8s resource>
-  isClone: true
-  clone:
-    name: < orabel db clone name>
-    sourceDatabaseName: "" # specify actual database name shown in NDB UI, not K8s resource name
-    timezone: "UTC"
-    clusterId: "<cluster-uuid>" # or use clusterName field
-    credentialSecret: <oracle db secret>
-    type: oracle
-    profiles:
-      software:
-        name: ""
-      compute:
-        name: ""
-      network:
-        name: ""
-      dbParam:
-        name: ""
 ```
 
 
