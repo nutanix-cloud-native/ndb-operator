@@ -143,7 +143,6 @@ type MySQLHAConfig struct {
 	InnoDBClusterName string `json:"innoDBClusterName"`
 	// DeployMySQLRouter controls whether MySQL Router VMs are provisioned for load balancing.
 	// When true, Router VMs must be included in nodes[] with nodeType "mysqlrouter",
-	// and applications connect via RouterRWPort / RouterROPort on the router IPs.
 	// When false, applications connect directly to the Master VM on port 3306.
 	// +optional
 	DeployMySQLRouter bool `json:"deployMySQLRouter,omitempty"`

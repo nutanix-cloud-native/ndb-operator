@@ -283,7 +283,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			}
 		}
 		if databaseStatus.IPAddress != "" {
-			r.setupConnectivity(ctx, database)
+			r.setupConnectivity(ctx, database, ndbClient)
 		} else {
 			// The database is in "READY" state on NDB, but the API responses sometimes do not have
 			// an IP address in the response right after reaching the READY state. We only setup connectivity
@@ -309,12 +309,18 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 // Then sets up an endpoint with the same name as the service
 // to map to an external endpoint (NDB database instance in our scenario).
 // Every database gets a primary -svc. HA databases additionally get engine-specific
-// extra services (e.g. -ro-svc for Postgres) via the HAConnectivityManager registry.
-func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *ndbv1alpha1.Database) (err error) {
+// extra services (e.g. -ro-svc for Postgres/MySQL) via the HAConnectivityManager registry.
+//
+// ndbClient is used only when the read-only endpoint needs different IPs than the primary
+// (currently: MySQL HA router-disabled, where the -ro-svc targets Replica VMs instead of the Master).
+func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *ndbv1alpha1.Database, ndbClient ndb_client.NDBClientHTTPInterface) (err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.setupConnectivity")
 
 	ns := database.Namespace
+
+	// Primary IPs come from Status.IPAddress (set by the HAIPResolver during NDBServer sync).
+	primaryIPs := strings.Split(database.Status.IPAddress, ",")
 
 	// Determine the port for the primary -svc and whether an HA manager is needed.
 	// HA databases use the engine-specific write port; non-HA use the standard DB port.
@@ -325,15 +331,32 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 		primaryPort = haManager.PrimaryPort(database.Spec.Instance.HAConfig)
 	}
 
-	// All databases get a primary -svc.
-	if err = r.setupServiceAndEndpoints(ctx, database, database.Name+"-svc", ns, primaryPort); err != nil {
+	// All databases get a primary -svc pointing to the primary (RW) IPs.
+	if err = r.setupServiceAndEndpoints(ctx, database, database.Name+"-svc", ns, primaryPort, primaryIPs); err != nil {
 		return
 	}
 
-	// HA databases additionally get engine-specific extra services (e.g. -ro-svc for Postgres).
+	// HA databases additionally get engine-specific extra services (e.g. -ro-svc).
 	if haManager != nil {
 		for _, svcSpec := range haManager.AdditionalServices(database.Spec.Instance.HAConfig) {
-			if err = r.setupServiceAndEndpoints(ctx, database, database.Name+svcSpec.NameSuffix, ns, svcSpec.Port); err != nil {
+			roIPs := primaryIPs
+
+			// MySQL HA router-disabled: the -ro-svc must target Replica VMs, not the Master.
+
+			if database.Spec.Instance.Type == common.DATABASE_TYPE_MYSQL &&
+				database.Spec.Instance.HAConfig.MySQL != nil &&
+				!database.Spec.Instance.HAConfig.MySQL.DeployMySQLRouter &&
+				database.Status.DatabaseServerId != "" {
+				replicaIPs, resolveErr := ndb_api.GetMySQLReplicaIPsFromDPC(ctx, ndbClient, database.Status.DatabaseServerId)
+				if resolveErr != nil {
+					log.Error(resolveErr, "Failed to resolve MySQL Replica IPs for -ro-svc; falling back to primary IPs")
+				} else if len(replicaIPs) > 0 {
+					roIPs = replicaIPs
+					log.Info("MySQL HA router-disabled: using Replica IPs for -ro-svc", "ips", roIPs)
+				}
+			}
+
+			if err = r.setupServiceAndEndpoints(ctx, database, database.Name+svcSpec.NameSuffix, ns, svcSpec.Port, roIPs); err != nil {
 				return
 			}
 		}
@@ -346,7 +369,8 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 // setupServiceAndEndpoints creates (or reconciles) a single Kubernetes Service and its
 // matching Endpoints object for the given database. It is the unit of work called for both
 // the primary -svc and each additional HA service (e.g. -ro-svc).
-func (r *DatabaseReconciler) setupServiceAndEndpoints(ctx context.Context, database *ndbv1alpha1.Database, name, namespace string, port int32) error {
+// ips is the explicit set of backend IP addresses to register for this service's endpoints.
+func (r *DatabaseReconciler) setupServiceAndEndpoints(ctx context.Context, database *ndbv1alpha1.Database, name, namespace string, port int32, ips []string) error {
 	log := ctrllog.FromContext(ctx)
 	nn := types.NamespacedName{Name: name, Namespace: namespace}
 	meta := metav1.ObjectMeta{Name: name, Namespace: namespace}
@@ -357,7 +381,7 @@ func (r *DatabaseReconciler) setupServiceAndEndpoints(ctx context.Context, datab
 		r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
 		return err
 	}
-	if err := r.setupEndpoints(ctx, database, nn, meta, port); err != nil {
+	if err := r.setupEndpoints(ctx, database, nn, meta, port, ips); err != nil {
 		errStatement := "Failed to setup kubernetes endpoints for database"
 		log.Error(err, errStatement)
 		r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
@@ -404,12 +428,10 @@ func (r *DatabaseReconciler) setupService(ctx context.Context, database *ndbv1al
 	return
 }
 
-// buildEndpointAddresses returns the list of endpoint addresses for the database.
-// For HA databases ipAddress holds comma-separated HAProxy IPs; each is returned
-// as a separate EndpointAddress so kube-proxy load-balances across all of them.
-// For single-instance databases the single ipAddress is used directly.
-func buildEndpointAddresses(database *ndbv1alpha1.Database) []corev1.EndpointAddress {
-	ips := strings.Split(database.Status.IPAddress, ",")
+// buildEndpointAddresses converts a slice of IP strings into Kubernetes EndpointAddresses.
+// Empty and whitespace-only entries are skipped. Each unique IP becomes a separate
+// EndpointAddress so kube-proxy load-balances across all of them.
+func buildEndpointAddresses(ips []string) []corev1.EndpointAddress {
 	addrs := make([]corev1.EndpointAddress, 0, len(ips))
 	for _, ip := range ips {
 		ip = strings.TrimSpace(ip)
@@ -441,13 +463,14 @@ func endpointAddressesInSync(existing []corev1.EndpointSubset, desired []corev1.
 }
 
 // Checks and creates an endpoints object for the service if it does not already exist.
-// If it is already present, syncs addresses with the Database.Status IP(s) if out of sync.
-// For HA databases all HAProxy IPs are registered; for single-instance the single IPAddress is used.
-func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1alpha1.Database, namespacedName types.NamespacedName, metadata metav1.ObjectMeta, targetPort int32) (err error) {
+// If it is already present, syncs addresses with the provided IPs if out of sync.
+// ips is the explicit set of backend IPs to register; callers are responsible for
+// providing the correct IPs (primary or read-only) for this particular service.
+func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1alpha1.Database, namespacedName types.NamespacedName, metadata metav1.ObjectMeta, targetPort int32, ips []string) (err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.setupEndpoints")
 
-	desiredAddresses := buildEndpointAddresses(database)
+	desiredAddresses := buildEndpointAddresses(ips)
 	endpointSubsets := []corev1.EndpointSubset{
 		{
 			Addresses: desiredAddresses,

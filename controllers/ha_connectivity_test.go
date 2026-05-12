@@ -19,7 +19,9 @@ package controllers
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -315,19 +317,6 @@ func TestHAIPResolversRegistry(t *testing.T) {
 // Helpers for MySQL tests
 // ---------------------------------------------------------------------------
 
-func mysqlRouterNodeWithProperty(ip string) ndb_api.DatabaseNode {
-	return ndb_api.DatabaseNode{
-		Properties: []ndb_api.Property{{Name: "node_type", Value: common.HA_NODE_TYPE_MYSQLROUTER}},
-		DbServer:   ndb_api.DatabaseServer{IPAddresses: []string{ip}},
-	}
-}
-
-func mysqlRouterNodeByName(name, ip string) ndb_api.DatabaseNode {
-	return ndb_api.DatabaseNode{
-		DbServer: ndb_api.DatabaseServer{Name: name, IPAddresses: []string{ip}},
-	}
-}
-
 func masterDBNode(ip string) ndb_api.DatabaseNode {
 	return ndb_api.DatabaseNode{
 		Properties: []ndb_api.Property{{Name: "role", Value: common.HA_NODE_ROLE_MASTER}},
@@ -433,74 +422,6 @@ func TestMySQLHAConnectivityManager_AdditionalServices(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// MySQLHAIPResolver — collectRouterIPs
-// ---------------------------------------------------------------------------
-
-func TestMySQLHAIPResolver_collectRouterIPs(t *testing.T) {
-	r := &MySQLHAIPResolver{}
-
-	t.Run("identifies router node by node_type property", func(t *testing.T) {
-		nodes := []ndb_api.DatabaseNode{
-			mysqlRouterNodeWithProperty("10.0.0.1"),
-			masterDBNode("10.0.0.2"),
-		}
-		ips := r.collectRouterIPs(nodes)
-		assert.Equal(t, []string{"10.0.0.1"}, ips)
-	})
-
-	t.Run("identifies router node by name containing 'mysqlrouter' (case-insensitive)", func(t *testing.T) {
-		nodes := []ndb_api.DatabaseNode{
-			mysqlRouterNodeByName("MySQLRouter-01", "10.0.0.3"),
-			masterDBNode("10.0.0.4"),
-		}
-		ips := r.collectRouterIPs(nodes)
-		assert.Equal(t, []string{"10.0.0.3"}, ips)
-	})
-
-	t.Run("collects IPs from multiple router nodes", func(t *testing.T) {
-		nodes := []ndb_api.DatabaseNode{
-			mysqlRouterNodeWithProperty("10.0.0.1"),
-			mysqlRouterNodeByName("mysqlrouter-02", "10.0.0.2"),
-			masterDBNode("10.0.0.3"),
-		}
-		ips := r.collectRouterIPs(nodes)
-		assert.ElementsMatch(t, []string{"10.0.0.1", "10.0.0.2"}, ips)
-	})
-
-	t.Run("excludes router node with no IP addresses", func(t *testing.T) {
-		nodes := []ndb_api.DatabaseNode{
-			{
-				Properties: []ndb_api.Property{{Name: "node_type", Value: common.HA_NODE_TYPE_MYSQLROUTER}},
-				DbServer:   ndb_api.DatabaseServer{IPAddresses: []string{}},
-			},
-			masterDBNode("10.0.0.2"),
-		}
-		ips := r.collectRouterIPs(nodes)
-		assert.Empty(t, ips)
-	})
-
-	t.Run("returns empty slice when no router nodes exist", func(t *testing.T) {
-		nodes := []ndb_api.DatabaseNode{
-			masterDBNode("10.0.0.1"),
-			replicaDBNode("10.0.0.2"),
-		}
-		ips := r.collectRouterIPs(nodes)
-		assert.Empty(t, ips)
-	})
-
-	t.Run("property match takes precedence; name match is not double-counted", func(t *testing.T) {
-		nodes := []ndb_api.DatabaseNode{
-			{
-				Properties: []ndb_api.Property{{Name: "node_type", Value: common.HA_NODE_TYPE_MYSQLROUTER}},
-				DbServer:   ndb_api.DatabaseServer{Name: "mysqlrouter-primary", IPAddresses: []string{"10.0.0.5"}},
-			},
-		}
-		ips := r.collectRouterIPs(nodes)
-		assert.Equal(t, []string{"10.0.0.5"}, ips)
-	})
-}
-
-// ---------------------------------------------------------------------------
 // MySQLHAIPResolver — collectMasterIP
 // ---------------------------------------------------------------------------
 
@@ -547,37 +468,32 @@ func TestMySQLHAIPResolver_collectMasterIP(t *testing.T) {
 // MySQLHAIPResolver — ResolveIPs
 // ---------------------------------------------------------------------------
 
+// dbNodeWithServerId returns a database node with a DatabaseServerId set,
+// matching the real-world NDB response where every DB VM has a server ID.
+func dbNodeWithServerId(ip, serverId string, role string) ndb_api.DatabaseNode {
+	return ndb_api.DatabaseNode{
+		DatabaseServerId: serverId,
+		Properties:       []ndb_api.Property{{Name: "role", Value: role}},
+		DbServer:         ndb_api.DatabaseServer{IPAddresses: []string{ip}},
+	}
+}
+
+// mockHTTPJSONResponse builds a minimal *http.Response whose body is the given JSON string.
+func mockHTTPJSONResponse(body string) *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(body)),
+	}
+}
+
 func TestMySQLHAIPResolver_ResolveIPs(t *testing.T) {
 	ctx := context.Background()
 	r := &MySQLHAIPResolver{}
 
-	t.Run("router-enabled: returns IPs from nodes when router property is present (no NDB call)", func(t *testing.T) {
-		db := ndb_api.DatabaseResponse{
-			DatabaseNodes: []ndb_api.DatabaseNode{
-				mysqlRouterNodeWithProperty("10.0.0.1"),
-				mysqlRouterNodeWithProperty("10.0.0.2"),
-				masterDBNode("10.0.0.3"),
-			},
-		}
-		ips, err := r.ResolveIPs(ctx, nil, db)
-		assert.NoError(t, err)
-		assert.ElementsMatch(t, []string{"10.0.0.1", "10.0.0.2"}, ips)
-	})
+	// ── DatabaseServerId empty: DPC call skipped, fall back to Master IP ──────────
 
-	t.Run("router-enabled: returns IPs when router identified by name (no NDB call)", func(t *testing.T) {
-		db := ndb_api.DatabaseResponse{
-			DatabaseNodes: []ndb_api.DatabaseNode{
-				mysqlRouterNodeByName("mysqlrouter-01", "10.0.0.7"),
-				masterDBNode("10.0.0.8"),
-			},
-		}
-		// hasRouter is detected via name; collectRouterIPs returns IPs by name match.
-		ips, err := r.ResolveIPs(ctx, nil, db)
-		assert.NoError(t, err)
-		assert.Equal(t, []string{"10.0.0.7"}, ips)
-	})
-
-	t.Run("router-disabled: returns Master IP only", func(t *testing.T) {
+	t.Run("skips DPC call and returns Master IP when DatabaseServerId is empty", func(t *testing.T) {
+		// Passing nil NDB client intentionally — if a DPC call were made this would panic.
 		db := ndb_api.DatabaseResponse{
 			DatabaseNodes: []ndb_api.DatabaseNode{
 				masterDBNode("10.0.0.1"),
@@ -590,7 +506,7 @@ func TestMySQLHAIPResolver_ResolveIPs(t *testing.T) {
 		assert.Equal(t, []string{"10.0.0.1"}, ips)
 	})
 
-	t.Run("router-disabled: returns nil when no Master node present", func(t *testing.T) {
+	t.Run("skips DPC call and returns nil when DatabaseServerId is empty and no Master node", func(t *testing.T) {
 		db := ndb_api.DatabaseResponse{
 			DatabaseNodes: []ndb_api.DatabaseNode{
 				replicaDBNode("10.0.0.2"),
@@ -602,7 +518,9 @@ func TestMySQLHAIPResolver_ResolveIPs(t *testing.T) {
 		assert.Nil(t, ips)
 	})
 
-	t.Run("router-enabled: returns nil when router nodes found but have no IPs and DatabaseServerId is empty", func(t *testing.T) {
+	t.Run("skips DPC call and returns Master IP when router in databaseNodes has no IPs and DatabaseServerId is empty", func(t *testing.T) {
+		// Router node is present but has no IPs and no server ID — DPC cannot be used.
+		// Falls back to the Master VM IP as the best available connection point.
 		db := ndb_api.DatabaseResponse{
 			DatabaseNodes: []ndb_api.DatabaseNode{
 				{
@@ -615,18 +533,65 @@ func TestMySQLHAIPResolver_ResolveIPs(t *testing.T) {
 		}
 		ips, err := r.ResolveIPs(ctx, nil, db)
 		assert.NoError(t, err)
-		assert.Nil(t, ips)
+		assert.Equal(t, []string{"10.0.0.1"}, ips)
 	})
 
-	t.Run("router-enabled: propagates NDB client error from fallback lookup", func(t *testing.T) {
+	// ── DPC-based lookup: the main path in production ─────────────────────────────
+	// NDB does not include MySQL Router VMs in databaseNodes[]. The resolver calls
+	// GetMySQLRouterIPsFromDPC which uses GET /dpcs/{id} to read router_info.
+
+	t.Run("router-enabled: DPC lookup resolves router IPs when routers absent from databaseNodes", func(t *testing.T) {
 		db := ndb_api.DatabaseResponse{
 			DatabaseNodes: []ndb_api.DatabaseNode{
-				{
-					DatabaseServerId: "server-id-456",
-					Properties:       []ndb_api.Property{{Name: "node_type", Value: common.HA_NODE_TYPE_MYSQLROUTER}},
-					DbServer:         ndb_api.DatabaseServer{IPAddresses: []string{}},
-				},
-				masterDBNode("10.0.0.1"),
+				dbNodeWithServerId("10.0.0.1", "server-id-db1", common.HA_NODE_ROLE_MASTER),
+				dbNodeWithServerId("10.0.0.2", "server-id-db2", common.HA_NODE_ROLE_REPLICA),
+			},
+		}
+		ndbClient := &mockNDBClient{}
+		// GetDatabaseServer(server-id-db1) → returns dbserverClusterId
+		ndbClient.On("NewRequest", http.MethodGet, "dbservers/server-id-db1", nil).Return(&http.Request{}, nil)
+		ndbClient.On("Do", mock.Anything).Return(mockHTTPJSONResponse(
+			`{"id":"server-id-db1","dbserverClusterId":"cluster-id-123"}`), nil).Once()
+		// GetDPC(cluster-id-123) → DPC response with router_info containing two router VMs
+		ndbClient.On("NewRequest", http.MethodGet, "dpcs/cluster-id-123", nil).Return(&http.Request{}, nil)
+		ndbClient.On("Do", mock.Anything).Return(mockHTTPJSONResponse(
+			`{"id":"cluster-id-123","info":{"info":{"cluster_info":{"router_info":{"router_node_list":[`+
+				`{"host_id":"r1","host_ip":"10.0.1.1","host_name":"mysqlrouter-1"},`+
+				`{"host_id":"r2","host_ip":"10.0.1.2","host_name":"mysqlrouter-2"}]}}}}}`), nil).Once()
+
+		ips, err := r.ResolveIPs(ctx, ndbClient, db)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, []string{"10.0.1.1", "10.0.1.2"}, ips)
+		ndbClient.AssertExpectations(t)
+	})
+
+	t.Run("router-disabled: DPC lookup finds no routers and falls back to Master IP", func(t *testing.T) {
+		db := ndb_api.DatabaseResponse{
+			DatabaseNodes: []ndb_api.DatabaseNode{
+				dbNodeWithServerId("10.0.0.1", "server-id-db1", common.HA_NODE_ROLE_MASTER),
+				dbNodeWithServerId("10.0.0.2", "server-id-db2", common.HA_NODE_ROLE_REPLICA),
+			},
+		}
+		ndbClient := &mockNDBClient{}
+		// GetDatabaseServer → cluster ID
+		ndbClient.On("NewRequest", http.MethodGet, "dbservers/server-id-db1", nil).Return(&http.Request{}, nil)
+		ndbClient.On("Do", mock.Anything).Return(mockHTTPJSONResponse(
+			`{"id":"server-id-db1","dbserverClusterId":"cluster-id-456"}`), nil).Once()
+		// GetDPC(cluster-id-456) → DPC with empty router_node_list (router not deployed)
+		ndbClient.On("NewRequest", http.MethodGet, "dpcs/cluster-id-456", nil).Return(&http.Request{}, nil)
+		ndbClient.On("Do", mock.Anything).Return(mockHTTPJSONResponse(
+			`{"id":"cluster-id-456","info":{"info":{"cluster_info":{"router_info":{"router_node_list":[]}}}}}`), nil).Once()
+
+		ips, err := r.ResolveIPs(ctx, ndbClient, db)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"10.0.0.1"}, ips)
+		ndbClient.AssertExpectations(t)
+	})
+
+	t.Run("propagates NDB client error from DPC lookup", func(t *testing.T) {
+		db := ndb_api.DatabaseResponse{
+			DatabaseNodes: []ndb_api.DatabaseNode{
+				dbNodeWithServerId("10.0.0.1", "server-id-456", common.HA_NODE_ROLE_MASTER),
 			},
 		}
 		ndbClient := &mockNDBClient{}

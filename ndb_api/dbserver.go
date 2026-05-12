@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
@@ -87,8 +86,6 @@ func GetDPC(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, dp
 // It calls GET /dpcs/{clusterId} and checks proxy_info:
 //   - If cluster_ip is set: the VIP was provisioned → returns [vip] (single IP, all traffic routes through it)
 //   - If cluster_ip is empty: no VIP → returns individual HAProxy node IPs from proxy_node_list
-//
-// This is needed because NDB does not include HAProxy nodes in databaseNodes[] on GET /databases.
 func GetHAProxyIPsForCluster(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, oneServerId string) (ips []string, err error) {
 	log := ctrllog.FromContext(ctx)
 
@@ -123,54 +120,78 @@ func GetHAProxyIPsForCluster(ctx context.Context, ndbClient ndb_client.NDBClient
 	// No VIP — use individual HAProxy node IPs from the DPC proxy node list.
 	for _, node := range proxyInfo.ProxyNodeList {
 		if node.HostIP != "" {
-			log.Info("HA cluster HAProxy node", "name", node.HostName, "ip", node.HostIP)
+			log.V(1).Info("HA cluster HAProxy node", "name", node.HostName, "ip", node.HostIP)
 			ips = append(ips, node.HostIP)
-		}
-	}
-	if len(ips) == 0 {
-		log.Info("No proxy IPs found in DPC proxy_node_list; falling back to dbservers name filter", "dpcId", server.DbserverClusterId)
-		// Last-resort fallback: list all servers and filter by name.
-		allServers, listErr := GetAllDatabaseServers(ctx, ndbClient)
-		if listErr != nil {
-			return nil, fmt.Errorf("GetHAProxyIPsForCluster: fallback list failed: %w", listErr)
-		}
-		for _, s := range allServers {
-			if s.DbserverClusterId == server.DbserverClusterId &&
-				strings.Contains(strings.ToLower(s.Name), common.HA_NODE_TYPE_HAPROXY) {
-				ips = append(ips, s.IPAddresses...)
-			}
 		}
 	}
 	return
 }
 
-// GetMySQLRouterIPsForCluster resolves the MySQL Router VM IPs for a MySQL HA cluster.
-// It first fetches the DB server to obtain the dbserverClusterId, then lists all servers
-// in that cluster and filters those whose name contains "mysqlrouter".
-// This is the fallback path used when router nodes are not present in databaseNodes[].
-func GetMySQLRouterIPsForCluster(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, oneServerId string) (ips []string, err error) {
+// GetMySQLRouterIPsFromDPC resolves MySQL Router VM IPs for a MySQL HA cluster using router list from the DPC endpoint.
+func GetMySQLRouterIPsFromDPC(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, oneServerId string) (ips []string, err error) {
 	log := ctrllog.FromContext(ctx)
 
 	server, err := GetDatabaseServer(ctx, ndbClient, oneServerId)
 	if err != nil {
-		return nil, fmt.Errorf("GetMySQLRouterIPsForCluster: could not fetch server %s: %w", oneServerId, err)
+		return nil, fmt.Errorf("GetMySQLRouterIPsFromDPC: could not fetch server %s: %w", oneServerId, err)
 	}
 	if server.DbserverClusterId == "" {
 		log.Info("Server has no dbserverClusterId; not an HA cluster", "id", oneServerId)
 		return
 	}
 
-	allServers, listErr := GetAllDatabaseServers(ctx, ndbClient)
-	if listErr != nil {
-		return nil, fmt.Errorf("GetMySQLRouterIPsForCluster: could not list all servers: %w", listErr)
+	dpc, err := GetDPC(ctx, ndbClient, server.DbserverClusterId)
+	if err != nil {
+		return nil, fmt.Errorf("GetMySQLRouterIPsFromDPC: could not fetch DPC %s: %w", server.DbserverClusterId, err)
 	}
-	for _, s := range allServers {
-		if s.DbserverClusterId == server.DbserverClusterId &&
-			strings.Contains(strings.ToLower(s.Name), common.HA_NODE_TYPE_MYSQLROUTER) {
-			ips = append(ips, s.IPAddresses...)
+
+	dpcInfo, err := dpc.GetDPCInfo()
+	if err != nil {
+		return nil, fmt.Errorf("GetMySQLRouterIPsFromDPC: could not parse DPC info: %w", err)
+	}
+
+	routerNodes := dpcInfo.Info.ClusterInfo.RouterInfo.RouterNodeList
+	log.Info("MySQL Router info parsed from DPC", "routerNodeCount", len(routerNodes), "dpcId", server.DbserverClusterId)
+	for _, node := range routerNodes {
+		if node.HostIP != "" {
+			log.V(1).Info("MySQL Router node", "name", node.HostName, "ip", node.HostIP)
+			ips = append(ips, node.HostIP)
 		}
 	}
-	log.Info("Resolved MySQL Router IPs for cluster", "dpcId", server.DbserverClusterId, "ips", ips)
+	return
+}
+
+// GetMySQLReplicaIPsFromDPC resolves Replica VM IPs for a router-disabled MySQL HA cluster uisng node from DPC endpoint.
+func GetMySQLReplicaIPsFromDPC(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, oneServerId string) (ips []string, err error) {
+	log := ctrllog.FromContext(ctx)
+
+	server, err := GetDatabaseServer(ctx, ndbClient, oneServerId)
+	if err != nil {
+		return nil, fmt.Errorf("GetMySQLReplicaIPsFromDPC: could not fetch server %s: %w", oneServerId, err)
+	}
+	if server.DbserverClusterId == "" {
+		log.Info("Server has no dbserverClusterId; not an HA cluster", "id", oneServerId)
+		return
+	}
+
+	dpc, err := GetDPC(ctx, ndbClient, server.DbserverClusterId)
+	if err != nil {
+		return nil, fmt.Errorf("GetMySQLReplicaIPsFromDPC: could not fetch DPC %s: %w", server.DbserverClusterId, err)
+	}
+
+	dpcInfo, err := dpc.GetDPCInfo()
+	if err != nil {
+		return nil, fmt.Errorf("GetMySQLReplicaIPsFromDPC: could not parse DPC info: %w", err)
+	}
+
+	nodeList := dpcInfo.Info.ClusterInfo.NodeList
+	log.Info("MySQL cluster node list parsed from DPC", "nodeCount", len(nodeList), "dpcId", server.DbserverClusterId)
+	for _, node := range nodeList {
+		if node.Role == common.HA_NODE_ROLE_REPLICA && node.HostIP != "" {
+			log.V(1).Info("MySQL Replica node", "name", node.HostName, "ip", node.HostIP)
+			ips = append(ips, node.HostIP)
+		}
+	}
 	return
 }
 

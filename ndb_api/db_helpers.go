@@ -36,6 +36,11 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 
 	// Fetching the TM details
 	tmName, tmDescription, slaName := database.GetInstanceTMDetails()
+	// NDB rejects any SLA other than "NONE" for MySQL HA.
+	//TODO: Remove this once NDB 2.11+ is released (time machine support for MySQL HA)
+	if database.IsMysqlHA() {
+		slaName = common.SLA_NAME_NONE
+	}
 	// Fetching the SLA for the TM by name
 	sla, err := GetSLAByName(ctx, ndb_client, slaName)
 	if err != nil {
@@ -416,8 +421,6 @@ func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionR
 		req.NodeCount = len(haConfig.Nodes)
 
 		// Build per-node entries from the HA config.
-		// MySQL Router nodes only carry node_type; database nodes carry role + node_type
-		// plus compute/network profile IDs.
 		profilesMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
 		haNodes := make([]Node, 0, len(haConfig.Nodes))
 		for _, n := range haConfig.Nodes {
@@ -425,9 +428,7 @@ func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionR
 				VmName:      n.VmName,
 				NxClusterId: n.ClusterId,
 			}
-			// All MySQL HA nodes (both database and router) require compute and network profiles
-			// since NDB provisions VMs for each. Router nodes carry only node_type in properties;
-			// database nodes additionally carry role and node_type.
+
 			node.NetworkProfileId = profilesMap[common.PROFILE_TYPE_NETWORK].Id
 			node.ComputeProfileId = profilesMap[common.PROFILE_TYPE_COMPUTE].Id
 			if n.NodeType == common.HA_NODE_TYPE_MYSQLROUTER {

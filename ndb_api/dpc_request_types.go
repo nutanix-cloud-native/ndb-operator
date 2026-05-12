@@ -31,11 +31,40 @@ type DPCProxyInfo struct {
 	ProxyNodeList []DPCProxyNode `json:"proxy_node_list"`
 }
 
+// DPCClusterNode represents a single database VM entry in the cluster node_list.
+// Present for both Postgres HA (roles: "master", "async_replica", "sync_replica")
+// and MySQL HA (roles: "Master", "Replica").
+type DPCClusterNode struct {
+	HostId   string `json:"host_id"`
+	HostIP   string `json:"host_ip"`
+	HostName string `json:"host_name"`
+	Role     string `json:"role"`
+}
+
+// DPCRouterNode represents a single MySQL Router VM in the DPC router info.
+type DPCRouterNode struct {
+	HostId   string `json:"host_id"`
+	HostIP   string `json:"host_ip"`
+	HostName string `json:"host_name"`
+}
+
+// DPCRouterInfo holds MySQL Router VM details returned by GET /dpcs/{id} for MySQL HA clusters.
+// RouterNodeList is empty when MySQL Router was not deployed (router-disabled instance).
+type DPCRouterInfo struct {
+	RouterNodeList []DPCRouterNode `json:"router_node_list"`
+}
+
 // DPCClusterInfo is the nested cluster topology returned by GET /dpcs/{id}.
+// NodeList is present for both Postgres HA and MySQL HA and lists all database VMs with their roles.
 type DPCClusterInfo struct {
+	// Shared fields
+	NodeList []DPCClusterNode `json:"node_list"`
+	// Postgres HA fields
 	EtcdPort           int          `json:"etcd_port"`
 	PatroniClusterName string       `json:"patroni_cluster_name"`
 	ProxyInfo          DPCProxyInfo `json:"proxy_info"`
+	// MySQL HA fields
+	RouterInfo DPCRouterInfo `json:"router_info"`
 }
 
 // DPCInnerInfo is the second-level info block: .info.info in the NDB response.

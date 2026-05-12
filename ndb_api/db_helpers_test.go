@@ -1157,6 +1157,7 @@ func TestGenerateProvisioningRequest_WithoutValidTMDetails_ReturnsError(t *testi
 		mockDatabase.On("GetInstanceTMDetails").Return("tm_name", "rm_description", tc.slaName)
 		mockDatabase.On("GetTMScheduleForInstance").Return(tc.tmSchedule, tc.tmScheduleErr)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("IsMysqlHA").Return(false)
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, mockDatabase, reqData)
@@ -1275,6 +1276,7 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 		mockDatabase.On("GetTMScheduleForInstance").Return(Schedule{}, nil)
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("IsMysqlHA").Return(false)
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, &mockDatabase, reqData)
@@ -1409,6 +1411,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 		mockDatabase.On("IsClone").Return(false)
 		mockDatabase.On("IsPostgresHA").Return(false)
+		mockDatabase.On("IsMysqlHA").Return(false)
 		mockDatabase.On("GetInstanceHAConfig").Return((*HAConfig)(nil))
 
 		// Test
