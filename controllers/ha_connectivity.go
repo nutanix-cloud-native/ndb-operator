@@ -50,6 +50,7 @@ type HAConnectivityManager interface {
 // To add HA connectivity support for a new engine, register its manager here.
 var haConnectivityManagers = map[string]HAConnectivityManager{
 	common.DATABASE_TYPE_POSTGRES: &PostgresHAConnectivityManager{},
+	common.DATABASE_TYPE_MYSQL:    &MySQLHAConnectivityManager{},
 }
 
 // HAIPResolver resolves the connection IP(s) for an HA database as reported by the NDB API.
@@ -67,6 +68,7 @@ type HAIPResolver interface {
 // To add HA IP resolution for a new engine, register its resolver here.
 var haIPResolvers = map[string]HAIPResolver{
 	common.DATABASE_TYPE_POSTGRES: &PostgresHAIPResolver{},
+	common.DATABASE_TYPE_MYSQL:    &MySQLHAIPResolver{},
 }
 
 // PostgresHAIPResolver resolves HAProxy IPs for a Postgres HA database.
@@ -131,4 +133,125 @@ func (m *PostgresHAConnectivityManager) AdditionalServices(haConfig *ndbv1alpha1
 	return []HAServiceSpec{
 		{NameSuffix: "-ro-svc", Port: readPort},
 	}
+}
+
+// MySQLHAConnectivityManager manages MySQL Router-based connectivity for MySQL HA.
+//
+// Router-enabled: primary -svc routes to the MySQL Router RW port (6446);
+// -ro-svc routes to the Router RO port (6447).
+//
+// Router-disabled: primary -svc routes to port 3306 (Master VM);
+// -ro-svc also uses port 3306 (Replica VMs share the same port).
+type MySQLHAConnectivityManager struct{}
+
+func (m *MySQLHAConnectivityManager) PrimaryPort(haConfig *ndbv1alpha1.InstanceHAConfig) int32 {
+	my := haConfig.MySQL
+	if my == nil || !my.DeployMySQLRouter {
+		return common.HA_MYSQL_DEFAULT_LISTENER_PORT
+	}
+	if my.RouterRWPort != 0 {
+		return my.RouterRWPort
+	}
+	return common.HA_MYSQL_DEFAULT_RW_PORT
+}
+
+func (m *MySQLHAConnectivityManager) AdditionalServices(haConfig *ndbv1alpha1.InstanceHAConfig) []HAServiceSpec {
+	my := haConfig.MySQL
+	if my == nil || !my.DeployMySQLRouter {
+		return []HAServiceSpec{
+			{NameSuffix: "-ro-svc", Port: common.HA_MYSQL_DEFAULT_LISTENER_PORT},
+		}
+	}
+	roPort := common.HA_MYSQL_DEFAULT_RO_PORT
+	if my.RouterROPort != 0 {
+		roPort = my.RouterROPort
+	}
+	return []HAServiceSpec{
+		{NameSuffix: "-ro-svc", Port: roPort},
+	}
+}
+
+// MySQLHAIPResolver resolves connection IPs for a MySQL HA database.
+//
+// Router-enabled: scans databaseNodes[] for nodes whose properties identify them as
+// mysqlrouter, then falls back to a DPC cluster membership lookup filtered by name.
+// The returned IPs are the MySQL Router VM IPs; applications connect on port 6446/6447.
+//
+// Router-disabled: returns the Master VM IP only; applications connect on port 3306.
+// Replica IPs are intentionally excluded — they are strictly read-only and exposed via
+// the -ro-svc endpoint separately using the same Master-resolved IP set from status.
+type MySQLHAIPResolver struct{}
+
+func (r *MySQLHAIPResolver) ResolveIPs(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, db ndb_api.DatabaseResponse) ([]string, error) {
+	// Determine whether a MySQL Router was deployed by inspecting the node list.
+	// A router node is identified by a {node_type: "mysqlrouter"} property, or as a
+	// fallback by its server name containing "mysqlrouter" (consistent with collectRouterIPs).
+	hasRouter := false
+	for _, node := range db.DatabaseNodes {
+		for _, prop := range node.Properties {
+			if prop.Name == "node_type" && prop.Value == common.HA_NODE_TYPE_MYSQLROUTER {
+				hasRouter = true
+				break
+			}
+		}
+		if !hasRouter && strings.Contains(strings.ToLower(node.DbServer.Name), common.HA_NODE_TYPE_MYSQLROUTER) {
+			hasRouter = true
+		}
+		if hasRouter {
+			break
+		}
+	}
+
+	if hasRouter {
+		ips := r.collectRouterIPs(db.DatabaseNodes)
+		if len(ips) > 0 {
+			return ips, nil
+		}
+		// Fallback: query the DPC (DBServerCluster) endpoint and filter by name.
+		if db.DatabaseNodes[0].DatabaseServerId == "" {
+			return nil, nil
+		}
+		return ndb_api.GetMySQLRouterIPsForCluster(ctx, ndbClient, db.DatabaseNodes[0].DatabaseServerId)
+	}
+
+	// Router-disabled: return the Master VM IP only.
+	return r.collectMasterIP(db.DatabaseNodes), nil
+}
+
+// collectRouterIPs returns the IP of each MySQL Router node in the list.
+// A node is identified as a router by a {node_type: "mysqlrouter"} property,
+// or as a fallback by its server name containing "mysqlrouter" (NDB naming convention).
+func (r *MySQLHAIPResolver) collectRouterIPs(nodes []ndb_api.DatabaseNode) []string {
+	var ips []string
+	for _, node := range nodes {
+		isRouter := false
+		for _, prop := range node.Properties {
+			if prop.Name == "node_type" && prop.Value == common.HA_NODE_TYPE_MYSQLROUTER {
+				isRouter = true
+				break
+			}
+		}
+		if !isRouter && strings.Contains(strings.ToLower(node.DbServer.Name), common.HA_NODE_TYPE_MYSQLROUTER) {
+			isRouter = true
+		}
+		if isRouter && len(node.DbServer.IPAddresses) > 0 {
+			ips = append(ips, node.DbServer.IPAddresses[0])
+		}
+	}
+	return ips
+}
+
+// collectMasterIP returns the IP of the Master database node.
+// Used when no MySQL Router is deployed; the Master is the single RW endpoint.
+func (r *MySQLHAIPResolver) collectMasterIP(nodes []ndb_api.DatabaseNode) []string {
+	for _, node := range nodes {
+		for _, prop := range node.Properties {
+			if prop.Name == "role" && prop.Value == common.HA_NODE_ROLE_MASTER {
+				if len(node.DbServer.IPAddresses) > 0 {
+					return []string{node.DbServer.IPAddresses[0]}
+				}
+			}
+		}
+	}
+	return nil
 }

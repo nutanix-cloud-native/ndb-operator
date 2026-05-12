@@ -329,6 +329,20 @@ func initializeObjects(spec *DatabaseSpec) {
 				pg.ReadPort = common.HA_PROXY_DEFAULT_READ_PORT
 			}
 		}
+		if my := spec.Instance.HAConfig.MySQL; my != nil {
+			if my.RouterRWPort == 0 {
+				my.RouterRWPort = common.HA_MYSQL_DEFAULT_RW_PORT
+			}
+			if my.RouterROPort == 0 {
+				my.RouterROPort = common.HA_MYSQL_DEFAULT_RO_PORT
+			}
+			if my.MySQLClusterUsername == "" {
+				my.MySQLClusterUsername = "mysqladmin"
+			}
+			if my.ReplicationUser == "" {
+				my.ReplicationUser = "repl"
+			}
+		}
 	}
 
 	// Initialize Clone properties

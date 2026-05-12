@@ -144,6 +144,36 @@ func GetHAProxyIPsForCluster(ctx context.Context, ndbClient ndb_client.NDBClient
 	return
 }
 
+// GetMySQLRouterIPsForCluster resolves the MySQL Router VM IPs for a MySQL HA cluster.
+// It first fetches the DB server to obtain the dbserverClusterId, then lists all servers
+// in that cluster and filters those whose name contains "mysqlrouter".
+// This is the fallback path used when router nodes are not present in databaseNodes[].
+func GetMySQLRouterIPsForCluster(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, oneServerId string) (ips []string, err error) {
+	log := ctrllog.FromContext(ctx)
+
+	server, err := GetDatabaseServer(ctx, ndbClient, oneServerId)
+	if err != nil {
+		return nil, fmt.Errorf("GetMySQLRouterIPsForCluster: could not fetch server %s: %w", oneServerId, err)
+	}
+	if server.DbserverClusterId == "" {
+		log.Info("Server has no dbserverClusterId; not an HA cluster", "id", oneServerId)
+		return
+	}
+
+	allServers, listErr := GetAllDatabaseServers(ctx, ndbClient)
+	if listErr != nil {
+		return nil, fmt.Errorf("GetMySQLRouterIPsForCluster: could not list all servers: %w", listErr)
+	}
+	for _, s := range allServers {
+		if s.DbserverClusterId == server.DbserverClusterId &&
+			strings.Contains(strings.ToLower(s.Name), common.HA_NODE_TYPE_MYSQLROUTER) {
+			ips = append(ips, s.IPAddresses...)
+		}
+	}
+	log.Info("Resolved MySQL Router IPs for cluster", "dpcId", server.DbserverClusterId, "ips", ips)
+	return
+}
+
 // DeprovisionDPC deletes an entire HA DBServerCluster (DPC) via DELETE /dpcs/{id}.
 // This is the correct NDB API for removing HA instances — NDB blocks individual
 // /dbservers/{id} deletes when the server belongs to a cluster.

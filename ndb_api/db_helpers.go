@@ -395,7 +395,7 @@ func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionR
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	req.SSHPublicKey = SSHPublicKey
 
-	// Default action arguments
+	// Default action arguments — shared by SI and HA
 	actionArguments := map[string]string{
 		"listener_port":           "3306",
 		"db_password":             dbPassword,
@@ -406,6 +406,65 @@ func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionR
 	// Appending/overwriting database actionArguments to actionArguments
 	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
 		return nil, err
+	}
+
+	// HA-specific request overrides (override req fields and merge HA action arguments)
+	if database.IsMysqlHA() {
+		haConfig := database.GetInstanceHAConfig()
+
+		req.Clustered = true
+		req.NodeCount = len(haConfig.Nodes)
+
+		// Build per-node entries from the HA config.
+		// MySQL Router nodes only carry node_type; database nodes carry role + node_type
+		// plus compute/network profile IDs.
+		profilesMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
+		haNodes := make([]Node, 0, len(haConfig.Nodes))
+		for _, n := range haConfig.Nodes {
+			node := Node{
+				VmName:      n.VmName,
+				NxClusterId: n.ClusterId,
+			}
+			// All MySQL HA nodes (both database and router) require compute and network profiles
+			// since NDB provisions VMs for each. Router nodes carry only node_type in properties;
+			// database nodes additionally carry role and node_type.
+			node.NetworkProfileId = profilesMap[common.PROFILE_TYPE_NETWORK].Id
+			node.ComputeProfileId = profilesMap[common.PROFILE_TYPE_COMPUTE].Id
+			if n.NodeType == common.HA_NODE_TYPE_MYSQLROUTER {
+				node.Properties = []NodeProperty{
+					{Name: "node_type", Value: common.HA_NODE_TYPE_MYSQLROUTER},
+				}
+			} else {
+				node.Properties = []NodeProperty{
+					{Name: "role", Value: n.Role},
+					{Name: "node_type", Value: common.HA_NODE_TYPE_DATABASE},
+				}
+			}
+			haNodes = append(haNodes, node)
+		}
+		req.Nodes = haNodes
+
+		deployRouter := "false"
+		if haConfig.DeployMySQLRouter {
+			deployRouter = "true"
+		}
+
+		haActionArguments := map[string]string{
+			"cluster_name":                haConfig.ClusterName,
+			"innodb_cluster_name":         haConfig.InnoDBClusterName,
+			"mysql_cluster_username":      haConfig.MySQLClusterUsername,
+			"mysql_cluster_password":      dbPassword,
+			"replication_user":            haConfig.ReplicationUser,
+			"replication_password":        dbPassword,
+			"deploy_mysqlrouter":          deployRouter,
+			"router_rw_port":              fmt.Sprintf("%d", haConfig.RouterRWPort),
+			"router_ro_port":              fmt.Sprintf("%d", haConfig.RouterROPort),
+			"allocate_mysql_hugepage":     "true",
+			"ensure_vm_host_distribution": "false",
+		}
+		for k, v := range haActionArguments {
+			actionArguments[k] = v
+		}
 	}
 
 	// Converting action arguments map to list and appending to req.ActionArguments

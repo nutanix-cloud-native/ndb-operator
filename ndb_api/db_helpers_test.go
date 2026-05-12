@@ -953,6 +953,7 @@ func TestMySqlProvisionRequestAppender_withoutAdditionalArguments_positiveWorkfl
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MYSQL)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsMysqlHA").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -1018,6 +1019,7 @@ func TestMySqlProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(
 		"listener_port": "1111",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsMysqlHA").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -1083,6 +1085,7 @@ func TestMySqlProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(
 		"invalid-key": "invalid-value",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsMysqlHA").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL)
 

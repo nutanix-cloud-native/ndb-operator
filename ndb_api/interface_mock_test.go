@@ -136,6 +136,12 @@ func (m *MockDatabaseInterface) IsPostgresHA() bool {
 	return args.Bool(0)
 }
 
+// IsMysqlHA is a mock implementation of the IsMysqlHA method in the Database interface
+func (m *MockDatabaseInterface) IsMysqlHA() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
+
 // GetInstanceHAConfig is a mock implementation of the GetInstanceHAConfig method in the Database interface
 func (m *MockDatabaseInterface) GetInstanceHAConfig() *HAConfig {
 	args := m.Called()
