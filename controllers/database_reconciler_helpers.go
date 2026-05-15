@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -101,8 +102,9 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 		return requeueOnErr(err)
 	}
 	log.Info("Database CR fetched. Adding finalizer " + finalizer)
+	patch := client.MergeFrom(database.DeepCopy())
 	controllerutil.AddFinalizer(database, finalizer)
-	if err := r.Update(ctx, database); err != nil {
+	if err := r.Patch(ctx, database, patch); err != nil {
 		return requeueOnErr(err)
 	} else {
 		log.Info("Added finalizer " + finalizer)
