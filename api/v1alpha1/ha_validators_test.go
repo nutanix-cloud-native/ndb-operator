@@ -94,7 +94,7 @@ func TestMysqlHAParamsValidator_Validate(t *testing.T) {
 
 	t.Run("valid config with router enabled produces no errors", func(t *testing.T) {
 		haConfig := &InstanceHAConfig{
-			MySQL: validMySQLConfig(),
+			MySQL: &MySQLHAConfig{InnoDBClusterName: "innodb-cluster", DeployMySQLRouter: true},
 			Nodes: []InstanceHANode{mysqlRouterNode("router1"), mysqlRouterNode("router2"), masterNode("db1"), replicaNode("db2"), replicaNode("db3")},
 		}
 		errors := &field.ErrorList{}
@@ -110,6 +110,32 @@ func TestMysqlHAParamsValidator_Validate(t *testing.T) {
 		errors := &field.ErrorList{}
 		validator.Validate(haConfig, haPath, errors)
 		assert.Empty(t, *errors)
+	})
+
+	t.Run("deployMySQLRouter true but no router nodes returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: &MySQLHAConfig{InnoDBClusterName: "innodb-cluster", DeployMySQLRouter: true},
+			Nodes: []InstanceHANode{masterNode("db1"), replicaNode("db2"), replicaNode("db3")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeInvalid, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.mysql.deployMySQLRouter", (*errors)[0].Field)
+		assert.Contains(t, (*errors)[0].Detail, "no mysqlrouter nodes")
+	})
+
+	t.Run("router nodes present but deployMySQLRouter false returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: validMySQLConfig(), // DeployMySQLRouter defaults to false
+			Nodes: []InstanceHANode{mysqlRouterNode("router1"), masterNode("db1"), replicaNode("db2")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeInvalid, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.nodes", (*errors)[0].Field)
+		assert.Contains(t, (*errors)[0].Detail, "deployMySQLRouter is false")
 	})
 
 	t.Run("nil mysql returns required error and stops further node validation", func(t *testing.T) {
@@ -153,7 +179,7 @@ func TestMysqlHAParamsValidator_Validate(t *testing.T) {
 
 	t.Run("mysqlrouter node with role set returns error", func(t *testing.T) {
 		haConfig := &InstanceHAConfig{
-			MySQL: validMySQLConfig(),
+			MySQL: &MySQLHAConfig{InnoDBClusterName: "innodb-cluster", DeployMySQLRouter: true},
 			Nodes: []InstanceHANode{
 				{VmName: "router1", NodeType: common.HA_NODE_TYPE_MYSQLROUTER, Role: "Master", ClusterName: "cluster-a"},
 				masterNode("db1"),

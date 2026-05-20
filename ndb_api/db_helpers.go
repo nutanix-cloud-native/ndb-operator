@@ -408,12 +408,9 @@ func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionR
 		"auto_tune_staging_drive": "true",
 	}
 
-	// Appending/overwriting database actionArguments to actionArguments
-	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
-		return nil, err
-	}
-
-	// HA-specific request overrides (override req fields and merge HA action arguments)
+	// HA-specific request overrides (override req fields and merge HA action arguments).
+	// This runs before setConfiguredActionArguments so that user-provided additionalArguments
+	// take final precedence over the HA defaults below.
 	if database.IsMysqlHA() {
 		haConfig := database.GetInstanceHAConfig()
 
@@ -466,6 +463,12 @@ func (a *MySqlRequestAppender) appendProvisioningRequest(req *DatabaseProvisionR
 		for k, v := range haActionArguments {
 			actionArguments[k] = v
 		}
+	}
+
+	// Apply user-provided additionalArguments last so they override both the base
+	// defaults and the HA defaults merged above.
+	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
+		return nil, err
 	}
 
 	// Converting action arguments map to list and appending to req.ActionArguments

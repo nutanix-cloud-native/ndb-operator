@@ -49,11 +49,13 @@ func getHAValidator(dbType string) (HAParamsValidator, bool) {
 type MysqlHAParamsValidator struct{}
 
 // Validate checks MySQL-specific HA constraints. Fields validated:
-//   - haConfig.mysql           — must be present (required)
-//   - haConfig.mysql.innoDBClusterName — must be non-empty
-//   - haConfig.nodes[*].nodeType — must be "database" or "mysqlrouter"
-//   - haConfig.nodes           — exactly one database node must have role "Master"
-//   - haConfig.nodes           — mysqlrouter nodes must not have a role set
+//   - haConfig.mysql                    — must be present (required)
+//   - haConfig.mysql.innoDBClusterName  — must be non-empty
+//   - haConfig.nodes[*].nodeType        — must be "database" or "mysqlrouter"
+//   - haConfig.nodes                    — exactly one database node must have role "Master"
+//   - haConfig.nodes                    — mysqlrouter nodes must not have a role set
+//   - haConfig.mysql.deployMySQLRouter  — if true, at least one mysqlrouter node must be present;
+//     if false, no mysqlrouter nodes must be present
 func (v *MysqlHAParamsValidator) Validate(haConfig *InstanceHAConfig, haPath *field.Path, errors *field.ErrorList) {
 	myPath := haPath.Child("mysql")
 
@@ -69,8 +71,10 @@ func (v *MysqlHAParamsValidator) Validate(haConfig *InstanceHAConfig, haPath *fi
 			my.InnoDBClusterName, "innoDBClusterName must be specified"))
 	}
 
-	// Validate node types and enforce exactly one Master database node.
+	// Validate node types, enforce exactly one Master database node, and
+	// count mysqlrouter nodes for the deployMySQLRouter consistency check below.
 	masterCount := 0
+	routerCount := 0
 	for i, node := range haConfig.Nodes {
 		nodePath := haPath.Child("nodes").Index(i)
 		if node.NodeType != common.HA_NODE_TYPE_DATABASE && node.NodeType != common.HA_NODE_TYPE_MYSQLROUTER {
@@ -84,11 +88,24 @@ func (v *MysqlHAParamsValidator) Validate(haConfig *InstanceHAConfig, haPath *fi
 		if node.NodeType == common.HA_NODE_TYPE_DATABASE && node.Role == common.HA_NODE_ROLE_MASTER {
 			masterCount++
 		}
+		if node.NodeType == common.HA_NODE_TYPE_MYSQLROUTER {
+			routerCount++
+		}
 	}
 
 	if len(haConfig.Nodes) > 0 && masterCount != 1 {
 		*errors = append(*errors, field.Invalid(haPath.Child("nodes"), haConfig.Nodes,
 			"exactly one database node must have role 'Master'"))
+	}
+
+	// Enforce consistency between deployMySQLRouter and the nodes list.
+	if my.DeployMySQLRouter && routerCount == 0 {
+		*errors = append(*errors, field.Invalid(myPath.Child("deployMySQLRouter"), my.DeployMySQLRouter,
+			"deployMySQLRouter is true but no mysqlrouter nodes are present in haConfig.nodes"))
+	}
+	if !my.DeployMySQLRouter && routerCount > 0 {
+		*errors = append(*errors, field.Invalid(haPath.Child("nodes"), haConfig.Nodes,
+			"mysqlrouter nodes are present but deployMySQLRouter is false"))
 	}
 }
 
