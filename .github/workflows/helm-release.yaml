@@ -40,9 +40,8 @@ jobs:
       - name: Push charts to GHCR
         run: |
           VERSION=$(helm show chart deploy/helm | grep '^version:' | awk '{print $2}')
-          # TODO: Uncomment before next release (this is temporary fix)
-          # if helm show chart oci://ghcr.io/nutanix-cloud-native/chart/ndb-operator --version "$VERSION" 2>/dev/null | grep -q "^version:"; then
-          #   echo "Chart $VERSION already exists on GHCR, skipping push."
-          #   exit 0
-          # fi
+          if helm show chart oci://ghcr.io/nutanix-cloud-native/chart/ndb-operator --version "$VERSION" 2>/dev/null | grep -q "^version:"; then
+            echo "Chart $VERSION already exists on GHCR, skipping push."
+            exit 0
+          fi
           helm push .cr-release-packages/ndb-operator-${VERSION}.tgz oci://ghcr.io/nutanix-cloud-native/chart
