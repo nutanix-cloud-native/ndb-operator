@@ -216,12 +216,16 @@ func NewMongoProvisioningSetupTypes() *SetupTypes {
 			Spec: ndbv1alpha1.DatabaseSpec{
 				NDBRef: "ndb-mongo",
 				Instance: &ndbv1alpha1.Instance{
-					Name:                "db-mongo-si",
-					Type:                common.DATABASE_TYPE_MONGODB,
-					DatabaseNames:       []string{"database_one"},
-					CredentialSecret:    "db-secret-mongo-si",
-					Size:                10,
-					TimeZone:            common.TIMEZONE_UTC,
+					Name:             "db-mongo-si",
+					Type:             common.DATABASE_TYPE_MONGODB,
+					DatabaseNames:    []string{"database_one"},
+					CredentialSecret: "db-secret-mongo-si",
+					Size:             10,
+					TimeZone:         common.TIMEZONE_UTC,
+					Profiles: &ndbv1alpha1.Profiles{
+						Software: ndbv1alpha1.Profile{Name: "MONGODB_12debian_NDBoperator"},
+						Network:  ndbv1alpha1.Profile{Name: "DEFAULT_OOB_MONGODB_NETWORK"},
+					},
 					TMInfo:              defaultTMInfo("db-mongo-si_TM"),
 					AdditionalArguments: map[string]string{},
 				},
@@ -288,6 +292,7 @@ func NewMSSQLProvisioningSetupTypes() *SetupTypes {
 					Size:             10,
 					TimeZone:         common.TIMEZONE_UTC,
 					Profiles: &ndbv1alpha1.Profiles{
+						Software:        ndbv1alpha1.Profile{Name: "MSSQL-4-NDBOperator"},
 						DbParam:         ndbv1alpha1.Profile{Name: "DEFAULT_SQLSERVER_DATABASE_PARAMS"},
 						DbParamInstance: ndbv1alpha1.Profile{Name: "DEFAULT_SQLSERVER_INSTANCE_PARAMS"},
 					},
