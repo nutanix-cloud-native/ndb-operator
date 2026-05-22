@@ -64,7 +64,7 @@ The container and bundle image creation steps can be skipped if existing images 
 
 ## Usage
 
-**NDBServer and credentials:** The operator uses two custom resources—**NDBServer** (cluster-scoped) and **Database** (namespaced). **NDBServer** is cluster-scoped so that admins can store the NDB API credential secret in a restricted namespace (e.g. `ndb-credentials`) and set `credentialSecretRef` to point to it. Developers who create **Database** resources only need to reference the NDBServer by **name** in `ndbRef` (e.g. `ndbRef: ndb`); they can list and use cluster-scoped NDBServers without needing access to the secret's namespace.
+**NDBServer and credentials:** The operator uses **NDBServer** (cluster-scoped) plus namespaced workload resources such as **Database** and **LinkedDatabase**. **NDBServer** is cluster-scoped so that admins can store the NDB API credential secret in a restricted namespace (e.g. `ndb-credentials`) and set `credentialSecretRef` to point to it. Developers who create **Database** or **LinkedDatabase** resources only need to reference the NDBServer by **name** in `ndbRef` (e.g. `ndbRef: ndb`); they can list and use cluster-scoped NDBServers without needing access to the secret's namespace.
 
 **Supported Database Engines:**
 - PostgreSQL
@@ -519,6 +519,46 @@ data:
 Create the Database resource:
 ```sh
 kubectl apply -f <path/to/database-manifest.yaml>
+```
+
+### Creating a linked PostgreSQL database on an existing instance
+
+Use `LinkedDatabase` when you need to add a logical PostgreSQL database to an existing NDB PostgreSQL instance without provisioning a new database server VM.
+
+The operator maps this resource to:
+
+```sh
+POST /databases/<sourceDatabaseId>/linked-databases
+```
+
+with a request body like:
+
+```json
+{"databases":[{"databaseName":"appdb"}]}
+```
+
+Example:
+
+```yaml
+apiVersion: ndb.nutanix.com/v1alpha1
+kind: LinkedDatabase
+metadata:
+  name: appdb
+  namespace: default
+spec:
+  # Name of the cluster-scoped NDBServer resource
+  ndbRef: ndb
+  # Use either sourceDatabaseId or sourceDatabaseName.
+  sourceDatabaseName: existing-postgres-instance
+  # sourceDatabaseId: "<existing-postgres-instance-uuid>"
+  databaseName: appdb
+```
+
+Create the linked database resource:
+
+```sh
+kubectl apply -f <path/to/linked-database-manifest.yaml>
+kubectl get linkeddatabases -n default
 ```
 
 ### Additional Arguments for Databases

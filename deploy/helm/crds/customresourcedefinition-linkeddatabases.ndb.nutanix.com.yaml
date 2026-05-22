@@ -1,0 +1,106 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: linkeddatabases.ndb.nutanix.com
+spec:
+  group: ndb.nutanix.com
+  names:
+    kind: LinkedDatabase
+    listKind: LinkedDatabaseList
+    plural: linkeddatabases
+    shortNames:
+    - ldb
+    - ldbs
+    singular: linkeddatabase
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.status
+      name: Status
+      type: string
+    - jsonPath: .status.sourceDatabaseId
+      name: Source Database ID
+      type: string
+    - jsonPath: .status.linkedDatabaseId
+      name: Linked Database ID
+      type: string
+    - jsonPath: .spec.databaseName
+      name: Database Name
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: LinkedDatabase is the Schema for the linkeddatabases API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: LinkedDatabaseSpec defines the desired state of LinkedDatabase.
+            properties:
+              databaseName:
+                description: Name of the logical database to create on the existing
+                  database instance.
+                minLength: 1
+                type: string
+              ndbRef:
+                description: Name of the cluster-scoped NDBServer resource.
+                minLength: 1
+                type: string
+              sourceDatabaseId:
+                description: |-
+                  UUID of the existing NDB database instance to add a linked database to.
+                  Either sourceDatabaseId or sourceDatabaseName must be provided.
+                minLength: 1
+                type: string
+              sourceDatabaseName:
+                description: |-
+                  Name of the existing NDB database instance to add a linked database to.
+                  Either sourceDatabaseId or sourceDatabaseName must be provided.
+                minLength: 1
+                type: string
+            required:
+            - databaseName
+            - ndbRef
+            type: object
+            x-kubernetes-validations:
+            - message: Either sourceDatabaseId or sourceDatabaseName must be provided
+              rule: (has(self.sourceDatabaseId) && size(self.sourceDatabaseId) > 0)
+                || (has(self.sourceDatabaseName) && size(self.sourceDatabaseName)
+                > 0)
+          status:
+            description: LinkedDatabaseStatus defines the observed state of LinkedDatabase.
+            properties:
+              creationOperationId:
+                type: string
+              linkedDatabaseId:
+                type: string
+              message:
+                type: string
+              sourceDatabaseId:
+                type: string
+              status:
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

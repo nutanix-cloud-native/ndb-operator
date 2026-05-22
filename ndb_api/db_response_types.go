@@ -17,11 +17,25 @@ limitations under the License.
 package ndb_api
 
 type DatabaseResponse struct {
-	Id            string         `json:"id"`
-	Name          string         `json:"name"`
-	Status        string         `json:"status"`
-	DatabaseNodes []DatabaseNode `json:"databaseNodes"`
-	Properties    []Property     `json:"properties"`
-	TimeMachineId string         `json:"timeMachineId"`
-	Type          string         `json:"type"`
+	Id              string                   `json:"id"`
+	Name            string                   `json:"name"`
+	Status          string                   `json:"status"`
+	DatabaseNodes   []DatabaseNode           `json:"databaseNodes"`
+	LinkedDatabases []LinkedDatabaseResponse `json:"linkedDatabases"`
+	Properties      []Property               `json:"properties"`
+	TimeMachineId   string                   `json:"timeMachineId"`
+	Type            string                   `json:"type"`
+}
+
+type LinkedDatabaseResponse struct {
+	Id                     string `json:"id"`
+	Name                   string `json:"name"`
+	DatabaseName           string `json:"databaseName"`
+	Description            string `json:"description"`
+	Status                 string `json:"status"`
+	DatabaseStatus         string `json:"databaseStatus"`
+	ParentDatabaseId       string `json:"parentDatabaseId"`
+	ParentLinkedDatabaseId string `json:"parentLinkedDatabaseId"`
+	SnapshotId             string `json:"snapshotId"`
+	TimeZone               string `json:"timeZone"`
 }

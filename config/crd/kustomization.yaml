@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/ndb.nutanix.com_databases.yaml
+- bases/ndb.nutanix.com_linkeddatabases.yaml
 - bases/ndb.nutanix.com_ndbservers.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
