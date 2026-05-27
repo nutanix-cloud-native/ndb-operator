@@ -953,6 +953,7 @@ func TestMySqlProvisionRequestAppender_withoutAdditionalArguments_positiveWorkfl
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MYSQL)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsMysqlHA").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -1018,6 +1019,7 @@ func TestMySqlProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(
 		"listener_port": "1111",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsMysqlHA").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -1083,6 +1085,7 @@ func TestMySqlProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(
 		"invalid-key": "invalid-value",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsMysqlHA").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MYSQL)
 
@@ -1154,6 +1157,7 @@ func TestGenerateProvisioningRequest_WithoutValidTMDetails_ReturnsError(t *testi
 		mockDatabase.On("GetInstanceTMDetails").Return("tm_name", "rm_description", tc.slaName)
 		mockDatabase.On("GetTMScheduleForInstance").Return(tc.tmSchedule, tc.tmScheduleErr)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("IsMysqlHA").Return(false)
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, mockDatabase, reqData)
@@ -1272,6 +1276,7 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 		mockDatabase.On("GetTMScheduleForInstance").Return(Schedule{}, nil)
 		mockDatabase.On("GetProfileResolvers").Return(profileResolvers)
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
+		mockDatabase.On("IsMysqlHA").Return(false)
 
 		// Test
 		_, err := GenerateProvisioningRequest(context.Background(), ndb_client, &mockDatabase, reqData)
@@ -1406,6 +1411,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 		mockDatabase.On("IsClone").Return(false)
 		mockDatabase.On("IsPostgresHA").Return(false)
+		mockDatabase.On("IsMysqlHA").Return(false)
 		mockDatabase.On("GetInstanceHAConfig").Return((*HAConfig)(nil))
 
 		// Test

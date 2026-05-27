@@ -34,6 +34,7 @@ type HAParamsValidator interface {
 // To add HA support for a new engine, register its validator here.
 var haValidators = map[string]HAParamsValidator{
 	common.DATABASE_TYPE_POSTGRES: &PostgresHAParamsValidator{},
+	common.DATABASE_TYPE_MYSQL:    &MysqlHAParamsValidator{},
 }
 
 // getHAValidator returns the registered HAParamsValidator for the given database type,
@@ -41,6 +42,71 @@ var haValidators = map[string]HAParamsValidator{
 func getHAValidator(dbType string) (HAParamsValidator, bool) {
 	v, ok := haValidators[dbType]
 	return v, ok
+}
+
+// MysqlHAParamsValidator validates InnoDB Cluster and MySQL Router specific fields for MySQL HA.
+// +kubebuilder:object:generate=false
+type MysqlHAParamsValidator struct{}
+
+// Validate checks MySQL-specific HA constraints. Fields validated:
+//   - haConfig.mysql                    — must be present (required)
+//   - haConfig.mysql.innoDBClusterName  — must be non-empty
+//   - haConfig.nodes[*].nodeType        — must be "database" or "mysqlrouter"
+//   - haConfig.nodes                    — exactly one database node must have role "Master"
+//   - haConfig.nodes                    — mysqlrouter nodes must not have a role set
+//   - haConfig.mysql.deployMySQLRouter  — if true, at least one mysqlrouter node must be present;
+//     if false, no mysqlrouter nodes must be present
+func (v *MysqlHAParamsValidator) Validate(haConfig *InstanceHAConfig, haPath *field.Path, errors *field.ErrorList) {
+	myPath := haPath.Child("mysql")
+
+	if haConfig.MySQL == nil {
+		*errors = append(*errors, field.Required(myPath,
+			"mysql config must be specified in haConfig when database type is mysql"))
+		return
+	}
+
+	my := haConfig.MySQL
+	if my.InnoDBClusterName == "" {
+		*errors = append(*errors, field.Invalid(myPath.Child("innoDBClusterName"),
+			my.InnoDBClusterName, "innoDBClusterName must be specified"))
+	}
+
+	// Validate node types, enforce exactly one Master database node, and
+	// count mysqlrouter nodes for the deployMySQLRouter consistency check below.
+	masterCount := 0
+	routerCount := 0
+	for i, node := range haConfig.Nodes {
+		nodePath := haPath.Child("nodes").Index(i)
+		if node.NodeType != common.HA_NODE_TYPE_DATABASE && node.NodeType != common.HA_NODE_TYPE_MYSQLROUTER {
+			*errors = append(*errors, field.Invalid(nodePath.Child("nodeType"), node.NodeType,
+				"nodeType must be either '"+common.HA_NODE_TYPE_DATABASE+"' or '"+common.HA_NODE_TYPE_MYSQLROUTER+"' for mysql HA"))
+		}
+		if node.NodeType == common.HA_NODE_TYPE_MYSQLROUTER && node.Role != "" {
+			*errors = append(*errors, field.Invalid(nodePath.Child("role"), node.Role,
+				"role must not be set for mysqlrouter nodes"))
+		}
+		if node.NodeType == common.HA_NODE_TYPE_DATABASE && node.Role == common.HA_NODE_ROLE_MASTER {
+			masterCount++
+		}
+		if node.NodeType == common.HA_NODE_TYPE_MYSQLROUTER {
+			routerCount++
+		}
+	}
+
+	if len(haConfig.Nodes) > 0 && masterCount != 1 {
+		*errors = append(*errors, field.Invalid(haPath.Child("nodes"), haConfig.Nodes,
+			"exactly one database node must have role 'Master'"))
+	}
+
+	// Enforce consistency between deployMySQLRouter and the nodes list.
+	if my.DeployMySQLRouter && routerCount == 0 {
+		*errors = append(*errors, field.Invalid(myPath.Child("deployMySQLRouter"), my.DeployMySQLRouter,
+			"deployMySQLRouter is true but no mysqlrouter nodes are present in haConfig.nodes"))
+	}
+	if !my.DeployMySQLRouter && routerCount > 0 {
+		*errors = append(*errors, field.Invalid(haPath.Child("nodes"), haConfig.Nodes,
+			"mysqlrouter nodes are present but deployMySQLRouter is false"))
+	}
 }
 
 // PostgresHAParamsValidator validates Patroni and HAProxy specific fields for Postgres HA.

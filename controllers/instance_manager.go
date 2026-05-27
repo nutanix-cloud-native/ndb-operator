@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
@@ -122,6 +123,13 @@ func (dm *DatabaseManager) deleteDatabaseServer(ctx context.Context, r *Database
 			// before giving up, making it robust against the common 409-Conflict case.
 			opIds, apiErr := ndb_api.DeprovisionHADatabaseServers(ctx, ndbClient, database.Status.DatabaseServerId)
 			if apiErr != nil {
+				// If NDB reports the DB server is already gone (e.g. cluster manually deleted
+				// via NDB UI), skip deprovision and signal done so the finalizer is removed.
+				if strings.Contains(apiErr.Error(), "ERA-ENT-0000001") {
+					log.Info("HA DB server already removed from NDB, skipping deprovision and removing finalizer " + common.FINALIZER_DATABASE_SERVER)
+					r.recorder.Eventf(database, "Normal", EVENT_DEREGISTRATION_COMPLETED, "HA DB server was already removed from NDB; skipping deprovision.")
+					return true, nil
+				}
 				log.Error(apiErr, "Failed to deprovision one or more HA database servers")
 				r.recorder.Eventf(database, "Warning", EVENT_DEREGISTRATION_FAILED, "Error: %s", apiErr.Error())
 				return false, apiErr

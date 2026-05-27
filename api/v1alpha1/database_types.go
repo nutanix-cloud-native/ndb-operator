@@ -92,9 +92,9 @@ type InstanceHANode struct {
 	// Name of the VM to be created
 	// +kubebuilder:validation:Required
 	VmName string `json:"vmName"`
-	// Type of this node: "haproxy" or "database"
+	// Type of this node: "database", "haproxy" (Postgres HA), or "mysqlrouter" (MySQL HA)
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=haproxy;database
+	// +kubebuilder:validation:Enum=haproxy;database;mysqlrouter
 	NodeType string `json:"nodeType"`
 	// Role of this node (database nodes only): "Primary" or "Secondary"
 	// +optional
@@ -114,7 +114,7 @@ type InstanceHANode struct {
 
 // InstanceHAConfig holds the HA provisioning configuration for a database instance.
 // Generic fields (ClusterName, EnableSynchronousMode, Nodes) apply to all HA engines.
-// Engine-specific settings are nested under the corresponding engine field (e.g. Postgres).
+// Engine-specific settings are nested under the corresponding engine field (e.g. Postgres, MySQL).
 // Exactly one engine field must be set, matching the instance.type.
 type InstanceHAConfig struct {
 	// Display name for the NDB HA cluster
@@ -130,6 +130,38 @@ type InstanceHAConfig struct {
 	// Required when the database type is "postgres".
 	// +optional
 	Postgres *PostgresHAConfig `json:"postgres,omitempty"`
+	// MySQL contains InnoDB Cluster and MySQL Router settings specific to MySQL HA.
+	// Required when the database type is "mysql".
+	// +optional
+	MySQL *MySQLHAConfig `json:"mysql,omitempty"`
+}
+
+// MySQLHAConfig holds InnoDB Cluster and MySQL Router settings specific to a MySQL HA instance.
+type MySQLHAConfig struct {
+	// Name used by MySQL InnoDB Cluster for internal cluster coordination
+	// +kubebuilder:validation:Required
+	InnoDBClusterName string `json:"innoDBClusterName"`
+	// DeployMySQLRouter controls whether MySQL Router VMs are provisioned for load balancing.
+	// When true, Router VMs must be included in nodes[] with nodeType "mysqlrouter",
+	// When false, applications connect directly to the Master VM on port 3306.
+	// +optional
+	DeployMySQLRouter bool `json:"deployMySQLRouter,omitempty"`
+	// RouterRWPort is the MySQL Router read-write port. Defaults to 6446.
+	// Only meaningful when DeployMySQLRouter is true.
+	// +optional
+	// +kubebuilder:default=6446
+	RouterRWPort int32 `json:"routerRWPort,omitempty"`
+	// RouterROPort is the MySQL Router read-only port. Defaults to 6447.
+	// Only meaningful when DeployMySQLRouter is true.
+	// +optional
+	// +kubebuilder:default=6447
+	RouterROPort int32 `json:"routerROPort,omitempty"`
+	// MySQLClusterUsername is the admin user for InnoDB Cluster management. Defaults to "mysqladmin".
+	// +optional
+	MySQLClusterUsername string `json:"mysqlClusterUsername,omitempty"`
+	// ReplicationUser is the user for group replication. Defaults to "repl".
+	// +optional
+	ReplicationUser string `json:"replicationUser,omitempty"`
 }
 
 // PostgresHAConfig holds Patroni and HAProxy settings specific to a Postgres HA instance.

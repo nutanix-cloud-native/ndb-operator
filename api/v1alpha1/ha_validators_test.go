@@ -44,6 +44,26 @@ func validPGConfig() *PostgresHAConfig {
 	return &PostgresHAConfig{PatroniClusterName: "patroni-cluster"}
 }
 
+// mysqlRouterNode returns a minimal valid MySQL Router node for use in test fixtures.
+func mysqlRouterNode(name string) InstanceHANode {
+	return InstanceHANode{VmName: name, NodeType: common.HA_NODE_TYPE_MYSQLROUTER, ClusterName: "cluster-a"}
+}
+
+// masterNode returns a minimal valid Master database node for use in test fixtures.
+func masterNode(name string) InstanceHANode {
+	return InstanceHANode{VmName: name, NodeType: common.HA_NODE_TYPE_DATABASE, Role: common.HA_NODE_ROLE_MASTER, ClusterName: "cluster-a"}
+}
+
+// replicaNode returns a minimal valid Replica database node for use in test fixtures.
+func replicaNode(name string) InstanceHANode {
+	return InstanceHANode{VmName: name, NodeType: common.HA_NODE_TYPE_DATABASE, Role: common.HA_NODE_ROLE_REPLICA, ClusterName: "cluster-b"}
+}
+
+// validMySQLConfig returns a minimal valid MySQLHAConfig for use in test fixtures.
+func validMySQLConfig() *MySQLHAConfig {
+	return &MySQLHAConfig{InnoDBClusterName: "innodb-cluster"}
+}
+
 func TestGetHAValidator(t *testing.T) {
 	t.Run("returns validator for postgres", func(t *testing.T) {
 		v, ok := getHAValidator(common.DATABASE_TYPE_POSTGRES)
@@ -52,12 +72,175 @@ func TestGetHAValidator(t *testing.T) {
 		assert.IsType(t, &PostgresHAParamsValidator{}, v)
 	})
 
+	t.Run("returns validator for mysql", func(t *testing.T) {
+		v, ok := getHAValidator(common.DATABASE_TYPE_MYSQL)
+		assert.True(t, ok)
+		assert.NotNil(t, v)
+		assert.IsType(t, &MysqlHAParamsValidator{}, v)
+	})
+
 	t.Run("returns false for unsupported engine types", func(t *testing.T) {
-		for _, unsupported := range []string{"mysql", "mongodb", "mssql", "oracle", ""} {
+		for _, unsupported := range []string{"mongodb", "mssql", "oracle", ""} {
 			v, ok := getHAValidator(unsupported)
 			assert.False(t, ok, "expected no validator for type %q", unsupported)
 			assert.Nil(t, v)
 		}
+	})
+}
+
+func TestMysqlHAParamsValidator_Validate(t *testing.T) {
+	validator := &MysqlHAParamsValidator{}
+	haPath := field.NewPath("haConfig")
+
+	t.Run("valid config with router enabled produces no errors", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: &MySQLHAConfig{InnoDBClusterName: "innodb-cluster", DeployMySQLRouter: true},
+			Nodes: []InstanceHANode{mysqlRouterNode("router1"), mysqlRouterNode("router2"), masterNode("db1"), replicaNode("db2"), replicaNode("db3")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Empty(t, *errors)
+	})
+
+	t.Run("valid config with router disabled produces no errors", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: validMySQLConfig(),
+			Nodes: []InstanceHANode{masterNode("db1"), replicaNode("db2"), replicaNode("db3")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Empty(t, *errors)
+	})
+
+	t.Run("deployMySQLRouter true but no router nodes returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: &MySQLHAConfig{InnoDBClusterName: "innodb-cluster", DeployMySQLRouter: true},
+			Nodes: []InstanceHANode{masterNode("db1"), replicaNode("db2"), replicaNode("db3")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeInvalid, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.mysql.deployMySQLRouter", (*errors)[0].Field)
+		assert.Contains(t, (*errors)[0].Detail, "no mysqlrouter nodes")
+	})
+
+	t.Run("router nodes present but deployMySQLRouter false returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: validMySQLConfig(), // DeployMySQLRouter defaults to false
+			Nodes: []InstanceHANode{mysqlRouterNode("router1"), masterNode("db1"), replicaNode("db2")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeInvalid, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.nodes", (*errors)[0].Field)
+		assert.Contains(t, (*errors)[0].Detail, "deployMySQLRouter is false")
+	})
+
+	t.Run("nil mysql returns required error and stops further node validation", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: nil,
+			Nodes: []InstanceHANode{masterNode("db1"), replicaNode("db2")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeRequired, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.mysql", (*errors)[0].Field)
+	})
+
+	t.Run("empty innoDBClusterName returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: &MySQLHAConfig{InnoDBClusterName: ""},
+			Nodes: []InstanceHANode{masterNode("db1"), replicaNode("db2")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeInvalid, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.mysql.innoDBClusterName", (*errors)[0].Field)
+	})
+
+	t.Run("invalid nodeType returns error for that node index", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: validMySQLConfig(),
+			Nodes: []InstanceHANode{
+				{VmName: "bad", NodeType: "haproxy", ClusterName: "cluster-a"},
+				masterNode("db1"),
+			},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeInvalid, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.nodes[0].nodeType", (*errors)[0].Field)
+	})
+
+	t.Run("mysqlrouter node with role set returns error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: &MySQLHAConfig{InnoDBClusterName: "innodb-cluster", DeployMySQLRouter: true},
+			Nodes: []InstanceHANode{
+				{VmName: "router1", NodeType: common.HA_NODE_TYPE_MYSQLROUTER, Role: "Master", ClusterName: "cluster-a"},
+				masterNode("db1"),
+			},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeInvalid, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.nodes[0].role", (*errors)[0].Field)
+	})
+
+	t.Run("zero master database nodes returns invalid nodes error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: validMySQLConfig(),
+			Nodes: []InstanceHANode{replicaNode("db1"), replicaNode("db2"), replicaNode("db3")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeInvalid, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.nodes", (*errors)[0].Field)
+		assert.Contains(t, (*errors)[0].Detail, "exactly one")
+	})
+
+	t.Run("multiple master database nodes returns invalid nodes error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: validMySQLConfig(),
+			Nodes: []InstanceHANode{masterNode("db1"), masterNode("db2"), replicaNode("db3")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeInvalid, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.nodes", (*errors)[0].Field)
+		assert.Contains(t, (*errors)[0].Detail, "exactly one")
+	})
+
+	t.Run("empty nodes list skips master count check", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: validMySQLConfig(),
+			Nodes: []InstanceHANode{},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Empty(t, *errors)
+	})
+
+	t.Run("multiple violations accumulate all errors", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MySQL: &MySQLHAConfig{InnoDBClusterName: ""},
+			Nodes: []InstanceHANode{
+				{VmName: "bad", NodeType: "haproxy", ClusterName: "cluster-a"},
+				replicaNode("db1"),
+				// no master node
+			},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		// 3 errors: empty innoDBClusterName + invalid nodeType for node[0] + no master
+		assert.Len(t, *errors, 3)
 	})
 }
 

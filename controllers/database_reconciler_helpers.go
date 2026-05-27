@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
@@ -33,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -101,8 +103,9 @@ func (r *DatabaseReconciler) addFinalizer(ctx context.Context, req ctrl.Request,
 		return requeueOnErr(err)
 	}
 	log.Info("Database CR fetched. Adding finalizer " + finalizer)
+	patch := client.MergeFrom(database.DeepCopy())
 	controllerutil.AddFinalizer(database, finalizer)
-	if err := r.Update(ctx, database); err != nil {
+	if err := r.Patch(ctx, database, patch); err != nil {
 		return requeueOnErr(err)
 	} else {
 		log.Info("Added finalizer " + finalizer)
@@ -120,13 +123,24 @@ func (r *DatabaseReconciler) handleDelete(ctx context.Context, req ctrl.Request,
 	log.Info("Database CR is being deleted")
 	instanceManager := getInstanceManager(*database)
 	if controllerutil.ContainsFinalizer(database, common.FINALIZER_INSTANCE) {
-		// Check if the deregistration operation id (database.Status.DeregistrationOperationId) is empty
-		// If so, then make a deprovisionDatabase API call to NDB
-		// else proceed check for the operation completion before removing finalizer.
+		// Check if the deregistration operation id (database.Status.DeregistrationOperationId) is empty.
+		// If so, make a deprovisionDatabase API call to NDB,
+		// else poll for operation completion before removing the finalizer.
 		deregistrationOperationId := database.Status.DeregistrationOperationId
 		if deregistrationOperationId == "" {
 			deregistrationOp, err := instanceManager.deregister(ctx, r, ndbClient, database)
 			if err != nil {
+				// If NDB reports the database is already gone (e.g. manually deleted via NDB UI),
+				// skip deregistration and proceed to remove the finalizer.
+				if strings.Contains(err.Error(), "ERA-ENT-0000001") {
+					log.Info("Database already removed from NDB, skipping deregistration and removing finalizer " + common.FINALIZER_INSTANCE)
+					r.recorder.Event(database, "Normal", EVENT_DEREGISTRATION_COMPLETED, "Database was already removed from NDB; skipping deregistration.")
+					controllerutil.RemoveFinalizer(database, common.FINALIZER_INSTANCE)
+					if err := r.Update(ctx, database); err != nil {
+						return requeueOnErr(err)
+					}
+					return requeue()
+				}
 				// Not logging here, already done in the deregister function
 				return requeueOnErr(err)
 			}
@@ -252,8 +266,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 
 	if !reflect.DeepEqual(database.Status, *databaseStatus) {
 		database.Status = *databaseStatus
-		err := r.Status().Update(ctx, database)
-		if err != nil {
+		if err := r.Status().Update(ctx, database); err != nil {
 			errStatement := "Failed to update status of database custom resource"
 			log.Error(err, errStatement)
 			r.recorder.Eventf(database, "Warning", EVENT_CR_STATUS_UPDATE_FAILED, "Error: %s. %s.", err.Error())
@@ -283,7 +296,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			}
 		}
 		if databaseStatus.IPAddress != "" {
-			r.setupConnectivity(ctx, database)
+			r.setupConnectivity(ctx, database, ndbClient)
 		} else {
 			// The database is in "READY" state on NDB, but the API responses sometimes do not have
 			// an IP address in the response right after reaching the READY state. We only setup connectivity
@@ -309,12 +322,16 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 // Then sets up an endpoint with the same name as the service
 // to map to an external endpoint (NDB database instance in our scenario).
 // Every database gets a primary -svc. HA databases additionally get engine-specific
-// extra services (e.g. -ro-svc for Postgres) via the HAConnectivityManager registry.
-func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *ndbv1alpha1.Database) (err error) {
+// extra services (e.g. -ro-svc for Postgres/MySQL) via the HAConnectivityManager registry.
+//
+// ndbClient is used only when the read-only endpoint needs different IPs than the primary
+func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *ndbv1alpha1.Database, ndbClient ndb_client.NDBClientHTTPInterface) (err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.setupConnectivity")
 
 	ns := database.Namespace
+
+	primaryIPs := strings.Split(database.Status.IPAddress, ",")
 
 	// Determine the port for the primary -svc and whether an HA manager is needed.
 	// HA databases use the engine-specific write port; non-HA use the standard DB port.
@@ -325,15 +342,47 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 		primaryPort = haManager.PrimaryPort(database.Spec.Instance.HAConfig)
 	}
 
-	// All databases get a primary -svc.
-	if err = r.setupServiceAndEndpoints(ctx, database, database.Name+"-svc", ns, primaryPort); err != nil {
+	// For MySQL HA router-disabled, all nodes (Master and Replicas) listen on the same port.
+	// If the user has overridden listener_port in additionalArguments, honour it.
+	mysqlRouterDisabled := database.Spec.Instance != nil &&
+		database.Spec.Instance.HAConfig != nil &&
+		database.Spec.Instance.HAConfig.MySQL != nil &&
+		!database.Spec.Instance.HAConfig.MySQL.DeployMySQLRouter
+	if mysqlRouterDisabled {
+		if portStr, ok := database.Spec.Instance.AdditionalArguments["listener_port"]; ok {
+			if port, parseErr := strconv.ParseInt(portStr, 10, 32); parseErr == nil && port > 0 {
+				primaryPort = int32(port)
+			}
+		}
+	}
+
+	// All databases get a primary -svc pointing to the primary (RW) IPs.
+	if err = r.setupServiceAndEndpoints(ctx, database, database.Name+"-svc", ns, primaryPort, primaryIPs); err != nil {
 		return
 	}
 
-	// HA databases additionally get engine-specific extra services (e.g. -ro-svc for Postgres).
+	// HA databases additionally get engine-specific extra services (e.g. -ro-svc).
 	if haManager != nil {
 		for _, svcSpec := range haManager.AdditionalServices(database.Spec.Instance.HAConfig) {
-			if err = r.setupServiceAndEndpoints(ctx, database, database.Name+svcSpec.NameSuffix, ns, svcSpec.Port); err != nil {
+			roIPs := primaryIPs
+			roPort := svcSpec.Port
+
+			// MySQL HA router-disabled: the -ro-svc must target Replica VMs, not the Master,
+			// and must use the same effective listener port as the primary -svc.
+			if mysqlRouterDisabled {
+				roPort = primaryPort
+				if database.Status.DatabaseServerId != "" {
+					replicaIPs, resolveErr := ndb_api.GetMySQLReplicaIPsFromDPC(ctx, ndbClient, database.Status.DatabaseServerId)
+					if resolveErr != nil {
+						log.Error(resolveErr, "Failed to resolve MySQL Replica IPs for -ro-svc; falling back to primary IPs")
+					} else if len(replicaIPs) > 0 {
+						roIPs = replicaIPs
+						log.Info("MySQL HA router-disabled: using Replica IPs for -ro-svc", "ips", roIPs)
+					}
+				}
+			}
+
+			if err = r.setupServiceAndEndpoints(ctx, database, database.Name+svcSpec.NameSuffix, ns, roPort, roIPs); err != nil {
 				return
 			}
 		}
@@ -346,7 +395,8 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 // setupServiceAndEndpoints creates (or reconciles) a single Kubernetes Service and its
 // matching Endpoints object for the given database. It is the unit of work called for both
 // the primary -svc and each additional HA service (e.g. -ro-svc).
-func (r *DatabaseReconciler) setupServiceAndEndpoints(ctx context.Context, database *ndbv1alpha1.Database, name, namespace string, port int32) error {
+// ips is the explicit set of backend IP addresses to register for this service's endpoints.
+func (r *DatabaseReconciler) setupServiceAndEndpoints(ctx context.Context, database *ndbv1alpha1.Database, name, namespace string, port int32, ips []string) error {
 	log := ctrllog.FromContext(ctx)
 	nn := types.NamespacedName{Name: name, Namespace: namespace}
 	meta := metav1.ObjectMeta{Name: name, Namespace: namespace}
@@ -357,7 +407,7 @@ func (r *DatabaseReconciler) setupServiceAndEndpoints(ctx context.Context, datab
 		r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
 		return err
 	}
-	if err := r.setupEndpoints(ctx, database, nn, meta, port); err != nil {
+	if err := r.setupEndpoints(ctx, database, nn, meta, port, ips); err != nil {
 		errStatement := "Failed to setup kubernetes endpoints for database"
 		log.Error(err, errStatement)
 		r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED, "Error: %s. %s", errStatement, err.Error())
@@ -404,12 +454,9 @@ func (r *DatabaseReconciler) setupService(ctx context.Context, database *ndbv1al
 	return
 }
 
-// buildEndpointAddresses returns the list of endpoint addresses for the database.
-// For HA databases ipAddress holds comma-separated HAProxy IPs; each is returned
-// as a separate EndpointAddress so kube-proxy load-balances across all of them.
-// For single-instance databases the single ipAddress is used directly.
-func buildEndpointAddresses(database *ndbv1alpha1.Database) []corev1.EndpointAddress {
-	ips := strings.Split(database.Status.IPAddress, ",")
+// buildEndpointAddresses converts a slice of IP strings into Kubernetes EndpointAddresses.
+// Empty and whitespace-only entries are skipped. Each unique IP becomes a separate
+func buildEndpointAddresses(ips []string) []corev1.EndpointAddress {
 	addrs := make([]corev1.EndpointAddress, 0, len(ips))
 	for _, ip := range ips {
 		ip = strings.TrimSpace(ip)
@@ -441,13 +488,14 @@ func endpointAddressesInSync(existing []corev1.EndpointSubset, desired []corev1.
 }
 
 // Checks and creates an endpoints object for the service if it does not already exist.
-// If it is already present, syncs addresses with the Database.Status IP(s) if out of sync.
-// For HA databases all HAProxy IPs are registered; for single-instance the single IPAddress is used.
-func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1alpha1.Database, namespacedName types.NamespacedName, metadata metav1.ObjectMeta, targetPort int32) (err error) {
+// If it is already present, syncs addresses with the provided IPs if out of sync.
+// ips is the explicit set of backend IPs to register; callers are responsible for
+// providing the correct IPs (primary or read-only) for this particular service.
+func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1alpha1.Database, namespacedName types.NamespacedName, metadata metav1.ObjectMeta, targetPort int32, ips []string) (err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.setupEndpoints")
 
-	desiredAddresses := buildEndpointAddresses(database)
+	desiredAddresses := buildEndpointAddresses(ips)
 	endpointSubsets := []corev1.EndpointSubset{
 		{
 			Addresses: desiredAddresses,

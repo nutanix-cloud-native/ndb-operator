@@ -240,11 +240,18 @@ func (d *Database) IsPostgresHA() bool {
 		d.Spec.Instance.HAConfig != nil
 }
 
+// IsMysqlHA returns true when this is a non-clone MySQL instance with haConfig specified.
+func (d *Database) IsMysqlHA() bool {
+	return !d.IsClone() &&
+		d.Spec.Instance.Type == common.DATABASE_TYPE_MYSQL &&
+		d.Spec.Instance.HAConfig != nil
+}
+
 // GetInstanceHAConfig converts the v1alpha1.InstanceHAConfig into the ndb_api.HAConfig
 // representation used within the ndb_api package.
 // Returns nil for clones and non-HA instances.
 func (d *Database) GetInstanceHAConfig() *ndb_api.HAConfig {
-	if !d.IsPostgresHA() {
+	if !d.IsPostgresHA() && !d.IsMysqlHA() {
 		return nil
 	}
 	src := d.Spec.Instance.HAConfig
@@ -262,22 +269,27 @@ func (d *Database) GetInstanceHAConfig() *ndb_api.HAConfig {
 		}
 	}
 
-	var patroniClusterName string
-	var writePort, readPort int32
-	var provisionVirtualIP bool
-	if pg := src.Postgres; pg != nil {
-		patroniClusterName = pg.PatroniClusterName
-		writePort = pg.WritePort
-		readPort = pg.ReadPort
-		provisionVirtualIP = pg.ProvisionVirtualIP
-	}
-	return &ndb_api.HAConfig{
-		PatroniClusterName:    patroniClusterName,
+	cfg := &ndb_api.HAConfig{
 		ClusterName:           src.ClusterName,
 		EnableSynchronousMode: src.EnableSynchronousMode,
-		WritePort:             writePort,
-		ReadPort:              readPort,
-		ProvisionVirtualIP:    provisionVirtualIP,
 		Nodes:                 nodes,
 	}
+
+	if pg := src.Postgres; pg != nil {
+		cfg.PatroniClusterName = pg.PatroniClusterName
+		cfg.WritePort = pg.WritePort
+		cfg.ReadPort = pg.ReadPort
+		cfg.ProvisionVirtualIP = pg.ProvisionVirtualIP
+	}
+
+	if my := src.MySQL; my != nil {
+		cfg.InnoDBClusterName = my.InnoDBClusterName
+		cfg.DeployMySQLRouter = my.DeployMySQLRouter
+		cfg.RouterRWPort = my.RouterRWPort
+		cfg.RouterROPort = my.RouterROPort
+		cfg.MySQLClusterUsername = my.MySQLClusterUsername
+		cfg.ReplicationUser = my.ReplicationUser
+	}
+
+	return cfg
 }

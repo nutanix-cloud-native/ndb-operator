@@ -50,6 +50,7 @@ type HAConnectivityManager interface {
 // To add HA connectivity support for a new engine, register its manager here.
 var haConnectivityManagers = map[string]HAConnectivityManager{
 	common.DATABASE_TYPE_POSTGRES: &PostgresHAConnectivityManager{},
+	common.DATABASE_TYPE_MYSQL:    &MySQLHAConnectivityManager{},
 }
 
 // HAIPResolver resolves the connection IP(s) for an HA database as reported by the NDB API.
@@ -67,6 +68,7 @@ type HAIPResolver interface {
 // To add HA IP resolution for a new engine, register its resolver here.
 var haIPResolvers = map[string]HAIPResolver{
 	common.DATABASE_TYPE_POSTGRES: &PostgresHAIPResolver{},
+	common.DATABASE_TYPE_MYSQL:    &MySQLHAIPResolver{},
 }
 
 // PostgresHAIPResolver resolves HAProxy IPs for a Postgres HA database.
@@ -131,4 +133,70 @@ func (m *PostgresHAConnectivityManager) AdditionalServices(haConfig *ndbv1alpha1
 	return []HAServiceSpec{
 		{NameSuffix: "-ro-svc", Port: readPort},
 	}
+}
+
+// MySQLHAConnectivityManager manages MySQL Router-based connectivity for MySQL HA.
+
+type MySQLHAConnectivityManager struct{}
+
+func (m *MySQLHAConnectivityManager) PrimaryPort(haConfig *ndbv1alpha1.InstanceHAConfig) int32 {
+	my := haConfig.MySQL
+	if my == nil || !my.DeployMySQLRouter {
+		return common.HA_MYSQL_DEFAULT_LISTENER_PORT
+	}
+	if my.RouterRWPort != 0 {
+		return my.RouterRWPort
+	}
+	return common.HA_MYSQL_DEFAULT_RW_PORT
+}
+
+func (m *MySQLHAConnectivityManager) AdditionalServices(haConfig *ndbv1alpha1.InstanceHAConfig) []HAServiceSpec {
+	my := haConfig.MySQL
+	if my == nil || !my.DeployMySQLRouter {
+		return []HAServiceSpec{
+			{NameSuffix: "-ro-svc", Port: common.HA_MYSQL_DEFAULT_LISTENER_PORT},
+		}
+	}
+	roPort := common.HA_MYSQL_DEFAULT_RO_PORT
+	if my.RouterROPort != 0 {
+		roPort = my.RouterROPort
+	}
+	return []HAServiceSpec{
+		{NameSuffix: "-ro-svc", Port: roPort},
+	}
+}
+
+// MySQLHAIPResolver resolves connection IPs for a MySQL HA database.
+type MySQLHAIPResolver struct{}
+
+func (r *MySQLHAIPResolver) ResolveIPs(ctx context.Context, ndbClient ndb_client.NDBClientHTTPInterface, db ndb_api.DatabaseResponse) ([]string, error) {
+
+	// /dpcs endpoint lists routers explicitly under router_info.router_node_list. When routers were deployed
+	if len(db.DatabaseNodes) == 0 || db.DatabaseNodes[0].DatabaseServerId == "" {
+		return r.collectMasterIP(db.DatabaseNodes), nil
+	}
+	routerIPs, err := ndb_api.GetMySQLRouterIPsFromDPC(ctx, ndbClient, db.DatabaseNodes[0].DatabaseServerId)
+	if err != nil {
+		return nil, err
+	}
+	if len(routerIPs) > 0 {
+		return routerIPs, nil
+	}
+
+	// No routers in the cluster — router-disabled instance. Return Master VM IP.
+	return r.collectMasterIP(db.DatabaseNodes), nil
+}
+
+// collectMasterIP returns the IP of the Master database node.
+func (r *MySQLHAIPResolver) collectMasterIP(nodes []ndb_api.DatabaseNode) []string {
+	for _, node := range nodes {
+		for _, prop := range node.Properties {
+			if prop.Name == "role" && prop.Value == common.HA_NODE_ROLE_MASTER {
+				if len(node.DbServer.IPAddresses) > 0 {
+					return []string{node.DbServer.IPAddresses[0]}
+				}
+			}
+		}
+	}
+	return nil
 }

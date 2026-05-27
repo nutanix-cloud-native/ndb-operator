@@ -44,14 +44,27 @@ type HANodeConfig struct {
 }
 
 // HAConfig carries the HA provisioning parameters surfaced through DatabaseInterface.
+// Generic fields apply to all engines; engine-specific fields are populated only
+// for the relevant engine type.
 type HAConfig struct {
-	PatroniClusterName    string
+	// Generic fields
 	ClusterName           string
 	EnableSynchronousMode bool
-	WritePort             int32
-	ReadPort              int32
-	ProvisionVirtualIP    bool
 	Nodes                 []HANodeConfig
+
+	// Postgres-specific fields (Patroni + HAProxy)
+	PatroniClusterName string
+	WritePort          int32
+	ReadPort           int32
+	ProvisionVirtualIP bool
+
+	// MySQL-specific fields (InnoDB Cluster + MySQL Router)
+	InnoDBClusterName    string
+	DeployMySQLRouter    bool
+	RouterRWPort         int32
+	RouterROPort         int32
+	MySQLClusterUsername string
+	ReplicationUser      string
 }
 
 type DatabaseInterface interface {
@@ -72,6 +85,8 @@ type DatabaseInterface interface {
 	GetAdditionalArguments() map[string]string
 	// IsPostgresHA returns true when this is a non-clone Postgres instance with haConfig set.
 	IsPostgresHA() bool
+	// IsMysqlHA returns true when this is a non-clone MySQL instance with haConfig set.
+	IsMysqlHA() bool
 	// GetInstanceHAConfig returns the HA configuration for HA instances.
 	// Returns nil for clones and non-HA instances.
 	GetInstanceHAConfig() *HAConfig

@@ -139,7 +139,20 @@ func GetAllowedAdditionalArgumentsForDatabase(dbType string) (map[string]bool, e
 		}, nil
 	case common.DATABASE_TYPE_MYSQL:
 		return map[string]bool{
+			/* SI and HA */
 			"listener_port": true,
+			/* HA only — users can override defaults injected by the appender */
+			"replication_user":            true,
+			"replication_password":        true,
+			"mysql_cluster_username":      true,
+			"mysql_cluster_password":      true,
+			"innodb_cluster_name":         true,
+			"cluster_name":                true,
+			"allocate_mysql_hugepage":     true,
+			"deploy_mysqlrouter":          true,
+			"router_rw_port":              true,
+			"router_ro_port":              true,
+			"ensure_vm_host_distribution": true,
 		}, nil
 	case common.DATABASE_TYPE_ORACLE:
 		return map[string]bool{
