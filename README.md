@@ -466,7 +466,7 @@ spec:
     #   ...
 ```
 
-### Example Defaults ConfigMap for Postgres HA
+### Example Defaults ConfigMap for HA instances
 The `defaultsConfigMapRef` field on the Database CR points to a ConfigMap that pre-fills profiles and time machine settings, reducing repetition across CRs. Keys are prefixed with the database `type` value (`postgres.`, `mysql.`) so a single ConfigMap can hold defaults for multiple engines.
 ```
 apiVersion: v1

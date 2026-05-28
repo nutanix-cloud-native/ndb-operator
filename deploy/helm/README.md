@@ -432,64 +432,104 @@ spec:
 ```
 
 
-#### Creating Postgres HA instance resource
-```yaml
+### Creating HA instance resource (Postgres, MySQL)
+The `haConfig` block is engine-specific. Use `type: postgres` with a `haConfig.postgres` sub-block, or `type: mysql` with a `haConfig.mysql` sub-block. The `nodes` array, `timeMachine`, and `profiles` fields are shared across both engines.
+
+**Postgres HA** — HAProxy VMs provide load balancing. Applications connect to **HAProxy VM IPs** on port 5000 (read-write) and 5001 (read-only).
+
+**MySQL HA (router disabled)** — Applications connect directly to the **Master VM** on port 3306 (read-write). The read-only service targets all **Replica VM** IPs. 
+
+**MySQL HA (router enabled)** — MySQL Router VMs handle load balancing. Applications connect to **Router VM IPs** on port 6446 (read-write) and 6447 (read-only).
+
+NOTE: the ports mentioned are default ports and can be overridden.
+
+```
 apiVersion: ndb.nutanix.com/v1alpha1
 kind: Database
 metadata:
-  name: Postgres-HA-K8s-resource
+  name: ha-k8s-resource
   namespace: default
 spec:
   ndbRef: ndbserver
+  # defaultsConfigMapRef: <ha-defaults-cm>   # injects timezone, profiles, timeMachine from ConfigMap
   databaseInstance:
-    name: "PGHA_instance_DB"
-    description: "Postgres HA instance"
-    # defaultsConfigMapRef: pgha-defaults   # injects timezone, profiles, timeMachine from ConfigMap
-    type: postgres
-    credentialSecret: pgha-db-secret
+    name: "HA_instance_DB"
+    description: "HA instance"
+    type: postgres        # ── or: mysql
+    credentialSecret: db-secret
     size: 200
-    clusterName: "<PE cluster name (as shown in NDB UI)>" # This is often the Primary PE cluster
-    # ClusterID: "UUID of the PE cluster"
+    clusterName: "<PE cluster name (as shown in NDB UI)>"   # primary PE cluster
+    # clusterId: "<UUID of the PE cluster>"
     databaseNames:
-      - PGHA_instance
-    timeMachine:
-      name: "PGHA_TM"
-      description: "TM for Postgres HA"
+      - ha_db
+    # timeMachine: # use timemachine section here to explicitly define and override defaults configmap
+    #   ...
+    # profiles: # use profiles section here to explicitly define and override defaults configmap
+    #   ....
     haConfig:
-      patroniClusterName: "pgha-patroni" # any desired name
-      clusterName: "PGHA_cluster" # any desired name
-      enableSynchronousMode: true # default is false, This is for data replication across DB nodes
-      # provisionVirtualIP: true # default is false, keep this true if having stretched VLAN and need to provision VirtualIP
-      # writePort: 5000   # defaults to 5000 if omitted
-      # readPort: 5001    # defaults to 5001 if omitted
+      clusterName: "HA_cluster"          # any desired name
+      enableSynchronousMode: true        # default: false; enables synchronous replication (Postgres only)
+
+      # ── Postgres-specific ──────────────────────────────────────────────────
+      postgres:
+        patroniClusterName: "ha-patroni" # any desired name
+        # provisionVirtualIP: true       # default: false; set true for stretched VLANs
+        # writePort: 5000                # HAProxy write port; defaults to 5000
+        # readPort: 5001                 # HAProxy read port; defaults to 5001
+
+      # ── MySQL-specific ─────────────────────────────────────────────────────
+      # mysql:
+      #   innoDBClusterName: "ha-innodb" # any desired name
+      #   deployMySQLRouter: false       # set true to add MySQL Router nodes (see nodes below)
+      #   # mysqlClusterUsername: mysqladmin   # default: mysqladmin
+      #   # replicationUser: repl             # default: repl
+      #   # routerRWPort: 6446               # only used when deployMySQLRouter: true; default: 6446
+      #   # routerROPort: 6447               # only used when deployMySQLRouter: true; default: 6447
+
       nodes:
-        - vmName: "PGHA_haproxy1" # any desired name
+        # ── Postgres: HAProxy nodes (required) ──
+        - vmName: "HA_haproxy1"
           nodeType: "haproxy"
           clusterName: "<PE cluster name (as shown in NDB UI)>"
-          # clusterId: "UUID of the PE cluster"
-        - vmName: "PGHA_haproxy2" # any desired name
+        - vmName: "HA_haproxy2"
           nodeType: "haproxy"
           clusterName: "<PE cluster name (as shown in NDB UI)>"
-          # clusterId: "UUID of the PE cluster"
-        - vmName: "PGHA_DB-1" # any desired name
+
+        # ── Postgres: database nodes ──
+        - vmName: "HA_DB-1"
           nodeType: "database"
-          role: "Primary"
+          role: "Primary"            # Postgres: Primary | MySQL: Master
           clusterName: "<PE cluster name (as shown in NDB UI)>"
-          # clusterId: "UUID of the PE cluster"
-        - vmName: "PGHA_DB-2" # any desired name
+        - vmName: "HA_DB-2"
+          nodeType: "database"
+          role: "Secondary"          # Postgres: Secondary | MySQL: Replica
+          clusterName: "<PE cluster name (as shown in NDB UI)>"
+        - vmName: "HA_DB-3"
           nodeType: "database"
           role: "Secondary"
-          clusterName: "<PE cluster name (as shown in NDB UI)>"
-          # clusterId: "UUID of the PE cluster"
-        - vmName: "PGHA_DB-3" # any desired name
-          nodeType: "database"
-          role: "Secondary"
-          clusterName: "<PE cluster name (as shown in NDB UI)>"
-          # clusterId: "UUID of the PE cluster"
+          clusterName: "<PE cluster name (as shown in NDB UI)>"  # can be a different PE cluster
+
+        # ── MySQL router-enabled only: add mysqlrouter nodes ──
+        # - vmName: "HA_mysqlrouter1"
+        #   nodeType: "mysqlrouter"
+        #   clusterName: "<PE cluster name (as shown in NDB UI)>"
+        # - vmName: "HA_mysqlrouter2"
+        #   nodeType: "mysqlrouter"
+        #   clusterName: "<PE cluster name (as shown in NDB UI)>"
+
+    # ── additionalArguments ────────────────────────────────────────────────
+    # Postgres supports: listener_port only
+    # MySQL supports: listener_port, allocate_mysql_hugepage, ensure_vm_host_distribution,
+    #                 replication_user, replication_password, mysql_cluster_username,
+    #                 mysql_cluster_password, innodb_cluster_name, cluster_name,
+    #                 deploy_mysqlrouter, router_rw_port, router_ro_port
+    # additionalArguments:
+    #   ...
 ```
 
-### Example Defaults configmap for HA instance
-```yaml
+### Example Defaults ConfigMap for HA instances
+The `defaultsConfigMapRef` field on the Database CR points to a ConfigMap that pre-fills profiles and time machine settings, reducing repetition across CRs. Keys are prefixed with the database `type` value (`postgres.`, `mysql.`) so a single ConfigMap can hold defaults for multiple engines.
+```
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -498,7 +538,7 @@ metadata:
 data:
   timezone: "UTC"
   # postgres-prefixed keys take priority over unprefixed keys for postgres databases
-  postgres.profiles.software.name: "POSTGRES_15.6_HA_ENABLED_ROCKY_LINUX_8_OOB"
+  postgres.profiles.software.name: "POSTGRES_15.6_HA_ENABLED_ROCKY_LINUX_8_OOB" # or use mysql.profiles....
   postgres.profiles.compute.name: "DEFAULT_HA_COMPUTE"
   postgres.profiles.network.name: "PGHA_VLAN"
   postgres.profiles.dbParam.name: "DEFAULT_POSTGRES_HA_PARAMS"
