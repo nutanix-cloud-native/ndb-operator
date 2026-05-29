@@ -59,7 +59,7 @@ spec:
         - --upstream=http://127.0.0.1:8080/
         - --logtostderr=true
         - --v=0
-        image: quay.io/brancz/kube-rbac-proxy:v0.22.0
+        image: docker.io/bitnami/kube-rbac-proxy@sha256:4bfaad756b23b5f4c11c66716b72b45a369baad988fbe3c3cf3f0446e3c86fea
         name: kube-rbac-proxy
         ports:
         - containerPort: 8443

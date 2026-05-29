@@ -201,6 +201,46 @@ spec:
                       enableSynchronousMode:
                         description: Enable synchronous replication mode
                         type: boolean
+                      mysql:
+                        description: |-
+                          MySQL contains InnoDB Cluster and MySQL Router settings specific to MySQL HA.
+                          Required when the database type is "mysql".
+                        properties:
+                          deployMySQLRouter:
+                            description: |-
+                              DeployMySQLRouter controls whether MySQL Router VMs are provisioned for load balancing.
+                              When true, Router VMs must be included in nodes[] with nodeType "mysqlrouter",
+                              When false, applications connect directly to the Master VM on port 3306.
+                            type: boolean
+                          innoDBClusterName:
+                            description: Name used by MySQL InnoDB Cluster for internal
+                              cluster coordination
+                            type: string
+                          mysqlClusterUsername:
+                            description: MySQLClusterUsername is the admin user for
+                              InnoDB Cluster management. Defaults to "mysqladmin".
+                            type: string
+                          replicationUser:
+                            description: ReplicationUser is the user for group replication.
+                              Defaults to "repl".
+                            type: string
+                          routerROPort:
+                            default: 6447
+                            description: |-
+                              RouterROPort is the MySQL Router read-only port. Defaults to 6447.
+                              Only meaningful when DeployMySQLRouter is true.
+                            format: int32
+                            type: integer
+                          routerRWPort:
+                            default: 6446
+                            description: |-
+                              RouterRWPort is the MySQL Router read-write port. Defaults to 6446.
+                              Only meaningful when DeployMySQLRouter is true.
+                            format: int32
+                            type: integer
+                        required:
+                        - innoDBClusterName
+                        type: object
                       nodes:
                         description: Node placement and role definitions for all VMs
                           in the HA cluster
@@ -223,10 +263,12 @@ spec:
                                 "Automatic")
                               type: string
                             nodeType:
-                              description: 'Type of this node: "haproxy" or "database"'
+                              description: 'Type of this node: "database", "haproxy"
+                                (Postgres HA), or "mysqlrouter" (MySQL HA)'
                               enum:
                               - haproxy
                               - database
+                              - mysqlrouter
                               type: string
                             role:
                               description: 'Role of this node (database nodes only):
