@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'deploy/helm/**'
+      - '!deploy/helm/README.md'
 
 jobs:
   linting:
