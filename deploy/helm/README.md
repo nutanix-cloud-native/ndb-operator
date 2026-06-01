@@ -41,7 +41,7 @@ Install a specific version:
 
 ```sh
 helm install ndb-operator nutanix/ndb-operator \
-  --version 0.5.7 \
+  --version 0.5.9 \
   --namespace ndb-operator-system \
   --create-namespace
 ```
@@ -66,7 +66,7 @@ Install a specific version:
 
 ```sh
 helm install ndb-operator oci://ghcr.io/nutanix-cloud-native/chart/ndb-operator \
-  --version 0.5.7 \
+  --version 0.5.9 \
   --namespace ndb-operator-system \
   --create-namespace
 ```
@@ -108,7 +108,7 @@ helm upgrade ndb-operator nutanix/ndb-operator \
 
 # Using OCI registry
 helm upgrade ndb-operator oci://ghcr.io/nutanix-cloud-native/chart/ndb-operator \
-  --version 0.5.7 \
+  --version 0.5.9 \
   --namespace ndb-operator-system
 ```
 
