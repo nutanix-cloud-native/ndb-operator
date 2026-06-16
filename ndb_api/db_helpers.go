@@ -165,6 +165,67 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 		}
 	}
 
+	// Override request fields for HA MongoDB (Replica Set) instances
+	if database.IsMongoHA() {
+		haConfig := database.GetInstanceHAConfig()
+		requestBody.Clustered = true
+		requestBody.NodeCount = len(haConfig.Nodes)
+
+		profilesMap := reqData[common.PROFILE_MAP_PARAM].(map[string]ProfileResponse)
+		haNodes := make([]Node, 0, len(haConfig.Nodes))
+		for _, n := range haConfig.Nodes {
+			node := Node{
+				VmName:           n.VmName,
+				NxClusterId:      n.ClusterId,
+				NetworkProfileId: profilesMap[common.PROFILE_TYPE_NETWORK].Id,
+			}
+			if n.NodeType == common.HA_NODE_TYPE_ARBITER {
+				// Arbiter: use arbiter-specific compute profile if provided, else fall back to default.
+				// priority must be 0 so the arbiter never attempts to become Primary.
+				if haConfig.ArbiterComputeProfileId != "" {
+					node.ComputeProfileId = haConfig.ArbiterComputeProfileId
+				} else {
+					node.ComputeProfileId = profilesMap[common.PROFILE_TYPE_COMPUTE].Id
+				}
+				node.Properties = []NodeProperty{
+					{Name: "role", Value: common.HA_NODE_ROLE_MONGO_ARBITER},
+					{Name: "votes", Value: "1"},
+					{Name: "priority", Value: "0"},
+				}
+			} else {
+				// Database node — role ("primary"/"secondary") comes from the user's YAML verbatim.
+				// No positional assumption is made; NDB manages actual election after provisioning.
+				node.ComputeProfileId = profilesMap[common.PROFILE_TYPE_COMPUTE].Id
+				node.Properties = []NodeProperty{
+					{Name: "role", Value: n.Role},
+					{Name: "votes", Value: "1"},
+					{Name: "priority", Value: "1"},
+				}
+			}
+			haNodes = append(haNodes, node)
+		}
+		requestBody.Nodes = haNodes
+
+		// Collect unique cluster IDs across all HA nodes for the TM SLA details
+		clusterIdSet := make(map[string]struct{})
+		for _, n := range haConfig.Nodes {
+			if n.ClusterId != "" {
+				clusterIdSet[n.ClusterId] = struct{}{}
+			}
+		}
+		clusterIds := make([]string, 0, len(clusterIdSet))
+		for id := range clusterIdSet {
+			clusterIds = append(clusterIds, id)
+		}
+		requestBody.TimeMachineInfo.SlaId = ""
+		requestBody.TimeMachineInfo.SlaDetails = &SlaDetails{
+			PrimarySla: PrimarySlaDetails{
+				SlaId:        sla.Id,
+				NxClusterIds: clusterIds,
+			},
+		}
+	}
+
 	// Appending request body based on database type
 	appender, err := GetRequestAppender(database.GetInstanceType())
 	if err != nil {
@@ -308,7 +369,7 @@ func (a *MongoDbRequestAppender) appendProvisioningRequest(req *DatabaseProvisio
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
 	req.SSHPublicKey = SSHPublicKey
 
-	// Default action arguments
+	// Default action arguments (shared by SI and HA)
 	actionArguments := map[string]string{
 		"listener_port":  "27017",
 		"log_size":       "100",
@@ -321,7 +382,26 @@ func (a *MongoDbRequestAppender) appendProvisioningRequest(req *DatabaseProvisio
 		"database_names": databaseNames,
 	}
 
-	// Appending/overwriting database actionArguments to actionArguments
+	// HA-specific action arguments — merged before setConfiguredActionArguments so that
+	// user-provided additionalArguments take final precedence over the HA defaults below.
+	if database.IsMongoHA() {
+		haConfig := database.GetInstanceHAConfig()
+		haActionArguments := map[string]string{
+			"cluster_name":        haConfig.ReplicaSetName,
+			"cluster_description": haConfig.ReplicaSetDescription,
+			// listener_port: use the configured port (may differ from 27017 if overridden in CRD)
+			"listener_port":  strconv.Itoa(int(haConfig.MongoListenerPort)),
+			"backup_policy":  "primary_only",
+			"restart_mongod": "true",
+			"working_dir":    "/tmp",
+		}
+		for k, v := range haActionArguments {
+			actionArguments[k] = v
+		}
+	}
+
+	// Apply user-provided additionalArguments last so they override both the base
+	// defaults and the HA defaults merged above.
 	if err := setConfiguredActionArguments(database, actionArguments); err != nil {
 		return nil, err
 	}

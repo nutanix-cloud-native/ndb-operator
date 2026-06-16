@@ -35,6 +35,7 @@ type HAParamsValidator interface {
 var haValidators = map[string]HAParamsValidator{
 	common.DATABASE_TYPE_POSTGRES: &PostgresHAParamsValidator{},
 	common.DATABASE_TYPE_MYSQL:    &MysqlHAParamsValidator{},
+	common.DATABASE_TYPE_MONGODB:  &MongoHAParamsValidator{},
 }
 
 // getHAValidator returns the registered HAParamsValidator for the given database type,
@@ -106,6 +107,69 @@ func (v *MysqlHAParamsValidator) Validate(haConfig *InstanceHAConfig, haPath *fi
 	if !my.DeployMySQLRouter && routerCount > 0 {
 		*errors = append(*errors, field.Invalid(haPath.Child("nodes"), haConfig.Nodes,
 			"mysqlrouter nodes are present but deployMySQLRouter is false"))
+	}
+}
+
+// MongoHAParamsValidator validates Replica Set specific fields for MongoDB HA.
+// +kubebuilder:object:generate=false
+type MongoHAParamsValidator struct{}
+
+// Validate checks MongoDB-specific HA constraints. Fields validated:
+//   - haConfig.mongodb                   — must be present (required)
+//   - haConfig.mongodb.replicaSetName    — must be non-empty
+//   - haConfig.nodes[*].nodeType         — must be "database" or "arbiter"
+//   - haConfig.nodes                     — arbiter nodes must not have a role set
+//   - haConfig.nodes                     — exactly one database node must have role "primary"
+//   - haConfig.mongodb.deployArbiter     — if true, exactly one "arbiter" node must be present;
+//     if false, no "arbiter" nodes may be present
+func (v *MongoHAParamsValidator) Validate(haConfig *InstanceHAConfig, haPath *field.Path, errors *field.ErrorList) {
+	mgPath := haPath.Child("mongodb")
+
+	if haConfig.MongoDB == nil {
+		*errors = append(*errors, field.Required(mgPath,
+			"mongodb config must be specified in haConfig when database type is mongodb"))
+		return
+	}
+
+	mg := haConfig.MongoDB
+	if mg.ReplicaSetName == "" {
+		*errors = append(*errors, field.Invalid(mgPath.Child("replicaSetName"),
+			mg.ReplicaSetName, "replicaSetName must be specified"))
+	}
+
+	primaryCount := 0
+	arbiterCount := 0
+	for i, node := range haConfig.Nodes {
+		nodePath := haPath.Child("nodes").Index(i)
+		if node.NodeType != common.HA_NODE_TYPE_DATABASE && node.NodeType != common.HA_NODE_TYPE_ARBITER {
+			*errors = append(*errors, field.Invalid(nodePath.Child("nodeType"), node.NodeType,
+				"nodeType must be either '"+common.HA_NODE_TYPE_DATABASE+"' or '"+common.HA_NODE_TYPE_ARBITER+"' for mongodb HA"))
+		}
+		if node.NodeType == common.HA_NODE_TYPE_ARBITER && node.Role != "" {
+			*errors = append(*errors, field.Invalid(nodePath.Child("role"), node.Role,
+				"role must not be set for arbiter nodes; role is implied by nodeType"))
+		}
+		if node.NodeType == common.HA_NODE_TYPE_DATABASE && node.Role == common.HA_NODE_ROLE_MONGO_PRIMARY {
+			primaryCount++
+		}
+		if node.NodeType == common.HA_NODE_TYPE_ARBITER {
+			arbiterCount++
+		}
+	}
+
+	if len(haConfig.Nodes) > 0 && primaryCount != 1 {
+		*errors = append(*errors, field.Invalid(haPath.Child("nodes"), haConfig.Nodes,
+			"exactly one database node must have role '"+common.HA_NODE_ROLE_MONGO_PRIMARY+"'"))
+	}
+
+	// Enforce consistency between deployArbiter and the nodes list.
+	if mg.DeployArbiter && arbiterCount != 1 {
+		*errors = append(*errors, field.Invalid(mgPath.Child("deployArbiter"), mg.DeployArbiter,
+			"deployArbiter is true but exactly one arbiter node must be present in haConfig.nodes"))
+	}
+	if !mg.DeployArbiter && arbiterCount > 0 {
+		*errors = append(*errors, field.Invalid(haPath.Child("nodes"), haConfig.Nodes,
+			"arbiter nodes are present but deployArbiter is false"))
 	}
 }
 

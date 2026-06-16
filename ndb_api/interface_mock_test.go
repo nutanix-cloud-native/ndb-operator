@@ -142,6 +142,12 @@ func (m *MockDatabaseInterface) IsMysqlHA() bool {
 	return args.Bool(0)
 }
 
+// IsMongoHA is a mock implementation of the IsMongoHA method in the Database interface
+func (m *MockDatabaseInterface) IsMongoHA() bool {
+	args := m.Called()
+	return args.Bool(0)
+}
+
 // GetInstanceHAConfig is a mock implementation of the GetInstanceHAConfig method in the Database interface
 func (m *MockDatabaseInterface) GetInstanceHAConfig() *HAConfig {
 	args := m.Called()

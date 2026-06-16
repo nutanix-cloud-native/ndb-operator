@@ -65,6 +65,13 @@ type HAConfig struct {
 	RouterROPort         int32
 	MySQLClusterUsername string
 	ReplicationUser      string
+
+	// MongoDB-specific fields (Replica Set)
+	ReplicaSetName          string
+	ReplicaSetDescription   string
+	DeployArbiter           bool
+	ArbiterComputeProfileId string
+	MongoListenerPort       int32
 }
 
 type DatabaseInterface interface {
@@ -87,6 +94,8 @@ type DatabaseInterface interface {
 	IsPostgresHA() bool
 	// IsMysqlHA returns true when this is a non-clone MySQL instance with haConfig set.
 	IsMysqlHA() bool
+	// IsMongoHA returns true when this is a non-clone MongoDB instance with haConfig set.
+	IsMongoHA() bool
 	// GetInstanceHAConfig returns the HA configuration for HA instances.
 	// Returns nil for clones and non-HA instances.
 	GetInstanceHAConfig() *HAConfig

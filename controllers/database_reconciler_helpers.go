@@ -331,6 +331,14 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 
 	ns := database.Namespace
 
+	// MongoDB HA uses a K8s Secret (not Services) for connectivity — smart MongoDB drivers
+	// need direct IP access to every node; a K8s Service with NAT breaks SDAM topology detection.
+	if database.Spec.Instance != nil &&
+		database.Spec.Instance.HAConfig != nil &&
+		database.Spec.Instance.HAConfig.MongoDB != nil {
+		return r.setupMongoConnSecret(ctx, database)
+	}
+
 	primaryIPs := strings.Split(database.Status.IPAddress, ",")
 
 	// Determine the port for the primary -svc and whether an HA manager is needed.
@@ -536,6 +544,86 @@ func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1
 	}
 	log.Info("Returning from database_reconciler_helpers.setupEndpoints")
 	return
+}
+
+// setupMongoConnSecret creates or updates the <database-name>-db-uri Secret that holds
+// the MongoDB connection URI for a Replica Set HA instance.
+// The URI is built from all data-node IPs (stored in database.Status.IPAddress by MongoHAIPResolver),
+// the credentials from the user's pre-existing credentialSecret, and the replica set name from haConfig.
+// The Secret is owned by the Database CR so it is garbage-collected on CR deletion.
+func (r *DatabaseReconciler) setupMongoConnSecret(ctx context.Context, database *ndbv1alpha1.Database) error {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered database_reconciler_helpers.setupMongoConnSecret")
+
+	haConfig := database.Spec.Instance.HAConfig
+	port := haConnectivityManagers[common.DATABASE_TYPE_MONGODB].PrimaryPort(haConfig)
+	rsName := haConfig.MongoDB.ReplicaSetName
+	dbName := strings.Join(database.Spec.Instance.DatabaseNames, ",")
+
+	// Read username + password from the user-provided credential Secret (Secret 1).
+	// This is the same Secret used for provisioning — we never modify it.
+	secretData, err := util.GetAllDataFromSecret(ctx, r.Client,
+		database.Spec.Instance.CredentialSecret, database.Namespace)
+	if err != nil {
+		log.Error(err, "Failed to read credential secret for MongoDB URI construction",
+			"credentialSecret", database.Spec.Instance.CredentialSecret)
+		return err
+	}
+	dbUser := string(secretData[common.SECRET_DATA_KEY_USERNAME])
+	dbPass := string(secretData[common.SECRET_DATA_KEY_PASSWORD])
+
+	// database.Status.IPAddress contains all data node IPs (comma-separated),
+	// set by MongoHAIPResolver in the NDBServer controller flow.
+	var hostParts []string
+	for _, ip := range strings.Split(database.Status.IPAddress, ",") {
+		if ip = strings.TrimSpace(ip); ip != "" {
+			hostParts = append(hostParts, fmt.Sprintf("%s:%d", ip, port))
+		}
+	}
+	hosts := strings.Join(hostParts, ",")
+	uri := fmt.Sprintf("mongodb://%s:%s@%s/%s?replicaSet=%s", dbUser, dbPass, hosts, dbName, rsName)
+
+	secretName := database.Name + "-db-uri"
+	nn := types.NamespacedName{Name: secretName, Namespace: database.Namespace}
+
+	existing := &corev1.Secret{}
+	getErr := r.Get(ctx, nn, existing)
+	if getErr != nil && errors.IsNotFound(getErr) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: database.Namespace,
+			},
+			StringData: map[string]string{
+				"uri": uri,
+			},
+		}
+		if ownerErr := ctrl.SetControllerReference(database, secret, r.Scheme); ownerErr != nil {
+			log.Error(ownerErr, "Failed to set controller reference on MongoDB URI secret")
+			return ownerErr
+		}
+		if createErr := r.Create(ctx, secret); createErr != nil {
+			log.Error(createErr, "Failed to create MongoDB URI secret", "secretName", secretName)
+			r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED,
+				"Failed to create MongoDB URI secret %s: %s", secretName, createErr.Error())
+			return createErr
+		}
+		log.Info("Created MongoDB URI secret", "secretName", secretName)
+	} else if getErr == nil {
+		// Secret exists — update the URI in case IPs have changed
+		existing.StringData = map[string]string{"uri": uri}
+		if updateErr := r.Update(ctx, existing); updateErr != nil {
+			log.Error(updateErr, "Failed to update MongoDB URI secret", "secretName", secretName)
+			return updateErr
+		}
+		log.Info("Updated MongoDB URI secret", "secretName", secretName)
+	} else {
+		log.Error(getErr, "Failed to get MongoDB URI secret", "secretName", secretName)
+		return getErr
+	}
+
+	log.Info("Returning from database_reconciler_helpers.setupMongoConnSecret")
+	return nil
 }
 
 // Returns the credentials(password and ssh public key) for NDB
