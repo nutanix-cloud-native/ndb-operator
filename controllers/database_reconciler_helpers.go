@@ -331,12 +331,11 @@ func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *nd
 
 	ns := database.Namespace
 
-	// MongoDB HA uses a K8s Secret (not Services) for connectivity — smart MongoDB drivers
-	// need direct IP access to every node; a K8s Service with NAT breaks SDAM topology detection.
+	// create headless services for MongoDB HA replicaset type
 	if database.Spec.Instance != nil &&
 		database.Spec.Instance.HAConfig != nil &&
 		database.Spec.Instance.HAConfig.MongoDB != nil {
-		return r.setupMongoConnSecret(ctx, database)
+		return r.setupMongoHAConnectivity(ctx, database, ndbClient)
 	}
 
 	primaryIPs := strings.Split(database.Status.IPAddress, ",")
@@ -546,22 +545,79 @@ func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1
 	return
 }
 
-// setupMongoConnSecret creates or updates the <database-name>-db-uri Secret that holds
-// the MongoDB connection URI for a Replica Set HA instance.
-// The URI is built from all data-node IPs (stored in database.Status.IPAddress by MongoHAIPResolver),
-// the credentials from the user's pre-existing credentialSecret, and the replica set name from haConfig.
-// The Secret is owned by the Database CR so it is garbage-collected on CR deletion.
-func (r *DatabaseReconciler) setupMongoConnSecret(ctx context.Context, database *ndbv1alpha1.Database) error {
+// For each data node, create a headless Service named after the VM hostname.
+
+// After the per-node Services/Endpoints are in place, creates or updates a
+// <database-name>-db-uri Secret whose "uri" key holds the full MongoDB connection
+// string with VM hostnames (not IPs), the replica-set name, and authSource=admin.
+func (r *DatabaseReconciler) setupMongoHAConnectivity(ctx context.Context, database *ndbv1alpha1.Database, ndbClient ndb_client.NDBClientHTTPInterface) error {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Entered database_reconciler_helpers.setupMongoConnSecret")
+	log.Info("Entered database_reconciler_helpers.setupMongoHAConnectivity")
 
 	haConfig := database.Spec.Instance.HAConfig
 	port := haConnectivityManagers[common.DATABASE_TYPE_MONGODB].PrimaryPort(haConfig)
 	rsName := haConfig.MongoDB.ReplicaSetName
 	dbName := strings.Join(database.Spec.Instance.DatabaseNames, ",")
 
-	// Read username + password from the user-provided credential Secret (Secret 1).
-	// This is the same Secret used for provisioning — we never modify it.
+	// Query NDB for the current set of database nodes (hostname + IP).
+	// This is a targeted GET on the cluster ID — the same ID that was set when
+	// the provisioning operation completed and stored in database.Status.Id.
+	dbResponse, err := ndb_api.GetDatabaseById(ctx, ndbClient, database.Status.Id)
+	if err != nil {
+		log.Error(err, "Failed to query NDB for MongoDB HA node details", "databaseId", database.Status.Id)
+		return err
+	}
+	if dbResponse == nil {
+		return fmt.Errorf("nil response from NDB for MongoDB HA database %s", database.Status.Id)
+	}
+
+	// Collect data nodes, arbiters are excluded
+	type mongoDataNode struct {
+		hostname string
+		ip       string
+	}
+	var dataNodes []mongoDataNode
+	for _, node := range dbResponse.DatabaseNodes {
+		isArbiter := false
+		for _, prop := range node.Properties {
+			if prop.Name == "role" && prop.Value == common.HA_NODE_ROLE_MONGO_ARBITER {
+				isArbiter = true
+				break
+			}
+		}
+		if !isArbiter && len(node.DbServer.IPAddresses) > 0 {
+			dataNodes = append(dataNodes, mongoDataNode{
+				hostname: node.DbServer.Name,
+				ip:       node.DbServer.IPAddresses[0],
+			})
+		}
+	}
+
+	if len(dataNodes) == 0 {
+		log.Info("No data nodes found in NDB response for MongoDB HA database, skipping connectivity setup",
+			"databaseId", database.Status.Id)
+		return nil
+	}
+
+	// Create or reconcile a headless Service + Endpoints for each data node.
+	for _, n := range dataNodes {
+		nn := types.NamespacedName{Name: n.hostname, Namespace: database.Namespace}
+		meta := metav1.ObjectMeta{Name: n.hostname, Namespace: database.Namespace}
+
+		if err := r.setupMongoHeadlessService(ctx, database, nn, meta, port); err != nil {
+			r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED,
+				"Failed to setup headless service for MongoDB node %s: %s", n.hostname, err.Error())
+			return err
+		}
+		if err := r.setupEndpoints(ctx, database, nn, meta, port, []string{n.ip}); err != nil {
+			r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED,
+				"Failed to setup endpoints for MongoDB node %s: %s", n.hostname, err.Error())
+			return err
+		}
+	}
+
+	// Read credentials from the user's pre-existing credential Secret.
+	// We only read it — never modify it.
 	secretData, err := util.GetAllDataFromSecret(ctx, r.Client,
 		database.Spec.Instance.CredentialSecret, database.Namespace)
 	if err != nil {
@@ -572,31 +628,29 @@ func (r *DatabaseReconciler) setupMongoConnSecret(ctx context.Context, database 
 	dbUser := string(secretData[common.SECRET_DATA_KEY_USERNAME])
 	dbPass := string(secretData[common.SECRET_DATA_KEY_PASSWORD])
 
-	// database.Status.IPAddress contains all data node IPs (comma-separated),
-	// set by MongoHAIPResolver in the NDBServer controller flow.
+	// Build a hostname-based MongoDB connection URI.
+	// Using VM hostnames (not raw IPs) is required so that SDAM topology discovery
+	// inside the driver matches the names in rs.conf() and CoreDNS can resolve them.
+	// e.g.: mongodb://user:pass@mongo-rs1:27017,mongo-rs2:27017/dbname?replicaSet=rs0&authSource=admin
 	var hostParts []string
-	for _, ip := range strings.Split(database.Status.IPAddress, ",") {
-		if ip = strings.TrimSpace(ip); ip != "" {
-			hostParts = append(hostParts, fmt.Sprintf("%s:%d", ip, port))
-		}
+	for _, n := range dataNodes {
+		hostParts = append(hostParts, fmt.Sprintf("%s:%d", n.hostname, port))
 	}
-	hosts := strings.Join(hostParts, ",")
-	uri := fmt.Sprintf("mongodb://%s:%s@%s/%s?replicaSet=%s", dbUser, dbPass, hosts, dbName, rsName)
+	uri := fmt.Sprintf("mongodb://%s:%s@%s/%s?replicaSet=%s&authSource=admin",
+		dbUser, dbPass, strings.Join(hostParts, ","), dbName, rsName)
 
+	// Create or update the <database-name>-db-uri Secret.
 	secretName := database.Name + "-db-uri"
-	nn := types.NamespacedName{Name: secretName, Namespace: database.Namespace}
-
+	uriNN := types.NamespacedName{Name: secretName, Namespace: database.Namespace}
 	existing := &corev1.Secret{}
-	getErr := r.Get(ctx, nn, existing)
+	getErr := r.Get(ctx, uriNN, existing)
 	if getErr != nil && errors.IsNotFound(getErr) {
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      secretName,
 				Namespace: database.Namespace,
 			},
-			StringData: map[string]string{
-				"uri": uri,
-			},
+			StringData: map[string]string{"uri": uri},
 		}
 		if ownerErr := ctrl.SetControllerReference(database, secret, r.Scheme); ownerErr != nil {
 			log.Error(ownerErr, "Failed to set controller reference on MongoDB URI secret")
@@ -610,20 +664,65 @@ func (r *DatabaseReconciler) setupMongoConnSecret(ctx context.Context, database 
 		}
 		log.Info("Created MongoDB URI secret", "secretName", secretName)
 	} else if getErr == nil {
-		// Secret exists — update the URI in case IPs have changed
-		existing.StringData = map[string]string{"uri": uri}
-		if updateErr := r.Update(ctx, existing); updateErr != nil {
-			log.Error(updateErr, "Failed to update MongoDB URI secret", "secretName", secretName)
-			return updateErr
+		// Only update if the URI actually changed (avoids unnecessary Secret writes every 15 s).
+		if string(existing.Data["uri"]) != uri {
+			existing.StringData = map[string]string{"uri": uri}
+			if updateErr := r.Update(ctx, existing); updateErr != nil {
+				log.Error(updateErr, "Failed to update MongoDB URI secret", "secretName", secretName)
+				return updateErr
+			}
+			log.Info("Updated MongoDB URI secret", "secretName", secretName)
 		}
-		log.Info("Updated MongoDB URI secret", "secretName", secretName)
 	} else {
 		log.Error(getErr, "Failed to get MongoDB URI secret", "secretName", secretName)
 		return getErr
 	}
 
-	log.Info("Returning from database_reconciler_helpers.setupMongoConnSecret")
+	log.Info("Returning from database_reconciler_helpers.setupMongoHAConnectivity")
 	return nil
+}
+
+// setupMongoHeadlessService creates a headless Kubernetes Service (clusterIP: None)
+// named after the MongoDB VM hostname. CoreDNS uses the paired Endpoints object to
+// resolve that hostname directly to the node IP, enabling SDAM topology discovery.
+// The service is owned by the Database CR for automatic garbage collection.
+func (r *DatabaseReconciler) setupMongoHeadlessService(ctx context.Context, database *ndbv1alpha1.Database, namespacedName types.NamespacedName, metadata metav1.ObjectMeta, port int32) (err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered database_reconciler_helpers.setupMongoHeadlessService", "name", namespacedName.Name)
+
+	foundService := &corev1.Service{}
+	err = r.Get(ctx, namespacedName, foundService)
+	if err != nil && errors.IsNotFound(err) {
+		log.Info("No headless service found, creating", "name", namespacedName.Name)
+		service := &corev1.Service{
+			ObjectMeta: metadata,
+			Spec: corev1.ServiceSpec{
+				ClusterIP: "None", // headless — no load balancing; CoreDNS answers via Endpoints
+				Ports: []corev1.ServicePort{
+					{
+						Protocol:   corev1.ProtocolTCP,
+						Port:       port,
+						TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: port},
+					},
+				},
+			},
+		}
+		if ownerErr := ctrl.SetControllerReference(database, service, r.Scheme); ownerErr != nil {
+			log.Error(ownerErr, "Error setting controller reference for headless service")
+			return ownerErr
+		}
+		err = r.Create(ctx, service)
+		if err != nil {
+			log.Error(err, "Failed to create headless service", "name", namespacedName.Name)
+			return
+		}
+		log.Info("Created headless service", "name", namespacedName.Name)
+	} else if err != nil {
+		log.Error(err, "Failed to get headless service", "name", namespacedName.Name)
+	}
+	// ClusterIP: None is immutable — no update needed for existing headless services.
+	log.Info("Returning from database_reconciler_helpers.setupMongoHeadlessService")
+	return
 }
 
 // Returns the credentials(password and ssh public key) for NDB

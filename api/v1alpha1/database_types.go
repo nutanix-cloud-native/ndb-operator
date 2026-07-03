@@ -92,11 +92,13 @@ type InstanceHANode struct {
 	// Name of the VM to be created
 	// +kubebuilder:validation:Required
 	VmName string `json:"vmName"`
-	// Type of this node: "database", "haproxy" (Postgres HA), "mysqlrouter" (MySQL HA), or "arbiter" (MongoDB HA)
+	// Type of this node:
+	// database, haproxy (Postgres HA), mysqlrouter (MySQL HA), or arbiter (MongoDB HA)
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=haproxy;database;mysqlrouter;arbiter
 	NodeType string `json:"nodeType"`
-	// Role of this node (database nodes only): "Primary" or "Secondary"
+	// Role of this node (database nodes only):
+	// Primary or Secondary
 	// +optional
 	Role string `json:"role,omitempty"`
 	// Id of the PE cluster this node should be placed on.

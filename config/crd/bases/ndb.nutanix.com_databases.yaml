@@ -287,9 +287,9 @@ spec:
                                 "Automatic")
                               type: string
                             nodeType:
-                              description: 'Type of this node: "database", "haproxy"
-                                (Postgres HA), "mysqlrouter" (MySQL HA), or "arbiter"
-                                (MongoDB HA)'
+                              description: |-
+                                Type of this node:
+                                database, haproxy (Postgres HA), mysqlrouter (MySQL HA), or arbiter (MongoDB HA)
                               enum:
                               - haproxy
                               - database
@@ -297,8 +297,9 @@ spec:
                               - arbiter
                               type: string
                             role:
-                              description: 'Role of this node (database nodes only):
-                                "Primary" or "Secondary"'
+                              description: |-
+                                Role of this node (database nodes only):
+                                Primary or Secondary
                               type: string
                             vmName:
                               description: Name of the VM to be created

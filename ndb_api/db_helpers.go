@@ -191,6 +191,8 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 					{Name: "role", Value: common.HA_NODE_ROLE_MONGO_ARBITER},
 					{Name: "votes", Value: "1"},
 					{Name: "priority", Value: "0"},
+					{Name: "slave_delay", Value: "0"},
+					{Name: "hidden", Value: "false"},
 				}
 			} else {
 				// Database node — role ("primary"/"secondary") comes from the user's YAML verbatim.
@@ -200,6 +202,8 @@ func GenerateProvisioningRequest(ctx context.Context, ndb_client *ndb_client.NDB
 					{Name: "role", Value: n.Role},
 					{Name: "votes", Value: "1"},
 					{Name: "priority", Value: "1"},
+					{Name: "slave_delay", Value: "0"},
+					{Name: "hidden", Value: "false"},
 				}
 			}
 			haNodes = append(haNodes, node)
@@ -376,7 +380,7 @@ func (a *MongoDbRequestAppender) appendProvisioningRequest(req *DatabaseProvisio
 		"journal_size":   "100",
 		"restart_mongod": "true",
 		"working_dir":    "/tmp",
-		"db_user":        "admin",
+		"db_user":        "mongod",
 		"backup_policy":  "primary_only",
 		"db_password":    dbPassword,
 		"database_names": databaseNames,

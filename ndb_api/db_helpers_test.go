@@ -786,7 +786,7 @@ func TestMongoDbProvisionRequestAppender_withoutAdditionalArguments_positiveWork
 		},
 		{
 			Name:  "db_user",
-			Value: "admin",
+			Value: "mongod",
 		},
 		{
 			Name:  "backup_policy",
@@ -875,7 +875,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_positiveWorkflo
 		},
 		{
 			Name:  "db_user",
-			Value: "admin",
+			Value: "mongod",
 		},
 		{
 			Name:  "backup_policy",
