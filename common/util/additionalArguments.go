@@ -127,10 +127,13 @@ func GetAllowedAdditionalArgumentsForDatabase(dbType string) (map[string]bool, e
 		}, nil
 	case common.DATABASE_TYPE_MONGODB:
 		return map[string]bool{
-			/* Has a default */
+			/* SI and HA */
 			"listener_port": true,
 			"log_size":      true,
 			"journal_size":  true,
+			/* HA only — users can override defaults injected by the appender */
+			"cluster_name":        true,
+			"cluster_description": true,
 		}, nil
 	case common.DATABASE_TYPE_POSTGRES:
 		return map[string]bool{

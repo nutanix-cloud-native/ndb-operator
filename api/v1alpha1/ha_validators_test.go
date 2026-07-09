@@ -64,6 +64,26 @@ func validMySQLConfig() *MySQLHAConfig {
 	return &MySQLHAConfig{InnoDBClusterName: "innodb-cluster"}
 }
 
+// mongoPrimaryNode returns a minimal valid MongoDB primary database node.
+func mongoPrimaryNode(name string) InstanceHANode {
+	return InstanceHANode{VmName: name, NodeType: common.HA_NODE_TYPE_DATABASE, Role: common.HA_NODE_ROLE_MONGO_PRIMARY, ClusterName: "cluster-a"}
+}
+
+// mongoSecondaryNode returns a minimal valid MongoDB secondary database node.
+func mongoSecondaryNode(name string) InstanceHANode {
+	return InstanceHANode{VmName: name, NodeType: common.HA_NODE_TYPE_DATABASE, Role: common.HA_NODE_ROLE_MONGO_SECONDARY, ClusterName: "cluster-b"}
+}
+
+// mongoArbiterNode returns a minimal valid MongoDB arbiter node (no role).
+func mongoArbiterNode(name string) InstanceHANode {
+	return InstanceHANode{VmName: name, NodeType: common.HA_NODE_TYPE_ARBITER, ClusterName: "cluster-a"}
+}
+
+// validMongoConfig returns a minimal valid MongoHAConfig for use in test fixtures.
+func validMongoConfig() *MongoHAConfig {
+	return &MongoHAConfig{ReplicaSetName: "mongo-rs"}
+}
+
 func TestGetHAValidator(t *testing.T) {
 	t.Run("returns validator for postgres", func(t *testing.T) {
 		v, ok := getHAValidator(common.DATABASE_TYPE_POSTGRES)
@@ -79,8 +99,15 @@ func TestGetHAValidator(t *testing.T) {
 		assert.IsType(t, &MysqlHAParamsValidator{}, v)
 	})
 
+	t.Run("returns validator for mongodb", func(t *testing.T) {
+		v, ok := getHAValidator(common.DATABASE_TYPE_MONGODB)
+		assert.True(t, ok)
+		assert.NotNil(t, v)
+		assert.IsType(t, &MongoHAParamsValidator{}, v)
+	})
+
 	t.Run("returns false for unsupported engine types", func(t *testing.T) {
-		for _, unsupported := range []string{"mongodb", "mssql", "oracle", ""} {
+		for _, unsupported := range []string{"mssql", "oracle", ""} {
 			v, ok := getHAValidator(unsupported)
 			assert.False(t, ok, "expected no validator for type %q", unsupported)
 			assert.Nil(t, v)
@@ -365,5 +392,147 @@ func TestPostgresHAParamsValidator_Validate(t *testing.T) {
 		// The haproxy node with role=Primary should not count toward primaryCount.
 		assert.Len(t, *errors, 1)
 		assert.Equal(t, "haConfig.nodes", (*errors)[0].Field)
+	})
+}
+
+// ---------------------------------------------------------------------------
+// MongoHAParamsValidator
+// ---------------------------------------------------------------------------
+
+func TestMongoHAParamsValidator_Validate(t *testing.T) {
+	validator := &MongoHAParamsValidator{}
+	haPath := field.NewPath("haConfig")
+
+	t.Run("valid 3-data-node config (no arbiter) produces no errors", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MongoDB: validMongoConfig(),
+			Nodes:   []InstanceHANode{mongoPrimaryNode("db1"), mongoSecondaryNode("db2"), mongoSecondaryNode("db3")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Empty(t, *errors)
+	})
+
+	t.Run("valid config with arbiter (deployArbiter=true + one arbiter node) produces no errors", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MongoDB: &MongoHAConfig{ReplicaSetName: "rs0", DeployArbiter: true},
+			Nodes:   []InstanceHANode{mongoPrimaryNode("db1"), mongoSecondaryNode("db2"), mongoArbiterNode("arb1")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Empty(t, *errors)
+	})
+
+	t.Run("missing mongodb config block returns required error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MongoDB: nil,
+			Nodes:   []InstanceHANode{mongoPrimaryNode("db1"), mongoSecondaryNode("db2")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeRequired, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.mongodb", (*errors)[0].Field)
+	})
+
+	t.Run("empty replicaSetName returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MongoDB: &MongoHAConfig{ReplicaSetName: ""},
+			Nodes:   []InstanceHANode{mongoPrimaryNode("db1"), mongoSecondaryNode("db2"), mongoSecondaryNode("db3")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, field.ErrorTypeInvalid, (*errors)[0].Type)
+		assert.Equal(t, "haConfig.mongodb.replicaSetName", (*errors)[0].Field)
+	})
+
+	t.Run("invalid nodeType returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MongoDB: validMongoConfig(),
+			Nodes: []InstanceHANode{
+				mongoPrimaryNode("db1"),
+				{VmName: "db2", NodeType: common.HA_NODE_TYPE_HAPROXY, Role: common.HA_NODE_ROLE_MONGO_SECONDARY, ClusterName: "cluster-a"},
+				mongoSecondaryNode("db3"),
+			},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.GreaterOrEqual(t, len(*errors), 1)
+		assert.Equal(t, "haConfig.nodes[1].nodeType", (*errors)[0].Field)
+	})
+
+	t.Run("no primary node returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MongoDB: validMongoConfig(),
+			Nodes:   []InstanceHANode{mongoSecondaryNode("db1"), mongoSecondaryNode("db2"), mongoSecondaryNode("db3")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, "haConfig.nodes", (*errors)[0].Field)
+		assert.Contains(t, (*errors)[0].Detail, "exactly one")
+	})
+
+	t.Run("multiple primary nodes returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MongoDB: validMongoConfig(),
+			Nodes:   []InstanceHANode{mongoPrimaryNode("db1"), mongoPrimaryNode("db2"), mongoSecondaryNode("db3")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, "haConfig.nodes", (*errors)[0].Field)
+		assert.Contains(t, (*errors)[0].Detail, "exactly one")
+	})
+
+	t.Run("arbiter node with role set returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MongoDB: &MongoHAConfig{ReplicaSetName: "rs0", DeployArbiter: true},
+			Nodes: []InstanceHANode{
+				mongoPrimaryNode("db1"),
+				mongoSecondaryNode("db2"),
+				{VmName: "arb1", NodeType: common.HA_NODE_TYPE_ARBITER, Role: "primary", ClusterName: "cluster-a"},
+			},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, "haConfig.nodes[2].role", (*errors)[0].Field)
+		assert.Contains(t, (*errors)[0].Detail, "must not be set for arbiter nodes")
+	})
+
+	t.Run("deployArbiter=true but no arbiter node returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MongoDB: &MongoHAConfig{ReplicaSetName: "rs0", DeployArbiter: true},
+			Nodes:   []InstanceHANode{mongoPrimaryNode("db1"), mongoSecondaryNode("db2"), mongoSecondaryNode("db3")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, "haConfig.mongodb.deployArbiter", (*errors)[0].Field)
+		assert.Contains(t, (*errors)[0].Detail, "exactly one arbiter node")
+	})
+
+	t.Run("deployArbiter=false but arbiter node present returns invalid error", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MongoDB: validMongoConfig(), // DeployArbiter defaults to false
+			Nodes:   []InstanceHANode{mongoPrimaryNode("db1"), mongoSecondaryNode("db2"), mongoArbiterNode("arb1")},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Len(t, *errors, 1)
+		assert.Equal(t, "haConfig.nodes", (*errors)[0].Field)
+		assert.Contains(t, (*errors)[0].Detail, "deployArbiter is false")
+	})
+
+	t.Run("empty nodes list skips primary and arbiter count checks", func(t *testing.T) {
+		haConfig := &InstanceHAConfig{
+			MongoDB: validMongoConfig(),
+			Nodes:   []InstanceHANode{},
+		}
+		errors := &field.ErrorList{}
+		validator.Validate(haConfig, haPath, errors)
+		assert.Empty(t, *errors)
 	})
 }
