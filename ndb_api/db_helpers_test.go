@@ -18,6 +18,7 @@ const (
 	TEST_PASSWORD      = "testPassword"
 	TEST_SSHKEY        = "testSSHKey"
 	TEST_DB_NAMES      = "testDB"
+	TEST_USERNAME      = "admin"
 	TEST_INSTANCE_TYPE = "testInstance"
 	TEST_TIMEZONE      = "test-timezone"
 	TEST_CLUSTER_ID    = "test-cluster-id"
@@ -744,7 +745,7 @@ func TestMSSQLProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(
 
 }
 
-// Tests MongoDbProvisionRequestAppender(), without additionalArguments, positive workflow
+// Tests MongoDbProvisionRequestAppender(), without additionalArguments, positive workflow (Single Instance)
 func TestMongoDbProvisionRequestAppender_withoutAdditionalArguments_positiveWorkflow(t *testing.T) {
 	t.Parallel()
 
@@ -755,6 +756,7 @@ func TestMongoDbProvisionRequestAppender_withoutAdditionalArguments_positiveWork
 	reqData := map[string]interface{}{
 		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
 		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+		common.NDB_PARAM_USERNAME:       TEST_USERNAME,
 	}
 
 	// Mock required Mock Database Interface methods
@@ -786,7 +788,7 @@ func TestMongoDbProvisionRequestAppender_withoutAdditionalArguments_positiveWork
 		},
 		{
 			Name:  "db_user",
-			Value: "mongod",
+			Value: "admin",
 		},
 		{
 			Name:  "backup_policy",
@@ -840,6 +842,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_positiveWorkflo
 	reqData := map[string]interface{}{
 		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
 		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+		common.NDB_PARAM_USERNAME:       TEST_USERNAME,
 	}
 
 	// Mock required Mock Database Interface methods
@@ -875,7 +878,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_positiveWorkflo
 		},
 		{
 			Name:  "db_user",
-			Value: "mongod",
+			Value: "admin",
 		},
 		{
 			Name:  "backup_policy",
@@ -929,6 +932,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_negativeWorkflo
 	reqData := map[string]interface{}{
 		common.NDB_PARAM_SSH_PUBLIC_KEY: TEST_SSHKEY,
 		common.NDB_PARAM_PASSWORD:       TEST_PASSWORD,
+		common.NDB_PARAM_USERNAME:       TEST_USERNAME,
 	}
 
 	// Mock required Mock Database Interface methods

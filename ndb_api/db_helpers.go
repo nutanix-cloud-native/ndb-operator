@@ -371,6 +371,9 @@ func (a *MongoDbRequestAppender) appendProvisioningRequest(req *DatabaseProvisio
 	dbPassword := reqData[common.NDB_PARAM_PASSWORD].(string)
 	databaseNames := database.GetInstanceDatabaseNames()
 	SSHPublicKey := reqData[common.NDB_PARAM_SSH_PUBLIC_KEY].(string)
+	// db_user is the Linux OS user on the NDB-provisioned VM; read it from the
+	// credential secret's "username" field so it is user-configurable, not hardcoded.
+	dbUser := reqData[common.NDB_PARAM_USERNAME].(string)
 	req.SSHPublicKey = SSHPublicKey
 
 	// Default action arguments (shared by SI and HA)
@@ -380,7 +383,7 @@ func (a *MongoDbRequestAppender) appendProvisioningRequest(req *DatabaseProvisio
 		"journal_size":   "100",
 		"restart_mongod": "true",
 		"working_dir":    "/tmp",
-		"db_user":        "mongod",
+		"db_user":        dbUser,
 		"backup_policy":  "primary_only",
 		"db_password":    dbPassword,
 		"database_names": databaseNames,
@@ -390,14 +393,17 @@ func (a *MongoDbRequestAppender) appendProvisioningRequest(req *DatabaseProvisio
 	// user-provided additionalArguments take final precedence over the HA defaults below.
 	if database.IsMongoHA() {
 		haConfig := database.GetInstanceHAConfig()
+		listenerPort := haConfig.MongoListenerPort
+		if listenerPort == 0 {
+			listenerPort = common.HA_MONGO_DEFAULT_LISTENER_PORT
+		}
 		haActionArguments := map[string]string{
 			"cluster_name":        haConfig.ReplicaSetName,
 			"cluster_description": haConfig.ReplicaSetDescription,
-			// listener_port: use the configured port (may differ from 27017 if overridden in CRD)
-			"listener_port":  strconv.Itoa(int(haConfig.MongoListenerPort)),
-			"backup_policy":  "primary_only",
-			"restart_mongod": "true",
-			"working_dir":    "/tmp",
+			"listener_port":       strconv.Itoa(int(listenerPort)),
+			"backup_policy":       "primary_only",
+			"restart_mongod":      "true",
+			"working_dir":         "/tmp",
 		}
 		for k, v := range haActionArguments {
 			actionArguments[k] = v

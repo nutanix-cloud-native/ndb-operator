@@ -532,13 +532,14 @@ func TestMongoHAParamsValidator_Validate(t *testing.T) {
 		assert.Contains(t, (*errors)[0].Detail, "deployArbiter is false")
 	})
 
-	t.Run("empty nodes list skips primary and arbiter count checks", func(t *testing.T) {
+	t.Run("empty nodes list returns minimum node count error", func(t *testing.T) {
 		haConfig := &InstanceHAConfig{
 			MongoDB: validMongoConfig(),
 			Nodes:   []InstanceHANode{},
 		}
 		errors := &field.ErrorList{}
 		validator.Validate(haConfig, haPath, errors)
-		assert.Empty(t, *errors)
+		assert.Len(t, *errors, 1)
+		assert.Contains(t, (*errors)[0].Detail, "requires at least 3 nodes")
 	})
 }

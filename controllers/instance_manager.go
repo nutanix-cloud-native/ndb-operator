@@ -51,7 +51,7 @@ func resolveNamesToUUIDs(ctx context.Context, r *DatabaseReconciler, ndbClient *
 func (dm *DatabaseManager) create(ctx context.Context, r *DatabaseReconciler, ndbClient *ndb_client.NDBClient, database *ndbv1alpha1.Database, namespace string) (taskResponse *ndb_api.TaskInfoSummaryResponse, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Provisioning a database on NDB")
-	dbPassword, sshPublicKey, err := r.getDatabaseCredentials(ctx, database.Spec.Instance.CredentialSecret, namespace)
+	dbPassword, sshPublicKey, dbUsername, err := r.getDatabaseCredentials(ctx, database.Spec.Instance.CredentialSecret, namespace)
 	if err != nil || dbPassword == "" || sshPublicKey == "" {
 		var errStatement string
 		if err == nil {
@@ -68,6 +68,7 @@ func (dm *DatabaseManager) create(ctx context.Context, r *DatabaseReconciler, nd
 	reqData := map[string]interface{}{
 		common.NDB_PARAM_PASSWORD:       dbPassword,
 		common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+		common.NDB_PARAM_USERNAME:       dbUsername,
 	}
 
 	// Resolve names to UUIDs before generating request
@@ -182,7 +183,7 @@ func (cm *CloneManager) create(ctx context.Context, r *DatabaseReconciler, ndbCl
 	}
 
 	databaseAdapter := &controller_adapters.Database{Database: *database}
-	dbPassword, sshPublicKey, err := r.getDatabaseCredentials(ctx, databaseAdapter.GetCredentialSecret(), namespace)
+	dbPassword, sshPublicKey, dbUsername, err := r.getDatabaseCredentials(ctx, databaseAdapter.GetCredentialSecret(), namespace)
 	if err != nil || dbPassword == "" || sshPublicKey == "" {
 		var errStatement string
 		if err == nil {
@@ -199,6 +200,7 @@ func (cm *CloneManager) create(ctx context.Context, r *DatabaseReconciler, ndbCl
 	reqData := map[string]interface{}{
 		common.NDB_PARAM_PASSWORD:       dbPassword,
 		common.NDB_PARAM_SSH_PUBLIC_KEY: sshPublicKey,
+		common.NDB_PARAM_USERNAME:       dbUsername,
 	}
 
 	generatedReq, err := ndb_api.GenerateCloningRequest(ctx, ndbClient, databaseAdapter, reqData)

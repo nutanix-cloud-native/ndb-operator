@@ -67,6 +67,30 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 				databaseInfo.IPAddress = db.DatabaseNodes[0].DbServer.IPAddresses[0]
 				log.Info("Using first node IP", "db", db.Name, "ip", databaseInfo.IPAddress)
 			}
+
+			// For MongoDB HA, cache per-node hostname + IP from the already-fetched detailed response.
+			// This allows the Database reconciler to build headless Services and the connection URI
+			// without making a redundant GetDatabaseById?detailed=true call every reconcile loop.
+			if dbType == common.DATABASE_TYPE_MONGODB && len(db.DatabaseNodes) > 1 {
+				for _, node := range db.DatabaseNodes {
+					if node.DbServer.Name == "" || len(node.DbServer.IPAddresses) == 0 {
+						continue
+					}
+					isArbiter := false
+					for _, prop := range node.Properties {
+						if prop.Name == "role" && prop.Value == common.HA_NODE_ROLE_MONGO_ARBITER {
+							isArbiter = true
+							break
+						}
+					}
+					databaseInfo.MongoNodes = append(databaseInfo.MongoNodes, ndbv1alpha1.MongoNodeInfo{
+						Hostname:  node.DbServer.Name,
+						IP:        node.DbServer.IPAddresses[0],
+						IsArbiter: isArbiter,
+					})
+				}
+				log.Info("Cached MongoDB HA nodes", "db", db.Name, "nodeCount", len(databaseInfo.MongoNodes))
+			}
 		}
 		databases[i] = databaseInfo
 	}

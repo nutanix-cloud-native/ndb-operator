@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
@@ -137,6 +139,11 @@ func (v *MongoHAParamsValidator) Validate(haConfig *InstanceHAConfig, haPath *fi
 			mg.ReplicaSetName, "replicaSetName must be specified"))
 	}
 
+	if len(haConfig.Nodes) < common.HA_MONGO_MIN_NODE_COUNT {
+		*errors = append(*errors, field.Invalid(haPath.Child("nodes"), haConfig.Nodes,
+			fmt.Sprintf("mongodb HA replica set requires at least %d nodes (e.g. 1 primary + 2 secondaries, or 1 primary + 1 secondary + 1 arbiter)", common.HA_MONGO_MIN_NODE_COUNT)))
+	}
+
 	primaryCount := 0
 	arbiterCount := 0
 	for i, node := range haConfig.Nodes {
@@ -157,7 +164,7 @@ func (v *MongoHAParamsValidator) Validate(haConfig *InstanceHAConfig, haPath *fi
 		}
 	}
 
-	if len(haConfig.Nodes) > 0 && primaryCount != 1 {
+	if len(haConfig.Nodes) >= common.HA_MONGO_MIN_NODE_COUNT && primaryCount != 1 {
 		*errors = append(*errors, field.Invalid(haPath.Child("nodes"), haConfig.Nodes,
 			"exactly one database node must have role '"+common.HA_NODE_ROLE_MONGO_PRIMARY+"'"))
 	}
