@@ -16,7 +16,7 @@ spec:
             capabilities:
               drop:
                 - "ALL"
-          image: docker.io/bitnami/kube-rbac-proxy@sha256:4bfaad756b23b5f4c11c66716b72b45a369baad988fbe3c3cf3f0446e3c86fea
+          image: docker.io/bitnami/kube-rbac-proxy@sha256:b7e25b5c57d9b3bfaabf4a9aa173d126344698d097ac44b943096dbe7a21fc05
           args:
             - "--secure-listen-address=0.0.0.0:8443"
             - "--upstream=http://127.0.0.1:8080/"
