@@ -247,11 +247,18 @@ func (d *Database) IsMysqlHA() bool {
 		d.Spec.Instance.HAConfig != nil
 }
 
+// IsMongoHA returns true when this is a non-clone MongoDB instance with haConfig specified.
+func (d *Database) IsMongoHA() bool {
+	return !d.IsClone() &&
+		d.Spec.Instance.Type == common.DATABASE_TYPE_MONGODB &&
+		d.Spec.Instance.HAConfig != nil
+}
+
 // GetInstanceHAConfig converts the v1alpha1.InstanceHAConfig into the ndb_api.HAConfig
 // representation used within the ndb_api package.
 // Returns nil for clones and non-HA instances.
 func (d *Database) GetInstanceHAConfig() *ndb_api.HAConfig {
-	if !d.IsPostgresHA() && !d.IsMysqlHA() {
+	if !d.IsPostgresHA() && !d.IsMysqlHA() && !d.IsMongoHA() {
 		return nil
 	}
 	src := d.Spec.Instance.HAConfig
@@ -289,6 +296,14 @@ func (d *Database) GetInstanceHAConfig() *ndb_api.HAConfig {
 		cfg.RouterROPort = my.RouterROPort
 		cfg.MySQLClusterUsername = my.MySQLClusterUsername
 		cfg.ReplicationUser = my.ReplicationUser
+	}
+
+	if mg := src.MongoDB; mg != nil {
+		cfg.ReplicaSetName = mg.ReplicaSetName
+		cfg.ReplicaSetDescription = mg.ReplicaSetDescription
+		cfg.DeployArbiter = mg.DeployArbiter
+		cfg.ArbiterComputeProfileId = mg.ArbiterComputeProfileId
+		cfg.MongoListenerPort = mg.ListenerPort
 	}
 
 	return cfg

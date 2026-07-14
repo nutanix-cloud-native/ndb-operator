@@ -604,3 +604,132 @@ func TestMySQLHAIPResolver_ResolveIPs(t *testing.T) {
 		ndbClient.AssertExpectations(t)
 	})
 }
+
+// ---------------------------------------------------------------------------
+// Helpers for MongoDB tests
+// ---------------------------------------------------------------------------
+
+func mongoPrimaryDBNode(ip string) ndb_api.DatabaseNode {
+	return ndb_api.DatabaseNode{
+		Properties: []ndb_api.Property{{Name: "role", Value: common.HA_NODE_ROLE_MONGO_PRIMARY}},
+		DbServer:   ndb_api.DatabaseServer{IPAddresses: []string{ip}},
+	}
+}
+
+func mongoSecondaryDBNode(ip string) ndb_api.DatabaseNode {
+	return ndb_api.DatabaseNode{
+		Properties: []ndb_api.Property{{Name: "role", Value: common.HA_NODE_ROLE_MONGO_SECONDARY}},
+		DbServer:   ndb_api.DatabaseServer{IPAddresses: []string{ip}},
+	}
+}
+
+func mongoArbiterDBNode(ip string) ndb_api.DatabaseNode {
+	return ndb_api.DatabaseNode{
+		Properties: []ndb_api.Property{{Name: "role", Value: common.HA_NODE_ROLE_MONGO_ARBITER}},
+		DbServer:   ndb_api.DatabaseServer{IPAddresses: []string{ip}},
+	}
+}
+
+// ---------------------------------------------------------------------------
+// MongoHAConnectivityManager — registry & PrimaryPort
+// ---------------------------------------------------------------------------
+
+func TestMongoHAConnectivityManager_Registry(t *testing.T) {
+	mgr, ok := haConnectivityManagers[common.DATABASE_TYPE_MONGODB]
+	assert.True(t, ok)
+	assert.IsType(t, &MongoHAConnectivityManager{}, mgr)
+}
+
+func TestMongoHAConnectivityManager_PrimaryPort(t *testing.T) {
+	mgr := &MongoHAConnectivityManager{}
+
+	t.Run("returns default 27017 when MongoDB config is nil", func(t *testing.T) {
+		haConfig := &ndbv1alpha1.InstanceHAConfig{MongoDB: nil}
+		assert.Equal(t, common.HA_MONGO_DEFAULT_LISTENER_PORT, mgr.PrimaryPort(haConfig))
+	})
+
+	t.Run("returns default 27017 when ListenerPort is zero", func(t *testing.T) {
+		haConfig := &ndbv1alpha1.InstanceHAConfig{
+			MongoDB: &ndbv1alpha1.MongoHAConfig{ReplicaSetName: "rs0", ListenerPort: 0},
+		}
+		assert.Equal(t, common.HA_MONGO_DEFAULT_LISTENER_PORT, mgr.PrimaryPort(haConfig))
+	})
+
+	t.Run("returns configured port when ListenerPort is set", func(t *testing.T) {
+		haConfig := &ndbv1alpha1.InstanceHAConfig{
+			MongoDB: &ndbv1alpha1.MongoHAConfig{ReplicaSetName: "rs0", ListenerPort: 27018},
+		}
+		assert.Equal(t, int32(27018), mgr.PrimaryPort(haConfig))
+	})
+}
+
+func TestMongoHAConnectivityManager_AdditionalServices(t *testing.T) {
+	mgr := &MongoHAConnectivityManager{}
+	haConfig := &ndbv1alpha1.InstanceHAConfig{
+		MongoDB: &ndbv1alpha1.MongoHAConfig{ReplicaSetName: "rs0"},
+	}
+	t.Run("returns nil (no additional services for MongoDB HA)", func(t *testing.T) {
+		svcs := mgr.AdditionalServices(haConfig)
+		assert.Nil(t, svcs)
+	})
+}
+
+// ---------------------------------------------------------------------------
+// MongoHAIPResolver — ResolveIPs
+// ---------------------------------------------------------------------------
+
+func TestMongoHAIPResolver_Registry(t *testing.T) {
+	res, ok := haIPResolvers[common.DATABASE_TYPE_MONGODB]
+	assert.True(t, ok)
+	assert.IsType(t, &MongoHAIPResolver{}, res)
+}
+
+func TestMongoHAIPResolver_ResolveIPs(t *testing.T) {
+	r := &MongoHAIPResolver{}
+	ctx := context.Background()
+
+	t.Run("returns all data node IPs (primary + secondary), excludes arbiter", func(t *testing.T) {
+		db := ndb_api.DatabaseResponse{
+			DatabaseNodes: []ndb_api.DatabaseNode{
+				mongoPrimaryDBNode("10.0.0.1"),
+				mongoSecondaryDBNode("10.0.0.2"),
+				mongoArbiterDBNode("10.0.0.3"),
+			},
+		}
+		ips, err := r.ResolveIPs(ctx, nil, db)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, []string{"10.0.0.1", "10.0.0.2"}, ips)
+	})
+
+	t.Run("returns all data node IPs when no arbiter is present", func(t *testing.T) {
+		db := ndb_api.DatabaseResponse{
+			DatabaseNodes: []ndb_api.DatabaseNode{
+				mongoPrimaryDBNode("10.0.0.1"),
+				mongoSecondaryDBNode("10.0.0.2"),
+				mongoSecondaryDBNode("10.0.0.3"),
+			},
+		}
+		ips, err := r.ResolveIPs(ctx, nil, db)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, []string{"10.0.0.1", "10.0.0.2", "10.0.0.3"}, ips)
+	})
+
+	t.Run("returns empty slice when all nodes are arbiters", func(t *testing.T) {
+		db := ndb_api.DatabaseResponse{
+			DatabaseNodes: []ndb_api.DatabaseNode{
+				mongoArbiterDBNode("10.0.0.1"),
+				mongoArbiterDBNode("10.0.0.2"),
+			},
+		}
+		ips, err := r.ResolveIPs(ctx, nil, db)
+		assert.NoError(t, err)
+		assert.Empty(t, ips)
+	})
+
+	t.Run("returns empty slice when DatabaseNodes is empty", func(t *testing.T) {
+		db := ndb_api.DatabaseResponse{DatabaseNodes: []ndb_api.DatabaseNode{}}
+		ips, err := r.ResolveIPs(ctx, nil, db)
+		assert.NoError(t, err)
+		assert.Empty(t, ips)
+	})
+}

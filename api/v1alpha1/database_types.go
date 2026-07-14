@@ -92,11 +92,13 @@ type InstanceHANode struct {
 	// Name of the VM to be created
 	// +kubebuilder:validation:Required
 	VmName string `json:"vmName"`
-	// Type of this node: "database", "haproxy" (Postgres HA), or "mysqlrouter" (MySQL HA)
+	// Type of this node:
+	// database, haproxy (Postgres HA), mysqlrouter (MySQL HA), or arbiter (MongoDB HA)
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=haproxy;database;mysqlrouter
+	// +kubebuilder:validation:Enum=haproxy;database;mysqlrouter;arbiter
 	NodeType string `json:"nodeType"`
-	// Role of this node (database nodes only): "Primary" or "Secondary"
+	// Role of this node (database nodes only):
+	// Primary or Secondary
 	// +optional
 	Role string `json:"role,omitempty"`
 	// Id of the PE cluster this node should be placed on.
@@ -134,6 +136,10 @@ type InstanceHAConfig struct {
 	// Required when the database type is "mysql".
 	// +optional
 	MySQL *MySQLHAConfig `json:"mysql,omitempty"`
+	// MongoDB contains Replica Set settings specific to MongoDB HA.
+	// Required when the database type is "mongodb".
+	// +optional
+	MongoDB *MongoHAConfig `json:"mongodb,omitempty"`
 }
 
 // MySQLHAConfig holds InnoDB Cluster and MySQL Router settings specific to a MySQL HA instance.
@@ -162,6 +168,30 @@ type MySQLHAConfig struct {
 	// ReplicationUser is the user for group replication. Defaults to "repl".
 	// +optional
 	ReplicationUser string `json:"replicationUser,omitempty"`
+}
+
+// MongoHAConfig holds Replica Set settings specific to a MongoDB HA instance.
+type MongoHAConfig struct {
+	// ReplicaSetName is the MongoDB Replica Set name, mapped to the "cluster_name" NDB action argument.
+	// +kubebuilder:validation:Required
+	ReplicaSetName string `json:"replicaSetName"`
+	// ReplicaSetDescription is an optional human-readable description shown in the NDB UI.
+	// +optional
+	ReplicaSetDescription string `json:"replicaSetDescription,omitempty"`
+	// DeployArbiter controls whether an Arbiter VM is provisioned.
+	// When true, exactly one node with nodeType "arbiter" must be present in nodes[].
+	// When false (default), no arbiter nodes may be present — all nodes are data-bearing.
+	// +optional
+	DeployArbiter bool `json:"deployArbiter,omitempty"`
+	// ArbiterComputeProfileId optionally assigns a smaller compute profile to the Arbiter VM.
+	// Falls back to the instance-level compute profile if unset.
+	// Only meaningful when DeployArbiter is true.
+	// +optional
+	ArbiterComputeProfileId string `json:"arbiterComputeProfileId,omitempty"`
+	// ListenerPort is the MongoDB listener port. Defaults to 27017.
+	// +optional
+	// +kubebuilder:default=27017
+	ListenerPort int32 `json:"listenerPort,omitempty"`
 }
 
 // PostgresHAConfig holds Patroni and HAProxy settings specific to a Postgres HA instance.

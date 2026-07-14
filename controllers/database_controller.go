@@ -44,7 +44,7 @@ import (
 // +kubebuilder:rbac:groups="core",resources=services,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="core",resources=endpoints,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups="core",resources=configmaps,verbs=get;list
-// +kubebuilder:rbac:groups="core",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="core",resources=secrets,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/finalizers,verbs=update

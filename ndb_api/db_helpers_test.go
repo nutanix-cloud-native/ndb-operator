@@ -745,6 +745,7 @@ func TestMongoDbProvisionRequestAppender_withoutAdditionalArguments_positiveWork
 	mockDatabase.On("GetInstanceType").Return(common.DATABASE_TYPE_MONGODB)
 	mockDatabase.On("GetAdditionalArguments").Return(map[string]string{})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsMongoHA").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -768,7 +769,7 @@ func TestMongoDbProvisionRequestAppender_withoutAdditionalArguments_positiveWork
 		},
 		{
 			Name:  "db_user",
-			Value: "admin",
+			Value: "mongod",
 		},
 		{
 			Name:  "backup_policy",
@@ -832,6 +833,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_positiveWorkflo
 		"journal_size":  "1",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsMongoHA").Return(false)
 	expectedActionArgs := []ActionArgument{
 		{
 			Name:  "listener_port",
@@ -855,7 +857,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_positiveWorkflo
 		},
 		{
 			Name:  "db_user",
-			Value: "admin",
+			Value: "mongod",
 		},
 		{
 			Name:  "backup_policy",
@@ -917,6 +919,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_negativeWorkflo
 		"invalid-key": "invalid-value",
 	})
 	mockDatabase.On("IsClone").Return(false)
+	mockDatabase.On("IsMongoHA").Return(false)
 	// Get specific implementation of RequestAppender
 	requestAppender, _ := GetRequestAppender(common.DATABASE_TYPE_MONGODB)
 
@@ -1412,6 +1415,7 @@ func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
 		mockDatabase.On("IsClone").Return(false)
 		mockDatabase.On("IsPostgresHA").Return(false)
 		mockDatabase.On("IsMysqlHA").Return(false)
+		mockDatabase.On("IsMongoHA").Return(false)
 		mockDatabase.On("GetInstanceHAConfig").Return((*HAConfig)(nil))
 
 		// Test
