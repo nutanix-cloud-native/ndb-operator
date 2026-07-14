@@ -20,39 +20,7 @@ NDB operator supports these functionalities:
 
 ## Installation and Running on the cluster
 
-### Method 1: Install from Helm Repository (Recommended)
-
-Add the Nutanix Helm repository:
-
-```sh
-helm repo add nutanix https://nutanix.github.io/helm/
-helm repo update
-```
-
-Install the latest version:
-
-```sh
-helm install ndb-operator nutanix/ndb-operator \
-  --namespace ndb-operator-system \
-  --create-namespace
-```
-
-Install a specific version:
-
-```sh
-helm install ndb-operator nutanix/ndb-operator \
-  --version 0.5.9 \
-  --namespace ndb-operator-system \
-  --create-namespace
-```
-
-List available versions:
-
-```sh
-helm search repo nutanix/ndb-operator --versions
-```
-
-### Method 2: Install from OCI Registry (GHCR)
+### Install from OCI Registry (GHCR)
 
 Install the latest version:
 
@@ -66,7 +34,7 @@ Install a specific version:
 
 ```sh
 helm install ndb-operator oci://ghcr.io/nutanix-cloud-native/chart/ndb-operator \
-  --version 0.5.9 \
+  --version 0.5.10 \
   --namespace ndb-operator-system \
   --create-namespace
 ```
@@ -101,14 +69,9 @@ kubectl get crds | grep ndb.nutanix.com
 To upgrade to a newer version:
 
 ```sh
-# Using Helm repository
-helm repo update
-helm upgrade ndb-operator nutanix/ndb-operator \
-  --namespace ndb-operator-system
-
 # Using OCI registry
 helm upgrade ndb-operator oci://ghcr.io/nutanix-cloud-native/chart/ndb-operator \
-  --version 0.5.9 \
+  --version 0.5.10 \
   --namespace ndb-operator-system
 ```
 
