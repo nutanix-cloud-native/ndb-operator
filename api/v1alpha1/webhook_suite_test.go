@@ -72,7 +72,7 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Webhook Suite")
 }
 
-var _ = BeforeEach(func() {
+var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	ctx, cancel = context.WithCancel(context.TODO())
@@ -138,8 +138,7 @@ var _ = BeforeEach(func() {
 
 	go func() {
 		defer GinkgoRecover()
-		err = mgr.Start(ctx)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(mgr.Start(ctx)).To(Succeed())
 	}()
 
 	// wait for the webhook server to get ready
@@ -157,6 +156,10 @@ var _ = BeforeEach(func() {
 })
 
 var _ = AfterEach(func() {
+	Expect(k8sClient.DeleteAllOf(ctx, &Database{}, client.InNamespace(NAMESPACE))).To(Succeed())
+})
+
+var _ = AfterSuite(func() {
 	cancel()
 	By("tearing down the test environment")
 	err := testEnv.Stop()

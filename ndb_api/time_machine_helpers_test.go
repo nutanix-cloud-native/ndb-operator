@@ -19,6 +19,8 @@ import (
 )
 
 func TestGenerateSnapshotRequest(t *testing.T) {
+	t.Parallel()
+
 	name := "TestSnapshot"
 	expiryDateTimezone := "UTC"
 	expireInDays := "7"

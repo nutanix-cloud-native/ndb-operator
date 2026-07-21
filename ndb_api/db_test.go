@@ -29,6 +29,8 @@ import (
 )
 
 func TestGetAllDatabases(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx       context.Context
 		ndbClient ndb_client.NDBClientHTTPInterface
@@ -95,6 +97,8 @@ func TestGetAllDatabases(t *testing.T) {
 }
 
 func TestGetDatabaseById(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx       context.Context
 		ndbClient ndb_client.NDBClientHTTPInterface
@@ -163,6 +167,8 @@ func TestGetDatabaseById(t *testing.T) {
 }
 
 func TestProvisionDatabase(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx       context.Context
 		ndbClient ndb_client.NDBClientHTTPInterface
@@ -225,6 +231,8 @@ func TestProvisionDatabase(t *testing.T) {
 }
 
 func TestDeprovisionDatabase(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx       context.Context
 		ndbClient ndb_client.NDBClientHTTPInterface

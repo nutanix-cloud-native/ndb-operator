@@ -25,6 +25,8 @@ import (
 )
 
 func TestFilter(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		items []int
 		fn    func(item int) bool
@@ -61,6 +63,8 @@ func TestFilter(t *testing.T) {
 }
 
 func TestFindFirstInt(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		input          []int

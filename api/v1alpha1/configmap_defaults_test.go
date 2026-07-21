@@ -73,6 +73,8 @@ func cloneDB(name string, modify ...func(*Clone)) *Database {
 }
 
 func TestFetchConfigMapDefaults(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	ns, name := "test-ns", "ndb-db-defaults"
 
@@ -119,6 +121,8 @@ func TestFetchConfigMapDefaults(t *testing.T) {
 }
 
 func TestApplyDefaultsFromConfigMap_Provision(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 
 	t.Run("cluster timezone size from defaults", func(t *testing.T) {
@@ -209,6 +213,8 @@ func TestApplyDefaultsFromConfigMap_Provision(t *testing.T) {
 }
 
 func TestApplyDefaultsFromConfigMap_Clone(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 
 	t.Run("clone-prefixed cluster and timezone beat generic", func(t *testing.T) {
@@ -269,6 +275,8 @@ func TestApplyDefaultsFromConfigMap_Clone(t *testing.T) {
 }
 
 func TestApplyDefaultsFromConfigMap_EdgeCases(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 
 	t.Run("nil instance or clone does not panic", func(t *testing.T) {

@@ -26,9 +26,7 @@ const (
 
 // Tests the validateReqData() function with different values of password and sshkey
 func TestValidateReqData(t *testing.T) {
-	//Set
-	server := GetServerTestHelper(t)
-	defer server.Close()
+	t.Parallel()
 
 	type reqData map[string]interface{}
 	errorInvalidPassword := errors.New("invalid database password")
@@ -84,11 +82,13 @@ func TestValidateReqData(t *testing.T) {
 
 // Tests the GetRequestAppenderByType() function for different database types
 func TestGetRequestAppenderByType(t *testing.T) {
+	t.Parallel()
 
 	// test data map
 	tests := []struct {
 		databaseType string
 		expected     interface{}
+		wantErr      bool
 	}{
 		{databaseType: common.DATABASE_TYPE_POSTGRES,
 			expected: &PostgresRequestAppender{},
@@ -107,11 +107,17 @@ func TestGetRequestAppenderByType(t *testing.T) {
 		},
 		{databaseType: "test",
 			expected: nil,
+			wantErr:  true,
 		},
 	}
 
 	for _, tc := range tests {
-		got, _ := GetRequestAppender(tc.databaseType)
+		got, err := GetRequestAppender(tc.databaseType)
+		if tc.wantErr {
+			assert.Error(t, err)
+		} else {
+			assert.NoError(t, err)
+		}
 		if !reflect.DeepEqual(tc.expected, got) {
 			t.Fatalf("expected: %v, got: %v", tc.expected, got)
 		}
@@ -120,6 +126,7 @@ func TestGetRequestAppenderByType(t *testing.T) {
 
 // Tests PostgresProvisionRequestAppender(), without additional arguments, positive workflow
 func TestPostgresProvisionRequestAppender_withoutAdditionalArguments_positiveWorkflow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -201,6 +208,7 @@ func TestPostgresProvisionRequestAppender_withoutAdditionalArguments_positiveWor
 
 // Tests PostgresProvisionRequestAppender(), with additional arguments, positive workflow
 func TestPostgresProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -285,6 +293,7 @@ func TestPostgresProvisionRequestAppender_withAdditionalArguments_positiveWorkfl
 
 // Tests PostgresProvisionRequestAppender(), with additional arguments, negative workflow
 func TestPostgresProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -324,6 +333,8 @@ func TestPostgresProvisionRequestAppender_withAdditionalArguments_negativeWorkfl
 // Tests PostgresProvisionRequestAppender for HA (multi-cluster) positive workflow.
 // Verifies that HA-specific action arguments are appended when IsPostgresHA returns true.
 func TestPostgresProvisionRequestAppender_HA_positiveWorkflow(t *testing.T) {
+	t.Parallel()
+
 	baseRequest := &DatabaseProvisionRequest{}
 	mockDatabase := &MockDatabaseInterface{}
 
@@ -386,6 +397,8 @@ func TestPostgresProvisionRequestAppender_HA_positiveWorkflow(t *testing.T) {
 
 // Verifies that provision_virtual_ip is "false" when ProvisionVirtualIP is not set (cross-cluster HAProxy).
 func TestPostgresProvisionRequestAppender_HA_noVirtualIP(t *testing.T) {
+	t.Parallel()
+
 	baseRequest := &DatabaseProvisionRequest{}
 	mockDatabase := &MockDatabaseInterface{}
 
@@ -430,6 +443,7 @@ func TestPostgresProvisionRequestAppender_HA_noVirtualIP(t *testing.T) {
 
 // Tests MSSQLProvisionRequestAppender(), without additional arguments, positive workflow
 func TestMSSQLProvisionRequestAppender_withoutAdditionalArguments_positiveWorklow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -544,6 +558,7 @@ func TestMSSQLProvisionRequestAppender_withoutAdditionalArguments_positiveWorklo
 
 // Tests MSSQLProvisionRequestAppender(), with additional arguments, positive workflow
 func TestMSSQLProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -676,6 +691,7 @@ func TestMSSQLProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(
 
 // Tests MSSQLProvisionRequestAppender(), with additionalArguments, negative workflow
 func TestMSSQLProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -730,6 +746,7 @@ func TestMSSQLProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(
 
 // Tests MongoDbProvisionRequestAppender(), without additionalArguments, positive workflow
 func TestMongoDbProvisionRequestAppender_withoutAdditionalArguments_positiveWorkflow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -813,6 +830,7 @@ func TestMongoDbProvisionRequestAppender_withoutAdditionalArguments_positiveWork
 
 // Tests MongoDbProvisionRequestAppender(), with additionalArguments, positive workflow
 func TestMongoDbProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -900,6 +918,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_positiveWorkflo
 
 // Tests MongoDbProvisionRequestAppender(), with additionalArguments, negative workflow
 func TestMongoDbProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -938,6 +957,7 @@ func TestMongoDbProvisionRequestAppender_withAdditionalArguments_negativeWorkflo
 
 // Tests MySqlProvisionRequestAppender(), without additional arguments, positive workflow
 func TestMySqlProvisionRequestAppender_withoutAdditionalArguments_positiveWorkflow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -1002,6 +1022,7 @@ func TestMySqlProvisionRequestAppender_withoutAdditionalArguments_positiveWorkfl
 
 // Tests MySqlProvisionRequestAppender(), with additional arguments, positive workflow
 func TestMySqlProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -1068,6 +1089,7 @@ func TestMySqlProvisionRequestAppender_withAdditionalArguments_positiveWorkflow(
 
 // Tests MySqlProvisionRequestAppender(), with additional arguments, negative workflow
 func TestMySqlProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(t *testing.T) {
+	t.Parallel()
 
 	baseRequest := &DatabaseProvisionRequest{}
 	// Create a mock implementation of DatabaseInterface
@@ -1111,6 +1133,7 @@ func TestMySqlProvisionRequestAppender_withAdditionalArguments_negativeWorkflow(
 // 2. SLA not found, no error in getting the TM schedule
 // 3. SLA not found and error in getting the TM schedule
 func TestGenerateProvisioningRequest_WithoutValidTMDetails_ReturnsError(t *testing.T) {
+	t.Parallel()
 
 	// Set
 	tests := []struct {
@@ -1177,6 +1200,7 @@ func TestGenerateProvisioningRequest_WithoutValidTMDetails_ReturnsError(t *testi
 // 5. DBParamInstance Profile returns an error
 // Test cases are self explanatory.
 func TestGenerateProvisioningRequest(t *testing.T) {
+	t.Parallel()
 
 	// Set
 	server := GetServerTestHelper(t)
@@ -1294,6 +1318,7 @@ func TestGenerateProvisioningRequest(t *testing.T) {
 // 3. ReqData with with empty ssh key MSSQL database
 // 4. Invalid instance type
 func TestGenerateProvisioningRequest_AgainstDifferentReqData(t *testing.T) {
+	t.Parallel()
 
 	// Set
 	server := GetServerTestHelper(t)
@@ -1435,6 +1460,8 @@ func sortWantAndGotActionArgsByName(wantActionArgs, gotActionArgs []ActionArgume
 }
 
 func TestOracleRequestAppender_appendProvisioningRequest(t *testing.T) {
+	t.Parallel()
+
 	appender := &OracleRequestAppender{}
 
 	t.Run("Oracle provision request has correct default action arguments", func(t *testing.T) {

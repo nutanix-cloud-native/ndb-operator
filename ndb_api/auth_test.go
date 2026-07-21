@@ -29,6 +29,8 @@ import (
 )
 
 func TestAuthValidate(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx       context.Context
 		ndbClient ndb_client.NDBClientHTTPInterface

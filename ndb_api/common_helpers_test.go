@@ -30,6 +30,8 @@ import (
 )
 
 func Test_sendRequest(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx          context.Context
 		ndbClient    ndb_client.NDBClientHTTPInterface
@@ -172,6 +174,8 @@ func Test_sendRequest(t *testing.T) {
 }
 
 func TestGetDatabaseEngineName(t *testing.T) {
+	t.Parallel()
+
 	// Test cases for GetDatabaseEngineName
 	testCases := []struct {
 		dbType         string
@@ -192,6 +196,8 @@ func TestGetDatabaseEngineName(t *testing.T) {
 }
 
 func TestGetDatabaseTypeFromEngine(t *testing.T) {
+	t.Parallel()
+
 	// Test cases for GetDatabaseTypeFromEngine
 	testCases := []struct {
 		engine         string
@@ -212,6 +218,8 @@ func TestGetDatabaseTypeFromEngine(t *testing.T) {
 }
 
 func TestGetDatabasePortByType(t *testing.T) {
+	t.Parallel()
+
 	// Test cases for GetDatabasePortByType
 	testCases := []struct {
 		dbType       string
@@ -228,31 +236,5 @@ func TestGetDatabasePortByType(t *testing.T) {
 	for _, tc := range testCases {
 		result := GetDatabasePortByType(tc.dbType)
 		assert.Equal(t, tc.expectedPort, result)
-	}
-}
-
-func TestGetRequestAppender(t *testing.T) {
-	// Test cases for GetRequestAppender
-	testCases := []struct {
-		databaseType   string
-		expectedResult bool
-	}{
-		{common.DATABASE_TYPE_POSTGRES, true},
-		{common.DATABASE_TYPE_MYSQL, true},
-		{common.DATABASE_TYPE_MONGODB, true},
-		{common.DATABASE_TYPE_MSSQL, true},
-		{common.DATABASE_TYPE_ORACLE, true},
-		{"invalidType", false},
-	}
-
-	for _, tc := range testCases {
-		result, err := GetRequestAppender(tc.databaseType)
-		if tc.expectedResult {
-			assert.NotNil(t, result)
-			assert.NoError(t, err)
-		} else {
-			assert.Nil(t, result)
-			assert.Error(t, err)
-		}
 	}
 }

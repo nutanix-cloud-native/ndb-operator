@@ -26,6 +26,8 @@ import (
 )
 
 func TestGetAllClones(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx       context.Context
 		ndbClient ndb_client.NDBClientHTTPInterface
@@ -92,6 +94,8 @@ func TestGetAllClones(t *testing.T) {
 }
 
 func TestProvisionClone(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx       context.Context
 		ndbClient ndb_client.NDBClientHTTPInterface
@@ -168,6 +172,8 @@ func TestProvisionClone(t *testing.T) {
 }
 
 func TestDeprovisionClone(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx       context.Context
 		ndbClient ndb_client.NDBClientHTTPInterface

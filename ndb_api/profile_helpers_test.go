@@ -33,6 +33,8 @@ import (
 // 3. MSSQL databases when db param instance profile is not resolved return an error
 // 4. MSSQL databases when software profile info is not provided return an error
 func TestResolveProfiles(t *testing.T) {
+	t.Parallel()
+
 	// Set
 	server := GetServerTestHelper(t)
 	defer server.Close()
@@ -381,6 +383,8 @@ func TestResolveProfiles(t *testing.T) {
 }
 
 func TestComputeOOBProfileResolver(t *testing.T) {
+	t.Parallel()
+
 	// Test cases for ComputeOOBProfileResolver
 	testCases := []struct {
 		profile      ProfileResponse
@@ -398,6 +402,8 @@ func TestComputeOOBProfileResolver(t *testing.T) {
 }
 
 func TestSoftwareOOBProfileResolverForSingleInstance(t *testing.T) {
+	t.Parallel()
+
 	// Test cases for SoftwareOOBProfileResolverForSingleInstance
 	testCases := []struct {
 		profile      ProfileResponse
@@ -415,6 +421,8 @@ func TestSoftwareOOBProfileResolverForSingleInstance(t *testing.T) {
 }
 
 func TestNetworkOOBProfileResolver(t *testing.T) {
+	t.Parallel()
+
 	// Test cases for NetworkOOBProfileResolver
 	testCases := []struct {
 		profile      ProfileResponse
@@ -432,6 +440,8 @@ func TestNetworkOOBProfileResolver(t *testing.T) {
 }
 
 func TestDbParamOOBProfileResolver(t *testing.T) {
+	t.Parallel()
+
 	// Test cases for DbParamOOBProfileResolver
 	testCases := []struct {
 		profile      ProfileResponse
@@ -449,6 +459,8 @@ func TestDbParamOOBProfileResolver(t *testing.T) {
 }
 
 func TestDbParamInstanceOOBProfileResolver(t *testing.T) {
+	t.Parallel()
+
 	// Test cases for DbParamInstanceOOBProfileResolver
 	testCases := []struct {
 		profile      ProfileResponse

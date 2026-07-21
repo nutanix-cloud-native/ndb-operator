@@ -12,6 +12,8 @@ import (
 )
 
 func TestGetAllDataFromSecret(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx       context.Context
 		client    client.Client

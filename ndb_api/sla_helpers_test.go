@@ -14,6 +14,8 @@ import (
 // 2. SLA for a given name does not exist.
 // 3. Unable to fetch all SLAs to filter.
 func TestGetSLAByName(t *testing.T) {
+	t.Parallel()
+
 	SLA_RESPONSES := getMockSLAResponses()
 	tests := []struct {
 		slaName             string

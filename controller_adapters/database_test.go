@@ -28,6 +28,7 @@ import (
 
 // Tests that GetName() retrieves Name correctly
 func TestDatabase_GetName(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
 		name             string
@@ -63,6 +64,7 @@ func TestDatabase_GetName(t *testing.T) {
 // 1. Description is NOT empty
 // 2. Description IS empty, in this case, a description is created for the user based on instance name
 func TestDatabase_GetDescription(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
 		name            string
@@ -110,6 +112,7 @@ func TestDatabase_GetDescription(t *testing.T) {
 
 // Tests the GetInstanceType() retrieves Type correctly:
 func TestDatabase_GetInstanceType(t *testing.T) {
+	t.Parallel()
 
 	name := "Contains Type"
 	database := Database{
@@ -134,6 +137,7 @@ func TestDatabase_GetInstanceType(t *testing.T) {
 
 // Tests the GetAdditionalArguments() retrieves AdditionalArguments correctly:
 func TestDatabase_GetAdditionalArguments(t *testing.T) {
+	t.Parallel()
 
 	name := "Contains Additional Arguments"
 	database := Database{
@@ -162,6 +166,7 @@ func TestDatabase_GetAdditionalArguments(t *testing.T) {
 
 // Tests the GetInstanceDatabaseNames() retrieves DatabaseNames correctly:
 func TestDatabase_GetInstanceDatabaseNames(t *testing.T) {
+	t.Parallel()
 
 	name := "Contains DatabaseNames"
 	database := Database{
@@ -186,6 +191,7 @@ func TestDatabase_GetInstanceDatabaseNames(t *testing.T) {
 
 // Tests the GetTimeZone() function retrieves TimeZone correctly:
 func TestDatabase_GetTimeZone(t *testing.T) {
+	t.Parallel()
 
 	name := "Contains TimeZone"
 	database := Database{
@@ -210,6 +216,7 @@ func TestDatabase_GetTimeZone(t *testing.T) {
 
 // Tests the GetInstanceSize() function retrieves Size correctly:
 func TestDatabase_GetInstanceSize(t *testing.T) {
+	t.Parallel()
 
 	name := "Contains Size"
 	database := Database{
@@ -234,6 +241,7 @@ func TestDatabase_GetInstanceSize(t *testing.T) {
 
 // Tests the GetClusterId() function retrieves ClusterId correctly:
 func TestDatabase_GetClusterId(t *testing.T) {
+	t.Parallel()
 
 	name := "Contains ClusterId"
 	database := Database{
@@ -263,6 +271,7 @@ func TestDatabase_GetClusterId(t *testing.T) {
 // 5. DailySnapshotTime has incorrect values (all), returns an error
 // 6. DailySnapshotTime has incorrect format, returns an error
 func TestDatabase_GetTMScheduleForInstance(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
 		name         string
@@ -383,6 +392,7 @@ func TestDatabase_GetTMScheduleForInstance(t *testing.T) {
 // 3. TM description is non empty, returns default values for other empty fields
 // 4. SLA name is non empty, returns default values for other empty fields
 func TestDatabase_GetInstanceTMDetails(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
 		name              string
@@ -474,6 +484,8 @@ func TestDatabase_GetInstanceTMDetails(t *testing.T) {
 }
 
 func TestDatabase_IsPostgresHA(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		db     Database
@@ -524,6 +536,8 @@ func TestDatabase_IsPostgresHA(t *testing.T) {
 }
 
 func TestDatabase_GetInstanceHAConfig(t *testing.T) {
+	t.Parallel()
+
 	// Nodes with defaults pre-applied, as the mutating webhook would do at admission time.
 	haNodes := []v1alpha1.InstanceHANode{
 		{VmName: "haproxy1", NodeType: common.HA_NODE_TYPE_HAPROXY, ClusterId: "cluster-a", FailoverMode: common.HA_NODE_FAILOVER_MODE_AUTOMATIC},

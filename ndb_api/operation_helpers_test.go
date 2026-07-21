@@ -23,6 +23,8 @@ import (
 )
 
 func TestGetOperationStatus(t *testing.T) {
+	t.Parallel()
+
 	// Test cases for GetOperationStatus
 	testCases := []struct {
 		status         string

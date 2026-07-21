@@ -26,6 +26,8 @@ import (
 )
 
 func TestProfile_Resolve(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		Profile     v1alpha1.Profile
 		ProfileType string
