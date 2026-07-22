@@ -28,6 +28,8 @@ import (
 )
 
 func TestDatabaseCustomDefaulter_Default(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	ns := "default"
 

@@ -65,6 +65,8 @@ func validMySQLConfig() *MySQLHAConfig {
 }
 
 func TestGetHAValidator(t *testing.T) {
+	t.Parallel()
+
 	t.Run("returns validator for postgres", func(t *testing.T) {
 		v, ok := getHAValidator(common.DATABASE_TYPE_POSTGRES)
 		assert.True(t, ok)
@@ -89,6 +91,8 @@ func TestGetHAValidator(t *testing.T) {
 }
 
 func TestMysqlHAParamsValidator_Validate(t *testing.T) {
+	t.Parallel()
+
 	validator := &MysqlHAParamsValidator{}
 	haPath := field.NewPath("haConfig")
 
@@ -245,6 +249,8 @@ func TestMysqlHAParamsValidator_Validate(t *testing.T) {
 }
 
 func TestPostgresHAParamsValidator_Validate(t *testing.T) {
+	t.Parallel()
+
 	validator := &PostgresHAParamsValidator{}
 	haPath := field.NewPath("haConfig")
 

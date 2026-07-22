@@ -26,6 +26,8 @@ import (
 // 2. Returns error when key is empty
 // 3. Returns error when key does not exist
 func TestCreateMapForKey(t *testing.T) {
+	t.Parallel()
+
 	type randomType struct {
 		Foo int
 		Bar string

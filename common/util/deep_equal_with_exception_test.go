@@ -24,6 +24,8 @@ import "testing"
 // 3. Returns false when both objects are differet
 // 4. Returns false when both objects are of different type
 func TestDeepEqualWithException(t *testing.T) {
+	t.Parallel()
+
 	type randomType struct {
 		Foo int
 		Bar string

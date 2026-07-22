@@ -19,6 +19,7 @@ package util
 import "testing"
 
 func TestToString(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
 		name string

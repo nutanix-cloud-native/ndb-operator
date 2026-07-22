@@ -28,6 +28,8 @@ import (
 )
 
 func TestGenerateCloningRequest(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx        context.Context
 		ndb_client ndb_client.NDBClientHTTPInterface
@@ -100,6 +102,8 @@ func TestGenerateCloningRequest(t *testing.T) {
 }
 
 func TestAppendLCMConfigDetailsToRequest(t *testing.T) {
+	t.Parallel()
+
 	t.Run("nil additionalArguments leaves LcmConfig nil", func(t *testing.T) {
 		req := &DatabaseCloneRequest{}
 		require.NoError(t, appendLCMConfigDetailsToRequest(req, nil))
@@ -181,6 +185,8 @@ func TestAppendLCMConfigDetailsToRequest(t *testing.T) {
 }
 
 func TestOracleRequestAppender_appendCloningRequest(t *testing.T) {
+	t.Parallel()
+
 	appender := &OracleRequestAppender{}
 
 	t.Run("Oracle clone request has correct default action arguments", func(t *testing.T) {

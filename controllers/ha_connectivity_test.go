@@ -82,6 +82,8 @@ func dbNode(ip string) ndb_api.DatabaseNode {
 // ---------------------------------------------------------------------------
 
 func TestPostgresHAConnectivityManager_PrimaryPort(t *testing.T) {
+	t.Parallel()
+
 	mgr := &PostgresHAConnectivityManager{}
 
 	t.Run("returns configured WritePort when set", func(t *testing.T) {
@@ -105,6 +107,8 @@ func TestPostgresHAConnectivityManager_PrimaryPort(t *testing.T) {
 }
 
 func TestPostgresHAConnectivityManager_AdditionalServices(t *testing.T) {
+	t.Parallel()
+
 	mgr := &PostgresHAConnectivityManager{}
 
 	t.Run("returns single -ro-svc with configured ReadPort", func(t *testing.T) {
@@ -140,6 +144,8 @@ func TestPostgresHAConnectivityManager_AdditionalServices(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPostgresHAIPResolver_collectHAProxyIPs(t *testing.T) {
+	t.Parallel()
+
 	r := &PostgresHAIPResolver{}
 
 	t.Run("identifies HAProxy node by node_type property", func(t *testing.T) {
@@ -214,6 +220,8 @@ func TestPostgresHAIPResolver_collectHAProxyIPs(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPostgresHAIPResolver_ResolveIPs(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	r := &PostgresHAIPResolver{}
 
@@ -276,6 +284,8 @@ func TestPostgresHAIPResolver_ResolveIPs(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestHAConnectivityManagersRegistry(t *testing.T) {
+	t.Parallel()
+
 	t.Run("postgres is registered", func(t *testing.T) {
 		mgr, ok := haConnectivityManagers[common.DATABASE_TYPE_POSTGRES]
 		assert.True(t, ok)
@@ -295,6 +305,8 @@ func TestHAConnectivityManagersRegistry(t *testing.T) {
 }
 
 func TestHAIPResolversRegistry(t *testing.T) {
+	t.Parallel()
+
 	t.Run("postgres is registered", func(t *testing.T) {
 		res, ok := haIPResolvers[common.DATABASE_TYPE_POSTGRES]
 		assert.True(t, ok)
@@ -332,22 +344,12 @@ func replicaDBNode(ip string) ndb_api.DatabaseNode {
 }
 
 // ---------------------------------------------------------------------------
-// MySQLHAConnectivityManager — registry
-// ---------------------------------------------------------------------------
-
-func TestHAConnectivityManagersRegistry_MySQL(t *testing.T) {
-	t.Run("mysql is registered", func(t *testing.T) {
-		mgr, ok := haConnectivityManagers[common.DATABASE_TYPE_MYSQL]
-		assert.True(t, ok)
-		assert.IsType(t, &MySQLHAConnectivityManager{}, mgr)
-	})
-}
-
-// ---------------------------------------------------------------------------
 // MySQLHAConnectivityManager — PrimaryPort
 // ---------------------------------------------------------------------------
 
 func TestMySQLHAConnectivityManager_PrimaryPort(t *testing.T) {
+	t.Parallel()
+
 	mgr := &MySQLHAConnectivityManager{}
 
 	t.Run("returns listener port 3306 when router is not deployed and MySQL config is nil", func(t *testing.T) {
@@ -382,6 +384,8 @@ func TestMySQLHAConnectivityManager_PrimaryPort(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestMySQLHAConnectivityManager_AdditionalServices(t *testing.T) {
+	t.Parallel()
+
 	mgr := &MySQLHAConnectivityManager{}
 
 	t.Run("returns -ro-svc on port 3306 when router is not deployed and MySQL config is nil", func(t *testing.T) {
@@ -426,6 +430,8 @@ func TestMySQLHAConnectivityManager_AdditionalServices(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestMySQLHAIPResolver_collectMasterIP(t *testing.T) {
+	t.Parallel()
+
 	r := &MySQLHAIPResolver{}
 
 	t.Run("returns Master node IP", func(t *testing.T) {
@@ -487,6 +493,8 @@ func mockHTTPJSONResponse(body string) *http.Response {
 }
 
 func TestMySQLHAIPResolver_ResolveIPs(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	r := &MySQLHAIPResolver{}
 

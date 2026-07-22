@@ -27,6 +27,8 @@ import (
 )
 
 func TestCreateSnapshotForTM(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx                context.Context
 		ndbClient          ndb_client.NDBClientHTTPInterface
@@ -121,6 +123,8 @@ func TestCreateSnapshotForTM(t *testing.T) {
 }
 
 func TestGetSnapshotsForTM(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx       context.Context
 		ndbClient ndb_client.NDBClientHTTPInterface
@@ -197,6 +201,8 @@ func TestGetSnapshotsForTM(t *testing.T) {
 }
 
 func TestGetTimeMachineById(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx       context.Context
 		ndbClient ndb_client.NDBClientHTTPInterface
