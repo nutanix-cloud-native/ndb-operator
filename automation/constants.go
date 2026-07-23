@@ -7,14 +7,6 @@ const (
 	// cluster-scoped NDBServer without needing access to the secret.
 	NDB_CREDENTIALS_NAMESPACE = "ndb-credentials"
 
-	// Resource paths
-	NDBSERVER_PATH  = "./config/ndb.yaml"
-	DATABASE_PATH   = "./config/database.yaml"
-	DB_SECRET_PATH  = "./config/db-secret.yaml"
-	NDB_SECRET_PATH = "./config/ndb-secret.yaml"
-	APP_POD_PATH    = "./config/pod.yaml"
-	APP_SVC_PATH    = "./config/service.yaml"
-
 	// Environment Variables
 	KUBECONFIG_ENV          = "KUBECONFIG"
 	DB_SECRET_PASSWORD_ENV  = "DB_SECRET_PASSWORD"

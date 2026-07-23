@@ -68,12 +68,8 @@ func (suite *MongoCloningSingleInstanceTestSuite) SetupSuite() {
 		suite.T().FailNow()
 	}
 
-	// Setup yaml types
-	setupTypes, err := util.SetupTypeTemplates(ctx)
-	if err != nil {
-		logger.Printf("%s! %s\n", errBaseMsg, err)
-		suite.T().FailNow()
-	}
+	// Build setup types
+	setupTypes := util.NewMongoCloningSetupTypes()
 
 	// Get test suite manager
 	tsm = util.GetTestSuiteManager(ctx, *setupTypes)
@@ -102,12 +98,8 @@ func (suite *MongoCloningSingleInstanceTestSuite) TearDownSuite() {
 	logger.Println("TearDownSuite() starting...")
 	errBaseMsg := "Error: SetupSuite() ended"
 
-	// Setup yaml types
-	setupTypes, err := util.SetupTypeTemplates(suite.ctx)
-	if err != nil {
-		logger.Printf("%s! %s\n", errBaseMsg, err)
-		suite.T().FailNow()
-	}
+	// Build setup types
+	setupTypes := util.NewMongoCloningSetupTypes()
 
 	// Delete resources and de-clone database
 	if err = suite.tsm.TearDown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {
