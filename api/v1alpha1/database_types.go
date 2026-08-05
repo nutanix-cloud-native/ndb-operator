@@ -198,13 +198,9 @@ type MongoHAConfig struct {
 	// ReplicaSetDescription is an optional human-readable description shown in the NDB UI.
 	// +optional
 	ReplicaSetDescription string `json:"replicaSetDescription,omitempty"`
-	// DeployArbiter controls whether an Arbiter VM is provisioned.
-	// When true, exactly one node with nodeType "arbiter" must be present in nodes[].
-	// When false (default), no arbiter nodes may be present — all nodes are data-bearing.
+
 	// +optional
 	DeployArbiter bool `json:"deployArbiter,omitempty"`
-	// ArbiterComputeProfileId optionally assigns a smaller compute profile to the Arbiter VM.
-	// Falls back to the instance-level compute profile if unset.
 	// Only meaningful when DeployArbiter is true.
 	// +optional
 	ArbiterComputeProfileId string `json:"arbiterComputeProfileId,omitempty"`

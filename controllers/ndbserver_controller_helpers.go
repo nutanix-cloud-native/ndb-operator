@@ -70,7 +70,6 @@ func getNDBServerDatabasesInfo(ctx context.Context, ndbClient *ndb_client.NDBCli
 
 			// For MongoDB HA, cache per-node hostname + IP from the already-fetched detailed response.
 			// This allows the Database reconciler to build headless Services and the connection URI
-			// without making a redundant GetDatabaseById?detailed=true call every reconcile loop.
 			if dbType == common.DATABASE_TYPE_MONGODB && len(db.DatabaseNodes) > 1 {
 				for _, node := range db.DatabaseNodes {
 					if node.DbServer.Name == "" || len(node.DbServer.IPAddresses) == 0 {

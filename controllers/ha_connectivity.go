@@ -205,8 +205,6 @@ func (r *MySQLHAIPResolver) collectMasterIP(nodes []ndb_api.DatabaseNode) []stri
 
 // MongoHAIPResolver resolves connection IPs for a MongoDB HA (Replica Set) database.
 // It returns the IPs of all data-bearing nodes (Primary + Secondaries), excluding Arbiters.
-// These IPs are joined and stored in database.Status.IPAddress, then used by
-// setupMongoConnSecret to build the full MongoDB connection URI.
 type MongoHAIPResolver struct{}
 
 func (r *MongoHAIPResolver) ResolveIPs(_ context.Context, _ ndb_client.NDBClientHTTPInterface, db ndb_api.DatabaseResponse) ([]string, error) {
