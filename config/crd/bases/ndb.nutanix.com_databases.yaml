@@ -191,6 +191,33 @@ spec:
                       enableSynchronousMode:
                         description: Enable synchronous replication mode
                         type: boolean
+                      mongodb:
+                        description: |-
+                          MongoDB contains Replica Set settings specific to MongoDB HA.
+                          Required when the database type is "mongodb".
+                        properties:
+                          arbiterComputeProfileId:
+                            description: Only meaningful when DeployArbiter is true.
+                            type: string
+                          deployArbiter:
+                            type: boolean
+                          listenerPort:
+                            default: 27017
+                            description: ListenerPort is the MongoDB listener port.
+                              Defaults to 27017.
+                            format: int32
+                            type: integer
+                          replicaSetDescription:
+                            description: ReplicaSetDescription is an optional human-readable
+                              description shown in the NDB UI.
+                            type: string
+                          replicaSetName:
+                            description: ReplicaSetName is the MongoDB Replica Set
+                              name, mapped to the "cluster_name" NDB action argument.
+                            type: string
+                        required:
+                        - replicaSetName
+                        type: object
                       mysql:
                         description: |-
                           MySQL contains InnoDB Cluster and MySQL Router settings specific to MySQL HA.
@@ -253,16 +280,19 @@ spec:
                                 "Automatic")
                               type: string
                             nodeType:
-                              description: 'Type of this node: "database", "haproxy"
-                                (Postgres HA), or "mysqlrouter" (MySQL HA)'
+                              description: |-
+                                Type of this node:
+                                database, haproxy (Postgres HA), mysqlrouter (MySQL HA), or arbiter (MongoDB HA)
                               enum:
                               - haproxy
                               - database
                               - mysqlrouter
+                              - arbiter
                               type: string
                             role:
-                              description: 'Role of this node (database nodes only):
-                                "Primary" or "Secondary"'
+                              description: |-
+                                Role of this node (database nodes only):
+                                Primary or Secondary
                               type: string
                             vmName:
                               description: Name of the VM to be created

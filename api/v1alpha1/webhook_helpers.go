@@ -170,6 +170,14 @@ func (v *ProvisioningWebhookHandler) defaulter(spec *DatabaseSpec) {
 		spec.Instance.TMInfo.QuarterlySnapshotMonth = "Jan"
 	}
 
+	// MongoDB HA specific defaults
+	if spec.Instance.HAConfig != nil && spec.Instance.HAConfig.MongoDB != nil {
+		if spec.Instance.HAConfig.MongoDB.ListenerPort == 0 {
+			databaselog.Info(fmt.Sprintf("Initializing MongoDB HAConfig.ListenerPort to: %d", common.HA_MONGO_DEFAULT_LISTENER_PORT))
+			spec.Instance.HAConfig.MongoDB.ListenerPort = common.HA_MONGO_DEFAULT_LISTENER_PORT
+		}
+	}
+
 	databaselog.Info("Exiting defaulter for provisioning")
 }
 

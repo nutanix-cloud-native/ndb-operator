@@ -51,6 +51,7 @@ type HAConnectivityManager interface {
 var haConnectivityManagers = map[string]HAConnectivityManager{
 	common.DATABASE_TYPE_POSTGRES: &PostgresHAConnectivityManager{},
 	common.DATABASE_TYPE_MYSQL:    &MySQLHAConnectivityManager{},
+	common.DATABASE_TYPE_MONGODB:  &MongoHAConnectivityManager{},
 }
 
 // HAIPResolver resolves the connection IP(s) for an HA database as reported by the NDB API.
@@ -69,6 +70,7 @@ type HAIPResolver interface {
 var haIPResolvers = map[string]HAIPResolver{
 	common.DATABASE_TYPE_POSTGRES: &PostgresHAIPResolver{},
 	common.DATABASE_TYPE_MYSQL:    &MySQLHAIPResolver{},
+	common.DATABASE_TYPE_MONGODB:  &MongoHAIPResolver{},
 }
 
 // PostgresHAIPResolver resolves HAProxy IPs for a Postgres HA database.
@@ -198,5 +200,45 @@ func (r *MySQLHAIPResolver) collectMasterIP(nodes []ndb_api.DatabaseNode) []stri
 			}
 		}
 	}
+	return nil
+}
+
+// MongoHAIPResolver resolves connection IPs for a MongoDB HA (Replica Set) database.
+// It returns the IPs of all data-bearing nodes (Primary + Secondaries), excluding Arbiters.
+type MongoHAIPResolver struct{}
+
+func (r *MongoHAIPResolver) ResolveIPs(_ context.Context, _ ndb_client.NDBClientHTTPInterface, db ndb_api.DatabaseResponse) ([]string, error) {
+	var ips []string
+	for _, node := range db.DatabaseNodes {
+		isArbiter := false
+		for _, prop := range node.Properties {
+			if prop.Name == "role" && prop.Value == common.HA_NODE_ROLE_MONGO_ARBITER {
+				isArbiter = true
+				break
+			}
+		}
+		if !isArbiter && len(node.DbServer.IPAddresses) > 0 {
+			ips = append(ips, node.DbServer.IPAddresses[0])
+		}
+	}
+	return ips, nil
+}
+
+// MongoHAConnectivityManager manages connectivity for MongoDB HA (Replica Set) databases.
+// Unlike Postgres/MySQL, MongoDB HA does NOT use K8s Services — the operator instead creates
+// a <database-name>-db-uri Secret with the full MongoDB connection URI so that smart MongoDB
+// drivers can connect directly to each node without K8s Service NAT interfering with SDAM.
+type MongoHAConnectivityManager struct{}
+
+func (m *MongoHAConnectivityManager) PrimaryPort(haConfig *ndbv1alpha1.InstanceHAConfig) int32 {
+	if mg := haConfig.MongoDB; mg != nil && mg.ListenerPort != 0 {
+		return mg.ListenerPort
+	}
+	return common.HA_MONGO_DEFAULT_LISTENER_PORT
+}
+
+// AdditionalServices returns nil — MongoDB HA creates no K8s Services.
+// Connectivity is handled via the <database-name>-db-uri Secret instead.
+func (m *MongoHAConnectivityManager) AdditionalServices(_ *ndbv1alpha1.InstanceHAConfig) []HAServiceSpec {
 	return nil
 }

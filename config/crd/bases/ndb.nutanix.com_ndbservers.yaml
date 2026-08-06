@@ -86,6 +86,27 @@ spec:
                       type: string
                     ipAddress:
                       type: string
+                    mongoNodes:
+                      description: |-
+                        MongoNodes holds per-node hostname and IP for MongoDB HA replica set members.
+                        Populated only for MongoDB HA databases; nil for all other database types.
+                      items:
+                        description: |-
+                          MongoNodeInfo holds the VM hostname and IP for a single MongoDB HA replica set member.
+                          IsArbiter is true for arbiter nodes, which are excluded from headless Service and URI creation.
+                        properties:
+                          hostname:
+                            type: string
+                          ip:
+                            type: string
+                          isArbiter:
+                            type: boolean
+                        required:
+                        - hostname
+                        - ip
+                        - isArbiter
+                        type: object
+                      type: array
                     name:
                       type: string
                     status:

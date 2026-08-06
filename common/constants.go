@@ -70,6 +70,16 @@ const (
 	HA_MYSQL_DEFAULT_RO_PORT       = int32(6447)
 	HA_MYSQL_DEFAULT_LISTENER_PORT = int32(3306)
 
+	HA_MONGO_DEFAULT_LISTENER_PORT = int32(27017)
+	// A replica set needs at least 3 members to form a quorum (e.g. PSS or PSA topology).
+	HA_MONGO_MIN_NODE_COUNT = 3
+
+	HA_NODE_TYPE_ARBITER = "arbiter"
+
+	HA_NODE_ROLE_MONGO_PRIMARY   = "primary"
+	HA_NODE_ROLE_MONGO_SECONDARY = "secondary"
+	HA_NODE_ROLE_MONGO_ARBITER   = "arbiter"
+
 	NDB_CR_STATUS_AUTHENTICATION_ERROR = "Authentication Error"
 	NDB_CR_STATUS_CREDENTIAL_ERROR     = "Credential Error"
 	NDB_CR_STATUS_ERROR                = "Error"

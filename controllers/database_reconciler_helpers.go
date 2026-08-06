@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	ndbv1alpha1 "github.com/nutanix-cloud-native/ndb-operator/api/v1alpha1"
 	"github.com/nutanix-cloud-native/ndb-operator/common"
 	"github.com/nutanix-cloud-native/ndb-operator/common/util"
+	"github.com/nutanix-cloud-native/ndb-operator/controller_adapters"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_api"
 	"github.com/nutanix-cloud-native/ndb-operator/ndb_client"
 	corev1 "k8s.io/api/core/v1"
@@ -296,7 +298,7 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 			}
 		}
 		if databaseStatus.IPAddress != "" {
-			r.setupConnectivity(ctx, database, ndbClient)
+			r.setupConnectivity(ctx, database, ndbClient, ndbServer)
 		} else {
 			// The database is in "READY" state on NDB, but the API responses sometimes do not have
 			// an IP address in the response right after reaching the READY state. We only setup connectivity
@@ -325,11 +327,16 @@ func (r *DatabaseReconciler) handleSync(ctx context.Context, database *ndbv1alph
 // extra services (e.g. -ro-svc for Postgres/MySQL) via the HAConnectivityManager registry.
 //
 // ndbClient is used only when the read-only endpoint needs different IPs than the primary
-func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *ndbv1alpha1.Database, ndbClient ndb_client.NDBClientHTTPInterface) (err error) {
+func (r *DatabaseReconciler) setupConnectivity(ctx context.Context, database *ndbv1alpha1.Database, ndbClient ndb_client.NDBClientHTTPInterface, ndbServer *ndbv1alpha1.NDBServer) (err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.setupConnectivity")
 
 	ns := database.Namespace
+
+	// create headless services for MongoDB HA replicaset type
+	if (&controller_adapters.Database{Database: *database}).IsMongoHA() {
+		return r.setupMongoHAConnectivity(ctx, database, ndbServer)
+	}
 
 	primaryIPs := strings.Split(database.Status.IPAddress, ",")
 
@@ -538,9 +545,178 @@ func (r *DatabaseReconciler) setupEndpoints(ctx context.Context, database *ndbv1
 	return
 }
 
+// For each data node, create a headless Service named after the VM hostname.
+// Builds the MongoDB connection URI Secret using per-node data cached in NDBServer status,
+func (r *DatabaseReconciler) setupMongoHAConnectivity(ctx context.Context, database *ndbv1alpha1.Database, ndbServer *ndbv1alpha1.NDBServer) error {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered database_reconciler_helpers.setupMongoHAConnectivity")
+
+	haConfig := database.Spec.Instance.HAConfig
+	port := haConnectivityManagers[common.DATABASE_TYPE_MONGODB].PrimaryPort(haConfig)
+	rsName := haConfig.MongoDB.ReplicaSetName
+
+	dbNames := database.Spec.Instance.DatabaseNames
+	if len(dbNames) == 0 {
+		return fmt.Errorf("no database names specified for MongoDB HA database %s", database.Name)
+	}
+	dbName := dbNames[0]
+
+	// Read per-node hostname + IP from NDBServer status.
+	dbInfo, ok := ndbServer.Status.Databases[database.Status.Id]
+	if !ok || len(dbInfo.MongoNodes) == 0 {
+		log.Info("MongoDB HA node details not yet cached in NDBServer status, will retry on next reconcile",
+			"databaseId", database.Status.Id)
+		return fmt.Errorf("MongoDB HA node details not yet available for database %s", database.Status.Id)
+	}
+
+	// Collect data nodes; arbiters are excluded from headless Services and the URI.
+	type mongoDataNode struct {
+		hostname string
+		ip       string
+	}
+	var dataNodes []mongoDataNode
+	for _, node := range dbInfo.MongoNodes {
+		if !node.IsArbiter {
+			dataNodes = append(dataNodes, mongoDataNode{
+				hostname: node.Hostname,
+				ip:       node.IP,
+			})
+		}
+	}
+
+	if len(dataNodes) == 0 {
+		log.Info("No data nodes found in NDBServer status for MongoDB HA database, skipping connectivity setup",
+			"databaseId", database.Status.Id)
+		return nil
+	}
+
+	// Create or reconcile a headless Service + Endpoints for each data node.
+	for _, n := range dataNodes {
+		nn := types.NamespacedName{Name: n.hostname, Namespace: database.Namespace}
+		meta := metav1.ObjectMeta{Name: n.hostname, Namespace: database.Namespace}
+
+		if err := r.setupMongoHeadlessService(ctx, database, nn, meta, port); err != nil {
+			r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED,
+				"Failed to setup headless service for MongoDB node %s: %s", n.hostname, err.Error())
+			return err
+		}
+		if err := r.setupEndpoints(ctx, database, nn, meta, port, []string{n.ip}); err != nil {
+			r.recorder.Eventf(database, "Warning", EVENT_ENDPOINT_SETUP_FAILED,
+				"Failed to setup endpoints for MongoDB node %s: %s", n.hostname, err.Error())
+			return err
+		}
+	}
+
+	// Read credentials from the user's pre-existing credential Secret.
+	// We only read it — never modify it.
+	secretData, err := util.GetAllDataFromSecret(ctx, r.Client,
+		database.Spec.Instance.CredentialSecret, database.Namespace)
+	if err != nil {
+		log.Error(err, "Failed to read credential secret for MongoDB URI construction",
+			"credentialSecret", database.Spec.Instance.CredentialSecret)
+		return err
+	}
+	dbUser := string(secretData[common.SECRET_DATA_KEY_USERNAME])
+	dbPass := string(secretData[common.SECRET_DATA_KEY_PASSWORD])
+
+	// Build a hostname-based MongoDB connection URI.
+	// url.UserPassword encodes the username and password for the URI to avoid RFC 3986 violations.
+	var hostParts []string
+	for _, n := range dataNodes {
+		hostParts = append(hostParts, fmt.Sprintf("%s:%d", n.hostname, port))
+	}
+	uri := fmt.Sprintf("mongodb://%s@%s/%s?replicaSet=%s&authSource=admin",
+		url.UserPassword(dbUser, dbPass).String(), strings.Join(hostParts, ","), dbName, rsName)
+
+	// Create or update the <database-name>-db-uri Secret.
+	secretName := database.Name + "-db-uri"
+	uriNN := types.NamespacedName{Name: secretName, Namespace: database.Namespace}
+	existing := &corev1.Secret{}
+	getErr := r.Get(ctx, uriNN, existing)
+	if getErr != nil && errors.IsNotFound(getErr) {
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: database.Namespace,
+			},
+			StringData: map[string]string{"uri": uri},
+		}
+		if ownerErr := ctrl.SetControllerReference(database, secret, r.Scheme); ownerErr != nil {
+			log.Error(ownerErr, "Failed to set controller reference on MongoDB URI secret")
+			return ownerErr
+		}
+		if createErr := r.Create(ctx, secret); createErr != nil {
+			log.Error(createErr, "Failed to create MongoDB URI secret", "secretName", secretName)
+			r.recorder.Eventf(database, "Warning", EVENT_SERVICE_SETUP_FAILED,
+				"Failed to create MongoDB URI secret %s: %s", secretName, createErr.Error())
+			return createErr
+		}
+		log.Info("Created MongoDB URI secret", "secretName", secretName)
+	} else if getErr == nil {
+		// Only update if the URI actually changed (avoids unnecessary Secret writes every 15 s).
+		if string(existing.Data["uri"]) != uri {
+			existing.StringData = map[string]string{"uri": uri}
+			if updateErr := r.Update(ctx, existing); updateErr != nil {
+				log.Error(updateErr, "Failed to update MongoDB URI secret", "secretName", secretName)
+				return updateErr
+			}
+			log.Info("Updated MongoDB URI secret", "secretName", secretName)
+		}
+	} else {
+		log.Error(getErr, "Failed to get MongoDB URI secret", "secretName", secretName)
+		return getErr
+	}
+
+	log.Info("Returning from database_reconciler_helpers.setupMongoHAConnectivity")
+	return nil
+}
+
+// setupMongoHeadlessService creates a headless Kubernetes Service (clusterIP: None)
+// named after the MongoDB VM hostname. CoreDNS uses the paired Endpoints object to
+// resolve that hostname directly to the node IP, enabling SDAM topology discovery.
+// The service is owned by the Database CR for automatic garbage collection.
+func (r *DatabaseReconciler) setupMongoHeadlessService(ctx context.Context, database *ndbv1alpha1.Database, namespacedName types.NamespacedName, metadata metav1.ObjectMeta, port int32) (err error) {
+	log := ctrllog.FromContext(ctx)
+	log.Info("Entered database_reconciler_helpers.setupMongoHeadlessService", "name", namespacedName.Name)
+
+	foundService := &corev1.Service{}
+	err = r.Get(ctx, namespacedName, foundService)
+	if err != nil && errors.IsNotFound(err) {
+		log.Info("No headless service found, creating", "name", namespacedName.Name)
+		service := &corev1.Service{
+			ObjectMeta: metadata,
+			Spec: corev1.ServiceSpec{
+				ClusterIP: "None", // headless — no load balancing; CoreDNS answers via Endpoints
+				Ports: []corev1.ServicePort{
+					{
+						Protocol:   corev1.ProtocolTCP,
+						Port:       port,
+						TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: port},
+					},
+				},
+			},
+		}
+		if ownerErr := ctrl.SetControllerReference(database, service, r.Scheme); ownerErr != nil {
+			log.Error(ownerErr, "Error setting controller reference for headless service")
+			return ownerErr
+		}
+		err = r.Create(ctx, service)
+		if err != nil {
+			log.Error(err, "Failed to create headless service", "name", namespacedName.Name)
+			return
+		}
+		log.Info("Created headless service", "name", namespacedName.Name)
+	} else if err != nil {
+		log.Error(err, "Failed to get headless service", "name", namespacedName.Name)
+	}
+	// ClusterIP: None is immutable — no update needed for existing headless services.
+	log.Info("Returning from database_reconciler_helpers.setupMongoHeadlessService")
+	return
+}
+
 // Returns the credentials(password and ssh public key) for NDB
 // Returns an error if reading the secret containing credentials fails
-func (r *DatabaseReconciler) getDatabaseCredentials(ctx context.Context, name, namespace string) (password, sshPublicKey string, err error) {
+func (r *DatabaseReconciler) getDatabaseCredentials(ctx context.Context, name, namespace string) (password, sshPublicKey, username string, err error) {
 	log := ctrllog.FromContext(ctx)
 	log.Info("Entered database_reconciler_helpers.getDatabaseCredentials")
 	secretDataMap, err := util.GetAllDataFromSecret(ctx, r.Client, name, namespace)
@@ -550,6 +726,7 @@ func (r *DatabaseReconciler) getDatabaseCredentials(ctx context.Context, name, n
 	}
 	password = string(secretDataMap[common.SECRET_DATA_KEY_PASSWORD])
 	sshPublicKey = string(secretDataMap[common.SECRET_DATA_KEY_SSH_PUBLIC_KEY])
+	username = string(secretDataMap[common.SECRET_DATA_KEY_USERNAME])
 	log.Info("Returning from database_reconciler_helpers.getDatabaseCredentials")
 	return
 }

@@ -82,6 +82,14 @@ func init() {
 	SchemeBuilder.Register(&NDBServer{}, &NDBServerList{})
 }
 
+// MongoNodeInfo holds the VM hostname and IP for a single MongoDB HA replica set member.
+// IsArbiter is true for arbiter nodes, which are excluded from headless Service and URI creation.
+type MongoNodeInfo struct {
+	Hostname  string `json:"hostname"`
+	IP        string `json:"ip"`
+	IsArbiter bool   `json:"isArbiter"`
+}
+
 // Database related info to be stored in the status field of the NDB CR
 type NDBServerDatabaseInfo struct {
 	Name          string `json:"name"`
@@ -91,4 +99,8 @@ type NDBServerDatabaseInfo struct {
 	TimeMachineId string `json:"timeMachineId"`
 	IPAddress     string `json:"ipAddress"`
 	Type          string `json:"type"`
+	// MongoNodes holds per-node hostname and IP for MongoDB HA replica set members.
+	// Populated only for MongoDB HA databases; nil for all other database types.
+	// +optional
+	MongoNodes []MongoNodeInfo `json:"mongoNodes,omitempty"`
 }
