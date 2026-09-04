@@ -48,6 +48,9 @@ import (
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=ndb.nutanix.com,resources=databases/finalizers,verbs=update
+// Native metrics HTTPS auth (controller-runtime filters.WithAuthenticationAndAuthorization)
+// +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
+// +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
 
 // DatabaseReconciler reconciles a Database object
 type DatabaseReconciler struct {
