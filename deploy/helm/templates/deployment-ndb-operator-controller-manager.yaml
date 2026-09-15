@@ -24,7 +24,7 @@ spec:
       containers:
       - args:
           - --health-probe-bind-address=:8081
-          - --metrics-bind-address=127.0.0.1:8080
+          - --metrics-bind-address=:8443
           - --leader-elect
         image: {{ .Values.image.repository }}:{{ .Values.image.tag | default $.Chart.AppVersion }}
         livenessProbe:
@@ -35,6 +35,9 @@ spec:
           periodSeconds: 20
         name: manager
         ports:
+        - containerPort: 8443
+          name: https
+          protocol: TCP
         - containerPort: 9443
           name: webhook-server
           protocol: TCP
@@ -54,26 +57,6 @@ spec:
         - mountPath: /tmp/k8s-webhook-server/serving-certs
           name: cert
           readOnly: true
-      - args:
-        - --secure-listen-address=0.0.0.0:8443
-        - --upstream=http://127.0.0.1:8080/
-        - --logtostderr=true
-        - --v=0
-        image: docker.io/bitnami/kube-rbac-proxy@sha256:b7e25b5c57d9b3bfaabf4a9aa173d126344698d097ac44b943096dbe7a21fc05
-        name: kube-rbac-proxy
-        ports:
-        - containerPort: 8443
-          name: https
-          protocol: TCP
-        {{- with .Values.resources.kubeProxy }}
-        resources:
-          {{- toYaml . | nindent 12 }}
-        {{- end }}
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
       securityContext:
         runAsNonRoot: true
       serviceAccountName: {{ include "ndb-operator.fullname" . }}-service-account
