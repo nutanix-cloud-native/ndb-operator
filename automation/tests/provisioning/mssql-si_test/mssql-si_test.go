@@ -67,12 +67,8 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) SetupSuite() {
 		suite.T().FailNow()
 	}
 
-	// Setup yaml types
-	setupTypes, err := util.SetupTypeTemplates(ctx)
-	if err != nil {
-		logger.Printf("%s! %s\n", errBaseMsg, err)
-		suite.T().FailNow()
-	}
+	// Build setup types
+	setupTypes := util.NewMSSQLProvisioningSetupTypes()
 
 	// Get Test suite manager
 	tsm = util.GetTestSuiteManager(ctx, *setupTypes)
@@ -101,12 +97,8 @@ func (suite *MSSQLProvisioningSingleInstanceTestSuite) TearDownSuite() {
 	logger.Println("TearDownSuite() starting...")
 	errBaseMsg := "Error: SetupSuite() ended"
 
-	// Setup yaml types
-	setupTypes, err := util.SetupTypeTemplates(suite.ctx)
-	if err != nil {
-		logger.Printf("%s! %s\n", errBaseMsg, err)
-		suite.T().FailNow()
-	}
+	// Build setup types
+	setupTypes := util.NewMSSQLProvisioningSetupTypes()
 
 	// Delete resources and de-provision database
 	if err = suite.tsm.TearDown(suite.ctx, setupTypes, suite.clientset, suite.v1alpha1ClientSet, suite.T()); err != nil {

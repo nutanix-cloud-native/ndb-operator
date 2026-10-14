@@ -66,7 +66,17 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 		st.DbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv(automation.DB_SECRET_PASSWORD_ENV)
 		_, err = clientset.CoreV1().Secrets(ns).Create(ctx, st.DbSecret, metav1.CreateOptions{})
 		if err != nil {
-			logger.Printf("Error while creating db secret %s: %s\n", st.DbSecret.Name, err)
+			if k8serrors.IsAlreadyExists(err) {
+				logger.Printf("DB Secret %s already exists, updating.\n", st.DbSecret.Name)
+				_, err = clientset.CoreV1().Secrets(ns).Update(ctx, st.DbSecret, metav1.UpdateOptions{})
+				if err != nil {
+					logger.Printf("Error while updating db secret %s: %s\n", st.DbSecret.Name, err)
+				} else {
+					logger.Printf("DB Secret %s updated.\n", st.DbSecret.Name)
+				}
+			} else {
+				logger.Printf("Error while creating db secret %s: %s\n", st.DbSecret.Name, err)
+			}
 		} else {
 			logger.Printf("DB Secret %s created.\n", st.DbSecret.Name)
 		}
@@ -80,7 +90,17 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 		st.NdbSecret.StringData[common.SECRET_DATA_KEY_PASSWORD] = os.Getenv(automation.NDB_SECRET_PASSWORD_ENV)
 		_, err = clientset.CoreV1().Secrets(ndbCredsNs).Create(context.TODO(), st.NdbSecret, metav1.CreateOptions{})
 		if err != nil {
-			logger.Printf("Error while creating ndb secret %s: %s\n", st.NdbSecret.Name, err)
+			if k8serrors.IsAlreadyExists(err) {
+				logger.Printf("NDB Secret %s already exists, updating.\n", st.NdbSecret.Name)
+				_, err = clientset.CoreV1().Secrets(ndbCredsNs).Update(context.TODO(), st.NdbSecret, metav1.UpdateOptions{})
+				if err != nil {
+					logger.Printf("Error while updating ndb secret %s: %s\n", st.NdbSecret.Name, err)
+				} else {
+					logger.Printf("NDB Secret %s updated in namespace %s.\n", st.NdbSecret.Name, ndbCredsNs)
+				}
+			} else {
+				logger.Printf("Error while creating ndb secret %s: %s\n", st.NdbSecret.Name, err)
+			}
 		} else {
 			logger.Printf("NDB Secret %s created in namespace %s.\n", st.NdbSecret.Name, ndbCredsNs)
 		}
@@ -96,9 +116,20 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 			st.NdbServer.Spec.CredentialSecretRef.Name = st.NdbSecret.Name
 		}
 		st.NdbServer.Namespace = "" // cluster-scoped has no namespace
+		ndbServerName := st.NdbServer.Name
 		st.NdbServer, err = v1alpha1ClientSet.NDBServers().Create(st.NdbServer)
 		if err != nil {
-			logger.Printf("Error while creating NDBServer %s: %s\n", st.NdbServer.Name, err)
+			if k8serrors.IsAlreadyExists(err) {
+				logger.Printf("NDBServer %s already exists, fetching existing.\n", ndbServerName)
+				st.NdbServer, err = v1alpha1ClientSet.NDBServers().Get(ndbServerName, metav1.GetOptions{})
+				if err != nil {
+					logger.Printf("Error while fetching existing NDBServer %s: %s\n", ndbServerName, err)
+				} else {
+					logger.Printf("NDBServer %s fetched successfully.\n", st.NdbServer.Name)
+				}
+			} else {
+				logger.Printf("Error while creating NDBServer %s: %s\n", ndbServerName, err)
+			}
 		} else {
 			logger.Printf("NDBServer %s created.\n", st.NdbServer.Name)
 		}
@@ -142,9 +173,21 @@ func provisionOrClone(ctx context.Context, st *SetupTypes, clientset *kubernetes
 				st.Database.Spec.Instance.ClusterId = nxClusterId
 			}
 		}
-		st.Database, err = v1alpha1ClientSet.Databases(st.Database.Namespace).Create(st.Database)
+		databaseName := st.Database.Name
+		databaseNamespace := st.Database.Namespace
+		st.Database, err = v1alpha1ClientSet.Databases(databaseNamespace).Create(st.Database)
 		if err != nil {
-			logger.Printf("Error while creating Database %s: %s\n", st.Database.Name, err)
+			if k8serrors.IsAlreadyExists(err) {
+				logger.Printf("Database %s already exists, fetching existing.\n", databaseName)
+				st.Database, err = v1alpha1ClientSet.Databases(databaseNamespace).Get(databaseName, metav1.GetOptions{})
+				if err != nil {
+					logger.Printf("Error while fetching existing Database %s: %s\n", databaseName, err)
+				} else {
+					logger.Printf("Database %s fetched successfully.\n", st.Database.Name)
+				}
+			} else {
+				logger.Printf("Error while creating Database %s: %s\n", databaseName, err)
+			}
 		} else {
 			logger.Printf("Database %s created.\n", st.Database.Name)
 		}
@@ -387,48 +430,45 @@ func getDatabaseOrCloneResponse(ctx context.Context, st *SetupTypes, clientset *
 func getAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.Clientset, localPort string) (res http.Response, err error) {
 	logger := GetLogger(ctx)
 	logger.Println("getAppResponse() started...")
-	errBaseMsg := "getAppResponse() ended"
 
 	// Retrieve the pod name and targetPort
 	podName := st.AppPod.Name
 	podTargetPort := st.AppPod.Spec.Containers[0].Ports[0].ContainerPort
 
-	// Run port-forward command using kubectl
-	cmd := exec.Command("kubectl", "port-forward", podName, fmt.Sprintf("%s:%d", localPort, podTargetPort))
-	err = cmd.Start()
-	if err != nil {
-		return http.Response{}, fmt.Errorf("%s! kubectl port-forward %s %s:%d failed! %v. ", errBaseMsg, podName, localPort, podTargetPort, err)
-	} else {
-		logger.Printf("kubectl port-forward %s %s:%d started.", podName, localPort, podTargetPort)
-	}
-
-	// Wait for port-forwarding to establish
-	// Increased from 2s to 10s to ensure port-forward fully establishes before HTTP attempts
-	logger.Println("Waiting 10 seconds for port-forward to establish...")
-	time.Sleep(10 * time.Second)
-
-	// Verify the forwarded port by making an HTTP request with retry logic
 	url := fmt.Sprintf("http://localhost:%s", localPort)
 	maxRetries := 10
 	retryDelay := 2 * time.Second
 	var resp *http.Response
 
 	for i := 0; i < maxRetries; i++ {
+		// Start a fresh port-forward on every attempt to handle cases where
+		// the previous port-forward process died (e.g. after an EOF)
+		cmd := exec.Command("kubectl", "port-forward", podName, fmt.Sprintf("%s:%d", localPort, podTargetPort))
+		if startErr := cmd.Start(); startErr != nil {
+			logger.Printf("Attempt %d: kubectl port-forward failed to start: %v", i+1, startErr)
+			time.Sleep(retryDelay)
+			continue
+		}
+		logger.Printf("Attempt %d: kubectl port-forward %s %s:%d started.", i+1, podName, localPort, podTargetPort)
+
+		// Give port-forward time to establish before making the HTTP request
+		time.Sleep(retryDelay)
+
 		resp, err = http.Get(url)
 		if err == nil && resp.StatusCode == 200 {
 			logger.Printf("http://localhost:%s successful on attempt %d.", localPort, i+1)
+			cmd.Process.Kill()
 			break
 		}
-		if i < maxRetries-1 {
-			logger.Printf("Attempt %d failed (err: %v), retrying in %v...", i+1, err, retryDelay)
-			if resp != nil {
-				resp.Body.Close()
-			}
-			time.Sleep(retryDelay)
+
+		logger.Printf("Attempt %d failed (err: %v), retrying...", i+1, err)
+		if resp != nil {
+			resp.Body.Close()
 		}
+		cmd.Process.Kill()
 	}
 
-	if err != nil || resp.StatusCode != 200 {
+	if err != nil || resp == nil || resp.StatusCode != 200 {
 		return http.Response{}, fmt.Errorf("http://localhost:%s failed after %d attempts! Last error: %v", localPort, maxRetries, err)
 	}
 
@@ -442,7 +482,7 @@ func getAppResponse(ctx context.Context, st *SetupTypes, clientset *kubernetes.C
 		logger.Println("Response: ", string(body))
 	}
 
-	logger.Printf("%s!", errBaseMsg)
+	logger.Println("getAppResponse() ended!")
 
 	return *resp, nil
 }
